@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/secure_storage_service.dart';
+import 'package:crm_task_manager/api/service/storage/secure_storage_service.dart';
 import 'package:crm_task_manager/notification_cache.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/page_2/order/order_cache.dart';

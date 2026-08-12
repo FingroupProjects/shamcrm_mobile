@@ -5,7 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/lead/lead_model.dart';
 
 void DropdownBottomSheet(
   BuildContext context,

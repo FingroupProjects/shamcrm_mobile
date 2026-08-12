@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_event.dart';
 import 'package:crm_task_manager/bloc/notifications/notifications_state.dart';
-import 'package:crm_task_manager/models/notifications_model.dart';
+import 'package:crm_task_manager/models/notification/notifications_model.dart';
 import 'package:crm_task_manager/notification_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

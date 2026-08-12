@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/city_model.dart';
+import 'package:crm_task_manager/models/lead/city_model.dart';
 import 'package:meta/meta.dart';
 
 part 'city_event.dart';

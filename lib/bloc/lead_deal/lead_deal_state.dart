@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/lead_deal_model.dart';
+import 'package:crm_task_manager/models/lead/lead_deal_model.dart';
 
 abstract class LeadDealsState {}
 

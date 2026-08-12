@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 /// Виджет для отображения реакций под сообщением

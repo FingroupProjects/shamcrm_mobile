@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/login_model.dart';
+import 'package:crm_task_manager/models/auth/login_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'login_event.dart';
 import 'login_state.dart';

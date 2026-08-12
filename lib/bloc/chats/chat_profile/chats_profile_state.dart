@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chat/chatById_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class ChatProfileState extends Equatable {

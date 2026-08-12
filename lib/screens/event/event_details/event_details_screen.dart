@@ -18,7 +18,7 @@ import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/event_by_Id_model.dart';
+import 'package:crm_task_manager/models/event/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_delete.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_edit_screen.dart';

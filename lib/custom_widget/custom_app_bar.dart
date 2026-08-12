@@ -12,10 +12,10 @@ import 'package:crm_task_manager/custom_widget/filter/chat/task/chat_task_filter
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/manager_app_bar_event.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/manager_app_bar_lead.dart';
-import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';

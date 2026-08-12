@@ -3,7 +3,7 @@ import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/repositories/lead_offline_repository.dart';
 import 'package:flutter/foundation.dart';

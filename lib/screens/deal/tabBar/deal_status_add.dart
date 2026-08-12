@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/deal/deal_event.dart';
 import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/models/user_data_response.dart'; // ✅ ДОБАВИТЬ ИМПОРТ
+import 'package:crm_task_manager/models/user/user_data_response.dart'; // ✅ ДОБАВИТЬ ИМПОРТ
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';

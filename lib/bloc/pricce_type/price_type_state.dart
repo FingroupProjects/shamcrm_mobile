@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/price_type_model.dart';
+import 'package:crm_task_manager/models/money/price_type_model.dart';
 
 abstract class PriceTypeState {}
 

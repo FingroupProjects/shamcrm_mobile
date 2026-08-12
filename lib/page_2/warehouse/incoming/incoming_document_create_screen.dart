@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';

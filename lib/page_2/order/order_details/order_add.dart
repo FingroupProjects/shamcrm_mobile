@@ -22,11 +22,11 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart'
     show DeleteFileDialog;
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/models/user/user_model.dart';
 import 'user_event.dart';
 import 'user_state.dart';
 

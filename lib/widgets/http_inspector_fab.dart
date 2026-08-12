@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/debug/http_inspector_screen.dart';
-import '../api/service/http_logger.dart';
-import '../main.dart'; // Для доступа к navigatorKey
+import '../api/service/http/http_logger.dart';
+import 'package:crm_task_manager/app/app_keys.dart';
 
 /// Плавающая кнопка для быстрого доступа к HTTP Inspector
 /// Показывается только в DEBUG режиме И если включена в настройках

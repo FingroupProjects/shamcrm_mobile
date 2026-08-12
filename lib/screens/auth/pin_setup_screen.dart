@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -16,7 +16,7 @@ import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';

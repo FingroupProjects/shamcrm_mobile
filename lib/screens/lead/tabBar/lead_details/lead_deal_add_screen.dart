@@ -18,11 +18,11 @@ import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/page_2/warehouse/openings/cash_register/cash_register_content.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_name_list.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
@@ -41,7 +41,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:io';
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
 
 class LeadDealAddScreen extends StatefulWidget {
   final int leadId;

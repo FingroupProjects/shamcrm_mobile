@@ -1,5 +1,5 @@
-import 'package:crm_task_manager/models/taskbyId_model.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/task/taskbyId_model.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class TaskEvent {}

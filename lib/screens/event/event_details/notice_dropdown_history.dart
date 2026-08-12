@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/models/lead/lead_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_event.dart';
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_state.dart';
-import 'package:crm_task_manager/models/notice_history_model.dart';
+import 'package:crm_task_manager/models/event/notice_history_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:intl/intl.dart';
 

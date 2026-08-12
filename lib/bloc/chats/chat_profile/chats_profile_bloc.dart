@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_state.dart';
-import 'package:crm_task_manager/models/chatById_model.dart';
+import 'package:crm_task_manager/models/chat/chatById_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';

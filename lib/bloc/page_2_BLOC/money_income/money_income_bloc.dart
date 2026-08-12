@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
-import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';

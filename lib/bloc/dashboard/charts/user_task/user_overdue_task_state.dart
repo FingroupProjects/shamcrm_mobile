@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/overdue_task_response.dart';
+import 'package:crm_task_manager/models/task/overdue_task_response.dart';
 
 abstract class UserOverdueTaskState {}
 

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/event_by_Id_model.dart';
+import 'package:crm_task_manager/models/event/event_by_Id_model.dart';
 
 abstract class NoticeState {}
 

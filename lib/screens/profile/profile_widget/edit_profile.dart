@@ -11,7 +11,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_viewer.dart';
 import 'package:flutter/material.dart';

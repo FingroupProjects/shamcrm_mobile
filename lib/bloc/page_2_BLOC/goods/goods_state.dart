@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/batch_model.dart';
+import 'package:crm_task_manager/models/money/batch_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 

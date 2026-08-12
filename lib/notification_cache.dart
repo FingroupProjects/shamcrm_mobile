@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crm_task_manager/models/notifications_model.dart';
+import 'package:crm_task_manager/models/notification/notifications_model.dart';
 
 class NotificationCacheHandler {
   static const _cacheKey = 'notifications_cache';

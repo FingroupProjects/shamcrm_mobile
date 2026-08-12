@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/models/my_task/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class MyTaskEvent {}

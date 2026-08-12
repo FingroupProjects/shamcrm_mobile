@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_lis
 import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_event.dart';
 import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/outcome_category_data.dart';
+import 'package:crm_task_manager/models/money/outcome_category_data.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

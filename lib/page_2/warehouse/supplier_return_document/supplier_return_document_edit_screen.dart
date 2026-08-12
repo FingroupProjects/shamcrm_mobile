@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_bloc.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';

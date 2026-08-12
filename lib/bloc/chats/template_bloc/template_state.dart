@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/template_model.dart';
+import 'package:crm_task_manager/models/chat/template_model.dart';
 
 
 abstract class TemplateState {}

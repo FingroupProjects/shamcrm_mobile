@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
-import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/models/event/event_model.dart';
 import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

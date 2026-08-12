@@ -4,7 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_b
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';

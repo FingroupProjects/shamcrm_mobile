@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/taskbyId_model.dart';
+import 'package:crm_task_manager/models/task/taskbyId_model.dart';
 
 abstract class TaskByIdState {}
 

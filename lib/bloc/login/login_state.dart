@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/user.dart';
+import 'package:crm_task_manager/models/user/user.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class LoginState extends Equatable {

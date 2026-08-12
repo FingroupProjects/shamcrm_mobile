@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/app/my_app.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

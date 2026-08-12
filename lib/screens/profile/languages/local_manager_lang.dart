@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/api/service/device/widget_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageManager {

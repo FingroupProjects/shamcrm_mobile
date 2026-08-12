@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/offline/core/local_cache_repository.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';

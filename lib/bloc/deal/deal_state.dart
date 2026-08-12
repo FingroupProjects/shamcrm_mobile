@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/deal_model.dart'; // Модель для Deal
+import 'package:crm_task_manager/models/deal/deal_model.dart'; // Модель для Deal
 
 abstract class DealState {}
 

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:crm_task_manager/api/service/dio_client.dart';
+import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/core/theme/typography/app_font_families.dart';
 // import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';

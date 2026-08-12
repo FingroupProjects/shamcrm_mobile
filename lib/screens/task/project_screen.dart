@@ -8,7 +8,7 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
-import 'package:crm_task_manager/models/project_model.dart';
+import 'package:crm_task_manager/models/task/project_model.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

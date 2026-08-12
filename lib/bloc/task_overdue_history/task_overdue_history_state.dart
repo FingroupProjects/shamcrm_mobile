@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/task_overdue_history_model.dart';
+import 'package:crm_task_manager/models/task/task_overdue_history_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class TaskOverdueHistoryState extends Equatable {

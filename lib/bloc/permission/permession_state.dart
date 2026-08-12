@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/permission.dart';
+import 'package:crm_task_manager/models/user/permission.dart';
 
 abstract class PermissionsState {}
 

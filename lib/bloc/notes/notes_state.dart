@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/models/lead/notes_model.dart';
 
 abstract class NotesState {}
 

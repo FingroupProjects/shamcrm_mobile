@@ -32,7 +32,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/charts/chart_skeleton.dart';
 import 'package:crm_task_manager/page_2/dashboard/widgets/dialogs/dialog_creditors_info.dart';
 import 'package:crm_task_manager/screens/dashboard/deal_stats.dart';

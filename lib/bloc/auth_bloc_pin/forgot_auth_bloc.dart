@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_event.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_state.dart';
-import 'package:crm_task_manager/models/login_model.dart';
+import 'package:crm_task_manager/models/auth/login_model.dart';
 
 class ForgotPinBloc extends Bloc<ForgotPinEvent, ForgotPinState> {
   final ApiService apiService;

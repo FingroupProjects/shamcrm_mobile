@@ -4,7 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
 import 'package:crm_task_manager/models/money/add_cash_desk_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

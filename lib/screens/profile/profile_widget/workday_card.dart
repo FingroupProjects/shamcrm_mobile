@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/workday_status_model.dart';
+import 'package:crm_task_manager/models/workday/workday_status_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/services/workday_capture_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';

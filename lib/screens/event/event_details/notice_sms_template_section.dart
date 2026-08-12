@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
+import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:flutter/material.dart';
 
 class NoticeSmsTemplateSection extends StatelessWidget {

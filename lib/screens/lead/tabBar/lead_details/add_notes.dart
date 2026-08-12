@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
+import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';

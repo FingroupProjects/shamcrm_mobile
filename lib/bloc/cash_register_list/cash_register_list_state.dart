@@ -1,5 +1,5 @@
-import 'package:crm_task_manager/models/cash_register_list_model.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:flutter/material.dart';
 
 @immutable

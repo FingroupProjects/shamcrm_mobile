@@ -6,7 +6,7 @@ import 'package:crm_task_manager/custom_widget/filter/page_2/reports/act_filter.
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/expense_structure_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/goods_movement_filter.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/reports/manufacture_reports_filter.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';

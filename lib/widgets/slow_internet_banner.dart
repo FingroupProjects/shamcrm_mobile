@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'dart:async';
-// import '../api/service/network_speed_service.dart';
+// import '../api/service/device/network_speed_service.dart';
 
 // class SlowInternetBanner extends StatefulWidget {
 //   const SlowInternetBanner({Key? key}) : super(key: key);

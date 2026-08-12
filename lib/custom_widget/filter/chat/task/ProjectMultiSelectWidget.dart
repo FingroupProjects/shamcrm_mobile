@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/user/organization_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';

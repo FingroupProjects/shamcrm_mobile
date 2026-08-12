@@ -4,7 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_history_model.dart';
 import 'package:equatable/equatable.dart';
 
-import '../../../../../../../models/api_exception_model.dart';
+import '../../../../../../../models/common/api_exception_model.dart';
 
 part 'client_sale_document_history_event.dart';
 part 'client_sale_document_history_state.dart';

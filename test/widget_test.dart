@@ -17,9 +17,9 @@
 // import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_event.dart';
 // import 'package:crm_task_manager/custom_widget/custom_button.dart';
 // import 'package:crm_task_manager/custom_widget/file_utils.dart';
-// import 'package:crm_task_manager/models/field_configuration.dart';
-// import 'package:crm_task_manager/models/leadById_model.dart';
-// import 'package:crm_task_manager/models/lead_model.dart';
+// import 'package:crm_task_manager/models/field/field_configuration.dart';
+// import 'package:crm_task_manager/models/lead/leadById_model.dart';
+// import 'package:crm_task_manager/models/lead/lead_model.dart';
 // import 'package:crm_task_manager/models/page_2/field_configuration.dart';
 // import 'package:crm_task_manager/screens/lead/tabBar/lead_details/history_dialog.dart';
 // import 'package:crm_task_manager/screens/lead/export_lead_to_contact.dart';

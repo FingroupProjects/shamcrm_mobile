@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/workday_status_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
+import 'package:crm_task_manager/models/workday/workday_status_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';

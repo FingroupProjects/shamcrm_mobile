@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import '../../../../models/api_exception_model.dart';
+import '../../../../models/common/api_exception_model.dart';
 import 'supplier_return_event.dart';
 import 'supplier_return_state.dart';
 

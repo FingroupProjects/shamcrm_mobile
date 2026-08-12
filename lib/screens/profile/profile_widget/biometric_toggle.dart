@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_toggle_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';

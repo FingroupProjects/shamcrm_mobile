@@ -8,11 +8,11 @@ import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_re
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/lead_multi_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
-import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/lead/lead_multi_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/lead/reason_for_refusal_model.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/status_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';

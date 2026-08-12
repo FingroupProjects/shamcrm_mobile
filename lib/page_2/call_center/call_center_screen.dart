@@ -8,7 +8,7 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/call_center_fi
 import 'package:crm_task_manager/custom_widget/filter/call_center/call_type_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/rating_multi_select_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_select_widget.dart';
-import 'package:crm_task_manager/models/lead_multi_model.dart';
+import 'package:crm_task_manager/models/lead/lead_multi_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_item.dart';

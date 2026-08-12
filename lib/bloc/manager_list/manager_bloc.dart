@@ -2,7 +2,7 @@ import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:meta/meta.dart';
 
 part 'manager_event.dart';

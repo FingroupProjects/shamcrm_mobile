@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/api/service/firebase_api.dart';
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
 import 'package:crm_task_manager/bloc/login/login_state.dart';

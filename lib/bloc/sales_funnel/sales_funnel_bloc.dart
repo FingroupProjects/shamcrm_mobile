@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
-import 'package:crm_task_manager/models/sales_funnel_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
+import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:flutter/material.dart';
 import 'sales_funnel_event.dart';
 import 'sales_funnel_state.dart';

@@ -4,8 +4,8 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';

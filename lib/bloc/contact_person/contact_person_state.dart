@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/models/lead/contact_person_model.dart';
 
 abstract class ContactPersonState {}
 

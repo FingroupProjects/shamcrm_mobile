@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/sales_funnel_model.dart';
+import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

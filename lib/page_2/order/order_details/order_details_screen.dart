@@ -6,7 +6,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';

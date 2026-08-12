@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/lead_sms_model.dart';
-import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
+import 'package:crm_task_manager/models/lead/lead_sms_model.dart';
+import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';

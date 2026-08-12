@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/deal/deal_task_model.dart';
 
 abstract class DealTasksState {}
 

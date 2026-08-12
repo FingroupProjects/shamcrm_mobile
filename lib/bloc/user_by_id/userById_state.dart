@@ -1,5 +1,5 @@
 
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 
 abstract class UserByIdState {}
 

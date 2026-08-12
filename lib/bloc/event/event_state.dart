@@ -1,5 +1,5 @@
 // event_state.dart
-import 'package:crm_task_manager/models/event_model.dart';
+import 'package:crm_task_manager/models/event/event_model.dart';
 
 abstract class EventState {}
 

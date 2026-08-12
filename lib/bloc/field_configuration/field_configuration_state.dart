@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class FieldConfigurationState extends Equatable {

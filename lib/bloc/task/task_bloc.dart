@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/models/workday_status_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
+import 'package:crm_task_manager/models/task/task_model.dart';
+import 'package:crm_task_manager/models/workday/workday_status_model.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';

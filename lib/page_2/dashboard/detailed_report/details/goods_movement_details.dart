@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../api/service/api_service.dart';
-import '../../../../models/dashboard_goods_movement_history_model.dart';
+import '../../../../models/page_2/dashboard_goods_movement_history_model.dart';
 import '../../../../models/page_2/good_variants_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../custom_widget/full_text_dialog.dart';

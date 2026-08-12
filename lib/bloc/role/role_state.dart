@@ -1,6 +1,6 @@
 // bloc/role/role_state.dart
 import 'package:equatable/equatable.dart';
-import '../../models/role_model.dart';
+import '../../models/user/role_model.dart';
 
 abstract class RoleState extends Equatable {
   const RoleState();

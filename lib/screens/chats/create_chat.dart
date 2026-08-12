@@ -8,8 +8,8 @@ import 'package:crm_task_manager/bloc/user/create_cleant/create_client_bloc.dart
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/multi_user_list.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/one_user_list_.dart';

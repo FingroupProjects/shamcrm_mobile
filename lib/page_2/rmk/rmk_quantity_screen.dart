@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';

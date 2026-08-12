@@ -4,8 +4,8 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/source_list_model.dart';
-import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/models/lead/source_list_model.dart';
+import 'package:crm_task_manager/models/lead/source_model.dart';
 import 'package:meta/meta.dart';
 
 part 'source_event.dart';

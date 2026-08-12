@@ -1,7 +1,7 @@
-import 'package:crm_task_manager/models/income_categories_data_response.dart';
+import 'package:crm_task_manager/models/money/income_categories_data_response.dart';
 import 'package:flutter/material.dart';
 
-import '../../models/outcome_categories_data_response.dart';
+import '../../models/money/outcome_categories_data_response.dart';
 
 @immutable
 sealed class GetAllOutcomeCategoryState {}

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/lead_list_model.dart';
+import '../../models/lead/lead_list_model.dart';
 
 @immutable
 sealed class GetAllLeadEvent {}

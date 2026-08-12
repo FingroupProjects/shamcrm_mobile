@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/pagination_dto.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/common/pagination_dto.dart';
 import 'package:crm_task_manager/offline/core/offline_module.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/core/request_priority.dart';

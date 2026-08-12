@@ -12,8 +12,8 @@ import '../../../../bloc/lead_list/lead_list_state.dart';
 import '../../../../bloc/supplier_list/supplier_list_bloc.dart';
 import '../../../../bloc/supplier_list/supplier_list_event.dart';
 import '../../../../bloc/supplier_list/supplier_list_state.dart';
-import '../../../../models/lead_list_model.dart';
-import '../../../../models/supplier_list_model.dart';
+import '../../../../models/lead/lead_list_model.dart';
+import '../../../../models/common/supplier_list_model.dart';
 import '../../../dropdown_loading_state.dart';
 
 class CreditorsFilterScreen extends StatefulWidget {

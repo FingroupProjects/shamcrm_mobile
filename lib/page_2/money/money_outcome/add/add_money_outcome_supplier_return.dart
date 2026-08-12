@@ -1,13 +1,13 @@
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
-import 'package:crm_task_manager/models/cash_register_list_model.dart';
-import 'package:crm_task_manager/models/supplier_list_model.dart';
+import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';

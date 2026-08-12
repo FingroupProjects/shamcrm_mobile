@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/source_model.dart';
+import 'package:crm_task_manager/models/lead/source_model.dart';
 
 abstract class SourceLeadState {}
 
@@ -25,7 +25,7 @@ class SourceLeadSuccess extends SourceLeadState {
   SourceLeadSuccess(this.message);
 }
 
-// import 'package:crm_task_manager/models/source_model.dart';
+// import 'package:crm_task_manager/models/lead/source_model.dart';
 // import 'package:equatable/equatable.dart';
 
 // abstract class SourceLeadState extends Equatable {

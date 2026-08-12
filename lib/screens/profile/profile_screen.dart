@@ -34,7 +34,7 @@ import 'package:crm_task_manager/bloc/organization/organization_state.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/user/organization_model.dart';
 import 'package:crm_task_manager/notification_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';

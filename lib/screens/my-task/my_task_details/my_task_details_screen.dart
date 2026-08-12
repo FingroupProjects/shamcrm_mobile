@@ -15,9 +15,9 @@ import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/my-task_model.dart';
-import 'package:crm_task_manager/models/my-taskbyId_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/my_task/my-task_model.dart';
+import 'package:crm_task_manager/models/my_task/my-taskbyId_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_delete.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart'

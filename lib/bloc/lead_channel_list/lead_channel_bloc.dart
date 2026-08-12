@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
+import 'package:crm_task_manager/models/lead/lead_filter_channel_model.dart';
 import 'package:meta/meta.dart';
 
 part 'lead_channel_event.dart';

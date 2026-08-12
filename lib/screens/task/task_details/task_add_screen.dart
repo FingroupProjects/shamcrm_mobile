@@ -8,17 +8,17 @@ import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_withPriority.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/project_task_model.dart';
-import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
+import 'package:crm_task_manager/models/task/project_task_model.dart';
+import 'package:crm_task_manager/models/task/task_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_list_edit.dart';
@@ -42,7 +42,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../bloc/field_configuration/field_configuration_bloc.dart';
 import '../../../bloc/field_configuration/field_configuration_event.dart';
-import '../../../models/field_configuration.dart';
+import '../../../models/field/field_configuration.dart';
 import '../../../page_2/warehouse/openings/cash_register/cash_register_content.dart';
 
 class TaskAddScreen extends StatefulWidget {

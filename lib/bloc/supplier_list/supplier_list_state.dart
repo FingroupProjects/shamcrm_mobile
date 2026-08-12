@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/supplier_list_model.dart';
+import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:flutter/material.dart';
 
 @immutable

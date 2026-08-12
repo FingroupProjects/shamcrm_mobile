@@ -1,6 +1,6 @@
 // lib/screens/deal/tabBar/deal_details/dropdown_history.dart
 
-import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/models/lead/lead_history_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_event.dart';
 import 'package:crm_task_manager/bloc/history_deal/deal_history_state.dart';
-import 'package:crm_task_manager/models/deal_history_model.dart';
+import 'package:crm_task_manager/models/deal/deal_history_model.dart';
 
 class ActionHistoryWidget extends StatefulWidget {
   final int dealId;

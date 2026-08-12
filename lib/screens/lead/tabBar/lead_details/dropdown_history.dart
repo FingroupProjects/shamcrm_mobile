@@ -2,7 +2,7 @@ import 'package:crm_task_manager/bloc/history_lead/history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_event.dart';
 import 'package:crm_task_manager/bloc/history_lead/history_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/lead_history_model.dart';
+import 'package:crm_task_manager/models/lead/lead_history_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';

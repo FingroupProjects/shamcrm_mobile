@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../api/service/http_log_model.dart';
-import '../../api/service/http_logger.dart';
+import '../../api/service/http/http_log_model.dart';
+import '../../api/service/http/http_logger.dart';
 import 'http_request_detail_screen.dart';
 import 'theme_controller.dart';
 import 'animated_theme_toggle.dart';

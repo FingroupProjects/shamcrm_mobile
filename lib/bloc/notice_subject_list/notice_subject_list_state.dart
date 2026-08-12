@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/notice_subject_model.dart';
+import 'package:crm_task_manager/models/event/notice_subject_model.dart';
 
 sealed class GetAllSubjectState {}
 final class GetAllSubjectInitial extends GetAllSubjectState {}

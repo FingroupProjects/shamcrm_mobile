@@ -1,5 +1,5 @@
 
-import 'package:crm_task_manager/models/department.dart';
+import 'package:crm_task_manager/models/user/department.dart';
 
 abstract class DepartmentState {}
 

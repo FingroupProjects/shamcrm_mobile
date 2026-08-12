@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

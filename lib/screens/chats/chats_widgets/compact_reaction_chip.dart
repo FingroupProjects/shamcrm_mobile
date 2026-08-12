@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 
 /// Компактный чип реакции как в Telegram
 /// Размещается ВНУТРИ сообщения

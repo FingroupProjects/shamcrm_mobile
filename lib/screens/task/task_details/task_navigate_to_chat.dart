@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

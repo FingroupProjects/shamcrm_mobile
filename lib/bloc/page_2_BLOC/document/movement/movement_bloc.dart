@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import '../../../../models/api_exception_model.dart';
+import '../../../../models/common/api_exception_model.dart';
 import 'movement_event.dart';
 import 'movement_state.dart';
 

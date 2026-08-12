@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/contact_person/contact_person_event.dart';
 import 'package:crm_task_manager/bloc/contact_person/contact_person_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/models/lead/contact_person_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

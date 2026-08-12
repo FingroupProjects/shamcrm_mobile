@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:flutter/material.dart';
 
 @immutable

@@ -15,7 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../models/api_exception_model.dart';
+import '../../../models/common/api_exception_model.dart';
 import '../../money/widgets/error_dialog.dart';
 
 class ManufactureDocumentDetailsScreen extends StatefulWidget {

@@ -9,20 +9,20 @@ import 'package:crm_task_manager/custom_widget/filter/lead/multi_advertising_cam
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_directory_dropdown_widget.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/state_single_select_widget.dart';
-import 'package:crm_task_manager/models/advertising_campaign_model.dart';
-import 'package:crm_task_manager/models/city_model.dart';
-import 'package:crm_task_manager/models/lead_filter_channel_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/region_model.dart';
-import 'package:crm_task_manager/models/source_list_model.dart';
-import 'package:crm_task_manager/models/directory_link_model.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/lead/advertising_campaign_model.dart';
+import 'package:crm_task_manager/models/lead/city_model.dart';
+import 'package:crm_task_manager/models/lead/lead_filter_channel_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
+import 'package:crm_task_manager/models/lead/source_list_model.dart';
+import 'package:crm_task_manager/models/task/directory_link_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/reason_for_refusal_model.dart';
+import 'package:crm_task_manager/models/lead/reason_for_refusal_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ManagerFilterScreen extends StatefulWidget {

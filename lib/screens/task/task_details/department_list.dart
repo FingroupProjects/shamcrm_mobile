@@ -2,7 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/bloc/department/department_event.dart';
 import 'package:crm_task_manager/bloc/department/department_state.dart';
-import 'package:crm_task_manager/models/department.dart';
+import 'package:crm_task_manager/models/user/department.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

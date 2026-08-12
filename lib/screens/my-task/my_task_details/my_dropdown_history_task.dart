@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_event.dart';
 import 'package:crm_task_manager/bloc/history_my-task/task_history_state.dart';
-import 'package:crm_task_manager/models/history_model_my-task.dart';
+import 'package:crm_task_manager/models/my_task/history_model_my-task.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

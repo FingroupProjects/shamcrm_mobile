@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:meta/meta.dart';
 
 part 'get_all_client_event.dart';

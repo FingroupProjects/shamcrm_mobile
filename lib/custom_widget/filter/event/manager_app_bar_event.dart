@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/event_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/multi_manager_list.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 

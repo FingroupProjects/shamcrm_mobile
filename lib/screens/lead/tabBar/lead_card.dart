@@ -4,7 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';

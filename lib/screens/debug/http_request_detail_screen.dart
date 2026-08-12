@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../api/service/http_log_model.dart';
+import '../../api/service/http/http_log_model.dart';
 import 'theme_controller.dart';
 
 /// Детальный экран с поддержкой тем

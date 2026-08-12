@@ -1,6 +1,6 @@
-import 'package:crm_task_manager/models/manager_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
-import 'package:crm_task_manager/models/dealById_model.dart';
+import 'package:crm_task_manager/models/deal/dealById_model.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class Order {

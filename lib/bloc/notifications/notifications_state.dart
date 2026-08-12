@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/notifications_model.dart';
+import 'package:crm_task_manager/models/notification/notifications_model.dart';
 
 abstract class NotificationState {}
 

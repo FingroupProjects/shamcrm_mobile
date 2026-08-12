@@ -3,7 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bloc.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_event.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_state.dart';
-import 'package:crm_task_manager/models/notice_subject_model.dart';
+import 'package:crm_task_manager/models/event/notice_subject_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

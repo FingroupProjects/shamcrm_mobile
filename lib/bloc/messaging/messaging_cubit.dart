@@ -2,9 +2,9 @@ import 'dart:collection';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/chat_messages_page.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/models/chat/chat_messages_page.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

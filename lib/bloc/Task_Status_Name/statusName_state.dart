@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/task_Status_Name_model.dart';
+import 'package:crm_task_manager/models/task/task_Status_Name_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class StatusNameState extends Equatable {

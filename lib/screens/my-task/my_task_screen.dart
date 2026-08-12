@@ -7,8 +7,8 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
-import 'package:crm_task_manager/models/my-task_model.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/my_task/my-task_model.dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/my-task/my_task_status_edit.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';

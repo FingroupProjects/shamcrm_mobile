@@ -4,7 +4,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dio/dio.dart';
-import 'package:crm_task_manager/api/service/dio_client.dart';
+import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';

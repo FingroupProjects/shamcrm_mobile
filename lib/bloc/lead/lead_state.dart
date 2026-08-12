@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:flutter/material.dart'; // Модель для Lead
 
 abstract class LeadState {}

@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -19,12 +19,12 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/delete_file_dialog.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
-import 'package:crm_task_manager/models/manager_model.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
+import 'package:crm_task_manager/models/lead/lead_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
+import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';

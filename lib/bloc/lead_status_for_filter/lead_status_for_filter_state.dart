@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/LeadStatusForFilter.dart';
+import 'package:crm_task_manager/models/lead/LeadStatusForFilter.dart';
 
 abstract class LeadStatusForFilterState {}
 

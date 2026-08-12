@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/organization_model.dart';
+import 'package:crm_task_manager/models/user/organization_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class OrganizationState extends Equatable {

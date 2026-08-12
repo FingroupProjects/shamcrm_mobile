@@ -8,7 +8,7 @@ import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_for_edit.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/models/contact_person_model.dart';
+import 'package:crm_task_manager/models/lead/contact_person_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

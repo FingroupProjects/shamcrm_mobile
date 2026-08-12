@@ -5,7 +5,7 @@ import 'package:crm_task_manager/custom_widget/filter/call_center/status_multi_s
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/lead_multi_model.dart';
+import 'package:crm_task_manager/models/lead/lead_multi_model.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';

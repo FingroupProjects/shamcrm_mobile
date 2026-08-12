@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_bloc.da
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_list_event.dart';
 import 'package:crm_task_manager/bloc/deal_name_list_bloc/deal_name_lists_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/deal_name_list.dart';
+import 'package:crm_task_manager/models/deal/deal_name_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

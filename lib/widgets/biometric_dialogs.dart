@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 

@@ -1,6 +1,6 @@
-import 'package:crm_task_manager/models/dealById_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/file_helper.dart';
+import 'package:crm_task_manager/models/deal/dealById_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 
 abstract class DealEvent {}

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/offline/core/local_operation_status.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';

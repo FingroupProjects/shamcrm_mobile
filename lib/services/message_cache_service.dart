@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/chats_model.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/offline/repositories/chat_message_cache_repository.dart';
 import 'package:flutter/foundation.dart';
 

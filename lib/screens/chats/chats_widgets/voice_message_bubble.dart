@@ -3,8 +3,8 @@ import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
-import 'package:crm_task_manager/models/chats_model.dart';
-import 'package:crm_task_manager/models/message_reaction_model.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 

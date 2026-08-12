@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/bloc/notes/notes_state.dart';
-import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/models/lead/notes_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

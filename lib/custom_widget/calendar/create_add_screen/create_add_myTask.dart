@@ -7,7 +7,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
-import 'package:crm_task_manager/models/my-task_model.dart';
+import 'package:crm_task_manager/models/my_task/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/mytask_status_list_edit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';

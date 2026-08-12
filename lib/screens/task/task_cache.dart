@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:crm_task_manager/models/task_model.dart';
+import 'package:crm_task_manager/models/task/task_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TaskCache {

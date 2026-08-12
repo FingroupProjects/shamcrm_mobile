@@ -4,7 +4,7 @@ import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
 import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
-import 'package:crm_task_manager/models/author_data_response.dart';
+import 'package:crm_task_manager/models/user/author_data_response.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

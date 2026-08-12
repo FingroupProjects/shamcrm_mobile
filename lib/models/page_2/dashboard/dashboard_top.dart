@@ -1,6 +1,6 @@
-import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
-import 'package:crm_task_manager/models/supplier_list_model.dart';
+import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 
 class DashboardTopPart {

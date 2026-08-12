@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/income_categories_data_response.dart';
+import 'package:crm_task_manager/models/money/income_categories_data_response.dart';
 import 'package:flutter/material.dart';
 
 @immutable

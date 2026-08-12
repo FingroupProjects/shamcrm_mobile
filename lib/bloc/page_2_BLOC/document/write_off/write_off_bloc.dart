@@ -4,7 +4,7 @@ import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../models/api_exception_model.dart';
+import '../../../../models/common/api_exception_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 
 part 'write_off_event.dart';

@@ -3,7 +3,7 @@ import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/author_data_response.dart';
+import 'package:crm_task_manager/models/user/author_data_response.dart';
 import 'package:meta/meta.dart';
 
 part 'get_all_author_event.dart';

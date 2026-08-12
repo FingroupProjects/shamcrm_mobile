@@ -5,7 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/cash_register_list_model.dart';
+import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/employee_remaining_model.dart';
 import 'package:crm_task_manager/models/money/money_outcome_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_operation_type.dart';

@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/region_model.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:meta/meta.dart';
 
 part 'region_event.dart';

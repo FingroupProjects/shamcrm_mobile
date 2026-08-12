@@ -4,7 +4,7 @@ import 'package:crm_task_manager/bloc/deal_task/deal_task_event.dart';
 import 'package:crm_task_manager/bloc/deal_task/deal_task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
-import 'package:crm_task_manager/models/deal_task_model.dart';
+import 'package:crm_task_manager/models/deal/deal_task_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/task_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';

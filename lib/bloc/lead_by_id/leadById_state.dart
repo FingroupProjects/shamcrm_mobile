@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/leadById_model.dart';
+import 'package:crm_task_manager/models/lead/leadById_model.dart';
 
 abstract class LeadByIdState {}
 

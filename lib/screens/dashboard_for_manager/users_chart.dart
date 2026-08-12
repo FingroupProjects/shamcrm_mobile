@@ -1,6 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/dashboard_charts_models_manager/user_task_model.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/dashboard_for_manager/CACHE/users_chart_manager_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

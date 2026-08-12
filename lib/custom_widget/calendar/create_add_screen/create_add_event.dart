@@ -8,7 +8,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/tematika_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/notice_sms_sample_model.dart';
+import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/Lead_Manager_Selector.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';

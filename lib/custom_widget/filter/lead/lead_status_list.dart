@@ -2,7 +2,7 @@
 // import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 // import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 // import 'package:crm_task_manager/bloc/lead/lead_state.dart';
-// import 'package:crm_task_manager/models/lead_model.dart';
+// import 'package:crm_task_manager/models/lead/lead_model.dart';
 // import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_bloc/flutter_bloc.dart';

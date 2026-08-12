@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

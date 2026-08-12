@@ -1,5 +1,5 @@
 
-import 'package:crm_task_manager/models/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/models/lead/lead_navigate_to_chat.dart';
 
 abstract class LeadToChatState {}
 

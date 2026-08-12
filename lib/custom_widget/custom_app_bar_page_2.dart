@@ -7,7 +7,7 @@ import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/orders/filter_app_bar_orders.dart';
-import 'package:crm_task_manager/models/user_byId_model..dart';
+import 'package:crm_task_manager/models/user/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DealCache {

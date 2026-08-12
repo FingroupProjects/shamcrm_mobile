@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/deal_history_model.dart';
+import 'package:crm_task_manager/models/deal/deal_history_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class DealHistoryState extends Equatable {

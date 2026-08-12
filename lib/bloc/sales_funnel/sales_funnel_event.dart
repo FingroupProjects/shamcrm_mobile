@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/sales_funnel_model.dart';
+import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class SalesFunnelEvent extends Equatable {

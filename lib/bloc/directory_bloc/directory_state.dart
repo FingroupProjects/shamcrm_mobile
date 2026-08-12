@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/directory_model.dart';
+import 'package:crm_task_manager/models/task/directory_model.dart';
 import 'package:flutter/material.dart';
 
 @immutable

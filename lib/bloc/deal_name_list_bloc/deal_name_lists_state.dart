@@ -1,5 +1,5 @@
 
-import 'package:crm_task_manager/models/deal_name_list.dart';
+import 'package:crm_task_manager/models/deal/deal_name_list.dart';
 
 sealed class GetAllDealNameState {}
 final class GetAllDealNameInitial extends GetAllDealNameState {}

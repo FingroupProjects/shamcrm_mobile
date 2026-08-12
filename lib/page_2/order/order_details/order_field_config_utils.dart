@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/field_configuration.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
 
 String _normalizeFieldName(String value) => value.trim().toLowerCase();
 

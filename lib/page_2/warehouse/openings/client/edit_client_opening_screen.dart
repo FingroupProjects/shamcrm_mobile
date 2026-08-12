@@ -5,7 +5,7 @@ import '../../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
 import '../../../../bloc/page_2_BLOC/openings/client/client_openings_state.dart';
 import '../../../../models/page_2/openings/client_openings_model.dart';
-import '../../../../models/lead_list_model.dart';
+import '../../../../models/lead/lead_list_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../../../screens/deal/tabBar/lead_list.dart';
 import '../../../../custom_widget/custom_button.dart';

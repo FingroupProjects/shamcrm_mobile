@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';

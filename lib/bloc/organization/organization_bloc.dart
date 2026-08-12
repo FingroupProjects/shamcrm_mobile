@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/api_exception_model.dart';
+import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'organization_event.dart';
 import 'organization_state.dart';
 

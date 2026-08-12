@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
-import 'package:crm_task_manager/models/lead_model.dart';
+import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/biometric_service.dart';
+import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/models/advertising_campaign_model.dart';
+import 'package:crm_task_manager/models/lead/advertising_campaign_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

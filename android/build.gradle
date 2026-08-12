@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '2.2.21'  // ✅ ПОСЛЕДНЯЯ ВЕРСИЯ
+    ext.kotlin_version = '2.3.21'
     repositories {
         google()
         mavenCentral()
@@ -7,7 +7,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.android.tools.build:gradle:8.13.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.google.gms:google-services:4.4.3'
         classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.6'
@@ -25,6 +25,20 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+// Register before evaluationDependsOn so callbacks still run when projects evaluate.
+// AGP 8.13+ enforces AAR metadata: plugins compiling against old SDK fail the build.
+subprojects { subproject ->
+    subproject.afterEvaluate {
+        if (subproject.plugins.hasPlugin('com.android.library')) {
+            if (subproject.android.hasProperty('compileSdk')) {
+                subproject.android.compileSdk = 36
+            } else {
+                subproject.android.compileSdkVersion 36
+            }
+        }
+    }
 }
 
 subprojects {

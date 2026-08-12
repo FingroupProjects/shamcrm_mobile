@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/batch_model.dart';
+import 'package:crm_task_manager/models/money/batch_model.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

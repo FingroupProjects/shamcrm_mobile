@@ -18,10 +18,10 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/dealById_model.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
-import 'package:crm_task_manager/models/field_configuration.dart';
-import 'package:crm_task_manager/models/notes_model.dart';
+import 'package:crm_task_manager/models/deal/dealById_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/lead/notes_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';

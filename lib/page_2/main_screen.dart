@@ -9,8 +9,8 @@
 // import 'package:crm_task_manager/bloc/deal_by_id/dealById_state.dart';
 // import 'package:crm_task_manager/custom_widget/custom_button.dart';
 // import 'package:crm_task_manager/main.dart';
-// import 'package:crm_task_manager/models/dealById_model.dart';
-// import 'package:crm_task_manager/models/deal_model.dart';
+// import 'package:crm_task_manager/models/deal/dealById_model.dart';
+// import 'package:crm_task_manager/models/deal/deal_model.dart';
 // import 'package:crm_task_manager/screens/deal/tabBar/deal_delete.dart';
 // import 'package:crm_task_manager/screens/deal/tabBar/deal_details/dropdown_history.dart';
 // import 'package:crm_task_manager/screens/deal/tabBar/deal_details/deal_task_screen.dart';

@@ -4,22 +4,22 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/ProjectMultiSelectWidget.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_user_list.dart';
-import 'package:crm_task_manager/models/author_data_response.dart';
-import 'package:crm_task_manager/models/project_task_model.dart';
+import 'package:crm_task_manager/models/user/author_data_response.dart';
+import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/department_list.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/models/task_model.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/task/task_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/multi_task_status_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/department/department_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:crm_task_manager/models/directory_link_model.dart';
-import 'package:crm_task_manager/models/main_field_model.dart';
+import 'package:crm_task_manager/models/task/directory_link_model.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
 
 class ChatTaskFilterScreen extends StatefulWidget {
   final Function(Map<String, dynamic>)? onUsersSelected;

@@ -1,5 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/custom_widget/compact_textfield.dart';
@@ -9,7 +9,7 @@ import 'package:crm_task_manager/custom_widget/keyboard_dismissible.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/custom_widget/quantity_input_formatter.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
-import 'package:crm_task_manager/models/lead_list_model.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/storage_widget.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';

@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/deal_model.dart';
+import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';

@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/full_text_dialog.dart';
-import 'package:crm_task_manager/models/overdue_task_response.dart';
+import 'package:crm_task_manager/models/task/overdue_task_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:flutter/material.dart';

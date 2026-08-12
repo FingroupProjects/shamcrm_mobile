@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/api/service/localization_service.dart';
-import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/api/service/localization/localization_service.dart';
+import 'package:crm_task_manager/api/service/device/widget_service.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
-import 'package:crm_task_manager/models/permission.dart';
+import 'package:crm_task_manager/models/user/permission.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
 import 'package:flutter/foundation.dart';
 

@@ -3,7 +3,7 @@ import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_event.dart';
 import 'package:crm_task_manager/bloc/chats/groupe_chat/group_chat_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/user_data_response.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/user_list_group.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';

@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/calendar_model.dart';
+import 'package:crm_task_manager/models/event/calendar_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class CalendarBlocState extends Equatable {

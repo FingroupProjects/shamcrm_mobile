@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../models/domain_check.dart';
+import '../../models/auth/domain_check.dart';
 
 abstract class DomainState extends Equatable {
   const DomainState();

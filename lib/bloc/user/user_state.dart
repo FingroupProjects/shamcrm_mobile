@@ -1,5 +1,5 @@
 
-import 'package:crm_task_manager/models/user_model.dart';
+import 'package:crm_task_manager/models/user/user_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class UserTaskState extends Equatable {
