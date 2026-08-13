@@ -126,17 +126,79 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final safeTop = mediaQuery.padding.top + 8.0;
+    final safeBottom = screenHeight - mediaQuery.padding.bottom - 8.0;
 
     // Константы для расчёта
     const double horizontalPadding = 16.0;
+    const double gap = 10.0;
     final double maxMenuWidth =
         (screenWidth - (horizontalPadding * 2)).clamp(220.0, 280.0);
-    final double reactionPanelHeight = widget.showReactions ? 54.0 : 0.0;
+    final double reactionPanelHeight = widget.showReactions ? 54.0 + gap : 0.0;
 
-    // Рассчитываем вертикальное положение
-    final isMenuBelow = widget.messagePosition.dy < screenHeight / 2;
+    // Приблизительная высота всего блока меню (реакции + само меню)
+    final double desiredMenuHeight =
+        (widget.items.length * 50.0) + reactionPanelHeight + 8.0;
+
+    final messageTop = widget.messagePosition.dy;
+    final messageBottom = messageTop + widget.messageSize.height;
+    final spaceBelow = safeBottom - messageBottom - gap;
+    final spaceAbove = messageTop - safeTop - gap;
+    final maxSafeHeight = (safeBottom - safeTop).clamp(120.0, screenHeight);
+
+    // Ставим меню туда, где оно целиком влезает; иначе — в сторону с большим местом.
+    // Если сообщение огромное (видео) и места нет ни сверху, ни снизу — рисуем
+    // поверх сообщения в безопасной зоне, чтобы пункты не обрезались.
+    final bool fitsBelow = spaceBelow >= desiredMenuHeight;
+    final bool fitsAbove = spaceAbove >= desiredMenuHeight;
+    final bool hasSideSpace = spaceBelow > 80 || spaceAbove > 80;
+
+    final bool isMenuBelow;
+    final bool overlayOnMessage;
+    if (fitsBelow) {
+      isMenuBelow = true;
+      overlayOnMessage = false;
+    } else if (fitsAbove) {
+      isMenuBelow = false;
+      overlayOnMessage = false;
+    } else if (hasSideSpace) {
+      isMenuBelow = spaceBelow >= spaceAbove;
+      overlayOnMessage = false;
+    } else {
+      isMenuBelow = true;
+      overlayOnMessage = true;
+    }
+
+    final double availableHeight = overlayOnMessage
+        ? maxSafeHeight
+        : (isMenuBelow ? spaceBelow : spaceAbove).clamp(0.0, maxSafeHeight);
+    // Если места почти нет — всё равно показываем меню поверх сообщения.
+    final double menuBlockHeight = desiredMenuHeight
+        .clamp(
+          0.0,
+          availableHeight >= 80 ? availableHeight : maxSafeHeight,
+        )
+        .toDouble();
+    final bool useOverlayFallback =
+        overlayOnMessage || availableHeight < 80;
+
+    double top;
+    if (useOverlayFallback) {
+      top = (safeBottom - menuBlockHeight).clamp(safeTop, safeBottom);
+    } else if (isMenuBelow) {
+      top = messageBottom + gap;
+      if (top + menuBlockHeight > safeBottom) {
+        top = (safeBottom - menuBlockHeight).clamp(safeTop, safeBottom);
+      }
+    } else {
+      top = messageTop - menuBlockHeight - gap;
+      if (top < safeTop) {
+        top = safeTop;
+      }
+    }
 
     // Рассчитываем горизонтальное положение, чтобы меню не вылезало за экран
     double left = widget.messagePosition.dx;
@@ -149,9 +211,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
       left = horizontalPadding;
     }
 
-    // Приблизительная высота всего блока меню (реакции + само меню)
-    final totalMenuHeight =
-        (widget.items.length * 50.0) + reactionPanelHeight + 20;
+    final needsScroll = desiredMenuHeight > menuBlockHeight + 0.5;
 
     return GestureDetector(
       onTap: _close,
@@ -186,34 +246,43 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
               child: widget.messageWidget,
             ),
 
-            // Меню и реакции
+            // Меню и реакции — всегда внутри безопасной зоны экрана
             Positioned(
               left: left,
-              top: isMenuBelow
-                  ? widget.messagePosition.dy + widget.messageSize.height + 10
-                  : widget.messagePosition.dy - totalMenuHeight - 10,
+              top: top,
               width: maxMenuWidth,
               child: ScaleTransition(
                 scale: _animation,
                 alignment:
                     isMenuBelow ? Alignment.topCenter : Alignment.bottomCenter,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.showReactions) ...[
-                      _buildReactionPanel(),
-                      const SizedBox(height: 10),
-                    ],
-                    // Контекстное меню
-                    _buildMenuCard(),
-                  ],
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: menuBlockHeight),
+                  child: needsScroll
+                      ? SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: _buildMenuColumn(),
+                        )
+                      : _buildMenuColumn(),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMenuColumn() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showReactions) ...[
+          _buildReactionPanel(),
+          const SizedBox(height: 10),
+        ],
+        _buildMenuCard(),
+      ],
     );
   }
 

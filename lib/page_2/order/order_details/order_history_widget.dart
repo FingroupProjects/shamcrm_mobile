@@ -146,10 +146,10 @@ class _OrderHistoryWidgetState extends State<OrderHistoryWidget> {
         AnimatedRotation(
           turns: isHistoryExpanded ? 0.5 : 0,
           duration: const Duration(milliseconds: 300),
-          child: Image.asset(
-            'assets/icons/tabBar/dropdown.png',
-            width: 16,
-            height: 16,
+          child: Icon(
+            Icons.expand_more_rounded,
+            size: 16,
+            color: colors.iconSecondary,
           ),
         ),
       ],
