@@ -1,2 +1,5 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "ephemeral/Flutter-Generated.xcconfig"
+SWIFT_ENABLE_EXPLICIT_MODULES = NO
+ARCHS = arm64
+ONLY_ACTIVE_ARCH = YES

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crm_task_manager/core/platform/app_platform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,10 @@ class WidgetService {
 
   // Инициализация слушателя
   static void initialize() {
+    if (AppPlatform.isDesktop) {
+      debugPrint('WidgetService: skipped on desktop');
+      return;
+    }
     if (_isInitialized) {
       debugPrint('WidgetService: initialize() skipped, already initialized');
       return;

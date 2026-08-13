@@ -31,8 +31,8 @@ class DefaultFirebaseOptions {
         return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for windows. '
+          'Push on Windows is skipped; use macOS/Android/iOS for FCM.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(

@@ -253,7 +253,7 @@ class FirebaseApi {
   }
 
   Future<String?> _getCurrentFcmToken() async {
-    if (Platform.isIOS) {
+    if (Platform.isIOS || Platform.isMacOS) {
       final apnsToken = await _firebaseMessaging.getAPNSToken();
       if (apnsToken == null) {
         debugPrint(
@@ -394,7 +394,7 @@ class FirebaseApi {
     required String source,
     bool openSipScreen = false,
   }) async {
-    if (!kShowSip) {
+    if (!sipEnabled) {
       return;
     }
     final payload = Map<String, dynamic>.from(message.data);

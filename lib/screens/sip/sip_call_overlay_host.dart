@@ -70,7 +70,9 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    unawaited(_sipService.initialize());
+    if (sipEnabled) {
+      unawaited(_sipService.initialize());
+    }
   }
 
   @override
@@ -81,7 +83,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
   }
 
   bool _shouldShowOverlay(SipUiState state) {
-    if (!kShowSip) return false;
+    if (!sipEnabled) return false;
     // isSipScreenOpenClaimed covers the gap after lead/CRM claims the UI but
     // before SipScreen.setSipScreenVisible(true) runs — otherwise the mini
     // overlay flashes and can trigger deferred PIN redirect mid-call.

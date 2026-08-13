@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/platform/app_platform.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/notification_cache.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
@@ -114,7 +115,7 @@ class AppLogoutService {
       debugPrint('AppLogoutService: local cleanup error: $e');
     }
 
-    if (restartApp) {
+    if (restartApp && !AppPlatform.isDesktop) {
       Restart.restartApp();
       return;
     }

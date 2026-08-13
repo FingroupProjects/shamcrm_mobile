@@ -1822,7 +1822,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                         ],
                                       ),
                                     ),
-                                  if (kShowSip && _canReadCallCenter)
+                                  if (sipEnabled && _canReadCallCenter)
                                     PopupMenuItem<String>(
                                       value: 'sip',
                                       child: Row(

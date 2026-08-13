@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase_api.dart';
 import 'package:crm_task_manager/api/service/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/widget_service.dart';
+import 'package:crm_task_manager/core/platform/app_platform.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
@@ -360,6 +361,12 @@ Future<void> _safeInitializeOfflineRuntime() async {
 }
 
 Future<void> _safeInitializeFirebase() async {
+  if (!AppPlatform.supportsFirebase) {
+    debugPrint('main: Firebase skipped on this platform');
+    await _initializeCrashlytics();
+    return;
+  }
+
   try {
     await _initializeFirebase().timeout(const Duration(seconds: 8));
     await _initializeCrashlytics();
@@ -505,39 +512,35 @@ Future<void> _initializeFirebase() async {
 }
 
 Future<void> _initializeCrashlytics() async {
-  if (Firebase.apps.isEmpty) return;
+  final crashlyticsEnabled =
+      AppPlatform.supportsCrashlytics && Firebase.apps.isNotEmpty;
 
   FlutterError.onError = (errorDetails) {
     // Layout overflows are UI bugs, not process-killing crashes.
     final isLayoutOverflow = errorDetails.exceptionAsString().toLowerCase().contains(
           'renderflex overflowed',
         );
-    if (isLayoutOverflow) {
-      FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
-      unawaited(
-        _reportIssue(
-          source: 'flutter_error',
-          error: errorDetails.exception,
-          stackTrace: errorDetails.stack,
-          fatal: false,
-        ),
-      );
-      return;
+    if (crashlyticsEnabled) {
+      if (isLayoutOverflow) {
+        FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
+      } else {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+      }
     }
-
-    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     unawaited(
       _reportIssue(
         source: 'flutter_error',
         error: errorDetails.exception,
         stackTrace: errorDetails.stack,
-        fatal: true,
+        fatal: !isLayoutOverflow,
       ),
     );
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    if (crashlyticsEnabled) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    }
     unawaited(
       _reportIssue(
         source: 'platform_dispatcher',
@@ -549,8 +552,10 @@ Future<void> _initializeCrashlytics() async {
     return true;
   };
 
-  await FirebaseCrashlytics.instance
-      .setCrashlyticsCollectionEnabled(!kDebugMode);
+  if (crashlyticsEnabled) {
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
+  }
 }
 
 Future<void> _reportIssue({

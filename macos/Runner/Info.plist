@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>shamCRM</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconFile</key>
@@ -20,6 +22,8 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.business</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
@@ -28,5 +32,26 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Нужен доступ к камере для съемки фото в чате и сканирования QR-кодов.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Мы используем микрофон для записи голосовых сообщений.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Для загрузки изображения с QR-кодом.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Приложение сохраняет изображения в вашу фотогалерею.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>shamCRM использует ваше местоположение для предоставления функций геолокации.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Это приложение требует использование Face ID для аутентификации.</string>
 </dict>
 </plist>
