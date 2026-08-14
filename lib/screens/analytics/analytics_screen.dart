@@ -38,6 +38,7 @@ class AnalyticsScreen extends StatefulWidget {
     this.chartSettingsTrigger = 0,
     this.showStatistics = true,
     this.showInitialLoader = true,
+    this.onFirstContentReady,
   }) : super(key: key);
 
   final bool showAppBar;
@@ -45,6 +46,7 @@ class AnalyticsScreen extends StatefulWidget {
   final int chartSettingsTrigger;
   final bool showStatistics;
   final bool showInitialLoader;
+  final VoidCallback? onFirstContentReady;
 
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
@@ -105,7 +107,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   int _lastFilterTrigger = 0;
   int _lastChartSettingsTrigger = 0;
   bool _isLoadingLocalChartPrefs = true;
+  bool _didNotifyFirstContentReady = false;
   Map<String, bool> _chartVisibility = {};
+
+  void _notifyFirstContentReady() {
+    if (_didNotifyFirstContentReady) return;
+    _didNotifyFirstContentReady = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onFirstContentReady?.call();
+    });
+  }
 
   @override
   void initState() {
@@ -295,6 +307,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _orderedChartSettings = orderedSettings;
         _isLoadingChartSettings = false;
       });
+      if (orderedSettings.isNotEmpty) {
+        _notifyFirstContentReady();
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -322,6 +337,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _conversionChange = stats.conversion.percent;
         _hasLoadedStatsOnce = true;
       });
+      _notifyFirstContentReady();
     } catch (e) {
       // Keep default values on error
     }

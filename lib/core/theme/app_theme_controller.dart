@@ -24,6 +24,8 @@ class AppThemeController extends ChangeNotifier {
   static const _backgroundAssetPathKey = 'app_background_asset_path_v1';
   static const _backgroundBlurKey = 'app_background_blur_v1';
   static const _loginIntroAnimationKey = 'app_login_intro_animation_v1';
+  static const _legacyDefaultBackgroundClearedKey =
+      'app_legacy_default_bg_cleared_v1';
   static const defaultBackgroundAssetPath = 'assets/fon/IMG_1620.JPG';
   ThemeMode _themeMode;
   AppPalettePreset _palettePreset;
@@ -61,13 +63,8 @@ class AppThemeController extends ChangeNotifier {
     _paletteSeedColor = _parseColor(prefs.getString(_paletteSeedColorKey));
     final savedBackgroundPreset = prefs.getString(_backgroundKey);
     if (savedBackgroundPreset == null) {
-      _backgroundPreset = AppBackgroundPreset.custom;
-      _backgroundAssetPath = defaultBackgroundAssetPath;
-      await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
-      await prefs.setString(
-        _backgroundAssetPathKey,
-        defaultBackgroundAssetPath,
-      );
+      _backgroundPreset = AppBackgroundPreset.none;
+      _backgroundAssetPath = null;
     } else {
       _backgroundPreset =
           AppBackgroundPresetX.fromStorageKey(savedBackgroundPreset);
@@ -94,6 +91,17 @@ class AppThemeController extends ChangeNotifier {
         await prefs.remove(_backgroundAssetPathKey);
         await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
       }
+    }
+    if (!(prefs.getBool(_legacyDefaultBackgroundClearedKey) ?? false)) {
+      if (_backgroundPreset == AppBackgroundPreset.custom &&
+          _backgroundAssetPath == defaultBackgroundAssetPath &&
+          (_backgroundImagePath == null || _backgroundImagePath!.isEmpty)) {
+        _backgroundPreset = AppBackgroundPreset.none;
+        _backgroundAssetPath = null;
+        await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
+        await prefs.remove(_backgroundAssetPathKey);
+      }
+      await prefs.setBool(_legacyDefaultBackgroundClearedKey, true);
     }
     _isInitialized = true;
     notifyListeners();
@@ -213,9 +221,9 @@ class AppThemeController extends ChangeNotifier {
     _themeMode = ThemeMode.system;
     _palettePreset = AppPalettePreset.analogous;
     _paletteSeedColor = null;
-    _backgroundPreset = AppBackgroundPreset.custom;
+    _backgroundPreset = AppBackgroundPreset.none;
     _backgroundImagePath = null;
-    _backgroundAssetPath = defaultBackgroundAssetPath;
+    _backgroundAssetPath = null;
     _backgroundBlurPercent = 18;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, _themeModeToStorage(_themeMode));
@@ -223,10 +231,7 @@ class AppThemeController extends ChangeNotifier {
     await prefs.remove(_paletteSeedColorKey);
     await prefs.setString(_backgroundKey, _backgroundPreset.storageKey);
     await prefs.remove(_backgroundImagePathKey);
-    await prefs.setString(
-      _backgroundAssetPathKey,
-      defaultBackgroundAssetPath,
-    );
+    await prefs.remove(_backgroundAssetPathKey);
     await prefs.setDouble(_backgroundBlurKey, _backgroundBlurPercent);
     await _deleteStoredBackgroundIfOwned(previousPath);
     notifyListeners();
