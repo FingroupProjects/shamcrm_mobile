@@ -395,7 +395,6 @@ class MessageBubble extends StatelessWidget {
 
       // Добавляем саму ссылку
       String url = match.group(0)!;
-      String displayUrl = url;
 
       // Добавляем https:// если ссылка начинается с www.
       if (!url.startsWith('http')) {
@@ -404,7 +403,7 @@ class MessageBubble extends StatelessWidget {
 
       spans.add(
         TextSpan(
-          text: displayUrl,
+          text: _shortenUrl(url),
           style: baseStyle.copyWith(
             color: isSender
                 ? ChatAppearanceScope.of(context).outgoingForeground(context)
@@ -430,10 +429,31 @@ class MessageBubble extends StatelessWidget {
     return spans;
   }
 
+  String _shortenUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final host = uri.host.replaceFirst(RegExp(r'^www\.'), '');
+      var path = uri.path;
+      if (path.endsWith('/') && path.length > 1) {
+        path = path.substring(0, path.length - 1);
+      }
+      if (path.isEmpty || path == '/') {
+        return host;
+      }
+      if (path.length > 22) {
+        path = '${path.substring(0, 20)}…';
+      }
+      return '$host$path';
+    } catch (_) {
+      if (url.length <= 36) return url;
+      return '${url.substring(0, 34)}…';
+    }
+  }
+
   // Универсальный обработчик клика по ссылке
   void _handleLinkTap(BuildContext context, String url) {
     final textStyles = context.appTextStyles;
-    // Вариант 1: Показываем меню с опциями (текущая логика)
+    final colors = context.appColors;
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
     final RenderBox messageBox = context.findRenderObject() as RenderBox;
@@ -442,9 +462,10 @@ class MessageBubble extends StatelessWidget {
 
     showMenu(
       context: context,
-      color: context.appColors.textInverse,
+      color: colors.surfacePrimary,
+      elevation: 8,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(16),
       ),
       position: RelativeRect.fromLTRB(
         position.dx + messageBox.size.width / 2.5,
@@ -457,10 +478,9 @@ class MessageBubble extends StatelessWidget {
           context: context,
           icon: 'assets/icons/chats/menu_icons/open.svg',
           text: AppLocalizations.of(context)!.translate('open_url_source'),
-          iconColor: context.appColors.textPrimary,
-          textColor: context.appColors.textPrimary,
-          onTap: () async {
-            Navigator.pop(context);
+          iconColor: colors.textPrimary,
+          textColor: colors.textPrimary,
+          onTap: () {
             launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
           },
         ),
@@ -468,10 +488,9 @@ class MessageBubble extends StatelessWidget {
           context: context,
           icon: 'assets/icons/chats/menu_icons/copy.svg',
           text: AppLocalizations.of(context)!.translate('copy'),
-          iconColor: context.appColors.textPrimary,
-          textColor: context.appColors.textPrimary,
+          iconColor: colors.textPrimary,
+          textColor: colors.textPrimary,
           onTap: () {
-            Navigator.pop(context);
             Clipboard.setData(ClipboardData(text: url));
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -481,27 +500,25 @@ class MessageBubble extends StatelessWidget {
                   style: textStyles.bodyLg.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: context.appColors.textInverse,
+                    color: colors.textInverse,
                   ),
                 ),
                 behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: context.appColors.success,
+                backgroundColor: colors.success,
                 elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                duration: const Duration(seconds: 3),
               ),
             );
           },
         ),
       ],
     );
-
-    // Вариант 2: Прямой переход (раскомментируйте, если нужно)
-    // launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   Widget _buildMessageWithHtml(BuildContext context, String text) {
@@ -604,9 +621,13 @@ class MessageBubble extends StatelessWidget {
           final url = node.attributes['href'] ?? '';
           final linkText = node.text.trim();
           if (linkText.isNotEmpty) {
+            final resolvedUrl = url.isNotEmpty
+                ? url
+                : (linkText.startsWith('http') ? linkText : 'https://$linkText');
+            final isRawUrl = _urlRegex.hasMatch(linkText);
             spans.add(
               TextSpan(
-                text: linkText,
+                text: isRawUrl ? _shortenUrl(resolvedUrl) : linkText,
                 style: newStyle.copyWith(
                   color: isSender
                       ? appearance.outgoingForeground(context)
@@ -614,7 +635,7 @@ class MessageBubble extends StatelessWidget {
                   decoration: TextDecoration.underline,
                 ),
                 recognizer: TapGestureRecognizer()
-                  ..onTap = () => _handleLinkTap(context, url),
+                  ..onTap = () => _handleLinkTap(context, resolvedUrl),
               ),
             );
           }
@@ -688,7 +709,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  PopupMenuItem _buildMenuItem({
+  PopupMenuItem<void> _buildMenuItem({
     required BuildContext context,
     required String icon,
     required String text,
@@ -696,36 +717,30 @@ class MessageBubble extends StatelessWidget {
     required Color textColor,
     required VoidCallback onTap,
   }) {
-    return PopupMenuItem(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          child: Row(
-            children: [
-              if (icon.isNotEmpty)
-                SvgPicture.asset(
-                  icon,
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                ),
-              if (icon.isNotEmpty) const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  text,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.appTextStyles.bodyLg.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: textColor,
-                  ),
-                ),
+    return PopupMenuItem<void>(
+      onTap: onTap,
+      child: Row(
+        children: [
+          if (icon.isNotEmpty)
+            SvgPicture.asset(
+              icon,
+              width: 22,
+              height: 22,
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            ),
+          if (icon.isNotEmpty) const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: context.appTextStyles.bodyLg.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: textColor,
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -2703,10 +2703,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                                 setState(() {
                                   _instagramResponseType = resolvedType;
                                 });
-                                _focusNode.requestFocus();
                                 context
                                     .read<MessagingCubit>()
                                     .setReplyMessage(message);
+                                Future<void>.delayed(
+                                  const Duration(milliseconds: 50),
+                                  () {
+                                    if (_focusNode.canRequestFocus) {
+                                      _focusNode.requestFocus();
+                                    }
+                                  },
+                                );
                               },
                               isPostExpanded:
                                   _expandedPostIds.contains(message.id),
@@ -4867,8 +4874,12 @@ class MessageItemWidget extends StatelessWidget {
           icon: 'assets/icons/chats/menu_icons/reply.svg',
           text: AppLocalizations.of(context)!.translate('reply'),
           onTap: () {
-            focusNode.requestFocus();
             context.read<MessagingCubit>().setReplyMessage(message);
+            Future<void>.delayed(const Duration(milliseconds: 50), () {
+              if (focusNode.canRequestFocus) {
+                focusNode.requestFocus();
+              }
+            });
           },
         ),
       );
@@ -4907,8 +4918,12 @@ class MessageItemWidget extends StatelessWidget {
           icon: 'assets/icons/chats/menu_icons/edit.svg',
           text: AppLocalizations.of(context)!.translate('edit'),
           onTap: () {
-            focusNode.requestFocus();
             context.read<MessagingCubit>().startEditingMessage(message);
+            Future<void>.delayed(const Duration(milliseconds: 50), () {
+              if (focusNode.canRequestFocus) {
+                focusNode.requestFocus();
+              }
+            });
           },
         ),
       );
