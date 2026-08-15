@@ -372,7 +372,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _isFiltering = false;
   bool _isTaskFiltering = false;
   bool _hasNewNotification = false;
-  late PusherChannelsClient socketClient;
+  PusherChannelsClient? socketClient;
   StreamSubscription<ChannelReadEvent>? notificationSubscription;
   StreamSubscription<RemoteMessage>? _firebaseMessageSubscription;
   StreamSubscription<RemoteMessage>? _firebaseOpenedAppSubscription;
@@ -560,7 +560,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     notificationSubscription?.cancel();
     _firebaseMessageSubscription?.cancel();
     _firebaseOpenedAppSubscription?.cancel();
-    socketClient.disconnect();
+    socketClient?.disconnect();
 
     super.dispose();
   }
@@ -607,17 +607,18 @@ class _CustomAppBarState extends State<CustomAppBar>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    socketClient = PusherChannelsClient.websocket(
+    final client = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
+    socketClient = client;
 
     String userId = prefs.getString('unique_id') ?? '';
     //debugPrint('userID--------------------------------------------------popopop-p : $userId');
     //debugPrint(userId);
 
-    final myPresenceChannel = socketClient.presenceChannel(
+    final myPresenceChannel = client.presenceChannel(
       'presence-user.$userId',
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -634,7 +635,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       ),
     );
 
-    socketClient.onConnectionEstablished.listen((_) {
+    client.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
@@ -654,7 +655,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     });
 
     try {
-      await socketClient.connect();
+      await client.connect();
       //debugPrint('Socket connection SUCCESSS');
     } catch (e) {
       if (kDebugMode) {

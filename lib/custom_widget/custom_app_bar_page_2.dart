@@ -115,7 +115,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
   bool _hasNewNotification = false;
-  late PusherChannelsClient socketClient;
+  PusherChannelsClient? socketClient;
   StreamSubscription<ChannelReadEvent>? notificationSubscription;
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
@@ -314,7 +314,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _checkOverdueTimer?.cancel();
     _timer.cancel();
     notificationSubscription?.cancel();
-    socketClient.disconnect();
+    socketClient?.disconnect();
     if (kDebugMode) {
       ////print('CustomAppBarPage2: Очистка ресурсов');
     }
@@ -348,7 +348,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    socketClient = PusherChannelsClient.websocket(
+    final client = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         if (kDebugMode) {
@@ -357,10 +357,11 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
+    socketClient = client;
 
     String userId = prefs.getString('unique_id') ?? '';
 
-    final myPresenceChannel = socketClient.presenceChannel(
+    final myPresenceChannel = client.presenceChannel(
       'presence-user.$userId',
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -379,7 +380,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       ),
     );
 
-    socketClient.onConnectionEstablished.listen((_) {
+    client.onConnectionEstablished.listen((_) {
       myPresenceChannel.subscribeIfNotUnsubscribed();
       notificationSubscription =
           myPresenceChannel.bind('notification.created').listen((event) {
@@ -394,7 +395,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     });
 
     try {
-      await socketClient.connect();
+      await client.connect();
       if (kDebugMode) {
         ////print('CustomAppBarPage2: Успешное соединение сокета');
       }

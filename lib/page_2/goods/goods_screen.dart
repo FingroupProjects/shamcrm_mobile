@@ -14,6 +14,7 @@ import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +45,6 @@ class _GoodsScreenState extends State<GoodsScreen> {
       debugPrint('GoodsScreen: Инициализация экрана товаров');
     }
     context.read<GoodsBloc>().add(FetchGoods());
-    context.read<GoodsBloc>().add(FetchSubCategories());
     _searchController.addListener(() {
       _onSearch(_searchController.text);
     });
@@ -351,11 +351,31 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     ),
                   );
                 } else if (state is GoodsError) {
-                  context.read<GoodsBloc>().add(FetchGoods());
-                  return const Center(
-                    child: PlayStoreImageLoading(
-                      size: 80.0,
-                      duration: Duration(milliseconds: 1000),
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, size: 64, color: colors.textMuted),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            friendlyError(state.message),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: colors.textMuted,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            context.read<GoodsBloc>().add(FetchGoods());
+                          },
+                          child: Text(localizations!.translate('update')),
+                        ),
+                      ],
                     ),
                   );
                 }

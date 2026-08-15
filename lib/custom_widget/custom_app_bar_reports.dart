@@ -74,7 +74,7 @@ class _CustomAppBarState extends State<CustomAppBarReports>
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
   bool _hasNewNotification = false;
-  late PusherChannelsClient socketClient;
+  PusherChannelsClient? socketClient;
   StreamSubscription<ChannelReadEvent>? notificationSubscription;
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
@@ -160,7 +160,7 @@ class _CustomAppBarState extends State<CustomAppBarReports>
     _checkOverdueTimer?.cancel();
     _timer.cancel();
     notificationSubscription?.cancel();
-    socketClient.disconnect();
+    socketClient?.disconnect();
     if (kDebugMode) {
       ////print('CustomAppBarReports: Очистка ресурсов');
     }

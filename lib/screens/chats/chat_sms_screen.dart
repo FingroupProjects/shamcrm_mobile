@@ -104,7 +104,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final FocusNode _searchFocusNode = FocusNode();
   WebSocket? _webSocket;
   late StreamSubscription<ChannelReadEvent>? chatSubscribtion;
-  late PusherChannelsClient socketClient;
+  PusherChannelsClient? socketClient;
   final ApiService apiService = ApiService();
   // Empty until async init finishes; cached messages may render first.
   String baseUrl = '';
@@ -3070,14 +3070,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    socketClient = PusherChannelsClient.websocket(
+    final client = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint(
             '=================-=== ❌ Socket connection error: $exception');
         Future.delayed(Duration(seconds: 5), () async {
+          if (_isDisposing) return;
           try {
-            await socketClient.connect();
+            await socketClient?.connect();
             debugPrint('=================-=== 🔄 Socket reconnect attempted');
           } catch (e) {
             debugPrint(
@@ -3088,6 +3089,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       },
       minimumReconnectDelayDuration: const Duration(seconds: 1),
     );
+    socketClient = client;
 
     String chatIdentifier = widget.chatUniqueId ?? widget.chatId.toString();
     if (widget.chatUniqueId == null || widget.chatUniqueId!.isEmpty) {
@@ -3110,7 +3112,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     debugPrint(
         '=================-=== 📢 Legacy reaction channel: $legacyReactionChannelName');
 
-    final myPresenceChannel = socketClient.presenceChannel(
+    final myPresenceChannel = client.presenceChannel(
       channelName,
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3127,7 +3129,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       ),
     );
 
-    final legacyReactionPresenceChannel = socketClient.presenceChannel(
+    final legacyReactionPresenceChannel = client.presenceChannel(
       legacyReactionChannelName,
       authorizationDelegate:
           EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3144,7 +3146,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       ),
     );
 
-    socketClient.onConnectionEstablished.listen((_) {
+    client.onConnectionEstablished.listen((_) {
       debugPrint(
           '=================-=== ✅ Socket connected successfully for chatIdentifier: $chatIdentifier');
       myPresenceChannel.subscribeIfNotUnsubscribed();
@@ -3479,7 +3481,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     };
 
     for (final privateName in chatReactionPrivateChannelNames) {
-      final privateChannel = socketClient.privateChannel(
+      final privateChannel = client.privateChannel(
         privateName,
         authorizationDelegate:
             EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3496,7 +3498,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         ),
       );
 
-      socketClient.onConnectionEstablished.listen((_) {
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to private reaction channel: $privateName');
         privateChannel.subscribeIfNotUnsubscribed();
@@ -3511,9 +3513,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
 
     for (final publicName in chatReactionPublicChannelNames) {
-      final publicChannel = socketClient.publicChannel(publicName);
+      final publicChannel = client.publicChannel(publicName);
 
-      socketClient.onConnectionEstablished.listen((_) {
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to public reaction channel: $publicName');
         publicChannel.subscribeIfNotUnsubscribed();
@@ -3543,7 +3545,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint(
           '=================-=== 🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
 
-      final userPresenceChannel = socketClient.presenceChannel(
+      final userPresenceChannel = client.presenceChannel(
         userChannelName,
         authorizationDelegate:
             EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3560,7 +3562,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         ),
       );
 
-      socketClient.onConnectionEstablished.listen((_) {
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to user channel: $userChannelName');
         userPresenceChannel.subscribeIfNotUnsubscribed();
@@ -3679,7 +3681,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       };
 
       for (final privateName in userReactionPrivateChannelNames) {
-        final userPrivateChannel = socketClient.privateChannel(
+        final userPrivateChannel = client.privateChannel(
           privateName,
           authorizationDelegate:
               EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3696,7 +3698,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           ),
         );
 
-        socketClient.onConnectionEstablished.listen((_) {
+        client.onConnectionEstablished.listen((_) {
           debugPrint(
               '=================-=== ✅ Subscribing to user private channel: $privateName');
           userPrivateChannel.subscribeIfNotUnsubscribed();
@@ -3711,9 +3713,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       }
 
       for (final publicName in userReactionPublicChannelNames) {
-        final userPublicChannel = socketClient.publicChannel(publicName);
+        final userPublicChannel = client.publicChannel(publicName);
 
-        socketClient.onConnectionEstablished.listen((_) {
+        client.onConnectionEstablished.listen((_) {
           debugPrint(
               '=================-=== ✅ Subscribing to user public channel: $publicName');
           userPublicChannel.subscribeIfNotUnsubscribed();
@@ -3735,7 +3737,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint(
           '=================-=== 🎯 CHAT_SMS: Fallback user channel: $fallbackChannelName');
 
-      final fallbackPresenceChannel = socketClient.presenceChannel(
+      final fallbackPresenceChannel = client.presenceChannel(
         fallbackChannelName,
         authorizationDelegate:
             EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3752,7 +3754,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         ),
       );
 
-      socketClient.onConnectionEstablished.listen((_) {
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to fallback user channel: $fallbackChannelName');
         fallbackPresenceChannel.subscribeIfNotUnsubscribed();
@@ -3766,7 +3768,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       );
 
       final fallbackPrivateName = 'private-user.$fallbackId';
-      final fallbackPrivateChannel = socketClient.privateChannel(
+      final fallbackPrivateChannel = client.privateChannel(
         fallbackPrivateName,
         authorizationDelegate:
             EndpointAuthorizableChannelTokenAuthorizationDelegate
@@ -3782,7 +3784,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           },
         ),
       );
-      socketClient.onConnectionEstablished.listen((_) {
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to fallback private user channel: $fallbackPrivateName');
         fallbackPrivateChannel.subscribeIfNotUnsubscribed();
@@ -3796,8 +3798,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
       final fallbackPublicName = 'user.$fallbackId';
       final fallbackPublicChannel =
-          socketClient.publicChannel(fallbackPublicName);
-      socketClient.onConnectionEstablished.listen((_) {
+          client.publicChannel(fallbackPublicName);
+      client.onConnectionEstablished.listen((_) {
         debugPrint(
             '=================-=== ✅ Subscribing to fallback public user channel: $fallbackPublicName');
         fallbackPublicChannel.subscribeIfNotUnsubscribed();
@@ -3812,7 +3814,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
     try {
       debugPrint('=================-=== 🚀 Initiating socket connection...');
-      await socketClient.connect();
+      await client.connect();
       debugPrint(
           '=================-=== ✅ Socket connection initiated successfully');
     } catch (e) {
@@ -4325,7 +4327,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
     _messageController.dispose();
     _searchController.dispose();
-    socketClient.dispose();
+    socketClient?.dispose();
     _focusNode.dispose();
     _searchFocusNode.dispose();
     WidgetsBinding.instance.removeObserver(this);

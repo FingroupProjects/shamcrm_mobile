@@ -169,7 +169,7 @@ extension ApiHttpX on ApiService {
     return response;
   }
 
-  Future<http.Response> _getRequest(String path) async {
+  Future<http.Response> _getRequest(String path, {Duration? timeout}) async {
     // Проверяем сессию перед каждым запросом
     if (!await _isSessionValid()) {
       await _forceLogoutAndRedirect();
@@ -229,10 +229,10 @@ extension ApiHttpX on ApiService {
           'Device': 'mobile'
         },
       ).timeout(
-        ApiService._defaultRequestTimeout,
+        timeout ?? ApiService._defaultRequestTimeout,
         onTimeout: () => throw TimeoutException(
           'Превышено время ожидания ответа сервера',
-          ApiService._defaultRequestTimeout,
+          timeout ?? ApiService._defaultRequestTimeout,
         ),
       );
 

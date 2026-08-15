@@ -17,16 +17,70 @@ class SmsSenderIntegration {
     this.salesFunnelId,
   });
 
-  String get displayName => username.isNotEmpty ? username : name;
+  String get displayName {
+    final candidates = [name, username, type];
+    for (final value in candidates) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return id > 0 ? 'ID $id' : '';
+  }
 
   factory SmsSenderIntegration.fromJson(Map<String, dynamic> json) {
+    final nested = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final integration = json['integration'] is Map<String, dynamic>
+        ? json['integration'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    String firstText(List<dynamic> values) {
+      for (final value in values) {
+        final text = SafeConverters.toSafeString(value).trim();
+        if (text.isNotEmpty && text != 'null') return text;
+      }
+      return '';
+    }
+
     return SmsSenderIntegration(
-      id: SafeConverters.toInt(json['id']),
-      username: SafeConverters.toSafeString(json['username']),
-      name: SafeConverters.toSafeString(json['name']),
-      type: SafeConverters.toSafeString(json['type']),
-      isActive: SafeConverters.toBool(json['is_active']),
-      salesFunnelId: SafeConverters.toIntOrNull(json['sales_funnel_id']),
+      id: SafeConverters.toInt(json['id'] ?? integration['id']),
+      username: firstText([
+        json['username'],
+        nested['username'],
+        integration['username'],
+        json['login'],
+        nested['login'],
+        json['phone'],
+        nested['phone'],
+        json['sender'],
+        nested['sender'],
+        json['sender_name'],
+        nested['sender_name'],
+        json['alphaname'],
+        nested['alphaname'],
+        json['alpha_name'],
+        nested['alpha_name'],
+      ]),
+      name: firstText([
+        json['name'],
+        nested['name'],
+        integration['name'],
+        json['title'],
+        nested['title'],
+        json['display_name'],
+        nested['display_name'],
+        json['label'],
+        nested['label'],
+      ]),
+      type: firstText([
+        json['type'],
+        nested['type'],
+        integration['type'],
+      ]),
+      isActive: SafeConverters.toBool(
+          json['is_active'] ?? integration['is_active']),
+      salesFunnelId: SafeConverters.toIntOrNull(
+          json['sales_funnel_id'] ?? integration['sales_funnel_id']),
     );
   }
 }

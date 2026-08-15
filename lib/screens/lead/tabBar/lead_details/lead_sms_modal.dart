@@ -216,6 +216,7 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
+        final colors = context.appColors;
         return SafeArea(
           child: ListView.separated(
             shrinkWrap: true,
@@ -223,19 +224,20 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
             itemCount: _senders.length,
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              color: context.appColors.borderSubtle,
+              color: colors.borderSubtle,
             ),
             itemBuilder: (context, index) {
               final sender = _senders[index];
               final isSelected = sender.id == _selectedSender?.id;
 
               return ListTile(
+                tileColor: colors.surfacePrimary,
                 title: Text(
                   sender.displayName,
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
-                    color: context.appColors.textPrimary,
+                    color: colors.textPrimary,
                   ),
                 ),
                 subtitle:
@@ -244,14 +246,14 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
                             sender.name,
                             style: TextStyle(
                               fontFamily: 'Gilroy',
-                              color: context.appColors.textSecondary,
+                              color: colors.textSecondary,
                             ),
                           )
                         : null,
                 trailing: isSelected
                     ? Icon(
                         Icons.check_rounded,
-                        color: context.appColors.buttonPrimaryBg,
+                        color: colors.buttonPrimaryBg,
                       )
                     : null,
                 onTap: () => Navigator.pop(context, sender),
@@ -497,9 +499,9 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
         _buildFieldLabel('Сообщение'),
         Container(
           decoration: BoxDecoration(
-            color: colors.surfaceElevated,
+            color: colors.fieldBg,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: colors.borderSubtle),
+            border: Border.all(color: colors.fieldBorder),
           ),
           child: TextField(
             controller: _messageController,
@@ -516,7 +518,7 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
               hintStyle: TextStyle(
                 fontSize: 15,
                 fontFamily: 'Gilroy',
-                color: colors.textSecondary,
+                color: colors.fieldHint,
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(16),
@@ -567,9 +569,9 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
     }
 
     if (_messages.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'Отправленных сообщений пока нет',
             textAlign: TextAlign.center,
@@ -577,7 +579,7 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xFF99A4BA),
+              color: colors.textSecondary,
             ),
           ),
         ),
@@ -636,11 +638,11 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
                         Expanded(
                           child: Text(
                             'Автор: ${item.author}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF6E7B96),
+                              color: colors.textSecondary,
                             ),
                           ),
                         ),
@@ -707,9 +709,9 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: colors.surfaceElevated,
+          color: colors.fieldBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colors.borderSubtle),
+          border: Border.all(color: colors.fieldBorder),
         ),
         child: Row(
           children: [
@@ -720,13 +722,13 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
                   fontSize: 15,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: isEmpty ? colors.textSecondary : colors.textPrimary,
+                  color: isEmpty ? colors.fieldHint : colors.textPrimary,
                 ),
               ),
             ),
             Icon(
               Icons.keyboard_arrow_down_rounded,
-              color: onTap == null ? colors.borderSubtle : colors.iconPrimary,
+              color: onTap == null ? colors.fieldHint : colors.iconPrimary,
             ),
           ],
         ),

@@ -246,6 +246,7 @@ part 'localization/api_localization.dart';
 
 class ApiService extends ApiServiceBase {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
+  static const Duration _slowListRequestTimeout = Duration(seconds: 45);
 
   static const String workdayReadPermission = 'timesheet.read';
 

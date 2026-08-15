@@ -352,7 +352,10 @@ extension ApiWarehouseCatalogX on ApiService {
       //debugPrint('ApiService: getGoods - Generated path: $path');
     }
 
-    final response = await _getRequest(path);
+    final response = await _getRequest(
+      path,
+      timeout: ApiService._slowListRequestTimeout,
+    );
     if (kDebugMode) {
       //debugPrint(
       // 'ApiService: Ответ сервера: statusCode=${response.statusCode}, body=${response.body}');
