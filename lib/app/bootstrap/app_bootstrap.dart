@@ -2,7 +2,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/app/crash_reporting/crash_reporter.dart';
-import 'package:crm_task_manager/firebase_options.dart';
+import 'package:crm_task_manager/app/firebase_options.dart';
 import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
 import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';

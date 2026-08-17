@@ -9,8 +9,10 @@ import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 
 class LeadColumn extends StatefulWidget {
   final int statusId;
@@ -183,20 +185,31 @@ class _LeadColumnState extends State<LeadColumn> {
       });
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
       children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-        Center(
-          child: Text(
-            AppLocalizations.of(context)!.translate('no_lead_in_status'),
-            style: context.appTextStyles.bodyMd.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Gilroy',
-              color: context.appColors.textSecondary,
-            ),
-          ),
+        SizedBox(height: MediaQuery.sizeOf(context).height * 0.16),
+        HelpfulEmptyState(
+          icon: Icons.people_outline_rounded,
+          title: l10n.translate('empty_leads_title'),
+          subtitle: l10n.translate('empty_leads_subtitle'),
+          actionLabel: _hasPermissionToAddLead
+              ? l10n.translate('empty_leads_action')
+              : null,
+          onAction: _hasPermissionToAddLead
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LeadAddScreen(
+                        statusId: widget.statusId,
+                      ),
+                    ),
+                  );
+                }
+              : null,
         ),
       ],
     );

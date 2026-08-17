@@ -10,6 +10,7 @@ import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_create.dar
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_details.dart';
 import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -677,21 +678,14 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                     state is WriteOffLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is WriteOffLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? (localizations?.translate('nothing_found') ??
-                              'Ничего не найдено')
-                          : (localizations?.translate('no_write_offs') ??
-                              'Нет документов списания'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.remove_circle_outline_rounded,
+                          titleKey: 'empty_write_off_title',
+                          subtitleKey: 'empty_write_off_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

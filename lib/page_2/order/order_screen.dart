@@ -18,6 +18,7 @@ import 'package:crm_task_manager/page_2/order/order_details/order_column.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_status_add.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_status_edit.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1145,24 +1146,31 @@ class _OrderScreenState extends State<OrderScreen>
             final List<Order> orders = state.orders;
 
             if (orders.isEmpty) {
-              return RefreshIndicator(
+              final l10n = AppLocalizations.of(context)!;
+              return HelpfulEmptyState.refreshable(
+                context: context,
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: colors.iconPrimary,
-                backgroundColor: colors.surfacePrimary,
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('nothing_found'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
+                child: _isSearching
+                    ? HelpfulEmptyState.search(l10n)
+                    : HelpfulEmptyState.section(
+                        l10n: l10n,
+                        icon: Icons.shopping_bag_outlined,
+                        titleKey: 'empty_orders_title',
+                        subtitleKey: 'empty_orders_subtitle',
+                        actionKey: _canCreateOrderStatus
+                            ? 'empty_orders_action'
+                            : null,
+                        onAction: _canCreateOrderStatus
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => OrderAddScreen(),
+                                  ),
+                                );
+                              }
+                            : null,
                       ),
-                    ),
-                  ),
-                ),
               );
             }
 

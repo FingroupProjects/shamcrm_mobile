@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';

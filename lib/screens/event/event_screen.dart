@@ -21,6 +21,7 @@ import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1005,16 +1006,7 @@ class _EventScreenState extends State<EventScreen>
     // Если есть активные фильтры или поиск - показываем отфильтрованный список
     if (_isSearching || _hasActiveFilters()) {
       if (events.isEmpty) {
-        return Center(
-          child: Text(
-            localizations?.translate('Нет событий') ?? 'Нет событий',
-            style: TextStyle(
-              color: Color(0xff99A4BA),
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-            ),
-          ),
-        );
+        return HelpfulEmptyState.search(localizations!);
       }
 
       return ListView.builder(
@@ -1040,17 +1032,20 @@ class _EventScreenState extends State<EventScreen>
     final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
 
     if (filteredEvents.isEmpty) {
-      return Center(
-        child: Text(
-          localizations?.translate('no_events_in_section')?.replaceAll(
-                  '{section}', _tabTitles[_currentTabIndex]['title']) ??
-              'Нет событий в разделе "${_tabTitles[_currentTabIndex]['title']}"',
-          style: TextStyle(
-            color: Color(0xff99A4BA),
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-          ),
-        ),
+      return HelpfulEmptyState.section(
+        l10n: localizations!,
+        icon: Icons.event_available_outlined,
+        titleKey: 'empty_events_title',
+        subtitleKey: 'empty_events_subtitle',
+        actionKey: _hasPermissionToAddEvent ? 'empty_events_action' : null,
+        onAction: _hasPermissionToAddEvent
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NoticeAddScreen()),
+                ).then((_) => _loadEvents());
+              }
+            : null,
       );
     }
 

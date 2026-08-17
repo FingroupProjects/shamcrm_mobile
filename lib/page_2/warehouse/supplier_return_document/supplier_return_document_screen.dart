@@ -11,6 +11,7 @@ import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/suppl
 import 'package:crm_task_manager/page_2/widgets/document_confirm_dialog.dart'; // НОВОЕ: Импорт диалога подтверждения
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -555,21 +556,14 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                         : []; // ИЗМЕНЕНО: List<>
 
                 if (currentData.isEmpty && state is SupplierReturnLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? localizations.translate('nothing_found') ??
-                              'Ничего не найдено'
-                          : localizations.translate('no_supplier_return') ??
-                              'Нет возвратов поставщику',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations,
+                          icon: Icons.keyboard_return_rounded,
+                          titleKey: 'empty_supplier_return_title',
+                          subtitleKey: 'empty_supplier_return_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:crm_task_manager/app_feature_flags.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
@@ -16,7 +15,7 @@ import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/custom_widget/filter/task/user_app_bar_task.dart';
 import 'package:crm_task_manager/models/user/user_byId_model..dart';
-import 'package:crm_task_manager/notifications_screen.dart';
+import 'package:crm_task_manager/screens/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';

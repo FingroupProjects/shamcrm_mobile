@@ -38,6 +38,7 @@ class AnalyticsScreen extends StatefulWidget {
     this.chartSettingsTrigger = 0,
     this.showStatistics = true,
     this.showInitialLoader = true,
+    this.onFirstContentReady,
   }) : super(key: key);
 
   final bool showAppBar;
@@ -45,6 +46,7 @@ class AnalyticsScreen extends StatefulWidget {
   final int chartSettingsTrigger;
   final bool showStatistics;
   final bool showInitialLoader;
+  final VoidCallback? onFirstContentReady;
 
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
@@ -105,7 +107,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   int _lastFilterTrigger = 0;
   int _lastChartSettingsTrigger = 0;
   bool _isLoadingLocalChartPrefs = true;
+  bool _didNotifyFirstContentReady = false;
   Map<String, bool> _chartVisibility = {};
+
+  void _notifyFirstContentReady() {
+    if (_didNotifyFirstContentReady) return;
+    _didNotifyFirstContentReady = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onFirstContentReady?.call();
+    });
+  }
 
   @override
   void initState() {
@@ -295,6 +307,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _orderedChartSettings = orderedSettings;
         _isLoadingChartSettings = false;
       });
+      if (orderedSettings.isNotEmpty) {
+        _notifyFirstContentReady();
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -322,6 +337,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _conversionChange = stats.conversion.percent;
         _hasLoadedStatsOnce = true;
       });
+      _notifyFirstContentReady();
     } catch (e) {
       // Keep default values on error
     }
@@ -632,6 +648,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final safeBottom = MediaQuery.of(context).padding.bottom;
             final maxHeight = MediaQuery.of(context).size.height * 0.82;
             final allSelected = entries.isNotEmpty &&
                 entries.every((entry) => tempVisibility[entry.key] ?? false);
@@ -643,11 +660,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               fallback: allSelected ? 'Disable all' : 'Enable all',
             );
 
-            return SafeArea(
-              top: false,
+            final colors = context.appColors;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
               child: Container(
                 constraints: BoxConstraints(maxHeight: maxHeight),
-                padding: EdgeInsets.fromLTRB(16, 14, 16, 16 + bottomInset),
+                decoration: BoxDecoration(
+                  color: colors.surfacePrimary.withValues(alpha: 0.94),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
+                  border: Border(
+                    top: BorderSide(
+                      color: colors.borderSubtle.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+                padding: EdgeInsets.fromLTRB(16, 14, 16, 12 + safeBottom),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -689,6 +718,98 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    if (entries.isNotEmpty) ...[
+                      Column(
+                        children: [
+                          InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              setSheetState(() {
+                                for (final entry in entries) {
+                                  tempVisibility[entry.key] = !allSelected;
+                                }
+                              });
+                            },
+                            child: Ink(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: colors.borderSubtle,
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Transform.scale(
+                                    scale: 1.05,
+                                    child: Switch(
+                                      value: allSelected,
+                                      onChanged: (value) {
+                                        setSheetState(() {
+                                          for (final entry in entries) {
+                                            tempVisibility[entry.key] = value;
+                                          }
+                                        });
+                                      },
+                                      thumbColor:
+                                          WidgetStateProperty.resolveWith(
+                                        (states) {
+                                          if (states.contains(
+                                              WidgetState.selected)) {
+                                            return Colors.white;
+                                          }
+                                          return colors.iconPrimary;
+                                        },
+                                      ),
+                                      activeTrackColor:
+                                          context.appColors.buttonPrimaryBg,
+                                      inactiveTrackColor:
+                                          context.appColors.surfacePrimary,
+                                      trackOutlineColor:
+                                          WidgetStateProperty.resolveWith(
+                                        (states) {
+                                          if (states.contains(
+                                              WidgetState.selected)) {
+                                            return context
+                                                .appColors.buttonPrimaryBg;
+                                          }
+                                          return context.appColors.borderSubtle;
+                                        },
+                                      ),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      selectAllLabel,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.appColors.textPrimary,
+                                        fontFamily: 'Gilroy',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+                            child: Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: context.appColors.borderSubtle,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     Expanded(
                       child: entries.isEmpty
                           ? Center(
@@ -705,99 +826,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 ),
                               ),
                             )
-                          : Column(
-                              children: [
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: () {
-                                    setSheetState(() {
-                                      for (final entry in entries) {
-                                        tempVisibility[entry.key] =
-                                            !allSelected;
-                                      }
-                                    });
-                                  },
-                                  child: Ink(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: context.appColors.surfaceElevated
-                                          .withValues(alpha: 0.96),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: context.appColors.borderSubtle,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Transform.scale(
-                                          scale: 1.05,
-                                          child: Switch(
-                                            value: allSelected,
-                                            onChanged: (value) {
-                                              setSheetState(() {
-                                                for (final entry in entries) {
-                                                  tempVisibility[entry.key] =
-                                                      value;
-                                                }
-                                              });
-                                            },
-                                            activeThumbColor: Colors.white,
-                                            inactiveThumbColor: Colors.white,
-                                            activeTrackColor: context
-                                                .appColors.buttonPrimaryBg,
-                                            inactiveTrackColor: context
-                                                .appColors.surfacePrimary,
-                                            trackOutlineColor:
-                                                WidgetStateProperty.resolveWith(
-                                              (states) {
-                                                if (states.contains(
-                                                    WidgetState.selected)) {
-                                                  return context.appColors
-                                                      .buttonPrimaryBg;
-                                                }
-                                                return context
-                                                    .appColors.borderSubtle;
-                                              },
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            selectAllLabel,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                                  context.appColors.textPrimary,
-                                              fontFamily: 'Gilroy',
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.fromLTRB(6, 8, 6, 8),
-                                  child: Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    color: context.appColors.borderSubtle,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: ListView.separated(
-                                    itemCount: entries.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 10),
-                                    itemBuilder: (context, index) {
+                          : ListView.separated(
+                              clipBehavior: Clip.hardEdge,
+                              itemCount: entries.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
                                       final entry = entries[index];
                                       final enabled =
                                           tempVisibility[entry.key] ?? false;
@@ -813,14 +847,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 10, vertical: 12),
                                           decoration: BoxDecoration(
-                                            color: context
-                                                .appColors.surfaceElevated
-                                                .withValues(alpha: 0.96),
+                                            color: colors.surfaceElevated,
                                             borderRadius:
                                                 BorderRadius.circular(14),
                                             border: Border.all(
-                                              color: context
-                                                  .appColors.borderSubtle,
+                                              color: colors.borderSubtle,
                                             ),
                                           ),
                                           child: Row(
@@ -837,10 +868,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                                           entry.key] = value;
                                                     });
                                                   },
-                                                  activeThumbColor:
-                                                      Colors.white,
-                                                  inactiveThumbColor:
-                                                      Colors.white,
+                                                  thumbColor:
+                                                      WidgetStateProperty
+                                                          .resolveWith(
+                                                    (states) {
+                                                      if (states.contains(
+                                                          WidgetState
+                                                              .selected)) {
+                                                        return Colors.white;
+                                                      }
+                                                      return colors.iconPrimary;
+                                                    },
+                                                  ),
                                                   activeTrackColor: context
                                                       .appColors
                                                       .buttonPrimaryBg,
@@ -884,9 +923,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                       );
                                     },
                                   ),
-                                ),
-                              ],
-                            ),
                     ),
                     Divider(
                       height: 1,
@@ -1009,6 +1045,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           final viewportHeight = MediaQuery.of(context).size.height;
 
           final showStatsSection = widget.showStatistics;
+          // Порядок: планы (если есть) → KPI → графики.
+          // Между KPI и графиками минимальный отступ — двигаем только графики вверх.
           const salesPlanSlot = 1;
           final statsSlot = showStatsSection ? 1 : 0;
 
@@ -1024,16 +1062,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             itemCount: salesPlanSlot + statsSlot + chartWidgets.length,
             itemBuilder: (context, index) {
               if (index == 0) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 8, top: 4),
-                  child: SalesPlanDashboardWidget(),
-                );
+                return const SalesPlanDashboardWidget();
               }
               final contentIndex = index - salesPlanSlot;
               if (showStatsSection && contentIndex == 0) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 8),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final cardWidth = (constraints.maxWidth -
@@ -1044,6 +1080,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         return GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
                           crossAxisCount: gridCrossAxisCount,
                           mainAxisSpacing: cardSpacing,
                           crossAxisSpacing: cardSpacing,
@@ -1104,7 +1141,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         );
                       },
                     ),
-                    SizedBox(height: chartSpacing * 0.75),
+                    const SizedBox(height: 8),
                   ],
                 );
               }

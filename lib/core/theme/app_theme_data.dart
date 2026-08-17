@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/components/app_bar_theme.dart';
 import 'package:crm_task_manager/core/theme/components/bottom_sheet_theme.dart';
 import 'package:crm_task_manager/core/theme/components/button_theme.dart';
@@ -10,7 +11,6 @@ import 'package:crm_task_manager/core/theme/tokens/app_shadow_tokens.dart';
 import 'package:crm_task_manager/core/theme/tokens/app_color_tokens.dart';
 import 'package:crm_task_manager/core/theme/tokens/app_text_tokens.dart';
 import 'package:crm_task_manager/core/theme/typography/app_font_families.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AppThemeData {
@@ -62,9 +62,12 @@ class AppThemeData {
       splashFactory: InkRipple.splashFactory,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.android: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: AppCupertinoPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: AppCupertinoPageTransitionsBuilder(),
         },
       ),
       textTheme: textTheme,

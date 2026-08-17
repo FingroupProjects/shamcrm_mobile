@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/task_by_id/taskById_state.dart';
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -470,12 +471,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  void _openTaskDeleteDialog() {
+  Future<void> _openTaskDeleteDialog() async {
     if (currentTask == null) return;
-    showDialog(
+    final deleted = await showDialog<bool>(
       context: context,
       builder: (context) => DeleteTaskDialog(taskId: currentTask!.id),
     );
+    if (deleted == true && mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> _handleAppBarMenuAction(String value) async {
@@ -824,7 +828,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
     final primaryText = _screenPrimaryText(context);
 
-    return PopScope(
+    return SwipeBackPopResult(
+      result: _buildNavigationResult,
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
@@ -1173,6 +1179,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             },
           ),
         ),
+      ),
       ),
     );
   }

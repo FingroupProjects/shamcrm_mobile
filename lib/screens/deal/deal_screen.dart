@@ -24,8 +24,10 @@ import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_delete.dart';
 import 'package:crm_task_manager/screens/deal/deal_status_edit.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
@@ -1591,40 +1593,37 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     }
 
     if (_isSearching && deals.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      return HelpfulEmptyState(
+        icon: Icons.search_off_rounded,
+        title: l10n.translate('empty_search_title'),
+        subtitle: l10n.translate('empty_search_subtitle'),
       );
     } else if (_isManager && deals.isEmpty) {
-      return Center(
-        child: Text(
-          'У выбранного менеджера нет сделок',
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      return HelpfulEmptyState(
+        icon: Icons.person_search_rounded,
+        title: 'У выбранного менеджера нет сделок',
       );
     } else if (deals.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_deal_for_manager'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      final statusId = _tabTitles.isNotEmpty
+          ? _tabTitles[_tabController.index]['id'] as int
+          : null;
+      return HelpfulEmptyState(
+        icon: Icons.handshake_outlined,
+        title: l10n.translate('empty_deals_title'),
+        subtitle: l10n.translate('empty_deals_subtitle'),
+        actionLabel: statusId != null ? l10n.translate('empty_deals_action') : null,
+        onAction: statusId != null
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DealAddScreen(statusId: statusId),
+                  ),
+                );
+              }
+            : null,
       );
     }
 
@@ -1717,27 +1716,20 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 deals.where((deal) => deal.statusId == statusId).toList();
 
             if (filteredDeals.isEmpty) {
-              return RefreshIndicator(
+              final l10n = AppLocalizations.of(context)!;
+              return HelpfulEmptyState.refreshable(
+                context: context,
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: context.appColors.buttonPrimaryBg,
-                backgroundColor: context.appColors.surfacePrimary,
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Text(
-                      _selectedManagers.isNotEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('no_manager_in_deal')
-                          : AppLocalizations.of(context)!
-                              .translate('nothing_found'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: context.appColors.textSecondary,
-                      ),
-                    ),
-                  ),
+                child: HelpfulEmptyState(
+                  icon: _selectedManagers.isNotEmpty
+                      ? Icons.person_search_rounded
+                      : Icons.search_off_rounded,
+                  title: _selectedManagers.isNotEmpty
+                      ? l10n.translate('no_manager_in_deal')
+                      : l10n.translate('empty_search_title'),
+                  subtitle: _selectedManagers.isNotEmpty
+                      ? null
+                      : l10n.translate('empty_search_subtitle'),
                 ),
               );
             }

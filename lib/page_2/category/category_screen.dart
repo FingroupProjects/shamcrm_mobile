@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/category/category_add_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'category_card.dart';
@@ -144,19 +145,20 @@ Future<void> _checkPermissions() async {
                     ),
                   );
                 } else if (state is CategoryEmpty || (state is CategoryLoaded && state.categories.isEmpty)) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? localizations!.translate('nothing_found')
-                          : localizations!.translate('category_not_found'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.category_outlined,
+                          titleKey: 'empty_category_title',
+                          subtitleKey: 'empty_category_subtitle',
+                          actionKey: _canCreateCategory
+                              ? 'empty_category_action'
+                              : null,
+                          onAction: _canCreateCategory
+                              ? () => CategoryAddBottomSheet.show(context)
+                              : null,
+                        );
                 } else if (state is CategoryLoaded) {
                   final categories = state.categories;
                   return ListView.builder(

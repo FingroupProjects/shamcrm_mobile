@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/my-task/my_task_status_edit.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_column.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_status_add.dart';
 import 'package:crm_task_manager/screens/my-task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -307,16 +308,11 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
   Widget searchWidget(List<MyTask> tasks) {
     if (_isSearching && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      return HelpfulEmptyState(
+        icon: Icons.search_off_rounded,
+        title: l10n.translate('empty_search_title'),
+        subtitle: l10n.translate('empty_search_subtitle'),
       );
     }
 
@@ -363,16 +359,9 @@ class _MyTaskScreenState extends State<MyTaskScreen>
 
   Widget userWidget(List<MyTask> tasks) {
     if (_selectedUserId != null && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('no_tasks_for_user'),
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      return HelpfulEmptyState(
+        icon: Icons.person_search_rounded,
+        title: AppLocalizations.of(context)!.translate('no_tasks_for_user'),
       );
     }
 

@@ -11,6 +11,7 @@ void showCustomSnackBar({
   if (!context.mounted) return;
   final safeMessage = friendlyError(message);
 
+  final bottom = MediaQuery.paddingOf(context).bottom;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
@@ -23,7 +24,7 @@ void showCustomSnackBar({
         ),
       ),
       behavior: SnackBarBehavior.floating,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.fromLTRB(12, 8, 12, bottom + 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),

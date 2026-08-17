@@ -108,6 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _hasDashboardIndexPermission = false;
   bool _isPermissionsChecked = false;
   bool _isDashboardReady = false;
+  static bool _sessionHasShownContent = false;
   int _analyticsFilterTrigger = 0;
   int _analyticsChartSettingsTrigger = 0;
 
@@ -117,7 +118,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _isDashboardReady = _sessionHasShownContent;
     _initializeData();
+  }
+
+  void _markDashboardReady() {
+    _sessionHasShownContent = true;
+    if (!mounted || _isDashboardReady) return;
+    setState(() {
+      _isDashboardReady = true;
+    });
   }
 
   Future<void> _initializeData() async {
@@ -139,21 +149,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
       }
 
-      // Не держим главный loader из-за tutorial/progress-проверок:
-      // дашборд должен появляться сразу, а это можно догрузить в фоне.
-      await _checkPermissionsAndTutorial();
-      if (mounted) {
-        setState(() {
-          _isDashboardReady = true;
-        });
-      }
+      // Tutorial/progress не должен держать главный loader.
+      _checkPermissionsAndTutorial();
+      _markDashboardReady();
     } catch (_) {
       // Dashboard continues with the available chart/cache states.
-      if (mounted) {
-        setState(() {
-          _isDashboardReady = true;
-        });
-      }
+      _markDashboardReady();
     }
   }
 
@@ -745,6 +746,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           chartSettingsTrigger: _analyticsChartSettingsTrigger,
                           showStatistics: userRoles.contains('admin'),
                           showInitialLoader: false,
+                          onFirstContentReady: _markDashboardReady,
                         )
                       : RefreshIndicator(
                           color: const Color(0xff1E2E52),
@@ -762,29 +764,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-          if (!isClickAvatarIcon)
-            IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: _isDashboardReady ? 0 : 1,
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const Positioned.fill(
-                      child: AppBackgroundOverlay(
-                        preset: AppBackgroundPreset.aurora,
-                        forceRender: true,
-                      ),
+          if (!isClickAvatarIcon && !_isDashboardReady)
+            const IgnorePointer(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned.fill(
+                    child: AppBackgroundOverlay(
+                      preset: AppBackgroundPreset.aurora,
+                      forceRender: true,
                     ),
-                    const Center(
-                      child: PlayStoreImageLoading(
-                        size: 64,
-                        duration: Duration(milliseconds: 1050),
-                      ),
+                  ),
+                  Center(
+                    child: PlayStoreImageLoading(
+                      size: 64,
+                      duration: Duration(milliseconds: 1050),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -884,6 +881,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               message: state.message,
               isSuccess: false,
             );
+          }
+          if (state is SalesDashboardPriorityLoaded ||
+              state is SalesDashboardLoadingSecondary ||
+              state is SalesDashboardFullyLoaded ||
+              state is SalesDashboardLoaded) {
+            _markDashboardReady();
           }
         },
         builder: (context, state) {

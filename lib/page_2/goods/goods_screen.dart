@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/goods/goods_add_screen.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/foundation.dart';
@@ -324,32 +325,23 @@ class _GoodsScreenState extends State<GoodsScreen> {
                     );
                   }
                 } else if (state is GoodsEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.inventory_2_outlined,
-                            size: 64, color: colors.textMuted),
-                        const SizedBox(height: 16),
-                        Text(
-                          _isSearching
-                              ? localizations!.translate('nothing_found')
-                              : localizations!.translate('no_products'),
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: colors.textMuted,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            context.read<GoodsBloc>().add(FetchGoods());
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.inventory_2_outlined,
+                          titleKey: 'empty_goods_title',
+                          subtitleKey: 'empty_goods_subtitle',
+                          actionKey: 'empty_goods_action',
+                          onAction: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GoodsAddScreen(),
+                              ),
+                            );
                           },
-                          child: Text(localizations!.translate('update')),
-                        ),
-                      ],
-                    ),
-                  );
+                        );
                 } else if (state is GoodsError) {
                   return Center(
                     child: Column(

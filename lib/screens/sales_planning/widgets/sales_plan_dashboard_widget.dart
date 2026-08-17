@@ -67,12 +67,11 @@ class _SalesPlanDashboardWidgetState extends State<SalesPlanDashboardWidget> {
         if (state is SalesPlanDashboardError) {
           return const SizedBox.shrink();
         }
+        // Не резервируем высоту на время загрузки — иначе на дашборде
+        // появляется большой пустой отступ над KPI-карточками.
         if (state is SalesPlanDashboardLoading ||
             state is SalesPlanDashboardInitial) {
-          return const SizedBox(
-            height: 120,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
+          return const SizedBox.shrink();
         }
         final items = (state as SalesPlanDashboardLoaded).items;
         if (items.isEmpty) return const SizedBox.shrink();
@@ -81,7 +80,7 @@ class _SalesPlanDashboardWidgetState extends State<SalesPlanDashboardWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
               child: Row(
                 children: [
                   Expanded(

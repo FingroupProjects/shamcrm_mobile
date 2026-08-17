@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/add_supplier_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supllier_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -146,21 +147,34 @@ class _SupplierCreenState extends State<SupplierCreen> {
               final suppliers = state.supplierList;
 
               if (suppliers.isEmpty) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations?.translate('nothing_found') ??
-                            'Ничего не найдено')
-                        : (localizations?.translate('no_suppliers') ??
-                            'Нет поставщиков'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                );
+                return _isSearching
+                    ? HelpfulEmptyState.search(localizations!)
+                    : HelpfulEmptyState.section(
+                        l10n: localizations!,
+                        icon: Icons.local_shipping_outlined,
+                        titleKey: 'empty_suppliers_title',
+                        subtitleKey: 'empty_suppliers_subtitle',
+                        actionKey: _hasCreatePermission
+                            ? 'empty_suppliers_action'
+                            : null,
+                        onAction: _hasCreatePermission
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddSupplierScreen(),
+                                  ),
+                                ).then((wasAdded) {
+                                  if (wasAdded == true) {
+                                    final query =
+                                        _currentFilters['query'] as String?;
+                                    _supplierBloc
+                                        .add(FetchSupplier(query: query));
+                                  }
+                                });
+                              }
+                            : null,
+                      );
               }
 
               return RefreshIndicator(

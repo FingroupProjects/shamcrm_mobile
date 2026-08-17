@@ -7,6 +7,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -472,31 +473,31 @@ class TaskColumnState extends State<TaskColumn> {
               }
 
               // Показываем "Нет задач" только когда загрузка завершена
-              return RefreshIndicator(
-                backgroundColor: colors.surfacePrimary,
-                color: colors.textPrimary,
+              final l10n = AppLocalizations.of(context)!;
+              return HelpfulEmptyState.refreshable(
+                context: context,
                 onRefresh: _onRefresh,
-                child: ListView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!
-                                .translate('no_tasks_for_selected_status'),
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Gilroy',
-                                color: colors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: HelpfulEmptyState(
+                  icon: Icons.task_alt_rounded,
+                  title: l10n.translate('empty_tasks_title'),
+                  subtitle: l10n.translate('empty_tasks_subtitle'),
+                  actionLabel: _hasPermissionToAddTask
+                      ? l10n.translate('empty_tasks_action')
+                      : null,
+                  onAction: _hasPermissionToAddTask
+                      ? () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TaskAddScreen(
+                                statusId: widget.statusId,
+                                initialProjectId: widget.projectId,
+                                lockProject: false,
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
                 ),
               );
             }
@@ -551,25 +552,31 @@ class TaskColumnState extends State<TaskColumn> {
             });
 
             // Показываем пустой список при ошибке
-            return RefreshIndicator(
+            final l10n = AppLocalizations.of(context)!;
+            return HelpfulEmptyState.refreshable(
+              context: context,
               onRefresh: _onRefresh,
-              color: colors.textPrimary,
-              backgroundColor: colors.surfacePrimary,
-              child: ListView(
-                physics: AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                  Center(
-                    child: Text(
-                      AppLocalizations.of(context)!
-                          .translate('no_tasks_for_selected_status'),
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy'),
-                    ),
-                  ),
-                ],
+              child: HelpfulEmptyState(
+                icon: Icons.task_alt_rounded,
+                title: l10n.translate('empty_tasks_title'),
+                subtitle: l10n.translate('empty_tasks_subtitle'),
+                actionLabel: _hasPermissionToAddTask
+                    ? l10n.translate('empty_tasks_action')
+                    : null,
+                onAction: _hasPermissionToAddTask
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TaskAddScreen(
+                              statusId: widget.statusId,
+                              initialProjectId: widget.projectId,
+                              lockProject: false,
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
               ),
             );
           }

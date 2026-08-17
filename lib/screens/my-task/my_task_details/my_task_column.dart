@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -93,29 +94,25 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
                   .toList();
 
               if (tasks.isEmpty) {
-                return RefreshIndicator(
-                  backgroundColor: colors.surfacePrimary,
-                  color: colors.buttonPrimaryBg,
+                final l10n = AppLocalizations.of(context)!;
+                return HelpfulEmptyState.refreshable(
+                  context: context,
                   onRefresh: _onRefresh,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.4),
-                      Center(
-                        child: Text(
-                          AppLocalizations.of(context)!
-                              .translate('no_tasks_for_selected_status'),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: colors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
+                  child: HelpfulEmptyState(
+                    icon: Icons.task_alt_rounded,
+                    title: l10n.translate('empty_tasks_title'),
+                    subtitle: l10n.translate('empty_tasks_subtitle'),
+                    actionLabel: l10n.translate('empty_tasks_action'),
+                    onAction: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MyTaskAddScreen(statusId: widget.statusId),
                         ),
-                      ),
-                    ],
+                      ).then((_) =>
+                          _taskBloc.add(FetchMyTasks(widget.statusId)));
+                    },
                   ),
                 );
               }

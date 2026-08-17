@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/data/emoji_data.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class PremiumContextMenu {
@@ -18,34 +19,41 @@ class PremiumContextMenu {
     required VoidCallback onDismiss,
   }) {
     final overlay = Overlay.of(context);
+    final appearance = ChatAppearanceScope.of(context);
     late OverlayEntry entry;
+    var removed = false;
+
+    void dismissAndRemove() {
+      if (removed) return;
+      removed = true;
+      onDismiss();
+      entry.remove();
+    }
 
     entry = OverlayEntry(
-      builder: (context) => _PremiumMenuOverlay(
-        messagePosition: messagePosition,
-        messageSize: messageSize,
-        messageWidget: messageWidget,
-        items: items,
-        onReactionSelected: showReactions && onReactionSelected != null
-            ? (emoji) {
-                onReactionSelected(emoji);
-                onDismiss();
-                entry.remove();
-              }
-            : null,
-        onShowFullPicker: showReactions
-            ? () {
-                onShowFullPicker?.call();
-                onDismiss();
-                entry.remove();
-              }
-            : null,
-        channelKey: channelKey,
-        showReactions: showReactions,
-        onDismiss: () {
-          onDismiss();
-          entry.remove();
-        },
+      builder: (context) => ChatAppearanceScope(
+        appearance: appearance,
+        child: _PremiumMenuOverlay(
+          messagePosition: messagePosition,
+          messageSize: messageSize,
+          messageWidget: messageWidget,
+          items: items,
+          onReactionSelected: showReactions && onReactionSelected != null
+              ? (emoji) {
+                  onReactionSelected(emoji);
+                  dismissAndRemove();
+                }
+              : null,
+          onShowFullPicker: showReactions
+              ? () {
+                  onShowFullPicker?.call();
+                  dismissAndRemove();
+                }
+              : null,
+          channelKey: channelKey,
+          showReactions: showReactions,
+          onDismiss: dismissAndRemove,
+        ),
       ),
     );
 
@@ -96,9 +104,10 @@ class _PremiumMenuOverlay extends StatefulWidget {
 }
 
 class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late final double _initialKeyboardInset;
 
   @override
   void initState() {
@@ -112,12 +121,33 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
       curve: Curves.easeOutBack, // Пружинный эффект
     );
     _controller.forward();
+    _initialKeyboardInset = _currentKeyboardInset();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
+  }
+
+  double _currentKeyboardInset() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return 0;
+    return views.first.viewInsets.bottom;
+  }
+
+  @override
+  void didChangeMetrics() {
+    final inset = _currentKeyboardInset();
+    if (inset > _initialKeyboardInset + 80) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onDismiss();
+        }
+      });
+    }
   }
 
   void _close() {
@@ -126,17 +156,81 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final safeTop = mediaQuery.padding.top + 8.0;
+    final safeBottom = screenHeight -
+        mediaQuery.padding.bottom -
+        mediaQuery.viewInsets.bottom -
+        8.0;
 
     // Константы для расчёта
     const double horizontalPadding = 16.0;
+    const double gap = 10.0;
     final double maxMenuWidth =
         (screenWidth - (horizontalPadding * 2)).clamp(220.0, 280.0);
-    final double reactionPanelHeight = widget.showReactions ? 54.0 : 0.0;
+    final double reactionPanelHeight = widget.showReactions ? 54.0 + gap : 0.0;
 
-    // Рассчитываем вертикальное положение
-    final isMenuBelow = widget.messagePosition.dy < screenHeight / 2;
+    // Приблизительная высота всего блока меню (реакции + само меню)
+    final double desiredMenuHeight =
+        (widget.items.length * 50.0) + reactionPanelHeight + 8.0;
+
+    final messageTop = widget.messagePosition.dy;
+    final messageBottom = messageTop + widget.messageSize.height;
+    final spaceBelow = safeBottom - messageBottom - gap;
+    final spaceAbove = messageTop - safeTop - gap;
+    final maxSafeHeight = (safeBottom - safeTop).clamp(120.0, screenHeight);
+
+    // Ставим меню туда, где оно целиком влезает; иначе — в сторону с большим местом.
+    // Если сообщение огромное (видео) и места нет ни сверху, ни снизу — рисуем
+    // поверх сообщения в безопасной зоне, чтобы пункты не обрезались.
+    final bool fitsBelow = spaceBelow >= desiredMenuHeight;
+    final bool fitsAbove = spaceAbove >= desiredMenuHeight;
+    final bool hasSideSpace = spaceBelow > 80 || spaceAbove > 80;
+
+    final bool isMenuBelow;
+    final bool overlayOnMessage;
+    if (fitsBelow) {
+      isMenuBelow = true;
+      overlayOnMessage = false;
+    } else if (fitsAbove) {
+      isMenuBelow = false;
+      overlayOnMessage = false;
+    } else if (hasSideSpace) {
+      isMenuBelow = spaceBelow >= spaceAbove;
+      overlayOnMessage = false;
+    } else {
+      isMenuBelow = true;
+      overlayOnMessage = true;
+    }
+
+    final double availableHeight = overlayOnMessage
+        ? maxSafeHeight
+        : (isMenuBelow ? spaceBelow : spaceAbove).clamp(0.0, maxSafeHeight);
+    // Если места почти нет — всё равно показываем меню поверх сообщения.
+    final double menuBlockHeight = desiredMenuHeight
+        .clamp(
+          0.0,
+          availableHeight >= 80 ? availableHeight : maxSafeHeight,
+        )
+        .toDouble();
+    final bool useOverlayFallback = overlayOnMessage || availableHeight < 80;
+
+    double top;
+    if (useOverlayFallback) {
+      top = (safeBottom - menuBlockHeight).clamp(safeTop, safeBottom);
+    } else if (isMenuBelow) {
+      top = messageBottom + gap;
+      if (top + menuBlockHeight > safeBottom) {
+        top = (safeBottom - menuBlockHeight).clamp(safeTop, safeBottom);
+      }
+    } else {
+      top = messageTop - menuBlockHeight - gap;
+      if (top < safeTop) {
+        top = safeTop;
+      }
+    }
 
     // Рассчитываем горизонтальное положение, чтобы меню не вылезало за экран
     double left = widget.messagePosition.dx;
@@ -149,9 +243,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
       left = horizontalPadding;
     }
 
-    // Приблизительная высота всего блока меню (реакции + само меню)
-    final totalMenuHeight =
-        (widget.items.length * 50.0) + reactionPanelHeight + 20;
+    final needsScroll = desiredMenuHeight > menuBlockHeight + 0.5;
 
     return GestureDetector(
       onTap: _close,
@@ -186,34 +278,43 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
               child: widget.messageWidget,
             ),
 
-            // Меню и реакции
+            // Меню и реакции — всегда внутри безопасной зоны экрана
             Positioned(
               left: left,
-              top: isMenuBelow
-                  ? widget.messagePosition.dy + widget.messageSize.height + 10
-                  : widget.messagePosition.dy - totalMenuHeight - 10,
+              top: top,
               width: maxMenuWidth,
               child: ScaleTransition(
                 scale: _animation,
                 alignment:
                     isMenuBelow ? Alignment.topCenter : Alignment.bottomCenter,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.showReactions) ...[
-                      _buildReactionPanel(),
-                      const SizedBox(height: 10),
-                    ],
-                    // Контекстное меню
-                    _buildMenuCard(),
-                  ],
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: menuBlockHeight),
+                  child: needsScroll
+                      ? SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: _buildMenuColumn(),
+                        )
+                      : _buildMenuColumn(),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMenuColumn() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showReactions) ...[
+          _buildReactionPanel(),
+          const SizedBox(height: 10),
+        ],
+        _buildMenuCard(),
+      ],
     );
   }
 
@@ -298,8 +399,11 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
   Widget _buildMenuItemWidget(ContextMenuItem item) {
     return InkWell(
       onTap: () {
-        item.onTap();
-        _close();
+        final action = item.onTap;
+        // Снимаем оверлей сразу, иначе клавиатура (Ответить/Изменить)
+        // оставляет панель реакций поверх поля ввода.
+        widget.onDismiss();
+        WidgetsBinding.instance.addPostFrameCallback((_) => action());
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),

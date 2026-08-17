@@ -12,6 +12,7 @@ import '../../../../custom_widget/custom_app_bar_page_2.dart';
 import '../../../../custom_widget/custom_button.dart';
 import '../../../../models/money/income_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../widgets/helpful_empty_state.dart';
 import '../../../../screens/profile/profile_screen.dart';
 import 'edit_income_screen.dart';
 
@@ -177,18 +178,17 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     state.status == IncomeStatus.loadingMore) {
                   final incomes = state.incomes;
                   if (incomes.isEmpty) {
-                    return Center(
-                      child: Text(
-                        AppLocalizations.of(context)?.translate('no_incomes') ??
-                            'Нет доходов',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    );
+                    final l10n = AppLocalizations.of(context)!;
+                    final hasQuery =
+                        (state.searchQuery ?? '').trim().isNotEmpty;
+                    return hasQuery
+                        ? HelpfulEmptyState.search(l10n)
+                        : HelpfulEmptyState.section(
+                            l10n: l10n,
+                            icon: Icons.payments_outlined,
+                            titleKey: 'empty_income_types_title',
+                            subtitleKey: 'empty_income_types_subtitle',
+                          );
                   }
                   return RefreshIndicator(
                     color: colors.buttonPrimaryBg,

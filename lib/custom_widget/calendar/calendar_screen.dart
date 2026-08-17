@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/filter/calendar/filter_calendar.d
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
@@ -376,19 +377,7 @@ void _changeView(String view) {
           }
 
           if (_isSearching && _searchController.text.isNotEmpty && _events.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('nothing_found'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              ),
-            );
+            return HelpfulEmptyState.search(AppLocalizations.of(context)!);
           }
 
           return SingleChildScrollView(

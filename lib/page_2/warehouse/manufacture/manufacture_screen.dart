@@ -8,6 +8,7 @@ import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_card.d
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_create.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
@@ -694,21 +695,14 @@ class _ManufactureScreenState extends State<ManufactureScreen> {
                     state is ManufactureLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is ManufactureLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? (localizations?.translate('nothing_found') ??
-                              'Ничего не найдено')
-                          : (localizations?.translate('no_manufactures') ??
-                              'Нет документов перемещения'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.precision_manufacturing_outlined,
+                          titleKey: 'empty_manufacture_title',
+                          subtitleKey: 'empty_manufacture_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

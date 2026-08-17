@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';

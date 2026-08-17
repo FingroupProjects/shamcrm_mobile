@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -807,7 +808,9 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return SwipeBackPopResult(
+      result: _buildNavigationResult,
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
@@ -996,6 +999,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }

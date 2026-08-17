@@ -5,6 +5,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/models/task/task_model.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -160,46 +161,41 @@ void DropdownBottomSheet(
                               isLoading = true;
                             });
 
+                            final previousStatusId = task.statusId;
+                            final previousTitle = defaultValue;
+                            final nextStatusId = selectedStatusId!;
+                            final nextTitle = selectedValue;
+                            final l10n = AppLocalizations.of(context)!;
+
                             ApiService()
                                 .updateTaskStatus(
                               task.id,
                               task.statusId,
-                              selectedStatusId!,
+                              nextStatusId,
                               reasonForRefusalId: refusalData?.reasonId,
                               reasonForRefusal: refusalData?.comment,
                             )
                                 .then((_) {
-                              ScaffoldMessenger.of(rootContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate(
-                                        'status_changed_successfully'),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: context.appColors.textInverse,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: context.appColors.success,
-                                  elevation: 3,
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: Duration(seconds: 3),
-                                ),
-                              );
                               setState(() {
                                 isLoading = false;
                               });
 
                               Navigator.pop(context);
-                              onSelect(selectedValue, selectedStatusId!);
+                              onSelect(nextTitle, nextStatusId);
+                              if (nextStatusId != previousStatusId) {
+                                UndoActions.showRevert(
+                                  message: l10n.translate('undo_status_changed'),
+                                  actionLabel: l10n.translate('undo'),
+                                  onUndo: () async {
+                                    await ApiService().updateTaskStatus(
+                                      task.id,
+                                      nextStatusId,
+                                      previousStatusId,
+                                    );
+                                    onSelect(previousTitle, previousStatusId);
+                                  },
+                                );
+                              }
                             }).catchError((error) {
                               setState(() {
                                 isLoading = false;

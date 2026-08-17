@@ -7,6 +7,7 @@ import 'package:crm_task_manager/models/page_2/expense_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/clien_sales_document_detail.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -207,20 +208,14 @@ class _RmkSalesScreenState extends State<RmkSalesScreen> {
               ),
             )
           : _documents.isEmpty
-              ? Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations?.translate('nothing_found') ??
-                            'Ничего не найдено')
-                        : 'Нет продаж РМК',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                )
+              ? (_isSearching
+                  ? HelpfulEmptyState.search(localizations!)
+                  : HelpfulEmptyState.section(
+                      l10n: localizations!,
+                      icon: Icons.point_of_sale_rounded,
+                      titleKey: 'empty_rmk_sales_title',
+                      subtitleKey: 'empty_rmk_sales_subtitle',
+                    ))
               : RefreshIndicator(
                   color: colors.buttonPrimaryBg,
                   backgroundColor: colors.surfacePrimary,

@@ -12,6 +12,36 @@ extension ThemeContextExtension on BuildContext {
   AppSpacingTokens get appSpacing => AppSpacingTokens.value;
   AppRadiusTokens get appRadius => AppRadiusTokens.value;
 
+  bool get isDarkTheme => Theme.of(this).brightness == Brightness.dark;
+
+  /// Dark toast chip. Never white — dark palettes map textPrimary to off-white.
+  Color get toastBackground {
+    if (isDarkTheme) {
+      return appColors.surfaceElevated;
+    }
+    final brand = appColors.textPrimary;
+    return brand.computeLuminance() < 0.45 ? brand : appColors.backgroundPrimary;
+  }
+
+  Color get toastForeground {
+    return useLightForeground(toastBackground)
+        ? const Color(0xFFF8FAFC)
+        : const Color(0xFF0F172A);
+  }
+
+  Color get toastAction {
+    final background = toastBackground;
+    final primary = appColors.buttonPrimaryBg;
+    final primaryContrast =
+        (primary.computeLuminance() - background.computeLuminance()).abs();
+    if (primaryContrast >= 0.28 &&
+        (primary.computeLuminance() >= 0.35 ||
+            background.computeLuminance() >= 0.35)) {
+      return primary;
+    }
+    return appColors.info;
+  }
+
   bool useLightForeground(Color background, {double threshold = 0.45}) {
     return background.computeLuminance() < threshold;
   }
@@ -22,8 +52,14 @@ extension ThemeContextExtension on BuildContext {
     Color? darkColor,
   }) {
     return useLightForeground(background)
-        ? (lightColor ?? appColors.textInverse)
-        : (darkColor ?? appColors.textPrimary);
+        ? (lightColor ??
+            (appColors.textInverse.computeLuminance() > 0.5
+                ? appColors.textInverse
+                : const Color(0xFFF8FAFC)))
+        : (darkColor ??
+            (appColors.textPrimary.computeLuminance() < 0.5
+                ? appColors.textPrimary
+                : const Color(0xFF0F172A)));
   }
 
   Color adaptiveHintOn(

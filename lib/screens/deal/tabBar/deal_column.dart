@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -410,32 +411,31 @@ class _DealColumnState extends State<DealColumn> {
       );
     }
 
-    return RefreshIndicator(
-      color: colors.buttonPrimaryBg,
-      backgroundColor: colors.surfacePrimary,
+    final l10n = AppLocalizations.of(context)!;
+    return HelpfulEmptyState.refreshable(
+      context: context,
       onRefresh: _onRefresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
-        children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!
-                      .translate('no_deal_in_selected_status'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
+      child: HelpfulEmptyState(
+        icon: Icons.handshake_outlined,
+        title: l10n.translate('empty_deals_title'),
+        subtitle: l10n.translate('empty_deals_subtitle'),
+        actionLabel: _canCreateDeal ? l10n.translate('empty_deals_action') : null,
+        onAction: _canCreateDeal
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        DealAddScreen(statusId: widget.statusId),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
+                ).then((_) {
+                  _dealBloc.add(FetchDeals(
+                    widget.statusId,
+                    salesFunnelId: widget.salesFunnelId,
+                  ));
+                });
+              }
+            : null,
       ),
     );
   }

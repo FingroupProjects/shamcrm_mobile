@@ -352,10 +352,10 @@ class _DealCardState extends State<DealCard>
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      Image.asset(
-                                        'assets/icons/tabBar/dropdown.png',
-                                        width: 20,
-                                        height: 20,
+                                      Icon(
+                                        Icons.expand_more_rounded,
+                                        size: 20,
+                                        color: colors.iconSecondary,
                                       ),
                                     ],
                                   ),

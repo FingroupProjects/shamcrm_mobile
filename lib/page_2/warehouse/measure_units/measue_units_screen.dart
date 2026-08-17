@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/add_measure_unit_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/measure_units/measure_unit_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
@@ -173,21 +174,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
               );
             } else if (state is MeasureUnitsLoaded) {
               if (state.units.isEmpty) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations.translate('nothing_found') ??
-                            'Ничего не найдено')
-                        : (localizations.translate('no_measure_units') ??
-                            'Нет единиц измерения'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                );
+                return _measureUnitsEmpty(localizations!);
               }
 
               return RefreshIndicator(
@@ -221,21 +208,7 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
                 ),
               );
             } else if (state is MeasureUnitsEmpty) {
-              return Center(
-                child: Text(
-                  _isSearching
-                      ? (localizations.translate('nothing_found') ??
-                          'Ничего не найдено')
-                      : (localizations.translate('no_measure_units') ??
-                          'Нет единиц измерения'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              );
+              return _measureUnitsEmpty(localizations!);
             } else if (state is MeasureUnitsError) {
               return Center(
                 child: Padding(
@@ -280,5 +253,32 @@ class _MeasureUnitsScreenState extends State<MeasureUnitsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _measureUnitsEmpty(AppLocalizations localizations) {
+    return _isSearching
+        ? HelpfulEmptyState.search(localizations)
+        : HelpfulEmptyState.section(
+            l10n: localizations,
+            icon: Icons.straighten_rounded,
+            titleKey: 'empty_measure_units_title',
+            subtitleKey: 'empty_measure_units_subtitle',
+            actionKey:
+                _hasCreatePermission ? 'empty_measure_units_action' : null,
+            onAction: _hasCreatePermission
+                ? () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddMeasureUnitScreen(),
+                      ),
+                    );
+                    if (result == true) {
+                      final query = _currentFilters['query'] as String?;
+                      _measureUnitsBloc.add(FetchMeasureUnits(query: query));
+                    }
+                  }
+                : null,
+          );
   }
 }

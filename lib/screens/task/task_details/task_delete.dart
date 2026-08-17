@@ -1,54 +1,66 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/app/app_keys.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
-import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DeleteTaskDialog extends StatelessWidget {
-  final int taskId; // Изменили тип на int
+  final int taskId;
 
   DeleteTaskDialog({required this.taskId});
 
- @override
-  Widget build(BuildContext context) {
-    return BlocListener<TaskBloc, TaskState>(
-      listener: (context, state) {
-        if (state is TaskError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
-               content: Text(
-                  AppLocalizations.of(context)!.translate(state.message), // Локализация сообщения
-                 style: TextStyle(
-                   fontFamily: 'Gilroy',
-                   fontSize: 16, 
-                   fontWeight: FontWeight.w500, 
-                   color: Colors.white, 
-                 ),
-               ),
-               behavior: SnackBarBehavior.floating,
-               margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-               shape: RoundedRectangleBorder(
-                 borderRadius: BorderRadius.circular(12),
-               ),
-               backgroundColor: Colors.red,
-               elevation: 3,
-               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16), 
-             ),
-          );
+  void _confirmDeferredDelete(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final id = taskId;
+    Navigator.of(context).pop(true);
+    UndoActions.defer(
+      message: l10n.translate('undo_delete_task'),
+      actionLabel: l10n.translate('undo'),
+      onCommit: () async {
+        try {
+          await ApiService().deleteTask(id);
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            ctx.read<TaskBloc>().add(FetchTaskStatuses(forceRefresh: true));
+            showCustomSnackBar(
+              context: ctx,
+              message: 'task_deleted_successfully',
+              isSuccess: true,
+            );
+          }
+        } catch (_) {
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            showCustomSnackBar(
+              context: ctx,
+              message: 'error_text',
+              isSuccess: false,
+            );
+          }
         }
       },
-      child: AlertDialog(
-        backgroundColor: Colors.white,
-        title: Center(
-          child: Text(
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return AlertDialog(
+      backgroundColor: colors.surfacePrimary,
+      title: Center(
+        child: Text(
           AppLocalizations.of(context)!.translate('delete_task'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -58,7 +70,7 @@ class DeleteTaskDialog extends StatelessWidget {
           fontSize: 16,
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w500,
-          color: Color(0xff1E2E52),
+          color: colors.textPrimary,
         ),
       ),
       actions: [
@@ -71,52 +83,22 @@ class DeleteTaskDialog extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                buttonColor: Colors.red,
-                textColor: Colors.white,
+                buttonColor: colors.buttonDangerBg,
+                textColor: colors.buttonDangerFg,
               ),
             ),
             SizedBox(width: 8),
             Expanded(
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('delete'),
-                onPressed: () {
-                    final localizations = AppLocalizations.of(context)!;
-
-                  context.read<TaskBloc>().add(DeleteTask(taskId,localizations)); 
-                  context.read<TaskBloc>().add(FetchTaskStatuses()); 
-                  ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                 AppLocalizations.of(context)!.translate('task_deleted_successfully'),
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.green,
-                elevation: 3,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: Duration(seconds: 3),
-              ),
-            );
-                  Navigator.of(context).pop();
-                  Navigator.pop(context, true); 
-                },
-                buttonColor: Color(0xff1E2E52),
-                textColor: Colors.white,
+                onPressed: () => _confirmDeferredDelete(context),
+                buttonColor: colors.buttonPrimaryBg,
+                textColor: colors.buttonPrimaryFg,
               ),
             ),
           ],
         ),
       ],
-      )
     );
   }
 }

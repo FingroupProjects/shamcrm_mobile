@@ -178,39 +178,30 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider(create: (context) => TaskByIdBloc(apiService)),
     BlocProvider(create: (context) => MyTaskByIdBloc(apiService)),
     BlocProvider(create: (context) => DealHistoryBloc(apiService)),
-    BlocProvider(
-        create: (context) => GetAllClientBloc(apiService: apiService)),
-    BlocProvider(
-        create: (context) => GetAllAuthorBloc(apiService: apiService)),
+    BlocProvider(create: (context) => GetAllClientBloc(apiService: apiService)),
+    BlocProvider(create: (context) => GetAllAuthorBloc(apiService: apiService)),
     BlocProvider(create: (context) => CreateClientBloc()),
     BlocProvider(create: (context) => GroupChatBloc(apiService)),
     BlocProvider(create: (context) => DeleteMessageBloc(ApiService())),
     BlocProvider(create: (context) => ListenSenderTextCubit()),
     BlocProvider(create: (context) => ListenSenderVoiceCubit()),
     BlocProvider(create: (context) => ListenSenderFileCubit()),
-    BlocProvider(
-      create: (context) => ChatsBloc(apiService),
-    ),
+    BlocProvider(create: (context) => ChatsBloc(apiService),),
     BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
     BlocProvider(create: (context) => MyTaskStatusBloc(ApiService())),
     BlocProvider(create: (context) => OrganizationBloc(ApiService())),
     BlocProvider(create: (context) => NotificationBloc(ApiService())),
-    BlocProvider(
-      create: (context) => ChatsBloc(apiService),
-    ),
+    BlocProvider(create: (context) => ChatsBloc(apiService),),
     BlocProvider(create: (context) => TaskStatusBloc(ApiService())),
     BlocProvider(create: (context) => DashboardChartBloc(ApiService())),
-    BlocProvider(
-        create: (context) => DashboardChartBlocManager(ApiService())),
+    BlocProvider(  create: (context) => DashboardChartBlocManager(ApiService())),
     BlocProvider(create: (context) => DashboardConversionBloc(ApiService())),
-    BlocProvider(
-        create: (context) => DashboardConversionBlocManager(ApiService())),
+    BlocProvider(create: (context) => DashboardConversionBlocManager(ApiService())),
     BlocProvider(create: (context) => UserBlocManager(ApiService())),
     BlocProvider(create: (context) => DealStatsBloc(ApiService())),
     BlocProvider(create: (context) => DealStatsManagerBloc(ApiService())),
     BlocProvider(create: (context) => DashboardTaskChartBloc(ApiService())),
-    BlocProvider(
-        create: (context) => DashboardTaskChartBlocManager(ApiService())),
+    BlocProvider( create: (context) => DashboardTaskChartBlocManager(ApiService())),
     BlocProvider(create: (context) => LeadDealsBloc(ApiService())),
     BlocProvider(create: (context) => DealTasksBloc(ApiService())),
     BlocProvider(create: (context) => ProcessSpeedBlocManager(ApiService())),
@@ -219,16 +210,14 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider(create: (context) => ChatProfileBloc(ApiService())),
     BlocProvider(create: (context) => TaskProfileBloc(ApiService())),
     BlocProvider(create: (context) => PermissionsBloc(ApiService())),
-    BlocProvider(
-        create: (context) => ForgotPinBloc(apiService: ApiService())),
+    BlocProvider( create: (context) => ForgotPinBloc(apiService: ApiService())),
     BlocProvider(create: (context) => SourceLeadBloc(apiService)),
     BlocProvider(create: (context) => LeadToCBloc(apiService: apiService)),
     BlocProvider(create: (context) => Data1CBloc(apiService: apiService)),
     BlocProvider(create: (context) => ProfileBloc(apiService: apiService)),
     BlocProvider(create: (context) => ProcessSpeedBloc(apiService)),
     BlocProvider(create: (context) => TaskCompletionBloc(apiService)),
-    BlocProvider(
-        create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
+    BlocProvider( create: (context) => TaskAddFromDealBloc(apiService: ApiService())),
     BlocProvider(create: (context) => EventBloc(apiService)),
     BlocProvider(create: (context) => SalesPlanBloc(apiService)),
     BlocProvider(create: (context) => SalesPlanDetailBloc(apiService)),
@@ -253,36 +242,19 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider(create: (context) => LabelBloc(apiService)),
     BlocProvider(create: (context) => VariantBloc(apiService)),
     BlocProvider(create: (context) => VariantBottomSheetBloc(apiService)),
-    BlocProvider(
-      create: (context) => CallCenterBloc(ApiService()),
-    ),
+    BlocProvider(create: (context) => CallCenterBloc(ApiService()),),
     BlocProvider(create: (context) => SalesFunnelBloc(ApiService())),
     BlocProvider(create: (context) => OperatorBloc(ApiService())),
     BlocProvider(create: (context) => TemplateBloc(ApiService())),
     BlocProvider(create: (context) => LeadStatusForFilterBloc(apiService)),
     BlocProvider(create: (context) => IncomingBloc(apiService)),
-    BlocProvider<StorageBloc>(
-      create: (context) => StorageBloc(apiService),
-    ),
-    BlocProvider<UnitsBloc>(
-      create: (context) => UnitsBloc(apiService),
-    ),
-    BlocProvider<ExpenseArticleBloc>(
-      create: (context) => ExpenseArticleBloc(apiService),
-    ),
-    BlocProvider<SupplierBloc>(
-      create: (context) => SupplierBloc(apiService),
-    ),
-    BlocProvider<ClientSaleBloc>(
-      create: (context) => ClientSaleBloc(apiService),
-    ),
-    BlocProvider<ClientSaleDocumentHistoryBloc>(
-      create: (context) => ClientSaleDocumentHistoryBloc(apiService),
-    ),
-    BlocProvider<IncomingDocumentHistoryBloc>(
-      create: (context) =>
-          IncomingDocumentHistoryBloc(context.read<ApiService>()),
-    ),
+    BlocProvider<StorageBloc>(  create: (context) => StorageBloc(apiService), ),
+    BlocProvider<UnitsBloc>(  create: (context) => UnitsBloc(apiService), ),
+    BlocProvider<ExpenseArticleBloc>(  create: (context) => ExpenseArticleBloc(apiService),),
+    BlocProvider<SupplierBloc>(  create: (context) => SupplierBloc(apiService),),
+    BlocProvider<ClientSaleBloc>( create: (context) => ClientSaleBloc(apiService),),
+    BlocProvider<ClientSaleDocumentHistoryBloc>(  create: (context) => ClientSaleDocumentHistoryBloc(apiService),),
+    BlocProvider<IncomingDocumentHistoryBloc>( create: (context) =>    IncomingDocumentHistoryBloc(context.read<ApiService>()),),
     BlocProvider(create: (context) => ClientReturnBloc(apiService)),
     BlocProvider(create: (context) => SupplierBloc(apiService)),
     BlocProvider(create: (context) => MeasureUnitsBloc(apiService)),
@@ -295,10 +267,8 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider(create: (context) => CashDeskBloc()),
     BlocProvider(create: (context) => ExpenseBloc()),
     BlocProvider(create: (context) => IncomeBloc()),
-    BlocProvider(
-        create: (context) => CategoryDashboardWarehouseBloc(apiService)),
-    BlocProvider(
-        create: (context) => GoodDashboardWarehouseBloc(apiService)),
+    BlocProvider( create: (context) => CategoryDashboardWarehouseBloc(apiService)),
+    BlocProvider( create: (context) => GoodDashboardWarehouseBloc(apiService)),
     BlocProvider(create: (context) => SalesDashboardBloc()),
     BlocProvider(create: (context) => SalesDashboardGoodsBloc()),
     BlocProvider(create: (context) => SalesDashboardCashBalanceBloc()),

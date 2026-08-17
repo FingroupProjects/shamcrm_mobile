@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/movement/movement_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/movement/movement_create.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
@@ -726,21 +727,14 @@ class _MovementScreenState extends State<MovementScreen> {
                     state is MovementLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is MovementLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? (localizations?.translate('nothing_found') ??
-                              'Ничего не найдено')
-                          : (localizations?.translate('no_movements') ??
-                              'Нет документов перемещения'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.swap_horiz_rounded,
+                          titleKey: 'empty_movement_title',
+                          subtitleKey: 'empty_movement_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

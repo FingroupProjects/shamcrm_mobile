@@ -19,7 +19,7 @@ import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
-import 'package:crm_task_manager/update_dialog.dart';
+import 'package:crm_task_manager/widgets/update_dialog.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';

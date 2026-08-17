@@ -8,6 +8,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/add_pricetype_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -143,21 +144,32 @@ class _PriceTypeScreenState extends State<PriceTypeScreen> {
               final priceTypes = state.priceTypes;
 
               if (priceTypes.isEmpty) {
-                return Center(
-                  child: Text(
-                    _isSearching
-                        ? (localizations.translate('nothing_found') ??
-                            'Ничего не найдено')
-                        : (localizations.translate('no_price_types') ??
-                            'Нет типов цен'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                );
+                return _isSearching
+                    ? HelpfulEmptyState.search(localizations)
+                    : HelpfulEmptyState.section(
+                        l10n: localizations,
+                        icon: Icons.sell_outlined,
+                        titleKey: 'empty_price_types_title',
+                        subtitleKey: 'empty_price_types_subtitle',
+                        actionKey: _hasCreatePermission
+                            ? 'empty_price_types_action'
+                            : null,
+                        onAction: _hasCreatePermission
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddPriceTypeScreen(),
+                                  ),
+                                ).then((_) {
+                                  final query =
+                                      _currentFilters['query'] as String?;
+                                  _priceTypeBloc
+                                      .add(FetchPriceType(query: query));
+                                });
+                              }
+                            : null,
+                      );
               }
 
               return RefreshIndicator(

@@ -7,6 +7,8 @@ import 'package:crm_task_manager/page_2/order/order_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 
 class OrderColumn extends StatefulWidget {
   final int statusId;
@@ -136,7 +138,12 @@ class _OrderColumnState extends State<OrderColumn> {
                         ),
                       )
                     : orders.isEmpty && !_isLoadingMore
-                        ? const Center(child: Text('Нет заказов'))
+                        ? HelpfulEmptyState.section(
+                            l10n: AppLocalizations.of(context)!,
+                            icon: Icons.shopping_bag_outlined,
+                            titleKey: 'empty_orders_title',
+                            subtitleKey: 'empty_orders_subtitle',
+                          )
                         : ListView.builder(
                             controller: _scrollController,
                             itemCount: orders.length + (_isLoadingMore ? 1 : 0),

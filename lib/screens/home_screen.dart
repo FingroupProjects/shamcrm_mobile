@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
-import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';

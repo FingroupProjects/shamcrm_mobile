@@ -20,6 +20,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_state.dart
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_event.dart';
 import 'package:crm_task_manager/bloc/lead_deal/lead_deal_state.dart';
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -1139,7 +1140,9 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         });
       });
     }
-    return PopScope(
+    return SwipeBackPopResult(
+      result: _buildNavigationResult,
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
@@ -1329,6 +1332,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -1395,12 +1399,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       builder: (context) => DeleteLeadDialog(leadId: currentLead!.id),
     );
     if (!mounted) return;
-
-    context.read<LeadBloc>().add(
-          FetchLeads(widget.statusId, ignoreCache: true),
-        );
     if (deleted == true) {
-      context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
       Navigator.pop(context, true);
     }
   }

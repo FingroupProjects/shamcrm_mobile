@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/money/money_outcome_document_model.dart'
 import 'package:crm_task_manager/page_2/money/money_outcome/widgets/money_outcome_card.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -469,19 +470,14 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                     state is MoneyOutcomeLoaded ? state.data : [];
 
                 if (currentData.isEmpty) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? localizations.translate('nothing_found')
-                          : localizations.translate('no_money_outcome'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations,
+                          icon: Icons.north_east_rounded,
+                          titleKey: 'empty_money_outcome_title',
+                          subtitleKey: 'empty_money_outcome_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

@@ -18,6 +18,7 @@ import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/material.dart';
@@ -700,13 +701,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     SizedBox(height: MediaQuery.of(context).size.height * 0.4),
-                    Center(
-                      child: Text(
-                        AppLocalizations.of(context)!
-                            .translate('no_notifications_yet'),
-                        style: textStyles.bodyLg
-                            .copyWith(color: colors.textSecondary),
-                      ),
+                    HelpfulEmptyState.section(
+                      l10n: AppLocalizations.of(context)!,
+                      icon: Icons.notifications_none_rounded,
+                      titleKey: 'empty_notifications_title',
+                      subtitleKey: 'empty_notifications_subtitle',
                     ),
                   ],
                 ),
@@ -725,16 +724,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 child: notifications.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
                         children: [
                           SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4),
-                          Center(
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_notifications_yet'),
-                              style: textStyles.bodyLg
-                                  .copyWith(color: colors.textSecondary),
-                            ),
+                            height: MediaQuery.sizeOf(context).height * 0.16,
+                          ),
+                          HelpfulEmptyState.section(
+                            l10n: AppLocalizations.of(context)!,
+                            icon: Icons.notifications_none_rounded,
+                            titleKey: 'empty_notifications_title',
+                            subtitleKey: 'empty_notifications_subtitle',
                           ),
                         ],
                       )

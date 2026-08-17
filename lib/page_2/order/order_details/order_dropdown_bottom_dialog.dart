@@ -9,6 +9,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -185,33 +186,17 @@ Future<void> OrderDropdownBottomSheet(
                                   return;
                                 }
 
-                                onSelect(selectedValue, selectedStatusId!);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(context)!.translate(
-                                          'status_changed_successfully'),
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: colors.textInverse,
-                                      ),
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    backgroundColor: colors.success,
-                                    elevation: 3,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 16),
-                                    duration: const Duration(seconds: 3),
-                                  ),
+                                final previousStatusId = order.orderStatus.id;
+                                final previousTitle = defaultValue;
+                                final nextStatusId = selectedStatusId!;
+                                final nextTitle = selectedValue;
+                                final l10n = AppLocalizations.of(context)!;
+                                final previousTabIndex =
+                                    orderStatuses.indexWhere(
+                                  (status) => status.id == previousStatusId,
                                 );
+
+                                onSelect(nextTitle, nextStatusId);
 
                                 context.read<OrderBloc>().add(
                                       FetchOrderStatuses(forceRefresh: true),
@@ -223,10 +208,29 @@ Future<void> OrderDropdownBottomSheet(
                                 Navigator.pop(context);
 
                                 final newTabIndex = orderStatuses.indexWhere(
-                                  (status) => status.id == selectedStatusId,
+                                  (status) => status.id == nextStatusId,
                                 );
                                 if (newTabIndex != -1) {
                                   onTabChange(newTabIndex);
+                                }
+
+                                if (nextStatusId != previousStatusId) {
+                                  UndoActions.showRevert(
+                                    message:
+                                        l10n.translate('undo_status_changed'),
+                                    actionLabel: l10n.translate('undo'),
+                                    onUndo: () async {
+                                      await ApiService().changeOrderStatus(
+                                        orderId: order.id,
+                                        statusId: previousStatusId,
+                                        organizationId: order.organizationId,
+                                      );
+                                      onSelect(previousTitle, previousStatusId);
+                                      if (previousTabIndex != -1) {
+                                        onTabChange(previousTabIndex);
+                                      }
+                                    },
+                                  );
                                 }
                               } catch (error) {
                                 if (!context.mounted) {

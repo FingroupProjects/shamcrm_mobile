@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
@@ -677,21 +678,37 @@ class _IncomingScreenState extends State<IncomingScreen> {
                     state is IncomingLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is IncomingLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? localizations!.translate('nothing_found') ??
-                              'Ничего не найдено'
-                          : localizations!.translate('no_incoming') ??
-                              'Нет приходов',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.move_to_inbox_rounded,
+                          titleKey: 'empty_incoming_title',
+                          subtitleKey: 'empty_incoming_subtitle',
+                          actionKey: _hasCreatePermission
+                              ? 'empty_incoming_action'
+                              : null,
+                          onAction: _hasCreatePermission
+                              ? () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          IncomingDocumentCreateScreen(
+                                        organizationId: widget.organizationId,
+                                      ),
+                                    ),
+                                  );
+                                  if (result == true && mounted) {
+                                    _incomingBloc.add(FetchIncoming(
+                                      forceRefresh: true,
+                                      filters: _currentFilters,
+                                      search: _search,
+                                    ));
+                                  }
+                                }
+                              : null,
+                        );
                 }
 
                 return RefreshIndicator(

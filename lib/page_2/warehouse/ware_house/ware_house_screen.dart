@@ -8,6 +8,7 @@ import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/add_warehouse_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/warehouse_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -166,21 +167,14 @@ class _WareHouseScreenState extends State<WareHouseScreen> {
             );
           } else if (state is WareHouseLoaded) {
             if (state.storages.isEmpty) {
-              return Center(
-                child: Text(
-                  _isSearching
-                      ? (localizations.translate('nothing_found') ??
-                          'Ничего не найдено')
-                      : (localizations.translate('no_warehouses') ??
-                          'Нет складов'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-              );
+              return _isSearching
+                  ? HelpfulEmptyState.search(localizations!)
+                  : HelpfulEmptyState.section(
+                      l10n: localizations!,
+                      icon: Icons.warehouse_outlined,
+                      titleKey: 'empty_warehouse_title',
+                      subtitleKey: 'empty_warehouse_subtitle',
+                    );
             }
 
             return RefreshIndicator(

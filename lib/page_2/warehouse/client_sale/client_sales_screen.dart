@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/create_clien_sales_document_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -685,21 +686,14 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                     state is ClientSaleLoaded ? state.data : [];
 
                 if (currentData.isEmpty && state is ClientSaleLoaded) {
-                  return Center(
-                    child: Text(
-                      _isSearching
-                          ? (localizations?.translate('nothing_found') ??
-                              'Ничего не найдено')
-                          : (localizations?.translate('no_client_sales') ??
-                              'Нет документов реализации'), // ИЗМЕНЕНО: Текст
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  );
+                  return _isSearching
+                      ? HelpfulEmptyState.search(localizations!)
+                      : HelpfulEmptyState.section(
+                          l10n: localizations!,
+                          icon: Icons.point_of_sale_rounded,
+                          titleKey: 'empty_client_sale_title',
+                          subtitleKey: 'empty_client_sale_subtitle',
+                        );
                 }
 
                 return RefreshIndicator(

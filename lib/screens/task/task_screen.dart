@@ -19,6 +19,7 @@ import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_column.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
@@ -1343,42 +1344,42 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
 
     if (_isSearching && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      return HelpfulEmptyState(
+        icon: Icons.search_off_rounded,
+        title: l10n.translate('empty_search_title'),
+        subtitle: l10n.translate('empty_search_subtitle'),
       );
     } else if (_isUser && tasks.isEmpty) {
-      return Center(
-        child: Text(
-          _selectedUsers.isNotEmpty
-              ? 'У выбранного пользователя нет задач'
-              : 'По запросу ничего не найдено',
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
+      return HelpfulEmptyState(
+        icon: Icons.person_search_rounded,
+        title: _selectedUsers.isNotEmpty
+            ? 'У выбранного пользователя нет задач'
+            : AppLocalizations.of(context)!.translate('empty_search_title'),
       );
     } else if (tasks.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_task_for_manager'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: Color(0xff99A4BA),
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      final statusId = _tabTitles.isNotEmpty
+          ? _tabTitles[_currentTabIndex]['id'] as int
+          : null;
+      return HelpfulEmptyState(
+        icon: Icons.task_alt_rounded,
+        title: l10n.translate('empty_tasks_title'),
+        subtitle: l10n.translate('empty_tasks_subtitle'),
+        actionLabel: statusId != null ? l10n.translate('empty_tasks_action') : null,
+        onAction: statusId != null
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TaskAddScreen(
+                      statusId: statusId,
+                      initialProjectId: _projectContextId,
+                    ),
+                  ),
+                );
+              }
+            : null,
       );
     }
 
@@ -1481,26 +1482,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 state.isLoadingMore && filteredTasks.isNotEmpty;
 
             if (filteredTasks.isEmpty) {
-              return RefreshIndicator(
+              final l10n = AppLocalizations.of(context)!;
+              return HelpfulEmptyState.refreshable(
+                context: context,
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: context.appColors.buttonPrimaryBg,
-                backgroundColor: context.appColors.surfacePrimary,
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Text(
-                      _selectedUsers.isNotEmpty
-                          ? 'У выбранного пользователя нет задач'
-                          : AppLocalizations.of(context)!
-                              .translate('nothing_found'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xff99A4BA),
-                      ),
-                    ),
-                  ),
+                child: HelpfulEmptyState(
+                  icon: _selectedUsers.isNotEmpty
+                      ? Icons.person_search_rounded
+                      : Icons.search_off_rounded,
+                  title: _selectedUsers.isNotEmpty
+                      ? 'У выбранного пользователя нет задач'
+                      : l10n.translate('empty_search_title'),
+                  subtitle: _selectedUsers.isNotEmpty
+                      ? null
+                      : l10n.translate('empty_search_subtitle'),
                 ),
               );
             }

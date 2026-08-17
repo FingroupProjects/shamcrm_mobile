@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_event.dart';
 import 'package:crm_task_manager/bloc/my-task_by_id/taskById_state.dart';
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
@@ -277,12 +278,15 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
     }
   }
 
-  void _openDeleteTask() {
+  Future<void> _openDeleteTask() async {
     if (currentMyTask == null) return;
-    showDialog(
+    final deleted = await showDialog<bool>(
       context: context,
       builder: (context) => DeleteMyTaskDialog(taskId: currentMyTask!.id),
     );
+    if (deleted == true && mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> _scrollToHistorySection() async {
@@ -662,7 +666,9 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
           },
         ),
       ],
-      child: PopScope(
+      child: SwipeBackPopResult(
+        result: _buildNavigationResult,
+        child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
@@ -731,6 +737,7 @@ class _MyTaskDetailsScreenState extends State<MyTaskDetailsScreen> {
             body: Center(child: Text('')),
           );
           },
+        ),
         ),
       ),
     );

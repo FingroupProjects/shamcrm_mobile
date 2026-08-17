@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dar
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
+import 'package:crm_task_manager/core/navigation/app_swipe_back.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
 import 'package:crm_task_manager/main.dart';
@@ -646,7 +647,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           create: (context) => OrderHistoryBloc(context.read<ApiService>()),
         ),
       ],
-      child: PopScope(
+      child: SwipeBackPopResult(
+        result: _buildNavigationResult,
+        child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
@@ -672,6 +675,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               body: _buildBody(state, loadedOrder),
             );
           },
+        ),
         ),
       ),
     );

@@ -113,17 +113,14 @@ class SalesPlanCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      SalesPlanLabels.formatPeriod(plan),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
+                  Text(
+                    SalesPlanLabels.formatPeriod(plan),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colors.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 
@@ -122,42 +123,37 @@ void DropdownBottomSheet(
                               isLoading = true;
                             });
 
+                            final previousStatusId = lead.statusId;
+                            final previousTitle = defaultValue;
+                            final nextStatusId = selectedStatusId!;
+                            final nextTitle = selectedValue;
+                            final l10n = AppLocalizations.of(context)!;
+
                             ApiService()
                                 .updateLeadStatus(
                               lead.id,
                               lead.statusId,
-                              selectedStatusId!,
+                              nextStatusId,
                               reasonForRefusalId: refusalData?.reasonId,
                               reasonForRefusal: refusalData?.comment,
                             )
                                 .then((_) {
-                              ScaffoldMessenger.of(rootContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!.translate(
-                                        'status_changed_successfully'),
-                                    style: rootContext.appTextStyles.bodyMd
-                                        .copyWith(
-                                      color: rootContext.appColors.textInverse,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor:
-                                      rootContext.appColors.success,
-                                  elevation: 3,
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  duration: Duration(seconds: 3),
-                                ),
-                              );
                               Navigator.pop(context);
-
-                              onSelect(selectedValue, selectedStatusId!);
+                              onSelect(nextTitle, nextStatusId);
+                              if (nextStatusId != previousStatusId) {
+                                UndoActions.showRevert(
+                                  message: l10n.translate('undo_status_changed'),
+                                  actionLabel: l10n.translate('undo'),
+                                  onUndo: () async {
+                                    await ApiService().updateLeadStatus(
+                                      lead.id,
+                                      nextStatusId,
+                                      previousStatusId,
+                                    );
+                                    onSelect(previousTitle, previousStatusId);
+                                  },
+                                );
+                              }
                             }).catchError((error) {
                               setState(() {
                                 isLoading = false;

@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/deal/dealById_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/common/reason_for_refusal_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -70,6 +71,7 @@ Future<void> showDealStatusBottomSheet(
 
   String selectedValue = defaultValue;
   List<int> selectedStatusIds = [];
+  List<int> originalStatusIds = [deal.statusId];
   bool isLoading = false;
   bool isInitializing = true;
   List<DealStatus> loadedStatuses = [];
@@ -79,9 +81,11 @@ Future<void> showDealStatusBottomSheet(
     final dealData = await apiService.getDealById(deal.id);
     if (dealData?.dealStatuses != null && dealData!.dealStatuses!.isNotEmpty) {
       selectedStatusIds = dealData.dealStatuses!.map((s) => s.id).toList();
+      originalStatusIds = List<int>.from(selectedStatusIds);
       debugPrint('✅ Initialized from API: $selectedStatusIds');
     } else {
       selectedStatusIds = [deal.statusId];
+      originalStatusIds = [deal.statusId];
       debugPrint('⚠️ Using current statusId: ${deal.statusId}');
     }
   } catch (e) {
@@ -229,34 +233,17 @@ Future<void> showDealStatusBottomSheet(
                                     reasonForRefusal: refusalData?.comment,
                                   )
                                       .then((_) {
-                                    ScaffoldMessenger.of(rootContext)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate(
-                                                  'status_changed_successfully'),
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: context.appColors.textInverse,
-                                          ),
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                        margin: EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 8),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        backgroundColor: context.appColors.success,
-                                        elevation: 3,
-                                        padding: EdgeInsets.symmetric(
-                                            vertical: 12, horizontal: 16),
-                                        duration: Duration(seconds: 3),
-                                      ),
-                                    );
+                                    final l10n = AppLocalizations.of(context)!;
+                                    final nextIds =
+                                        List<int>.from(selectedStatusIds);
+                                    final nextTitle = selectedValue;
+                                    final previousIds =
+                                        List<int>.from(originalStatusIds);
+                                    final previousTitle = defaultValue;
+                                    final statusChanged = nextIds.length !=
+                                            previousIds.length ||
+                                        !nextIds.every(previousIds.contains);
+
                                     setState(() {
                                       isLoading = false;
                                     });
@@ -264,7 +251,28 @@ Future<void> showDealStatusBottomSheet(
                                     debugPrint(
                                         '✅ Deal status updated: $selectedStatusIds');
                                     Navigator.pop(context);
-                                    onSelect(selectedValue, selectedStatusIds);
+                                    onSelect(nextTitle, nextIds);
+                                    if (statusChanged) {
+                                      UndoActions.showRevert(
+                                        message: l10n
+                                            .translate('undo_status_changed'),
+                                        actionLabel: l10n.translate('undo'),
+                                        onUndo: () async {
+                                          await apiService.updateDealStatus(
+                                            deal.id,
+                                            nextIds.isNotEmpty
+                                                ? nextIds.first
+                                                : deal.statusId,
+                                            previousIds,
+                                            isMultiSelect:
+                                                isMultiSelectEnabled,
+                                            organizationId: organizationId,
+                                            salesFunnelId: salesFunnelId,
+                                          );
+                                          onSelect(previousTitle, previousIds);
+                                        },
+                                      );
+                                    }
                                   }).catchError((error) {
                                     setState(() {
                                       isLoading = false;

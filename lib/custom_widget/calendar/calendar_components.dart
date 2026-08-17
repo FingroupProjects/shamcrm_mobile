@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -214,21 +215,11 @@ class EventListForDate extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: eventsOnSelectedDate.isEmpty
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('no_events'),
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
+          ? HelpfulEmptyState.section(
+              l10n: AppLocalizations.of(context)!,
+              icon: Icons.event_available_outlined,
+              titleKey: 'empty_calendar_title',
+              subtitleKey: 'empty_calendar_subtitle',
             )
           : ConstrainedBox(
               constraints: BoxConstraints(
@@ -392,21 +383,11 @@ class DayViewEventList extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: sortedEvents.isEmpty
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('no_events'),
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                ),
-              ),
+          ? HelpfulEmptyState.section(
+              l10n: AppLocalizations.of(context)!,
+              icon: Icons.event_available_outlined,
+              titleKey: 'empty_calendar_title',
+              subtitleKey: 'empty_calendar_subtitle',
             )
           : ConstrainedBox(
               constraints: BoxConstraints(

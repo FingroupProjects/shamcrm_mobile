@@ -10,6 +10,7 @@ import 'package:crm_task_manager/models/money/cash_register_model.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/add_cash_desk_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_references/cash_desk/edit_cash_desk_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -170,19 +171,17 @@ class _CashDeskScreenState extends State<CashDeskScreen> {
                     state.status == CashDeskStatus.loadingMore) {
                   final cashRegisters = state.cashRegisters;
                   if (cashRegisters.isEmpty) {
-                    return Center(
-                      child: Text(
-                        AppLocalizations.of(context)
-                                ?.translate('no_cash_registers') ??
-                            'Нет касс',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    );
+                    final l10n = AppLocalizations.of(context)!;
+                    final hasQuery =
+                        (state.searchQuery ?? '').trim().isNotEmpty;
+                    return hasQuery
+                        ? HelpfulEmptyState.search(l10n)
+                        : HelpfulEmptyState.section(
+                            l10n: l10n,
+                            icon: Icons.point_of_sale_outlined,
+                            titleKey: 'empty_cash_desk_title',
+                            subtitleKey: 'empty_cash_desk_subtitle',
+                          );
                   }
 
                   return RefreshIndicator(

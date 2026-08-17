@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/in_app_update_service.dart';
+import 'package:crm_task_manager/services/in_app_update_service.dart';
 import 'package:flutter/material.dart';
 
 class InAppUpdateCornerIndicator extends StatelessWidget {

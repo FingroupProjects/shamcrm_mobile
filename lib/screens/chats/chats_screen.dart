@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -2024,28 +2025,18 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         pagingController: widget.pagingController,
         builderDelegate: PagedChildBuilderDelegate<Chats>(
           noItemsFoundIndicatorBuilder: (context) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!
-                        .translate('nothing_found_chat'),
-                    style: context.appTextStyles.titleMd.copyWith(
-                      fontSize: 18,
-                      color: context.appColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context)!.translate('list_empty_chat'),
-                    style: context.appTextStyles.bodyLg.copyWith(
-                      fontSize: 16,
-                      color: context.appColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+            final l10n = AppLocalizations.of(context)!;
+            return HelpfulEmptyState(
+              icon: Icons.chat_bubble_outline_rounded,
+              title: l10n.translate('empty_chats_title'),
+              subtitle: l10n.translate('empty_chats_subtitle'),
+              actionLabel: l10n.translate('empty_chats_action'),
+              onAction: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => const AddClientDialog(),
+                );
+              },
             );
           },
           firstPageProgressIndicatorBuilder: (context) {

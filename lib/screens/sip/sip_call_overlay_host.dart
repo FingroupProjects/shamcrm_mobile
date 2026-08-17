@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:crm_task_manager/app_feature_flags.dart';
+import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/app/app_keys.dart';
 import 'package:flutter/cupertino.dart';

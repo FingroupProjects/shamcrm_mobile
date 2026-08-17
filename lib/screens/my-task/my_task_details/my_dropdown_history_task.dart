@@ -125,10 +125,10 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetMyTask> {
             color: context.appColors.textPrimary,
           ),
         ),
-        Image.asset(
-          'assets/icons/tabBar/dropdown.png',
-          width: 16,
-          height: 16,
+        Icon(
+          Icons.expand_more_rounded,
+          size: 16,
+          color: context.appColors.iconSecondary,
         ),
       ],
     );

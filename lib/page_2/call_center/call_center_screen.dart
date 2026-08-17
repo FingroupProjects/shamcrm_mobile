@@ -16,6 +16,7 @@ import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -572,21 +573,15 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.call, size: 64, color: context.appColors.iconSecondary),
-          const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context)!.translate('no_calls_found'),
-            style: context.appTextStyles.titleMd.copyWith(
-              fontWeight: FontWeight.w500,
-              color: context.appColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    if (_searchQuery.trim().isNotEmpty) {
+      return HelpfulEmptyState.search(l10n);
+    }
+    return HelpfulEmptyState.section(
+      l10n: l10n,
+      icon: Icons.call_outlined,
+      titleKey: 'empty_calls_title',
+      subtitleKey: 'empty_calls_subtitle',
     );
   }
 

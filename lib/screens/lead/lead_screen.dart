@@ -41,6 +41,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
+import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 
 class LeadScreen extends StatefulWidget {
   final int? initialStatusId;
@@ -232,6 +233,24 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ignoreCache: true,
       ),
     );
+  }
+
+  void _openCreateLeadFromEmpty() {
+    if (_tabTitles.isEmpty) return;
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'] as int;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LeadAddScreen(
+          statusId: currentStatusId,
+          isWarehouseReferenceClient: widget.isWarehouseReferenceClients,
+        ),
+      ),
+    ).then((result) {
+      if (result is int && mounted) {
+        _refreshAfterLeadCreated(result);
+      }
+    });
   }
 
   // Метод для проверки наличия активных фильтров
@@ -1567,41 +1586,27 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
 
     if (_isSearching && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_found'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      return HelpfulEmptyState(
+        icon: Icons.search_off_rounded,
+        title: l10n.translate('empty_search_title'),
+        subtitle: l10n.translate('empty_search_subtitle'),
       );
     } else if (_isManager && leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!
-              .translate('no_leads_for_selected_manager'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      return HelpfulEmptyState(
+        icon: Icons.person_search_rounded,
+        title: AppLocalizations.of(context)!
+            .translate('no_leads_for_selected_manager'),
       );
     } else if (leads.isEmpty) {
-      return Center(
-        child: Text(
-          AppLocalizations.of(context)!.translate('nothing_lead_for_manager'),
-          style: TextStyle(
-            fontSize: 18,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      return HelpfulEmptyState(
+        icon: Icons.people_outline_rounded,
+        title: l10n.translate('empty_leads_title'),
+        subtitle: l10n.translate('empty_leads_subtitle'),
+        actionLabel:
+            _hasPermissionToAddLead ? l10n.translate('empty_leads_action') : null,
+        onAction: _hasPermissionToAddLead ? _openCreateLeadFromEmpty : null,
       );
     }
 
@@ -1691,27 +1696,20 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 leads.where((lead) => lead.statusId == statusId).toList();
 
             if (filteredLeads.isEmpty) {
-              return RefreshIndicator(
+              final l10n = AppLocalizations.of(context)!;
+              return HelpfulEmptyState.refreshable(
+                context: context,
                 onRefresh: () => _onRefresh(currentStatusId),
-                color: context.appColors.buttonPrimaryBg,
-                backgroundColor: context.appColors.surfacePrimary,
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Text(
-                      _selectedManagers.isNotEmpty
-                          ? AppLocalizations.of(context)!
-                              .translate('selected_manager_has_any_lead')
-                          : AppLocalizations.of(context)!
-                              .translate('nothing_found'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: context.appColors.textSecondary,
-                      ),
-                    ),
-                  ),
+                child: HelpfulEmptyState(
+                  icon: _selectedManagers.isNotEmpty
+                      ? Icons.person_search_rounded
+                      : Icons.search_off_rounded,
+                  title: _selectedManagers.isNotEmpty
+                      ? l10n.translate('selected_manager_has_any_lead')
+                      : l10n.translate('empty_search_title'),
+                  subtitle: _selectedManagers.isNotEmpty
+                      ? null
+                      : l10n.translate('empty_search_subtitle'),
                 ),
               );
             }

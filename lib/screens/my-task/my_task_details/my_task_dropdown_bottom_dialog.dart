@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_bottom_dropdown.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/my_task/my-task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/undo_snackbar.dart';
 import 'package:flutter/material.dart';
 
 void DropdownBottomSheet(
@@ -113,43 +114,38 @@ void DropdownBottomSheet(
                             isLoading = true;
                           });
 
+                          final previousStatusId = task.statusId;
+                          final previousTitle = defaultValue;
+                          final nextStatusId = selectedStatusId!;
+                          final nextTitle = selectedValue;
+                          final l10n = AppLocalizations.of(context)!;
+
                           ApiService()
                               .updateMyTaskStatus(
                             task.id,
                             task.statusId,
-                            selectedStatusId!,
+                            nextStatusId,
                           )
                               .then((_) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  AppLocalizations.of(context)!
-                                      .translate('status_changed_successfully'),
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: colors.textInverse,
-                                  ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: colors.success,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 16),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
                             setState(() {
                               isLoading = false;
                             });
                             Navigator.pop(context);
-                            onSelect(selectedValue, selectedStatusId!);
+                            onSelect(nextTitle, nextStatusId);
+                            if (nextStatusId != previousStatusId) {
+                              UndoActions.showRevert(
+                                message: l10n.translate('undo_status_changed'),
+                                actionLabel: l10n.translate('undo'),
+                                onUndo: () async {
+                                  await ApiService().updateMyTaskStatus(
+                                    task.id,
+                                    nextStatusId,
+                                    previousStatusId,
+                                  );
+                                  onSelect(previousTitle, previousStatusId);
+                                },
+                              );
+                            }
                           }).catchError((_) {
                             setState(() {
                               isLoading = false;

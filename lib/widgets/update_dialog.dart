@@ -1,5 +1,6 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/services/in_app_update_service.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/in_app_update_service.dart';
 import 'package:new_version_plus/new_version_plus.dart';
 
 class UpdateDialog {
@@ -82,6 +83,8 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
@@ -90,11 +93,14 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
       backgroundColor: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colors.borderSubtle.withValues(alpha: 0.4),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: colors.shadow.withValues(alpha: 0.16),
               blurRadius: 40,
               offset: const Offset(0, 20),
             ),
@@ -108,36 +114,29 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2196F3),
-                    Color(0xFF1976D2),
-                  ],
-                ),
+                color: colors.buttonPrimaryBg,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.system_update_rounded,
                 size: 36,
-                color: Colors.white,
+                color: colors.buttonPrimaryFg,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               widget.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
+                color: colors.textPrimary,
                 letterSpacing: -0.3,
               ),
               textAlign: TextAlign.center,
@@ -145,9 +144,9 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
             const SizedBox(height: 16),
             Text(
               widget.message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF666666),
+                color: colors.textSecondary,
                 height: 1.5,
                 letterSpacing: 0.1,
               ),
@@ -170,10 +169,10 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
                     ),
                     child: Text(
                       widget.laterButton,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF666666),
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -184,10 +183,11 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
                     onPressed:
                         _isPrimaryButtonEnabled() ? _handleUpdatePressed : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2196F3),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFBFD7F1),
-                      disabledForegroundColor: Colors.white,
+                      backgroundColor: colors.buttonPrimaryBg,
+                      foregroundColor: colors.buttonPrimaryFg,
+                      disabledBackgroundColor:
+                          colors.buttonPrimaryBg.withValues(alpha: 0.4),
+                      disabledForegroundColor: colors.buttonPrimaryFg,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
