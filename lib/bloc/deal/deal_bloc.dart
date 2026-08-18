@@ -22,6 +22,10 @@ class DealBloc extends Bloc<DealEvent, DealState> {
   FetchDeals? _queuedFetchDealsEvent;
   FetchMoreDeals? _queuedFetchMoreDealsEvent;
   int? _currentTabStatusId;
+  int? _lastCompletedFetchStatusId;
+
+  int? get lastCompletedFetchStatusId => _lastCompletedFetchStatusId;
+  int? get currentTabStatusId => _currentTabStatusId;
   String? _currentQuery;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionsIds;
@@ -199,6 +203,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
             currentPage: 1,
             dealCounts: Map.from(_dealCounts),
             isLoadingMore: false));
+        _lastCompletedFetchStatusId = event.statusId;
       } else {
         final currentState = state;
         final bool showsRequestedStatus = currentState is DealDataLoaded &&
@@ -274,6 +279,7 @@ class DealBloc extends Bloc<DealEvent, DealState> {
           currentPage: 1,
           dealCounts: Map.from(_dealCounts),
           isLoadingMore: false));
+      _lastCompletedFetchStatusId = event.statusId;
     } catch (e) {
       if (_isWorkdayAccessError(e)) {
         return;

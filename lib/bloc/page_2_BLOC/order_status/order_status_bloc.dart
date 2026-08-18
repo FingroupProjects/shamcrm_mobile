@@ -15,6 +15,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   Map<int?, bool> allOrdersFetched = {};
   Map<int, int> _orderCounts = {};
   bool isFetching = false;
+  int? _lastCompletedFetchStatusId;
+
+  int? get lastCompletedFetchStatusId => _lastCompletedFetchStatusId;
   String? _currentQuery;
   List<String>? _currentManagerIds;
   List<String>? _currentRegionsIds;
@@ -328,6 +331,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           pagination: orderResponse.pagination,
           orderCounts: Map.from(_orderCounts),
         ));
+        _lastCompletedFetchStatusId = event.statusId;
       } else {
         debugPrint('❌ OrderBloc: No internet connection');
       }

@@ -125,6 +125,8 @@ class PinAdaptiveContrastController {
       controller.backgroundImagePath ?? '',
       controller.backgroundAssetPath ?? '',
       controller.backgroundBlurPercent.toStringAsFixed(1),
+      controller.backgroundOpacityPercent.toStringAsFixed(1),
+      controller.carouselIndex.toString(),
       isDark,
       size.width.round(),
       size.height.round(),

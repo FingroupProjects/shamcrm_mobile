@@ -8,7 +8,6 @@ import 'package:crm_task_manager/app/app_providers.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
-import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/auth/auth_screen.dart';
 import 'package:crm_task_manager/screens/auth/login_screen.dart';
@@ -180,13 +179,7 @@ class _MyAppState extends State<MyApp> {
             builder: (context, child) {
               final colors = context.appColors;
               final themeController = context.watch<AppThemeController>();
-              final hasCustomWallpaper =
-                  themeController.backgroundPreset ==
-                      AppBackgroundPreset.custom &&
-                  ((themeController.backgroundImagePath != null &&
-                          themeController.backgroundImagePath!.isNotEmpty) ||
-                      (themeController.backgroundAssetPath != null &&
-                          themeController.backgroundAssetPath!.isNotEmpty));
+              final hasCustomWallpaper = themeController.hasCustomWallpaper;
               final appChild = Stack(
                 fit: StackFit.expand,
                 children: [

@@ -1693,12 +1693,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
           // Показываем лоадер только если флаги активны ИЛИ состояние - DealLoading
           if (_shouldShowLoader || _isFilterLoading || state is DealLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return HelpfulEmptyState.loading();
           }
 
           if (state is DealDataLoaded) {
@@ -1714,6 +1709,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
             final filteredDeals =
                 deals.where((deal) => deal.statusId == statusId).toList();
+            final dealBloc = context.read<DealBloc>();
+            if (filteredDeals.isEmpty &&
+                !HelpfulEmptyState.isReadyForStatus(
+                  isFetching: dealBloc.isFetching,
+                  completedStatusId: dealBloc.lastCompletedFetchStatusId,
+                  statusId: statusId,
+                )) {
+              return HelpfulEmptyState.loading();
+            }
 
             if (filteredDeals.isEmpty) {
               final l10n = AppLocalizations.of(context)!;
@@ -1808,8 +1812,9 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Widget _buildCustomTabBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: context.appColors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(24),
@@ -2601,19 +2606,26 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   void _scrollToActiveTab() {
+    if (_tabKeys.isEmpty ||
+        _currentTabIndex < 0 ||
+        _currentTabIndex >= _tabKeys.length) {
+      return;
+    }
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
-    if (keyContext != null) {
+    if (keyContext != null && _tabScrollController.hasClients) {
       final box = keyContext.findRenderObject() as RenderBox;
       final position =
           box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
       final tabWidth = box.size.width;
+      final screenWidth = MediaQuery.of(context).size.width;
 
-      if (position.dx < 0 ||
-          (position.dx + tabWidth) > MediaQuery.of(context).size.width) {
-        double targetOffset = _tabScrollController.offset +
-            position.dx -
-            (MediaQuery.of(context).size.width / 2) +
-            (tabWidth / 2);
+      if (position.dx < 0 || (position.dx + tabWidth) > screenWidth) {
+        final maxOffset = _tabScrollController.position.maxScrollExtent;
+        final targetOffset = (_tabScrollController.offset +
+                position.dx -
+                (screenWidth / 2) +
+                (tabWidth / 2))
+            .clamp(0.0, maxOffset);
         if (targetOffset != _tabScrollController.offset) {
           _tabScrollController.animateTo(
             targetOffset,

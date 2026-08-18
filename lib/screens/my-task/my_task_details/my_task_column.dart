@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_add_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -81,13 +80,8 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
     backgroundColor: Colors.transparent, // было: colors.backgroundSecondary
     body: BlocBuilder<MyTaskBloc, MyTaskState>(
           builder: (context, state) {
-            if (state is MyTaskLoading) {
-              return const Center(
-                child: PlayStoreImageLoading(
-                  size: 80.0,
-                  duration: Duration(milliseconds: 1000),
-                ),
-              );
+            if (state is MyTaskLoading || state is MyTaskInitial) {
+              return HelpfulEmptyState.loading();
             } else if (state is MyTaskDataLoaded) {
               final tasks = state.tasks
                   .where((task) => task.statusId == widget.statusId)

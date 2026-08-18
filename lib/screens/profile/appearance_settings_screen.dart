@@ -1,14 +1,12 @@
-import 'dart:io';
-
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette_presets.dart';
 import 'package:crm_task_manager/custom_widget/full_color_wheel_dialog.dart';
+import 'package:crm_task_manager/screens/profile/widgets/wallpaper_carousel_card.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class AppearanceSettingsScreen extends StatefulWidget {
@@ -125,10 +123,10 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Своя картинка',
+                title: 'Карусель обоев',
                 subtitle:
-                    'Можно поставить свой фон для всего приложения. Он будет мягко наложен поверх интерфейса.',
-                child: _CustomBackgroundCard(controller: controller),
+                    'Добавьте фото из галереи в альбом проекта, затем отметьте от 1 до 15 картинок для фона. Их можно чередовать при входе или по таймеру.',
+                child: WallpaperCarouselCard(controller: controller),
               ),
               const SizedBox(height: 16),
               _SectionCard(
@@ -431,228 +429,6 @@ class _PreviewLinesPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PreviewLinesPainter oldDelegate) =>
       oldDelegate.color != color;
-}
-
-class _CustomBackgroundCard extends StatelessWidget {
-  final AppThemeController controller;
-
-  static const List<String> _projectBackgrounds = [
-    'assets/fon/IMG_1548.JPG',
-    'assets/fon/IMG_1614.JPG',
-    'assets/fon/IMG_1615.JPG',
-    'assets/fon/IMG_1617.JPG',
-    'assets/fon/IMG_1616.JPG',
-    'assets/fon/IMG_1606.JPG',
-    'assets/fon/IMG_1612.JPG',
-    'assets/fon/IMG_1613.JPG',
-    'assets/fon/IMG_1607.JPG',
-    'assets/fon/IMG_1611.JPG',
-    'assets/fon/IMG_1610.JPG',
-    'assets/fon/IMG_1609.JPG',
-    'assets/fon/IMG_1580.JPG',
-    'assets/fon/IMG_1581.JPG',
-    'assets/fon/IMG_1608.JPG',
-    'assets/fon/IMG_1620.JPG',
-    'assets/fon/IMG_1583.JPG',
-    'assets/fon/IMG_1582.JPG',
-    'assets/fon/IMG_1579.JPG',
-    'assets/fon/IMG_1578.JPG',
-    'assets/fon/IMG_1618.JPG',
-    'assets/fon/IMG_1584.JPG',
-    'assets/fon/IMG_1619.JPG',
-    'assets/fon/IMG_1500.png',
-    'assets/fon/IMG_1501.png',
-    'assets/fon/IMG_1502.png',
-    'assets/fon/IMG_1503.png',
-    'assets/fon/IMG_1504.png',
-    'assets/fon/IMG_1505.png',
-    'assets/fon/IMG_1506.png',
-    'assets/fon/IMG_1507.png',
-    'assets/fon/IMG_1508.png',
-  ];
-
-  const _CustomBackgroundCard({required this.controller});
-
-  Future<void> _pickImage(BuildContext context) async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
-    if (!context.mounted) return;
-    await controller.setCustomBackgroundImagePath(image.path);
-  }
-
-  Future<void> _setProjectBackground(String assetPath) async {
-    await controller.setAssetBackgroundImagePath(assetPath);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final imagePath = controller.backgroundImagePath;
-    final assetPath = controller.backgroundAssetPath;
-    final hasImage = imagePath != null && imagePath.isNotEmpty;
-    final hasAsset = assetPath != null && assetPath.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: SizedBox(
-            height: 164,
-            width: double.infinity,
-            child: Stack(fit: StackFit.expand, children: [
-              ColoredBox(color: context.appColors.surfacePrimary),
-              if (hasImage)
-                Image.file(File(imagePath), fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                  return DecoratedBox(
-                      decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      context.appColors.backgroundSecondary,
-                      context.appColors.surfaceAccent.withValues(alpha: 0.55),
-                    ],
-                  )));
-                })
-              else if (hasAsset)
-                Image.asset(assetPath, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                  return DecoratedBox(
-                      decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      context.appColors.backgroundSecondary,
-                      context.appColors.surfaceAccent.withValues(alpha: 0.55),
-                    ],
-                  )));
-                })
-              else
-                DecoratedBox(
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.appColors.backgroundSecondary,
-                    context.appColors.surfaceAccent.withValues(alpha: 0.55),
-                  ],
-                ))),
-              DecoratedBox(
-                  decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  context.appColors.backgroundPrimary.withValues(alpha: 0.18),
-                ],
-              ))),
-              if (!hasImage)
-                Center(
-                    child: Text(
-                        'Выберите изображение из альбома проекта или галереи',
-                        style: context.appTextStyles.bodyMd.copyWith(
-                            color: context.appColors.textPrimary,
-                            fontWeight: FontWeight.w600))),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Wrap(spacing: 10, runSpacing: 10, children: [
-          FilledButton(
-            onPressed: () => _pickImage(context),
-            style: FilledButton.styleFrom(
-                backgroundColor: context.appColors.buttonPrimaryBg,
-                foregroundColor: context.appColors.buttonPrimaryFg),
-            child: Text(hasImage ? 'Сменить картинку' : 'Выбрать картинку'),
-          ),
-          if (hasImage)
-            OutlinedButton(
-              onPressed: controller.clearCustomBackgroundImage,
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: context.appColors.textPrimary,
-                  side: BorderSide(color: context.appColors.borderSubtle)),
-              child: const Text('Убрать'),
-            ),
-          if (hasImage)
-            OutlinedButton(
-              onPressed: () =>
-                  controller.setBackgroundPreset(AppBackgroundPreset.custom),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: context.appColors.textPrimary,
-                side: BorderSide(
-                    color: controller.backgroundPreset ==
-                            AppBackgroundPreset.custom
-                        ? context.appColors.buttonPrimaryBg
-                        : context.appColors.borderSubtle),
-              ),
-              child: const Text('Использовать как фон'),
-            ),
-        ]),
-        const SizedBox(height: 18),
-        Text('Альбом проекта',
-            style: context.appTextStyles.titleMd.copyWith(
-                color: context.appColors.textPrimary,
-                fontWeight: FontWeight.w700)),
-        const SizedBox(height: 10),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _projectBackgrounds.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 0.92),
-          itemBuilder: (context, index) {
-            final asset = _projectBackgrounds[index];
-            final selected = hasAsset && assetPath == asset;
-            return InkWell(
-              onTap: () => _setProjectBackground(asset),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: selected
-                          ? context.appColors.buttonPrimaryBg
-                          : context.appColors.borderSubtle,
-                      width: selected ? 1.5 : 1),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Stack(fit: StackFit.expand, children: [
-                    Image.asset(asset, fit: BoxFit.cover),
-                    DecoratedBox(
-                        decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.2),
-                        Colors.transparent
-                      ],
-                    ))),
-                    if (selected)
-                      Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Icon(Icons.check_circle,
-                              color: context.appColors.buttonPrimaryBg,
-                              size: 22)),
-                  ]),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _ColorWheelPalette extends StatelessWidget {

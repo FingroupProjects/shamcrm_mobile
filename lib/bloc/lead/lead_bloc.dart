@@ -50,6 +50,9 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   String? _lastCompletedFetchKey;
   int? _lastCompletedFetchStatusId;
 
+  int? get lastCompletedFetchStatusId => _lastCompletedFetchStatusId;
+  int? get currentTabStatusId => _currentTabStatusId;
+
   LeadBloc(this.apiService) : super(LeadInitial()) {
     on<FetchLeadStatuses>(_fetchLeadStatuses);
     on<FetchLeads>(_fetchLeads);

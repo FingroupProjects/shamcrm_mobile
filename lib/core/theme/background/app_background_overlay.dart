@@ -42,6 +42,7 @@ class AppBackgroundOverlay extends StatelessWidget {
     final resolvedImagePath = themeController?.backgroundImagePath ?? imagePath;
     final resolvedAssetPath = themeController?.backgroundAssetPath ?? assetPath;
     final resolvedBlurSigma = themeController?.backgroundBlurSigma ?? blurSigma;
+    final resolvedOpacity = themeController?.backgroundOpacity ?? 1.0;
 
     if (resolvedPreset == AppBackgroundPreset.none) {
       return const SizedBox.shrink();
@@ -54,47 +55,16 @@ class AppBackgroundOverlay extends StatelessWidget {
       if (file.existsSync()) {
         return _AppBackgroundScope(
           child: IgnorePointer(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (resolvedBlurSigma > 0)
-                  ImageFiltered(
-                    imageFilter: ImageFilter.blur(
-                      sigmaX: resolvedBlurSigma,
-                      sigmaY: resolvedBlurSigma,
-                    ),
-                    child: Image.file(
-                      file,
-                      fit: BoxFit.cover,
-                      gaplessPlayback: true,
-                      filterQuality: FilterQuality.medium,
-                    ),
-                  )
-                  else
-                  Image.file(
-                    file,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    filterQuality: FilterQuality.medium,
-                  ),
-                if (resolvedBlurSigma > 0)
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          context.appColors.backgroundPrimary
-                              .withValues(alpha: 0.16),
-                          context.appColors.surfacePrimary
-                              .withValues(alpha: 0.08),
-                          context.appColors.backgroundSecondary
-                              .withValues(alpha: 0.2),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+            child: _CustomWallpaperLayer(
+              wallpaperKey: 'file:$resolvedImagePath',
+              opacity: resolvedOpacity,
+              blurSigma: resolvedBlurSigma,
+              image: Image.file(
+                file,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
+              ),
             ),
           ),
         );
@@ -106,47 +76,16 @@ class AppBackgroundOverlay extends StatelessWidget {
         resolvedAssetPath.isNotEmpty) {
       return _AppBackgroundScope(
         child: IgnorePointer(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (resolvedBlurSigma > 0)
-                ImageFiltered(
-                  imageFilter: ImageFilter.blur(
-                    sigmaX: resolvedBlurSigma,
-                    sigmaY: resolvedBlurSigma,
-                  ),
-                  child: Image.asset(
-                    resolvedAssetPath,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    filterQuality: FilterQuality.medium,
-                  ),
-                )
-              else
-                Image.asset(
-                  resolvedAssetPath,
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                  filterQuality: FilterQuality.medium,
-                ),
-              if (resolvedBlurSigma > 0)
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        context.appColors.backgroundPrimary
-                            .withValues(alpha: 0.16),
-                        context.appColors.surfacePrimary
-                            .withValues(alpha: 0.08),
-                        context.appColors.backgroundSecondary
-                            .withValues(alpha: 0.2),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
+          child: _CustomWallpaperLayer(
+            wallpaperKey: 'asset:$resolvedAssetPath',
+            opacity: resolvedOpacity,
+            blurSigma: resolvedBlurSigma,
+            image: Image.asset(
+              resolvedAssetPath,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
+            ),
           ),
         ),
       );
@@ -270,6 +209,67 @@ class AppBackgroundOverlay extends StatelessWidget {
                 color.withValues(alpha: 0.0),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomWallpaperLayer extends StatelessWidget {
+  final String wallpaperKey;
+  final double opacity;
+  final double blurSigma;
+  final Image image;
+
+  const _CustomWallpaperLayer({
+    required this.wallpaperKey,
+    required this.opacity,
+    required this.blurSigma,
+    required this.image,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: opacity.clamp(0.1, 1.0),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 700),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: KeyedSubtree(
+          key: ValueKey(wallpaperKey),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (blurSigma > 0)
+                ImageFiltered(
+                  imageFilter: ImageFilter.blur(
+                    sigmaX: blurSigma,
+                    sigmaY: blurSigma,
+                  ),
+                  child: SizedBox.expand(child: image),
+                )
+              else
+                SizedBox.expand(child: image),
+              if (blurSigma > 0)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        context.appColors.backgroundPrimary
+                            .withValues(alpha: 0.16),
+                        context.appColors.surfacePrimary
+                            .withValues(alpha: 0.08),
+                        context.appColors.backgroundSecondary
+                            .withValues(alpha: 0.2),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

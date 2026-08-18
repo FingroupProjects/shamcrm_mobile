@@ -20,6 +20,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   bool allTasksFetched = false;
   Map<int, int> _taskCounts = {};
   int? _currentTabStatusId;
+  int? _lastCompletedFetchStatusId;
+
+  int? get lastCompletedFetchStatusId => _lastCompletedFetchStatusId;
+  int? get currentTabStatusId => _currentTabStatusId;
   String? _currentQuery;
   List<int>? _currentUserIds;
   int? _currentStatusIds;
@@ -436,6 +440,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             currentPage: 1,
             taskCounts: Map.from(_taskCounts),
             isLoadingMore: false));
+        _lastCompletedFetchStatusId = event.statusId;
       }
 
       // ОПТИМИЗАЦИЯ: Проверяем интернет только если нужно обновить данные
@@ -564,6 +569,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
             currentPage: 1,
             taskCounts: Map.from(_taskCounts),
             isLoadingMore: false));
+        _lastCompletedFetchStatusId = event.statusId;
       }
     } catch (e) {
       if (_isWorkdayAccessError(e)) {

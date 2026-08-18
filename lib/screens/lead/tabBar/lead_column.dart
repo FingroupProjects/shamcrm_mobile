@@ -37,6 +37,7 @@ class _LeadColumnState extends State<LeadColumn> {
   bool _isSwitch = false;
   final ApiService _apiService = ApiService();
   final ScrollController _scrollController = ScrollController();
+  late LeadBloc _leadBloc;
 
   final GlobalKey keyLeadCard = GlobalKey();
   final GlobalKey keyStatusDropdown = GlobalKey();
@@ -57,13 +58,21 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _leadBloc = context.read<LeadBloc>();
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    final bloc = context.read<LeadBloc>();
+    if (!mounted) return;
+    final bloc = _leadBloc;
     if (!_scrollController.hasClients ||
         bloc.allLeadsFetched ||
         bloc.isFetching) {
@@ -108,10 +117,9 @@ class _LeadColumnState extends State<LeadColumn> {
   }
 
   Future<void> _onRefresh() async {
-    context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
-    context
-        .read<LeadBloc>()
-        .add(FetchLeads(widget.statusId, ignoreCache: true));
+    if (!mounted) return;
+    _leadBloc.add(FetchLeadStatuses(forceRefresh: true));
+    _leadBloc.add(FetchLeads(widget.statusId, ignoreCache: true));
   }
 
   Widget _buildLeadsList(List<Lead> leads) {
@@ -130,13 +138,12 @@ class _LeadColumnState extends State<LeadColumn> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: leads.length +
-            ((context.watch<LeadBloc>().state is LeadDataLoaded &&
-                    (context.watch<LeadBloc>().state as LeadDataLoaded)
-                        .isLoadingMore)
+            ((_leadBloc.state is LeadDataLoaded &&
+                    (_leadBloc.state as LeadDataLoaded).isLoadingMore)
                 ? 1
                 : 0),
         itemBuilder: (context, index) {
-          final state = context.watch<LeadBloc>().state;
+          final state = _leadBloc.state;
           if (state is LeadDataLoaded &&
               state.isLoadingMore &&
               index >= leads.length) {
@@ -166,7 +173,9 @@ class _LeadColumnState extends State<LeadColumn> {
                       lead, widget.statusId, newStatusId);
                   await LeadCache.updateLeadCountTemporary(
                       widget.statusId, newStatusId);
-                  context.read<LeadBloc>().add(RestoreCountsFromCache());
+                  if (mounted) {
+                    _leadBloc.add(RestoreCountsFromCache());
+                  }
                 }
               },
               onStatusId: widget.onStatusId,
@@ -217,6 +226,9 @@ class _LeadColumnState extends State<LeadColumn> {
 
   @override
   Widget build(BuildContext context) {
+    if (!context.mounted) {
+      return HelpfulEmptyState.loading();
+    }
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     debugPrint('LeadColumn: Building for statusId: ${widget.statusId}');
@@ -227,14 +239,12 @@ class _LeadColumnState extends State<LeadColumn> {
         color: colors.buttonPrimaryBg,
         backgroundColor: colors.surfacePrimary,
         child: BlocBuilder<LeadBloc, LeadState>(
+          bloc: _leadBloc,
           builder: (context, state) {
             debugPrint('LeadColumn: BlocBuilder state: ${state.runtimeType}');
 
             if (state is LeadLoading) {
-              return const Center(
-                child: PlayStoreImageLoading(
-                    size: 80.0, duration: Duration(milliseconds: 1000)),
-              );
+              return HelpfulEmptyState.loading();
             }
 
             if (state is LeadDataLoaded) {
@@ -249,18 +259,21 @@ class _LeadColumnState extends State<LeadColumn> {
                 return _buildLeadsList(leads);
               }
 
-              return FutureBuilder<List<Lead>>(
-                future: LeadCache.getLeadsForStatus(widget.statusId),
-                builder: (context, snapshot) {
-                  final cachedLeads = snapshot.data ?? const <Lead>[];
-                  return _buildLeadsList(cachedLeads);
-                },
+              final readyForThisStatus = HelpfulEmptyState.isReadyForStatus(
+                isFetching: _leadBloc.isFetching,
+                completedStatusId: _leadBloc.lastCompletedFetchStatusId,
+                statusId: widget.statusId,
               );
+              if (!readyForThisStatus) {
+                return HelpfulEmptyState.loading();
+              }
+
+              return _buildLeadsList(const <Lead>[]);
             }
 
             if (state is LeadError) {
-              final bool isCurrentRoute =
-                  ModalRoute.of(context)?.isCurrent ?? true;
+              final bool isCurrentRoute = context.mounted &&
+                  (ModalRoute.of(context)?.isCurrent ?? true);
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
@@ -313,9 +326,9 @@ class _LeadColumnState extends State<LeadColumn> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        context.read<LeadBloc>().add(
-                              FetchLeads(widget.statusId, ignoreCache: true),
-                            );
+                        _leadBloc.add(
+                          FetchLeads(widget.statusId, ignoreCache: true),
+                        );
                       },
                       child: Text(
                         'Повторить',

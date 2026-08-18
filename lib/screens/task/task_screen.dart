@@ -1453,12 +1453,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
           // Показываем лоадер только если флаги активны ИЛИ состояние - TaskLoading
           if (state is TaskLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return HelpfulEmptyState.loading();
           }
 
           if (state is TaskDataLoaded) {
@@ -1480,6 +1475,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 tasks.where((task) => task.statusId == statusId).toList();
             final bool showPaginationLoader =
                 state.isLoadingMore && filteredTasks.isNotEmpty;
+
+            if (filteredTasks.isEmpty &&
+                !HelpfulEmptyState.isReadyForStatus(
+                  isFetching: context.read<TaskBloc>().isFetching,
+                  completedStatusId:
+                      context.read<TaskBloc>().lastCompletedFetchStatusId,
+                  statusId: statusId,
+                )) {
+              return HelpfulEmptyState.loading();
+            }
 
             if (filteredTasks.isEmpty) {
               final l10n = AppLocalizations.of(context)!;

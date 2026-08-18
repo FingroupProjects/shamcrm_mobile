@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +18,23 @@ class HelpfulEmptyState extends StatelessWidget {
   final String? subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
+
+  static Widget loading() {
+    return const Center(
+      child: PlayStoreImageLoading(
+        size: 80.0,
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+  }
+
+  static bool isReadyForStatus({
+    required bool isFetching,
+    required int? completedStatusId,
+    required int statusId,
+  }) {
+    return !isFetching && completedStatusId == statusId;
+  }
 
   static HelpfulEmptyState search(AppLocalizations l10n) {
     return HelpfulEmptyState(

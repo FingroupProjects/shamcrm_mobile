@@ -5,7 +5,6 @@ import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -61,18 +60,20 @@ class _DealColumnState extends State<DealColumn> {
   void initState() {
     super.initState();
     //print('DealColumn: initState started for statusId: ${widget.statusId}');
-    _dealBloc = context.read<DealBloc>();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkCreatePermission();
+      if (mounted) {
+        _checkCreatePermission();
+      }
     });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _dealBloc = context.read<DealBloc>();
     if (!_isInitialized) {
       _initTutorialTargets();
       _isInitialized = true;
@@ -303,7 +304,7 @@ class _DealColumnState extends State<DealColumn> {
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients) return;
     if (_scrollController.position.maxScrollExtent <= 0) return;
 
     final position = _scrollController.position;
@@ -442,17 +443,16 @@ class _DealColumnState extends State<DealColumn> {
 
  @override
 Widget build(BuildContext context) {
+  if (!context.mounted) {
+    return HelpfulEmptyState.loading();
+  }
   return Stack(
     children: [
       BlocBuilder<DealBloc, DealState>(
+        bloc: _dealBloc,
         builder: (context, state) {
           if (state is DealLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return HelpfulEmptyState.loading();
           } else if (state is DealDataLoaded) {
             final deals = state.deals
                 .where((deal) => deal.statusId == widget.statusId)
@@ -464,13 +464,16 @@ Widget build(BuildContext context) {
               return _buildDealsList(deals);
             }
 
-            return FutureBuilder<List<Deal>>(
-              future: DealCache.getDealsForStatus(widget.statusId),
-              builder: (context, snapshot) {
-                final cachedDeals = snapshot.data ?? const <Deal>[];
-                return _buildDealsList(cachedDeals);
-              },
+            final readyForThisStatus = HelpfulEmptyState.isReadyForStatus(
+              isFetching: _dealBloc.isFetching,
+              completedStatusId: _dealBloc.lastCompletedFetchStatusId,
+              statusId: widget.statusId,
             );
+            if (!readyForThisStatus) {
+              return HelpfulEmptyState.loading();
+            }
+
+            return _buildDealsList(const <Deal>[]);
           } else if (state is DealError) {
             return const SizedBox();
           }

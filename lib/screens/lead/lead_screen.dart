@@ -1576,13 +1576,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     final currentStatusId =
         _tabTitles.isNotEmpty ? _tabTitles[_currentTabIndex]['id'] : 0;
 
-    if (_isFilterLoading || _shouldShowLoader) {
-      return const Center(
-        child: PlayStoreImageLoading(
-          size: 80.0,
-          duration: Duration(milliseconds: 1000),
-        ),
-      );
+    final leadBloc = context.read<LeadBloc>();
+    final waitingForStatus = leads.isEmpty &&
+        !HelpfulEmptyState.isReadyForStatus(
+          isFetching: leadBloc.isFetching,
+          completedStatusId: leadBloc.lastCompletedFetchStatusId,
+          statusId: currentStatusId,
+        );
+
+    if (_isFilterLoading || _shouldShowLoader || waitingForStatus) {
+      return HelpfulEmptyState.loading();
     }
 
     if (_isSearching && leads.isEmpty) {
@@ -1681,12 +1684,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           // Показываем лоадер только если флаги активны ИЛИ состояние - LeadLoading
           if (_shouldShowLoader || _isFilterLoading || state is LeadLoading) {
             //print('LeadScreen: _buildManagerView - Showing loader');
-            return Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return HelpfulEmptyState.loading();
           }
 
           if (state is LeadDataLoaded) {
@@ -1694,6 +1692,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             final statusId = _tabTitles[_tabController.index]['id'];
             final filteredLeads =
                 leads.where((lead) => lead.statusId == statusId).toList();
+            final leadBloc = context.read<LeadBloc>();
+            if (filteredLeads.isEmpty &&
+                !HelpfulEmptyState.isReadyForStatus(
+                  isFetching: leadBloc.isFetching,
+                  completedStatusId: leadBloc.lastCompletedFetchStatusId,
+                  statusId: statusId,
+                )) {
+              return HelpfulEmptyState.loading();
+            }
 
             if (filteredLeads.isEmpty) {
               final l10n = AppLocalizations.of(context)!;

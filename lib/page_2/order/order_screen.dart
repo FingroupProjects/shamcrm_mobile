@@ -803,6 +803,7 @@ class _OrderScreenState extends State<OrderScreen>
                                           return OrderColumn(
                                             statusId: status.id,
                                             name: status.name,
+                                            canCreateOrder: _canCreateOrderStatus,
                                             searchQuery: _isSearching
                                                 ? _searchController.text
                                                 : null,
@@ -1134,16 +1135,20 @@ class _OrderScreenState extends State<OrderScreen>
                   : 0;
 
           if (_shouldShowLoader || _isFilterLoading || state is OrderLoading) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+            return HelpfulEmptyState.loading();
           }
 
           if (state is OrderLoaded) {
             final List<Order> orders = state.orders;
+            final orderBloc = context.read<OrderBloc>();
+            if (orders.isEmpty &&
+                !HelpfulEmptyState.isReadyForStatus(
+                  isFetching: orderBloc.isFetching,
+                  completedStatusId: orderBloc.lastCompletedFetchStatusId,
+                  statusId: currentStatusId,
+                )) {
+              return HelpfulEmptyState.loading();
+            }
 
             if (orders.isEmpty) {
               final l10n = AppLocalizations.of(context)!;

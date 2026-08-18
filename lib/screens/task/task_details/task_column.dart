@@ -43,6 +43,7 @@ class TaskColumnState extends State<TaskColumn> {
   final ApiService _apiService = ApiService();
   final ScrollController _scrollController = ScrollController();
   bool _isInitialLoad = true; // Флаг первой загрузки
+  late TaskBloc _taskBloc;
 
   List<TargetFocus> targets = [];
 
@@ -69,7 +70,7 @@ class TaskColumnState extends State<TaskColumn> {
         _loadFeatureState();
 
         // Если данные для активного статуса уже есть, не показываем начальный loader.
-        final taskBloc = context.read<TaskBloc>();
+        final taskBloc = _taskBloc;
         if (taskBloc.state is TaskDataLoaded) {
           final currentState = taskBloc.state as TaskDataLoaded;
           final hasTasksForStatus = currentState.tasks
@@ -93,8 +94,14 @@ class TaskColumnState extends State<TaskColumn> {
     _scrollController.addListener(_onScroll);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _taskBloc = context.read<TaskBloc>();
+  }
+
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients) return;
     if (_scrollController.position.maxScrollExtent <= 0) return;
 
     final position = _scrollController.position;
@@ -102,7 +109,7 @@ class TaskColumnState extends State<TaskColumn> {
         position.pixels >= (position.maxScrollExtent - 200);
 
     if (reachedPaginationThreshold) {
-      final taskBloc = context.read<TaskBloc>();
+      final taskBloc = _taskBloc;
       final currentState = taskBloc.state;
       if (currentState is TaskDataLoaded &&
           !taskBloc.allTasksFetched &&
@@ -275,7 +282,7 @@ class TaskColumnState extends State<TaskColumn> {
     }
 
     if (oldWidget.isActive != widget.isActive && mounted) {
-      final taskBloc = context.read<TaskBloc>();
+      final taskBloc = _taskBloc;
       final currentState = taskBloc.state;
       final hasTasksForStatus = currentState is TaskDataLoaded &&
           currentState.tasks.any((task) => task.statusId == widget.statusId);
@@ -324,7 +331,7 @@ class TaskColumnState extends State<TaskColumn> {
   Future<void> _onRefresh() async {
     // ОПТИМИЗАЦИЯ: При обновлении заново загружаем задачи и статусы из единого блока
     if (mounted) {
-      final taskBloc = context.read<TaskBloc>();
+      final taskBloc = _taskBloc;
       await taskBloc.clearAllCountsAndCache(
         clearPersistentCache: widget.projectId == null,
       );
@@ -339,14 +346,17 @@ class TaskColumnState extends State<TaskColumn> {
 
   @override
   Widget build(BuildContext context) {
+    if (!context.mounted) {
+      return HelpfulEmptyState.loading();
+    }
     final colors = context.appColors;
     // ОПТИМИЗАЦИЯ: Используем существующий блок из контекста, не создаем новый
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: BlocBuilder<TaskBloc, TaskState>(
+        bloc: _taskBloc,
         builder: (context, state) {
-          // Получаем блок из контекста
-          final taskBloc = context.read<TaskBloc>();
+          final taskBloc = _taskBloc;
 
           // ОПТИМИЗАЦИЯ: Проверяем наличие данных для текущего статуса
           bool hasDataForStatus = false;
@@ -356,16 +366,8 @@ class TaskColumnState extends State<TaskColumn> {
           }
 
           // ОПТИМИЗАЦИЯ: Показываем лоадер только при реальной загрузке БЕЗ данных
-          if (state is TaskLoading &&
-              widget.isActive &&
-              _isInitialLoad &&
-              !hasDataForStatus) {
-            return const Center(
-              child: PlayStoreImageLoading(
-                size: 80.0,
-                duration: Duration(milliseconds: 1000),
-              ),
-            );
+          if (state is TaskLoading && widget.isActive && !hasDataForStatus) {
+            return HelpfulEmptyState.loading();
           }
 
           if (state is TaskDataLoaded) {
@@ -454,22 +456,22 @@ class TaskColumnState extends State<TaskColumn> {
                 return const SizedBox.shrink();
               }
 
-              if (_isInitialLoad) {
-                // Сбрасываем флаг с небольшой задержкой для пустых статусов
-                Future.delayed(Duration(milliseconds: 300), () {
-                  if (mounted) {
-                    setState(() {
-                      _isInitialLoad = false;
-                    });
-                  }
-                });
-
-                return const Center(
-                  child: PlayStoreImageLoading(
-                    size: 80.0,
-                    duration: Duration(milliseconds: 1000),
-                  ),
-                );
+              final readyForThisStatus = HelpfulEmptyState.isReadyForStatus(
+                isFetching: taskBloc.isFetching,
+                completedStatusId: taskBloc.lastCompletedFetchStatusId,
+                statusId: widget.statusId,
+              );
+              if (!readyForThisStatus || _isInitialLoad) {
+                if (_isInitialLoad && readyForThisStatus) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _isInitialLoad = false;
+                      });
+                    }
+                  });
+                }
+                return HelpfulEmptyState.loading();
               }
 
               // Показываем "Нет задач" только когда загрузка завершена
@@ -610,7 +612,7 @@ class TaskColumnState extends State<TaskColumn> {
                   ),
                 ).then((_) {
                   if (mounted) {
-                    context.read<TaskBloc>().add(FetchTasks(
+                    _taskBloc.add(FetchTasks(
                           widget.statusId,
                           projectId: widget.projectId,
                         ));
