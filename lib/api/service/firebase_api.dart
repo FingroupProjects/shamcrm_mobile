@@ -19,6 +19,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_details_screen.d
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -172,6 +173,9 @@ class FirebaseApi {
   factory FirebaseApi() => _instance;
   FirebaseApi._internal();
 
+  static const MethodChannel _pushChannel =
+      MethodChannel('com.softtech.crm_task_manager/widget');
+
   final _firebaseMessaging = FirebaseMessaging.instance;
   final ApiService _apiService = ApiService();
   RemoteMessage? _initialMessage;
@@ -210,7 +214,14 @@ class FirebaseApi {
         sound: true,
       );
 
-      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+      await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+          settings.authorizationStatus != AuthorizationStatus.provisional) {
         debugPrint('User declined or has not accepted notification permission');
         return;
       }
@@ -359,6 +370,7 @@ class FirebaseApi {
           return;
         }
         _printCustomData(message);
+        unawaited(_showForegroundPushNotification(message));
       });
     } catch (e) {
       debugPrint('Ошибка инициализации push уведомлений: $e');
@@ -367,6 +379,55 @@ class FirebaseApi {
 
   RemoteMessage? getInitialMessage() {
     return _initialMessage;
+  }
+
+  Future<void> _showForegroundPushNotification(RemoteMessage message) async {
+    if (_isIncomingCallPushData(message.data) ||
+        _isIncomingCallTerminationPushData(message.data)) {
+      return;
+    }
+
+    final type = message.data['type']?.toString();
+    // Android chat already posts a native heads-up from ChatQuickReplyManager.
+    if (Platform.isAndroid &&
+        (type == 'message' || type == 'chat_message' || type == 'new_message')) {
+      return;
+    }
+
+    final title = (message.notification?.title ??
+            message.data['title'] ??
+            message.data['sender_name'] ??
+            'shamCRM')
+        .toString()
+        .trim();
+    final body = (message.notification?.body ??
+            message.data['body'] ??
+            message.data['message_text'] ??
+            message.data['message'] ??
+            '')
+        .toString()
+        .trim();
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    // iOS notification-payload messages are presented by the system once
+    // foreground presentation options / willPresent allow banners.
+    if (Platform.isIOS && message.notification != null) {
+      return;
+    }
+
+    try {
+      await _pushChannel.invokeMethod<void>('showForegroundPush', <String, dynamic>{
+        'title': title.isEmpty ? 'shamCRM' : title,
+        'body': body,
+        'type': type,
+        'id': message.data['id']?.toString() ??
+            message.data['chat_id']?.toString(),
+      });
+    } catch (error) {
+      debugPrint('FirebaseApi: failed to show foreground push: $error');
+    }
   }
 
   void _printCustomData(RemoteMessage? message) {

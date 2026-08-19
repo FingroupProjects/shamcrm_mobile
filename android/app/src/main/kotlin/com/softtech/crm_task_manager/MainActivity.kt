@@ -200,6 +200,20 @@ class MainActivity : FlutterFragmentActivity() {
                     clearPendingNavigation()
                     result.success(pending)
                 }
+                "showForegroundPush" -> {
+                    val title = call.argument<String>("title")
+                    val body = call.argument<String>("body")
+                    val type = call.argument<String>("type")
+                    val id = call.argument<String>("id")
+                    CrmPushNotificationManager.show(
+                        this,
+                        title = title,
+                        body = body,
+                        type = type,
+                        id = id,
+                    )
+                    result.success(true)
+                }
                 "shareExportFile" -> {
                     val path = call.argument<String>("path")
                     val title = call.argument<String>("title")

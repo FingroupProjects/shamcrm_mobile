@@ -1,6 +1,7 @@
 import Flutter
 import Network
 import UIKit
+import UserNotifications
 import WidgetKit
 
 @main
@@ -78,6 +79,8 @@ import WidgetKit
                 self.handleSyncLanguage(call: call, result: result)
             case "getPendingNavigation":
                 self.handleGetPendingNavigation(result: result)
+            case "showForegroundPush":
+                self.handleShowForegroundPush(call: call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -173,6 +176,71 @@ import WidgetKit
         defaults.set(languageCode, forKey: "app_language")
         WidgetCenter.shared.reloadAllTimelines()
         result(true)
+    }
+
+    private func handleShowForegroundPush(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any] else {
+            result(false)
+            return
+        }
+
+        let title = (args["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = (args["body"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let body, !body.isEmpty else {
+            result(false)
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = (title?.isEmpty == false ? title! : "shamCRM")
+        content.body = body
+        content.sound = .default
+        if let type = args["type"] as? String, !type.isEmpty {
+            content.userInfo["type"] = type
+        }
+        if let id = args["id"] as? String, !id.isEmpty {
+            content.userInfo["id"] = id
+        }
+
+        let request = UNNotificationRequest(
+            identifier: "foreground-\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request) { error in
+            result(error == nil)
+        }
+    }
+
+    private func firstString(from userInfo: [AnyHashable: Any], keys: [String]) -> String? {
+        for key in keys {
+            if let value = userInfo[key] as? String {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty, trimmed.lowercased() != "null" {
+                    return trimmed
+                }
+            }
+        }
+        return nil
+    }
+
+    override func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        let type = firstString(from: notification.request.content.userInfo, keys: ["type", "event"])?
+            .lowercased()
+        if type == "incoming_call" || type == "call_start" || type == "sip_incoming_call" {
+            completionHandler([])
+            return
+        }
+
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .list, .sound, .badge])
+        } else {
+            completionHandler([.alert, .sound, .badge])
+        }
     }
 
     override func userNotificationCenter(
