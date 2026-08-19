@@ -13,7 +13,12 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
-        await AppLogoutService.logoutAndReset(context: context);
+        await AppLogoutService.logoutAndReset(
+          context: context,
+          restartApp: false,
+          navigateToAuth: false,
+          exitApp: true,
+        );
       },
       child: _buildProfileOption(
         context: context,

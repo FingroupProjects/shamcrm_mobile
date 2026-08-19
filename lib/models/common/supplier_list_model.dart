@@ -16,9 +16,11 @@ class SupplierData {
   factory SupplierData.fromJson(Map<String, dynamic> json) => SupplierData(
     id: json["id"],
     name: json['name'] is String ? json['name'] : 'Без имени',
-    currencyId: json['currency_id'],
-    currency: json['currency'] != null
-        ? SupplierListCurrency.fromJson(json['currency'])
+    currencyId: json['currency_id'] is int
+        ? json['currency_id'] as int
+        : int.tryParse('${json['currency_id'] ?? ''}'),
+    currency: json['currency'] is Map<String, dynamic>
+        ? SupplierListCurrency.fromJson(json['currency'] as Map<String, dynamic>)
         : null,
   );
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/storage/secure_storage_service.dart';
+import 'package:crm_task_manager/core/platform/app_platform.dart';
 import 'package:crm_task_manager/services/notification_cache.dart';
 import 'package:crm_task_manager/offline/core/offline_runtime.dart';
 import 'package:crm_task_manager/page_2/order/order_cache.dart';
@@ -13,7 +14,9 @@ import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:restart_app/restart_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,14 +32,24 @@ class AppLogoutService {
     'app_palette_seed_color_v1',
   };
 
+  static bool _isBusy = false;
+
   static Future<void> logoutAndReset({
     BuildContext? context,
     bool restartApp = true,
     bool navigateToAuth = true,
     bool notifyServer = true,
+    bool exitApp = false,
   }) async {
+    if (_isBusy) return;
+    _isBusy = true;
+
     final apiService = ApiService();
     final authService = AuthService();
+
+    if (exitApp && context != null && context.mounted) {
+      _showExitOverlay(context);
+    }
 
     try {
       await SipService().clearSavedCredentials(
@@ -80,6 +93,7 @@ class AppLogoutService {
           ),
       ]);
 
+      ApiService.clearAnalyticsFilters();
       ApiService.clearAnalyticsResponseCache();
 
       final prefs = await SharedPreferences.getInstance();
@@ -110,11 +124,19 @@ class AppLogoutService {
         ..clearLiveImages();
       await _clearDownloadedFileCache();
       await _clearTemporaryFiles();
+      await _clearApplicationCache();
     } catch (e) {
       debugPrint('AppLogoutService: local cleanup error: $e');
     }
 
-    if (restartApp) {
+    if (exitApp) {
+      await _terminateProcess();
+      return;
+    }
+
+    _isBusy = false;
+
+    if (restartApp && !AppPlatform.isDesktop) {
       Restart.restartApp();
       return;
     }
@@ -161,6 +183,55 @@ class AppLogoutService {
       }
     } catch (error) {
       debugPrint('AppLogoutService: temporary directory cleanup error: $error');
+    }
+  }
+
+  static void _showExitOverlay(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _clearApplicationCache() async {
+    try {
+      final cacheDirectory = await getApplicationCacheDirectory();
+      if (!await cacheDirectory.exists()) return;
+      for (final entity in cacheDirectory.listSync()) {
+        try {
+          if (entity is Directory) {
+            await entity.delete(recursive: true);
+          } else if (entity is File) {
+            await entity.delete();
+          }
+        } catch (error) {
+          debugPrint(
+            'AppLogoutService: cache item cleanup error '
+            '(${entity.path}): $error',
+          );
+        }
+      }
+    } catch (error) {
+      debugPrint('AppLogoutService: application cache cleanup error: $error');
+    }
+  }
+
+  static Future<void> _terminateProcess() async {
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    try {
+      await SystemNavigator.pop();
+    } catch (error) {
+      debugPrint('AppLogoutService: SystemNavigator.pop error: $error');
+    }
+    if (!kIsWeb) {
+      exit(0);
     }
   }
 

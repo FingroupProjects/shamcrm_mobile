@@ -413,9 +413,16 @@ extension ApiHttpX on ApiService {
     String path, {
     required String debugLabel,
     required String fallbackMessage,
+    bool bypassCache = false,
+    bool applyAnalyticsFilters = true,
   }) async {
     try {
-      final response = await _analyticsRequest(path);
+      final response = applyAnalyticsFilters
+          ? await _analyticsRequest(
+              path,
+              bypassCache: bypassCache,
+            )
+          : await _getRequest(path);
 
       if (response.statusCode != 200) {
         _throwAnalyticsChartApiError(response, fallbackMessage);

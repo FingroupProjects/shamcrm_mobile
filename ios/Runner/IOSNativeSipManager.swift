@@ -899,9 +899,16 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     func applicationDidEnterBackground() {
         updateAppVisibility(isForeground: false)
         beginBackgroundTransitionTask(reason: "app-background")
+        // Keep Linphone iterating while iOS still gives us background time.
+        // Immediate enter_background + push-allowed account stops UDP INVITE
+        // processing, so a just-minimized app gets neither CallKit nor sound
+        // unless a VoIP push arrives. Enter Linphone background only when the
+        // background task is about to expire.
         if let core {
-            linphone_core_enter_background(core)
-            appendDiagnosticLog("linphone_enter_background", [:])
+            linphone_core_enter_foreground(core)
+            appendDiagnosticLog("linphone_keep_foreground", [
+                "reason": "app-background-task",
+            ])
         }
         if snapshot.persistentEnabled {
             _ = restoreRegistrationIfNeeded(reason: "app-did-enter-background", emitRegisteringEvent: false)
@@ -1126,9 +1133,11 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         core = createdCore
         linphone_core_set_user_data(createdCore, Unmanaged.passUnretained(self).toOpaque())
         linphone_core_enable_auto_iterate(createdCore, 1)
-        // Incoming alerting is owned by CallKit. Local Linphone ringback must not
-        // mask TTL/Sipuni early-media RTP (busy IVR / network tone on 183).
-        linphone_core_enable_native_ringing(createdCore, 0)
+        // CallKit owns the system incoming UI, but a just-minimized app can
+        // receive a SIP INVITE before PushKit/CallKit. Native ringing is the
+        // fallback so the user still hears the call. Outgoing ringback stays
+        // off so TTL/Sipuni 183 early-media is not masked.
+        linphone_core_enable_native_ringing(createdCore, 1)
         linphone_core_set_ringback(createdCore, nil)
         linphone_core_set_ring_during_incoming_early_media(createdCore, 0)
 
@@ -2849,10 +2858,23 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         guard backgroundTaskIdentifier == .invalid else { return }
 
         backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "IOSNativeSipManager") { [weak self] in
-            self?.appendDiagnosticLog("background_task_expired", [
+            guard let self else { return }
+            self.appendDiagnosticLog("background_task_expired", [
                 "reason": reason,
             ])
-            self?.endBackgroundTransitionTask(reason: "expired")
+            let callState = self.snapshot.callState
+            let keepCoreActive = callState == "incoming" ||
+                callState == "calling" ||
+                callState == "ringing" ||
+                callState == "early_media" ||
+                callState == "in_call"
+            if let core = self.core, !keepCoreActive {
+                linphone_core_enter_background(core)
+                self.appendDiagnosticLog("linphone_enter_background", [
+                    "reason": "background-task-expired",
+                ])
+            }
+            self.endBackgroundTransitionTask(reason: "expired")
         }
 
         appendDiagnosticLog("background_task_started", [
@@ -2959,8 +2981,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         } else {
             beginBackgroundTransitionTask(reason: "voip-push")
             if let core {
-                linphone_core_enter_background(core)
-                appendDiagnosticLog("linphone_enter_background", [
+                // PushKit woke us to receive the matching INVITE. Background
+                // mode would stop SIP iterate and drop the call.
+                linphone_core_enter_foreground(core)
+                appendDiagnosticLog("linphone_enter_foreground", [
                     "reason": "voip-push",
                 ])
             }
@@ -3199,6 +3223,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 )
             } else {
                 self.callKitReportedForCurrentIncoming = true
+                if let core = self.core {
+                    linphone_core_enable_native_ringing(core, 0)
+                }
                 self.appendDiagnosticLog("callkit_reported", [
                     "call_uuid": payload.uuid.uuidString,
                     "call_id": payload.callId ?? "",
@@ -3373,6 +3400,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private func handleCallEnded(reason: CXCallEndedReason, callUUID: UUID, remoteIdentity: String?) {
         cancelIncomingInviteTimeout()
         callKitReportedForCurrentIncoming = false
+        if let core {
+            linphone_core_enable_native_ringing(core, 1)
+        }
         let endedCallId = snapshot.callId
         appendDiagnosticLog("call_end_reason", [
             "reason": endedReasonString(for: reason),
@@ -3947,6 +3977,9 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
     func callKitManagerDidReset(_ manager: IOSCallKitManager) {
         cancelIncomingInviteTimeout()
         callKitReportedForCurrentIncoming = false
+        if let core {
+            linphone_core_enable_native_ringing(core, 1)
+        }
         currentCall = nil
         pendingIncomingPayload = nil
         deferredAction = nil

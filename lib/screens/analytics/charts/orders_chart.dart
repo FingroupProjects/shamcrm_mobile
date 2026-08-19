@@ -7,6 +7,7 @@ import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.da
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/models/online_store_orders_model.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/screens/analytics/details/online_store_orders_details_screen.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class OrdersChart extends StatefulWidget {
@@ -102,87 +103,7 @@ class _OrdersChartState extends State<OrdersChart> {
   }
 
   void _showDetails() {
-    if (_data == null || _data!.chartData.isEmpty) return;
-    final colors = context.appColors;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: colors.surfacePrimary,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _title,
-                      style: TextStyle(
-                        fontSize: ResponsiveHelper(context).titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                        fontFamily: 'Golos',
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: colors.iconSecondary),
-                  ),
-                ],
-              ),
-              SizedBox(height: ResponsiveHelper(context).smallSpacing),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: _data!.chartData.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final point = _data!.chartData[index];
-                    final month = analyticsMonthShort(context, point.month);
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        month,
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).bodyFontSize,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${analyticsText(context, 'successful', fallback: 'Successful')}: ${point.successfulOrders} • ${analyticsText(context, 'cancelled', fallback: 'Cancelled')}: ${point.canceledOrders}',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).smallFontSize,
-                          color: colors.textSecondary,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                      trailing: Text(
-                        '${point.totalOrders}',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper(context).bodyFontSize,
-                          fontWeight: FontWeight.w600,
-                          color: colors.info,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    OnlineStoreOrdersDetailsScreen.open(context, title: _title);
   }
 
   @override
