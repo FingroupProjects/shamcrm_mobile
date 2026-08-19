@@ -1,6 +1,38 @@
 import 'package:crm_task_manager/models/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/supplier_list_model.dart';
+import 'package:flutter/foundation.dart';
+
+T? _tryParseObject<T>(
+  dynamic value,
+  T Function(Map<String, dynamic> json) parser,
+) {
+  if (value is! Map<String, dynamic>) return null;
+  try {
+    return parser(value);
+  } catch (e) {
+    debugPrint('DashboardTopPart: failed to parse $T: $e');
+    return null;
+  }
+}
+
+List<T> _tryParseList<T>(
+  dynamic value,
+  T Function(Map<String, dynamic> json) parser,
+) {
+  if (value is! List) return [];
+  final items = <T>[];
+  for (final item in value) {
+    if (item is Map<String, dynamic>) {
+      try {
+        items.add(parser(item));
+      } catch (e) {
+        debugPrint('DashboardTopPart: skipped invalid $T item: $e');
+      }
+    }
+  }
+  return items;
+}
 
 class DashboardTopPart {
   final Result? result;
@@ -10,8 +42,10 @@ class DashboardTopPart {
 
   factory DashboardTopPart.fromJson(Map<String, dynamic> json) {
     return DashboardTopPart(
-      result: json['result'] != null ? Result.fromJson(json['result']) : null,
-      errors: json['errors'] as String?,
+      result: json['result'] is Map<String, dynamic>
+          ? Result.fromJson(json['result'] as Map<String, dynamic>)
+          : null,
+      errors: json['errors'] is String ? json['errors'] as String : null,
     );
   }
 
@@ -38,16 +72,12 @@ class Result {
 
   factory Result.fromJson(Map<String, dynamic> json) {
     return Result(
-      cashBalance: json['cash_balance'] != null
-          ? CashBalance.fromJson(json['cash_balance'])
-          : null,
-      ourDebts: json['our_debts'] != null
-          ? OurDebts.fromJson(json['our_debts'])
-          : null,
-      debtsToUs: json['debts_to_us'] != null
-          ? DebtsToUs.fromJson(json['debts_to_us'])
-          : null,
-      filters: json['filters'] as List<dynamic>? ?? [], // Safe cast, default to empty list
+      cashBalance: _tryParseObject(json['cash_balance'], CashBalance.fromJson),
+      ourDebts: _tryParseObject(json['our_debts'], OurDebts.fromJson),
+      debtsToUs: _tryParseObject(json['debts_to_us'], DebtsToUs.fromJson),
+      filters: json['filters'] is List
+          ? List<dynamic>.from(json['filters'] as List)
+          : [],
     );
   }
 
@@ -90,17 +120,12 @@ class CashBalance {
       previousBalance: (json['previous_balance'] as num?)?.toDouble() ?? 0.0,
       percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
       isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      cashRegisters: (json['cash_registers'] as List<dynamic>?)
-          ?.map((v) => CashRegisterData.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
-      movements: (json['movements'] as List<dynamic>?)
-          ?.map((v) => IncomingDocument.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
+      currency: json['currency'] is String ? json['currency'] as String : null,
+      cashRegisters:
+          _tryParseList(json['cash_registers'], CashRegisterData.fromJson),
+      movements: _tryParseList(json['movements'], IncomingDocument.fromJson),
       comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      period: _tryParseObject(json['period'], Period.fromJson),
     );
   }
 
@@ -189,13 +214,11 @@ class OurDebts {
       previousDebts: (json['previous_debts'] as num?)?.toDouble() ?? 0.0,
       percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
       isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      suppliersList: (json['suppliers_list'] as List<dynamic>?)
-          ?.map((v) => SupplierData.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
+      currency: json['currency'] is String ? json['currency'] as String : null,
+      suppliersList:
+          _tryParseList(json['suppliers_list'], SupplierData.fromJson),
       comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      period: _tryParseObject(json['period'], Period.fromJson),
     );
   }
 
@@ -241,13 +264,10 @@ class DebtsToUs {
       (json['previous_debts_to_us'] as num?)?.toDouble() ?? 0.0,
       percentageChange: (json['percentage_change'] as num?)?.toDouble() ?? 0.0,
       isPositiveChange: json['is_positive_change'] as bool? ?? false,
-      currency: json['currency'] as String?,
-      debtorsList: (json['debtors_list'] as List<dynamic>?)
-          ?.map((v) => Debtors.fromJson(v as Map<String, dynamic>))
-          .toList() ??
-          [],
+      currency: json['currency'] is String ? json['currency'] as String : null,
+      debtorsList: _tryParseList(json['debtors_list'], Debtors.fromJson),
       comparisonPeriod: json['comparison_period'] as String? ?? '',
-      period: json['period'] != null ? Period.fromJson(json['period']) : null,
+      period: _tryParseObject(json['period'], Period.fromJson),
     );
   }
 

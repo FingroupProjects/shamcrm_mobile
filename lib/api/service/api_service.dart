@@ -1401,9 +1401,16 @@ class ApiService {
     String path, {
     required String debugLabel,
     required String fallbackMessage,
+    bool bypassCache = false,
+    bool applyAnalyticsFilters = true,
   }) async {
     try {
-      final response = await _analyticsRequest(path);
+      final response = applyAnalyticsFilters
+          ? await _analyticsRequest(
+              path,
+              bypassCache: bypassCache,
+            )
+          : await _getRequest(path);
 
       if (response.statusCode != 200) {
         _throwAnalyticsChartApiError(response, fallbackMessage);
@@ -8686,6 +8693,57 @@ class ApiService {
       fallbackMessage: 'Ошибка загрузки заказов интернет-магазина!',
     );
     return OnlineStoreOrdersResponse.fromJson(jsonData);
+  }
+
+  /// Детализация заказов интернет-магазина (V2)
+  /// Endpoint: /api/v2/dashboard/online-store-orders-more-details
+  Future<OnlineStoreOrdersMoreDetailsResponse>
+      getOnlineStoreOrdersMoreDetailsV2({
+    List<String>? managerIds,
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    var path = await _appendQueryParams(
+      '/v2/dashboard/online-store-orders-more-details',
+    );
+
+    final extraParams = <String>[];
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      extraParams.add('date_from=${Uri.encodeComponent(dateFrom)}');
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      extraParams.add('date_to=${Uri.encodeComponent(dateTo)}');
+    }
+
+    final selectedManagers = managerIds
+            ?.map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
+    for (final id in selectedManagers) {
+      extraParams.add('managers[]=${Uri.encodeComponent(id)}');
+    }
+
+    if (extraParams.isNotEmpty) {
+      final query = extraParams.join('&');
+      path = path.contains('?') ? '$path&$query' : '$path?$query';
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        'ApiService: getOnlineStoreOrdersMoreDetailsV2 - Generated path: $path',
+      );
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getOnlineStoreOrdersMoreDetailsV2',
+      fallbackMessage: 'Ошибка загрузки детализации заказов интернет-магазина!',
+      bypassCache: true,
+      applyAnalyticsFilters: false,
+    );
+    return OnlineStoreOrdersMoreDetailsResponse.fromJson(jsonData);
   }
 
   /// Выполненные задачи (график)

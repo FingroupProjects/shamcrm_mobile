@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
@@ -660,8 +661,13 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _onExitPressed() {
-    SystemNavigator.pop();
+  Future<void> _onExitPressed() async {
+    await AppLogoutService.logoutAndReset(
+      context: context,
+      restartApp: false,
+      navigateToAuth: false,
+      exitApp: true,
+    );
   }
 
   // ==========================================================================

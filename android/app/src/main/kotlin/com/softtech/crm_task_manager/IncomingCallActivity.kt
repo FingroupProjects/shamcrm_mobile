@@ -111,10 +111,27 @@ class IncomingCallActivity : Activity() {
         NativeSipBridge.addObserver(bridgeObserver)
         val snapshot = NativeSipBridge.getStateSnapshot()
         Log.d(TAG, "Initial bridge snapshot in IncomingCallActivity: $snapshot")
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "incoming_activity_created",
+            details = hashMapOf(
+                "caller" to callerName,
+                "callState" to snapshot["callState"],
+            ),
+        )
         val callState = snapshot["callState"]?.toString()
         if (callState != "incoming") {
-            Log.d(TAG, "IncomingCallActivity opened without incoming call, closing. state=$callState")
-            requestClose("stale-launch-$callState")
+            window.decorView.postDelayed({
+                if (closingRequested || isFinishing) return@postDelayed
+                val delayedState = NativeSipBridge.getStateSnapshot()["callState"]?.toString()
+                if (delayedState != "incoming") {
+                    Log.d(TAG, "IncomingCallActivity opened without incoming call, closing. state=$delayedState")
+                    NativeSipBridge.recordDiagnosticEvent(
+                        event = "incoming_activity_stale_close",
+                        details = hashMapOf("callState" to delayedState),
+                    )
+                    requestClose("stale-launch-$delayedState")
+                }
+            }, 400)
         }
     }
 
@@ -179,6 +196,10 @@ class IncomingCallActivity : Activity() {
         }
         closingRequested = true
         Log.d(TAG, "Closing IncomingCallActivity, reason=$reason")
+        NativeSipBridge.recordDiagnosticEvent(
+            event = "incoming_activity_closed",
+            details = hashMapOf("reason" to reason),
+        )
         finishAndRemoveTask()
     }
 }

@@ -124,8 +124,9 @@ class IncomingDocument extends Equatable {
           ? WareHouse.fromJson(recipientStorageJson)
           : null,
       comment: json['comment'],
-      currency:
-          json['currency'] != null ? Currency.fromJson(json['currency']) : null,
+      currency: json['currency'] is Map<String, dynamic>
+          ? Currency.fromJson(json['currency'] as Map<String, dynamic>)
+          : null,
       exchangeRate: json['exchangeRate'] != null
           ? ExchangeRate.fromJson(json['exchangeRate'])
           : (json['exchange_rate'] != null

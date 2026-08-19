@@ -190,11 +190,6 @@ class NativeSipForegroundService : Service() {
                 return
             }
 
-            if (incomingUiRetryCount >= 2) {
-                Log.d(TAG, "Incoming UI watchdog reached retry limit, keep waiting on current UI path")
-                return
-            }
-
             incomingUiRetryCount += 1
             val incomingEvent = hashMapOf<String, Any?>(
                 "type" to "call",
@@ -202,7 +197,19 @@ class NativeSipForegroundService : Service() {
                 "remoteIdentity" to snapshot["remoteIdentity"],
             )
             Log.d(TAG, "Incoming UI watchdog retry=$incomingUiRetryCount: relaunch IncomingCallActivity")
-            launchIncomingCallUiFallback(incomingEvent)
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "incoming_ui_watchdog_retry",
+                details = hashMapOf(
+                    "retry" to incomingUiRetryCount,
+                    "notificationsEnabled" to notificationManager.areNotificationsEnabled(),
+                    "fullScreenAllowed" to canUseFullScreenIntent(),
+                ),
+            )
+            launchIncomingCallActivity(incomingEvent, "watchdog-$incomingUiRetryCount")
+            if (incomingUiRetryCount >= 2) {
+                openFlutterCallUi()
+                return
+            }
             maintenanceHandler.postDelayed(this, 900L)
         }
     }
@@ -702,21 +709,9 @@ class NativeSipForegroundService : Service() {
     }
 
     private fun incomingCallActivityPendingIntent(event: HashMap<String, Any?>): PendingIntent {
-        val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
-        val intent = Intent(this, IncomingCallActivity::class.java).apply {
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
-                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
-            )
-            putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
-        }
-
         return createActivityPendingIntent(
             requestCode = 1003,
-            intent = intent,
+            intent = incomingCallActivityIntent(event),
         )
     }
 
@@ -896,9 +891,53 @@ class NativeSipForegroundService : Service() {
                 "remoteIdentity" to event["remoteIdentity"],
                 "deviceLocked" to isDeviceLocked(),
                 "fullScreenAllowed" to canUseFullScreenIntent(),
+                "notificationsEnabled" to notificationManager.areNotificationsEnabled(),
             ),
         )
-        launchIncomingCallUiFallback(event)
+        launchIncomingCallActivity(event, source)
+    }
+
+    private fun incomingCallActivityIntent(event: HashMap<String, Any?>): Intent {
+        val remoteIdentity = formatIdentity(event["remoteIdentity"]?.toString())
+        return Intent(this, IncomingCallActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+            )
+            putExtra(IncomingCallActivity.EXTRA_CALLER_NAME, remoteIdentity)
+        }
+    }
+
+    private fun launchIncomingCallActivity(event: HashMap<String, Any?>, source: String) {
+        val intent = incomingCallActivityIntent(event)
+        try {
+            // phoneCall foreground service may start the incoming-call activity
+            // even when POST_NOTIFICATIONS is denied and full-screen intent
+            // never fires. PendingIntent.send() is silently dropped on many OEMs.
+            startActivity(intent)
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "incoming_activity_start_sent",
+                details = hashMapOf(
+                    "source" to source,
+                    "remoteIdentity" to intent.getStringExtra(IncomingCallActivity.EXTRA_CALLER_NAME),
+                    "notificationsEnabled" to notificationManager.areNotificationsEnabled(),
+                ),
+            )
+            Log.d(TAG, "IncomingCallActivity startActivity sent[$source]")
+        } catch (error: Throwable) {
+            Log.e(TAG, "IncomingCallActivity startActivity failed[$source]: ${error.message}", error)
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "incoming_activity_start_failed",
+                details = hashMapOf(
+                    "source" to source,
+                    "error" to (error.message ?: error.javaClass.simpleName),
+                ),
+            )
+            launchIncomingCallUiFallback(event)
+        }
     }
 
     private fun launchIncomingCallUiFallback(event: HashMap<String, Any?>) {

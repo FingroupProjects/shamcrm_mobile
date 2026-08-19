@@ -493,25 +493,27 @@ class SpeedGaugePainter extends CustomPainter {
 
     canvas.drawArc(rect, startAngle, totalSweep, false, basePaint);
 
-    final normalizedSpeed = (speedHours / maxHours).clamp(0.0, 1.0);
+    final safeMaxHours = (maxHours.isFinite && maxHours > 0) ? maxHours : 10;
+    final safeSpeed =
+        (speedHours.isFinite && speedHours > 0) ? speedHours : 0.0;
+    final normalizedSpeed = (safeSpeed / safeMaxHours).clamp(0.0, 1.0);
     final sweepAngle = totalSweep * normalizedSpeed;
 
-    final progressPaint = Paint()
-      ..shader = SweepGradient(
-        startAngle: startAngle,
-        endAngle: startAngle + sweepAngle,
-        colors: [
-          successColor,
-          warningColor,
-          errorColor,
-        ],
-        stops: const [0.0, 0.6, 1.0],
-      ).createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
-    if (sweepAngle > 0) {
+    if (sweepAngle > 0.001) {
+      final progressPaint = Paint()
+        ..shader = SweepGradient(
+          startAngle: startAngle,
+          endAngle: startAngle + sweepAngle,
+          colors: [
+            successColor,
+            warningColor,
+            errorColor,
+          ],
+          stops: const [0.0, 0.6, 1.0],
+        ).createShader(rect)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14
+        ..strokeCap = StrokeCap.round;
       canvas.drawArc(rect, startAngle, sweepAngle, false, progressPaint);
       final endCapPaint = Paint()
         ..color = errorColor
