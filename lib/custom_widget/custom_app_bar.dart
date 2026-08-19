@@ -470,13 +470,20 @@ class _CustomAppBarState extends State<CustomAppBar>
     _firebaseMessageSubscription =
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Получено push-уведомление: ${message.data}');
-      if (message.data['type'] == 'message') {
-        // Проверяем что виджет еще mounted перед вызовом setState
-        if (mounted) {
-          setState(() {
-            _hasNewNotification = true;
-          });
-          prefs.setBool('hasNewNotification', true);
+      final type = message.data['type']?.toString();
+      if (type == 'incoming_call' ||
+          type == 'call_cancelled' ||
+          type == 'call_canceled' ||
+          type == 'call_ended' ||
+          type == 'call_end') {
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _hasNewNotification = true;
+        });
+        prefs.setBool('hasNewNotification', true);
+        if (type == 'message') {
           _playSound();
         }
       }
