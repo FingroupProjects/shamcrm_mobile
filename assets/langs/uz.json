@@ -2188,6 +2188,8 @@
   "image_load_error": "Rasmni yuklashda xatolik!",
   "cut": "Kesish",
   "paste": "Joylashtirish",
+  "clipboard": "Bufer",
+  "clipboard_empty": "Bufer bo'sh",
   "bold": "Qalin",
   "italic": "Kursiv",
   "strikethrough": "Ustidan chizilgan",

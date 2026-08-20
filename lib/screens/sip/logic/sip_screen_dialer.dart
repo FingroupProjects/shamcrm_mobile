@@ -115,51 +115,71 @@ extension _SipScreenDialerExtension on _SipScreenState {
     return true;
   }
 
-  Future<void> _showDialActions() async {
+  Future<void> _showDialActions([Offset? globalPosition]) async {
     if (_isDialActionsSheetVisible) return;
     _isDialActionsSheetVisible = true;
     final l10n = AppLocalizations.of(context)!;
-    final clipboardText = await _clipboardDialText();
-    if (!mounted) {
-      _isDialActionsSheetVisible = false;
-      return;
-    }
-
     try {
-      await showCupertinoModalPopup<void>(
-        context: context,
-        builder: (sheetContext) => CupertinoActionSheet(
-          actions: [
-            CupertinoActionSheetAction(
-              onPressed: () async {
-                Navigator.of(sheetContext).pop();
-                final pasted = await _pasteDial();
-                if (!pasted) {
-                  _showSipSnackBar(
-                    l10n.translate('clipboard_empty'),
-                    isError: true,
-                  );
-                }
-              },
-              child: Text(l10n.translate('paste')),
-            ),
-            CupertinoActionSheetAction(
-              onPressed: () async {
-                Navigator.of(sheetContext).pop();
-                await _showDialClipboardSheet(clipboardText);
-              },
-              child: Text(l10n.translate('clipboard')),
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(sheetContext).pop(),
-            child: Text(l10n.translate('cancel')),
-          ),
-        ),
-      );
+      final overlayBox =
+          Overlay.of(context).context.findRenderObject() as RenderBox?;
+      if (!mounted) return;
+
+      final tap = globalPosition ?? _dialHeaderMenuAnchor();
+      final selected = overlayBox == null
+          ? await _showDialPasteActionSheet()
+          : await showMenu<String>(
+              context: context,
+              position: RelativeRect.fromRect(
+                Rect.fromLTWH(tap.dx, tap.dy, 1, 1),
+                Offset.zero & overlayBox.size,
+              ),
+              items: [
+                PopupMenuItem<String>(
+                  value: 'paste',
+                  child: Text(l10n.translate('paste')),
+                ),
+              ],
+            );
+      if (!mounted || selected != 'paste') return;
+
+      final pasted = await _pasteDial();
+      if (!pasted) {
+        _showSipSnackBar(
+          l10n.translate('clipboard_empty'),
+          isError: true,
+        );
+      }
     } finally {
       _isDialActionsSheetVisible = false;
     }
+  }
+
+  Offset _dialHeaderMenuAnchor() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return const Offset(120, 180);
+    }
+    final topCenter = box.localToGlobal(Offset(box.size.width / 2, 72));
+    return topCenter;
+  }
+
+  Future<String?> _showDialPasteActionSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    return showCupertinoModalPopup<String>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(sheetContext).pop('paste'),
+            child: Text(l10n.translate('paste')),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(sheetContext).pop(),
+          child: Text(l10n.translate('cancel')),
+        ),
+      ),
+    );
   }
 
   Future<void> _showDialClipboardSheet(String clipboardText) async {
