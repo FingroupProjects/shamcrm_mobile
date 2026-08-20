@@ -26,6 +26,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/media_group_message
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/telegram_chat_app_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
@@ -59,8 +60,11 @@ import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/chat_file_send_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_media_preview_sheet.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
+import 'package:crm_task_manager/services/chat_media_download_manager.dart';
+import 'package:crm_task_manager/widgets/full_video_screen_viewer.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
@@ -150,6 +154,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   int get _pendingNewMessagesCount => _pendingScrollButtonMessageIds.length;
 
   bool get _shouldShowScrollToBottomButton => !_isNearBottom;
+
+  String get _headerChatName {
+    return ChatTitleResolver.clean(_cachedCompanionName) ??
+        ChatTitleResolver.clean(widget.chatItem.name) ??
+        '';
+  }
 
   bool get _canUseReactionsInCurrentChat {
     final isLeadWith24hRestriction =
@@ -1286,42 +1296,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
       final prefs = await SharedPreferences.getInstance();
       final myUserId = prefs.getString('userID') ?? '';
-
-      // Получаем данные чата
       final chatData = await widget.apiService.getChatById(widget.chatId);
-
-      // ✅ Определяем, является ли чат группой
       final isGroup = chatData.group != null;
+      final resolvedName = await ChatTitleResolver.resolve(
+        apiService: widget.apiService,
+        chat: chatData,
+        currentUserId: myUserId,
+        pushFallback: widget.chatItem.name,
+      );
+
+      if (!mounted) return;
       setState(() {
         _isGroupChat = isGroup;
-      });
-      debugPrint(
-          '=================-=== 📊 Чат является группой: $_isGroupChat');
-
-      // Ищем собеседника в chatUsers
-      if (chatData.chatUsers.isNotEmpty) {
-        for (var chatUser in chatData.chatUsers) {
-          final participantId = chatUser.participant.id.toString();
-
-          if (participantId != myUserId) {
-            // Это собеседник!
-            final participantName = chatUser.participant.name;
-
-            // Используем имя как есть (в модели нет lastname)
-            String fullName = participantName;
-
-            setState(() {
-              _cachedCompanionName = fullName;
-            });
-
-            debugPrint('✅ Имя собеседника закэшировано: $_cachedCompanionName');
-            return;
-          }
+        if (!ChatTitleResolver.isPlaceholder(resolvedName)) {
+          _cachedCompanionName = resolvedName;
         }
-      }
-
-      debugPrint(
-          '=================-=== ⚠️ Имя участника не найдено в chatUsers');
+      });
+      debugPrint('✅ Имя собеседника закэшировано: $_cachedCompanionName');
     } catch (e) {
       debugPrint(
           '=================-=== ❌ Ошибка кэширования имени собеседника: $e');
@@ -2145,8 +2136,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           appBar: TelegramChatAppBar(
             name: isSupportChat
                 ? AppLocalizations.of(context)!.translate('support_chat_name')
-                : (widget.chatItem.name.isNotEmpty
-                    ? widget.chatItem.name
+                : (_headerChatName.isNotEmpty
+                    ? _headerChatName
                     : AppLocalizations.of(context)!.translate('no_name')),
             avatar: widget.chatItem.avatar,
             isGroupChat: _isGroupChat == true,
@@ -2747,10 +2738,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                                       : null,
                               isGroupChat: _isGroupChat,
                               chatChannelName: channelName,
-                              companionName: _cachedCompanionName ??
-                                  (widget.chatItem.name.isNotEmpty
-                                      ? widget.chatItem.name
-                                      : null),
+                              companionName: _headerChatName.isNotEmpty
+                                  ? _headerChatName
+                                  : null,
                               canSendMessageInChat: widget.canSendMessage,
                               onDeliveryErrorTap: message.deliveryStatus ==
                                       MessageDeliveryStatus.failed
@@ -3340,13 +3330,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
         final myName = await _getMyDisplayName();
         final fallbackCompanionName =
-            (_cachedCompanionName != null && _cachedCompanionName!.isNotEmpty)
-                ? _cachedCompanionName!
-                : (_isGroupChat == true
-                    ? ''
-                    : (widget.chatItem.name.isNotEmpty
-                        ? widget.chatItem.name
-                        : ''));
+            _isGroupChat == true ? '' : _headerChatName;
 
         final senderDisplayName = isMyMessageResult
             ? (senderName ?? myName)
@@ -4669,12 +4653,31 @@ class MessageItemWidget extends StatelessWidget {
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
           onTap: (path) async {
-            if (message.filePath != null && message.filePath!.isNotEmpty) {
-              try {
-                await apiServiceDownload.downloadAndOpenFile(message.filePath!);
-              } catch (e) {
-                debugPrint('Error downloading file: $e');
-              }
+            if (message.filePath == null || message.filePath!.isEmpty) {
+              return;
+            }
+            final looksLikeVideo = Message.resolveIncomingType(
+                  'file',
+                  message.text,
+                  filePath: message.filePath,
+                ) ==
+                'video';
+            if (looksLikeVideo) {
+              final source = resolveFileUrl(message.filePath, baseUrl);
+              final playable = source.isNotEmpty ? source : message.filePath!;
+              await openFullVideoScreenViewer(
+                context,
+                videoPath: playable,
+                fileName: message.text,
+                time: time(message.createMessateTime),
+                senderName: message.isMyMessage ? '' : message.senderName,
+              );
+              return;
+            }
+            try {
+              await apiServiceDownload.downloadAndOpenFile(message.filePath!);
+            } catch (e) {
+              debugPrint('Error downloading file: $e');
             }
           },
           senderName: message.senderName,
@@ -4896,6 +4899,21 @@ class MessageItemWidget extends StatelessWidget {
       ),
     );
 
+    if (_canSaveMessage(message)) {
+      final isFile = message.type == 'file' || message.type == 'document';
+      menuItems.add(
+        ContextMenuItem(
+          iconData: Icons.download_rounded,
+          text: AppLocalizations.of(context)!.translate(
+            isFile ? 'save' : 'save_to_gallery',
+          ),
+          onTap: () {
+            _saveMessageToDevice(message);
+          },
+        ),
+      );
+    }
+
     // 3. Закрепить/Открепить
     menuItems.add(
       ContextMenuItem(
@@ -4965,6 +4983,77 @@ class MessageItemWidget extends StatelessWidget {
         onMenuStateChanged?.call(false);
       },
     );
+  }
+
+  bool _canSaveMessage(Message message) {
+    return message.type == 'image' ||
+        message.type == 'video' ||
+        message.type == 'media_group' ||
+        message.type == 'file' ||
+        message.type == 'document';
+  }
+
+  String? _resolveSaveSource(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('/') || path.startsWith('file:')) {
+      return path.replaceFirst('file://', '');
+    }
+    final url = resolveFileUrl(path, baseUrl);
+    return url.isEmpty ? null : url;
+  }
+
+  ChatDownloadKind _kindForMessage(Message message) {
+    if (message.type == 'video') return ChatDownloadKind.video;
+    if (message.type == 'image') return ChatDownloadKind.image;
+    return ChatDownloadKind.file;
+  }
+
+  void _saveMessageToDevice(Message message) {
+    final targets = <({String url, String name, ChatDownloadKind kind})>[];
+
+    if (message.type == 'media_group' && message.mediaItems.isNotEmpty) {
+      for (final item in message.mediaItems) {
+        final url = _resolveSaveSource(item.path);
+        if (url == null) continue;
+        targets.add((
+          url: url,
+          name: item.name,
+          kind: item.isVideo ? ChatDownloadKind.video : ChatDownloadKind.image,
+        ));
+      }
+    } else {
+      final messages =
+          mediaGroupMessages.isNotEmpty ? mediaGroupMessages : [message];
+      for (final item in messages) {
+        final url = _resolveSaveSource(item.filePath);
+        if (url == null) continue;
+        targets.add((
+          url: url,
+          name: item.text,
+          kind: _kindForMessage(item),
+        ));
+      }
+    }
+
+    if (targets.isEmpty) {
+      final fallback = _resolveSaveSource(message.filePath);
+      if (fallback != null) {
+        targets.add((
+          url: fallback,
+          name: message.text,
+          kind: _kindForMessage(message),
+        ));
+      }
+    }
+
+    for (final target in targets) {
+      ChatMediaDownloadManager.instance.start(
+        sourceUrl: target.url,
+        fileName: target.name,
+        kind: target.kind,
+        alias: message.filePath,
+      );
+    }
   }
 
   void _copyMessageToClipboard(BuildContext context, String messageText) {

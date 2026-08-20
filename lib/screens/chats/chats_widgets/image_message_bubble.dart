@@ -11,7 +11,9 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dar
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/services/chat_media_download_manager.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/widgets/chat_download_progress_overlay.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -172,13 +174,33 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: fullUrl != null
-                          ? _ShimmerImageLoader(
-                              url: fullUrl,
-                              width: 200,
-                              height: 200,
-                            )
-                          : _buildUrlPending(context),
+                      child: SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            fullUrl != null
+                                ? _ShimmerImageLoader(
+                                    url: fullUrl,
+                                    width: 200,
+                                    height: 200,
+                                  )
+                                : _buildUrlPending(context),
+                            ListenableBuilder(
+                              listenable: ChatMediaDownloadManager.instance,
+                              builder: (context, _) {
+                                final task = ChatMediaDownloadManager.instance
+                                    .taskFor(fullUrl ?? widget.filePath);
+                                if (task == null || !task.showOverlay) {
+                                  return const SizedBox.shrink();
+                                }
+                                return ChatDownloadProgressOverlay(task: task);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   if (widget.reactions.isNotEmpty)

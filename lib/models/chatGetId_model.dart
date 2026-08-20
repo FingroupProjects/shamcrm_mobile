@@ -49,7 +49,10 @@ class ChatsGetId {
 
       for (var i = 0; i < chatUsersRaw.length; i++) {
         try {
-          final chatUser = ChatUser.fromJson(chatUsersRaw[i]);
+          final rawUser = chatUsersRaw[i];
+          if (rawUser is! Map) continue;
+          final chatUser =
+              ChatUser.fromJson(Map<String, dynamic>.from(rawUser));
           chatUsersList.add(chatUser);
           debugPrint('   ✅ Parsed chatUser[$i]: ${chatUser.participant.name}');
         } catch (e) {
@@ -59,23 +62,13 @@ class ChatsGetId {
     } else if (data['user'] != null) {
       debugPrint('   Found single user object');
       final userJson = data['user'];
-      final participant = Participant(
-        id: userJson['id'] ?? 0,
-        name: userJson['name'] ?? '',
-        login: userJson['login'] ?? '',
-        email: userJson['email'] ?? '',
-        phone: userJson['phone'] ?? '',
-        image: userJson['image'] ?? '',
-        lastSeen: userJson['last_seen'],
-        deletedAt: userJson['deleted_at'],
-      );
-      chatUsersList = [
-        ChatUser(
-          type: 'user',
-          participant: participant,
-        )
-      ];
-      debugPrint('   ✅ Created chatUser from single user: ${participant.name}');
+      if (userJson is Map) {
+        chatUsersList = [
+          ChatUser.fromJson(Map<String, dynamic>.from(userJson)),
+        ];
+        debugPrint(
+            '   ✅ Created chatUser from single user: ${chatUsersList.first.participant.name}');
+      }
     } else {
       debugPrint('   ⚠️ No chatUsers or user found');
     }
@@ -87,25 +80,37 @@ class ChatsGetId {
     debugPrint('   type: ${data['type']}');
     debugPrint('   raw name: "${data['name']}"');
     debugPrint('   group: ${data['group']}');
+    debugPrint('   lead: ${data['lead']}');
+
+    String pickName(dynamic value) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isEmpty || text == 'null' || text == 'Без имени') return '';
+      return text;
+    }
 
     if (data['type'] == 'lead') {
-      String channelName = data['channel']?['name'] ?? 'telegram_account';
-      name = data['integration']?['name'] ?? channelName;
-      debugPrint('   ✅ Lead name: $name');
-    } else if (data['type'] == 'corporate') {
-      name = data['name']?.toString() ?? '';
-      debugPrint('   ✅ Corporate raw name: "$name"');
-
-      // Если name пустой, но есть group
-      if (name.isEmpty && data['group'] != null) {
-        name = data['group']['name'] ?? '';
-        debugPrint('   ✅ Using group name: $name');
+      final lead = data['lead'];
+      if (lead is Map) {
+        name = pickName(lead['name']) ;
+        if (name.isEmpty) name = pickName(lead['full_name']);
       }
+      if (name.isEmpty) name = pickName(data['name']);
+      debugPrint('   ✅ Lead client name: $name');
+    } else if (data['type'] == 'corporate') {
+      name = pickName(data['name']);
+      if (name.isEmpty && data['group'] is Map) {
+        name = pickName(data['group']['name']);
+      }
+      if (name.isEmpty && data['user'] is Map) {
+        name = pickName(data['user']['name']);
+      }
+      debugPrint('   ✅ Corporate name: $name');
     } else if (data['type'] == 'task') {
-      name = data['task']?['name'] ?? '';
+      name = pickName(data['task'] is Map ? data['task']['name'] : null);
+      if (name.isEmpty) name = pickName(data['name']);
       debugPrint('   ✅ Task name: $name');
     } else {
-      name = data['name']?.toString() ?? '';
+      name = pickName(data['name']);
       debugPrint('   ✅ Default name: $name');
     }
 
@@ -218,10 +223,19 @@ class ChatUser {
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? participantJson;
+    if (json['participant'] is Map) {
+      participantJson = Map<String, dynamic>.from(json['participant'] as Map);
+    } else if (json['user'] is Map) {
+      participantJson = Map<String, dynamic>.from(json['user'] as Map);
+    } else if (json['id'] != null || json['name'] != null) {
+      participantJson = json;
+    }
+
     return ChatUser(
-      type: json['type'] ?? '',
-      participant: json['participant'] != null
-          ? Participant.fromJson(json['participant'])
+      type: json['type']?.toString() ?? '',
+      participant: participantJson != null
+          ? Participant.fromJson(participantJson)
           : Participant.empty(),
     );
   }

@@ -63,12 +63,14 @@ class PremiumContextMenu {
 
 class ContextMenuItem {
   final String icon;
+  final IconData? iconData;
   final String text;
   final VoidCallback onTap;
   final bool isDestructive;
 
   ContextMenuItem({
-    required this.icon,
+    this.icon = '',
+    this.iconData,
     required this.text,
     required this.onTap,
     this.isDestructive = false,
@@ -215,8 +217,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
           availableHeight >= 80 ? availableHeight : maxSafeHeight,
         )
         .toDouble();
-    final bool useOverlayFallback =
-        overlayOnMessage || availableHeight < 80;
+    final bool useOverlayFallback = overlayOnMessage || availableHeight < 80;
 
     double top;
     if (useOverlayFallback) {
@@ -260,12 +261,11 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
                 return BackdropFilter(
                   filter:
                       ImageFilter.blur(sigmaX: 10 * value, sigmaY: 10 * value),
-                  child:
-                      Container(
-                        color: context.appColors.overlay.withValues(
-                              alpha: 0.3 * value,
-                            ),
-                      ),
+                  child: Container(
+                    color: context.appColors.overlay.withValues(
+                      alpha: 0.3 * value,
+                    ),
+                  ),
                 );
               },
             ),
@@ -387,7 +387,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
               if (!isLast)
                 Divider(
                     height: 1,
-                color: context.appColors.borderSubtle,
+                    color: context.appColors.borderSubtle,
                     indent: 15,
                     endIndent: 15),
             ],
@@ -411,7 +411,15 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (item.icon.contains('.svg'))
+            if (item.iconData != null)
+              Icon(
+                item.iconData,
+                size: 22,
+                color: item.isDestructive
+                    ? context.appColors.error
+                    : context.appColors.textPrimary,
+              )
+            else if (item.icon.contains('.svg'))
               SvgPicture.asset(
                 item.icon,
                 width: 22,
@@ -422,7 +430,7 @@ class _PremiumMenuOverlayState extends State<_PremiumMenuOverlay>
               )
             else
               Icon(
-                Icons.copy, // Fallback
+                Icons.download_rounded,
                 size: 22,
                 color: item.isDestructive
                     ? context.appColors.error

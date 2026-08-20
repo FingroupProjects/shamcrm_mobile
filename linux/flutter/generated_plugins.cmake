@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_linux
   flutter_localization
   flutter_secure_storage_linux
+  flutter_volume_controller
   flutter_webrtc
   open_file_linux
   printing

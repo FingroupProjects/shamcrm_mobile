@@ -13,6 +13,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chats_model.dart';
 import 'package:crm_task_manager/models/deal_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
@@ -974,117 +975,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           String chatName = '';
           String endPointInTab = '';
 
-          if (getChatById.type == "lead") {
-            debugPrint('🎯 Creating LEAD chat screen');
-            endPointInTab = 'lead';
-            chatName =
-                getChatById.name.isNotEmpty ? getChatById.name : 'Лид #$chatId';
-
-            chatScreen = ChatSmsScreen(
-              chatItem: Chats(
-                id: chatId,
-                uniqueId: getChatById.uniqueId,
-                name: chatName,
-                image: '',
-                channel: "",
-                lastMessage: "",
-                messageType: "",
-                createDate: "",
-                unreadCount: 0,
-                canSendMessage: getChatById.canSendMessage,
-                chatUsers: [],
-              ).toChatItem(),
-              chatId: chatId,
-              chatUniqueId: getChatById.uniqueId,
-              endPointInTab: endPointInTab,
-              canSendMessage: getChatById.canSendMessage,
-            );
-          } else if (getChatById.type == "task") {
-            debugPrint('🎯 Creating TASK chat screen');
-            debugPrint('📡 Calling getTaskProfile($chatId)...');
-            endPointInTab = 'task';
-
-            final chatProfileTask = await _apiService.getTaskProfile(chatId);
-            debugPrint(
-                '✅ getTaskProfile completed: name=${chatProfileTask.name}');
-
-            chatName = chatProfileTask.name.isNotEmpty
-                ? chatProfileTask.name
-                : 'Задача #$chatId';
-
-            chatScreen = ChatSmsScreen(
-              chatItem: Chats(
-                id: chatId,
-                uniqueId: getChatById.uniqueId,
-                name: chatName,
-                image: '',
-                channel: "",
-                lastMessage: "",
-                messageType: "",
-                createDate: "",
-                unreadCount: 0,
-                canSendMessage: getChatById.canSendMessage,
-                chatUsers: [],
-              ).toChatItem(),
-              chatId: chatId,
-              chatUniqueId: getChatById.uniqueId,
-              endPointInTab: endPointInTab,
-              canSendMessage: getChatById.canSendMessage,
-            );
-          } else if (getChatById.type == "corporate") {
-            debugPrint('🎯 Creating CORPORATE chat screen');
-            endPointInTab = 'corporate';
-
+          if (getChatById.type == "lead" ||
+              getChatById.type == "task" ||
+              getChatById.type == "corporate") {
+            endPointInTab = getChatById.type!;
             final prefs = await SharedPreferences.getInstance();
-            String userId = prefs.getString('userID').toString();
+            chatName = await ChatTitleResolver.resolve(
+              apiService: _apiService,
+              chat: getChatById,
+              currentUserId: prefs.getString('userID'),
+            );
 
-            debugPrint(
-                '📊 Server data: name="${getChatById.name}", chatUsers.length=${getChatById.chatUsers.length}, group=${getChatById.group?.name}');
-
-            if (getChatById.group != null) {
-              chatName = getChatById.group!.name;
-              debugPrint('✅ [1] Using GROUP name: $chatName');
-            } else if (getChatById.name.isNotEmpty &&
-                getChatById.name != 'null') {
-              chatName = getChatById.name;
-              debugPrint('✅ [2] Using server name: $chatName');
-            } else if (getChatById.chatUsers.isNotEmpty &&
-                getChatById.chatUsers.length >= 2) {
-              int userIndex = getChatById.chatUsers.indexWhere(
-                  (user) => user.participant.id.toString() == userId);
-
-              if (userIndex != -1) {
-                int otherUserIndex = (userIndex == 0) ? 1 : 0;
-                chatName =
-                    getChatById.chatUsers[otherUserIndex].participant.name;
-                debugPrint('✅ [3] Using OTHER user from chatUsers: $chatName');
-              } else {
-                chatName = getChatById.chatUsers[0].participant.name;
-                debugPrint('✅ [4] Using first chatUser: $chatName');
-              }
-            } else {
-              // ✅ НЕ ЗАКРЫВАЕМ LOADER - продолжаем крутить, пока грузим из socket
-              debugPrint('⚠️ Server returned NO data, getting from socket...');
-              shouldCloseLoader = false; // ✅ Оставляем loader крутиться
-
+            if (ChatTitleResolver.isPlaceholder(chatName) &&
+                getChatById.type == 'corporate') {
+              shouldCloseLoader = false;
               try {
-                final socketName = await _getChatNameFromSocket(chatId,
-                    chatUniqueId: getChatById.uniqueId);
-
-                if (socketName != null && socketName.isNotEmpty) {
-                  chatName = socketName;
-                  debugPrint('✅ [5] Got name from socket: $chatName');
-                } else {
-                  chatName = 'Корпоративный чат';
-                  debugPrint('⚠️ [6] Socket returned nothing, using fallback');
-                }
+                final socketName = await _getChatNameFromSocket(
+                  chatId,
+                  chatUniqueId: getChatById.uniqueId,
+                );
+                chatName = ChatTitleResolver.clean(socketName) ?? chatName;
               } catch (e) {
                 debugPrint('❌ Error getting socket name: $e');
-                chatName = 'Корпоративный чат';
               }
-
-              // ✅ ТЕПЕРЬ можно закрыть loader
               shouldCloseLoader = true;
+            }
+
+            if (ChatTitleResolver.isPlaceholder(chatName)) {
+              chatName = endPointInTab == 'lead'
+                  ? 'Лид #$chatId'
+                  : endPointInTab == 'task'
+                      ? 'Задача #$chatId'
+                      : 'Корпоративный чат';
             }
 
             debugPrint('🎯 FINAL chatName: "$chatName"');
@@ -1095,13 +1017,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 uniqueId: getChatById.uniqueId,
                 image: '',
                 name: chatName,
-                channel: "",
+                channel: getChatById.channelName,
                 lastMessage: "",
                 messageType: "",
                 createDate: "",
                 unreadCount: 0,
                 canSendMessage: getChatById.canSendMessage,
-                chatUsers: [],
+                chatUsers: const [],
+                type: getChatById.type,
+                group: getChatById.group,
               ).toChatItem(),
               chatId: chatId,
               chatUniqueId: getChatById.uniqueId,

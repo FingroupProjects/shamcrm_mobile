@@ -7,8 +7,12 @@ import 'package:crm_task_manager/models/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
+import 'package:crm_task_manager/services/chat_media_download_manager.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/widgets/chat_download_progress_overlay.dart';
 import 'package:crm_task_manager/widgets/full_image_screen_viewer.dart';
+import 'package:crm_task_manager/widgets/full_video_screen_viewer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -92,8 +96,9 @@ class _MediaGroupMessageBubbleState extends State<MediaGroupMessageBubble> {
     final isUploading = widget.messages.any((message) => message.isUploading);
     final viewerImagePaths = items
         .where((item) => item.isImage && item.path.isNotEmpty)
-        .map((item) => _buildImageUrl(item.path, _baseUrl))
+        .map((item) => _buildMediaUrl(item.path, _baseUrl))
         .whereType<String>()
+        .where((path) => path.startsWith('http'))
         .toList();
 
     return DecoratedBox(
@@ -444,11 +449,14 @@ class _MediaTile extends StatelessWidget {
       item.path.startsWith('/') || item.path.startsWith('file:');
 
   String? _buildRemoteUrl() {
-    if (baseUrl == null) return null;
-    final normalizedPath = item.path.startsWith('storage/')
-        ? item.path
-        : 'storage/${item.path.startsWith('/') ? item.path.substring(1) : item.path}';
-    return Uri.parse(baseUrl!).resolve(normalizedPath).toString();
+    return _buildMediaUrl(item.path, baseUrl);
+  }
+
+  String? _playableSource() {
+    if (_isLocalFile) {
+      return item.path.replaceFirst('file://', '');
+    }
+    return _buildRemoteUrl();
   }
 
   int _resolveInitialIndex(String? remoteUrl) {
@@ -481,22 +489,35 @@ class _MediaTile extends StatelessWidget {
     final initialIndex = _resolveInitialIndex(remoteUrl);
 
     return GestureDetector(
-      onTap: item.isImage && !isMenuOpen && remoteUrl != null
+      onTap: !isMenuOpen && !isUploading && _playableSource() != null
           ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FullImageScreenViewer(
-                    imagePaths: viewerImagePaths.isNotEmpty
-                        ? viewerImagePaths
-                        : [remoteUrl],
-                    initialIndex: initialIndex,
-                    time: time,
-                    fileName: item.name,
-                    senderName: !isSender ? senderName : '',
+              final source = _playableSource()!;
+              if (item.isVideo) {
+                openFullVideoScreenViewer(
+                  context,
+                  videoPath: source,
+                  fileName: item.name,
+                  time: time,
+                  senderName: !isSender ? senderName : '',
+                );
+                return;
+              }
+              if (item.isImage && (remoteUrl != null || source.isNotEmpty)) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FullImageScreenViewer(
+                      imagePaths: viewerImagePaths.isNotEmpty
+                          ? viewerImagePaths
+                          : [remoteUrl ?? source],
+                      initialIndex: initialIndex,
+                      time: time,
+                      fileName: item.name,
+                      senderName: !isSender ? senderName : '',
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             }
           : null,
       child: SizedBox(
@@ -505,14 +526,29 @@ class _MediaTile extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             _buildMediaContent(context, remoteUrl),
-            if (item.isVideo)
-              const Center(
-                child: Icon(
-                  Icons.play_circle_fill_rounded,
-                  size: 34,
-                  color: Colors.white,
-                ),
-              ),
+            ListenableBuilder(
+              listenable: ChatMediaDownloadManager.instance,
+              builder: (context, _) {
+                final task = ChatMediaDownloadManager.instance
+                    .taskFor(_playableSource());
+                final hidePlay = task?.showOverlay == true;
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (item.isVideo && !hidePlay)
+                      const Center(
+                        child: Icon(
+                          Icons.play_circle_fill_rounded,
+                          size: 34,
+                          color: Colors.white,
+                        ),
+                      ),
+                    if (task != null && task.showOverlay)
+                      ChatDownloadProgressOverlay(task: task),
+                  ],
+                );
+              },
+            ),
             if (extraCount > 0)
               Container(
                 color: Colors.black.withValues(alpha: 0.42),
@@ -620,7 +656,7 @@ class _MediaTile extends StatelessWidget {
     }
 
     if (item.isVideo) {
-      final videoSource = _isLocalFile ? item.path : remoteUrl;
+      final videoSource = _playableSource();
       if (videoSource != null && videoSource.isNotEmpty) {
         return _VideoThumbnailPreview(videoSource: videoSource);
       }
@@ -638,12 +674,16 @@ class _MediaTile extends StatelessWidget {
   }
 }
 
-String? _buildImageUrl(String path, String? baseUrl) {
-  if (baseUrl == null) return null;
-  final normalizedPath = path.startsWith('storage/')
-      ? path
-      : 'storage/${path.startsWith('/') ? path.substring(1) : path}';
-  return Uri.parse(baseUrl).resolve(normalizedPath).toString();
+String? _buildMediaUrl(String path, String? baseUrl) {
+  if (path.startsWith('/') || path.startsWith('file:')) {
+    return path.replaceFirst('file://', '');
+  }
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  if (baseUrl == null || baseUrl.isEmpty) return null;
+  final url = resolveFileUrl(path, baseUrl);
+  return url.isEmpty ? null : url;
 }
 
 class _VideoThumbnailPreview extends StatelessWidget {

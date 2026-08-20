@@ -1874,6 +1874,14 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             '=================-=== _ChatItemsWidget._shouldRefreshData: lastMessage changed for chat ID ${updatedChat.id}');
         return true;
       }
+
+      final currentName = currentChat.displayName ?? currentChat.name;
+      final updatedName = updatedChat.displayName ?? updatedChat.name;
+      if (currentName != updatedName) {
+        debugPrint(
+            '=================-=== _ChatItemsWidget._shouldRefreshData: name changed for chat ID ${updatedChat.id}: "$currentName" -> "$updatedName"');
+        return true;
+      }
     }
 
     // Проверяем изменение порядка
