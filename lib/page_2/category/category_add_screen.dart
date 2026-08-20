@@ -8,12 +8,12 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/switch.dart';
+import 'package:crm_task_manager/page_2/category/category_image_field.dart';
 import 'package:crm_task_manager/page_2/category/category_list_subcategory.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 class CategoryAddBottomSheet {
   static void show(BuildContext context) {
@@ -26,13 +26,6 @@ class CategoryAddBottomSheet {
     List<CustomField> customFields = [];
     String selectedType = 'a';
     bool isAffectingPrice = false;
-
-    Future<void> _pickImage() async {
-      final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-      }
-    }
 
     showModalBottomSheet(
       context: context,
@@ -208,91 +201,13 @@ class CategoryAddBottomSheet {
                                   isAffectingPrice: isAffectingPrice,
                                 ),
                               const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!.translate('image_message'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  await _pickImage();
-                                  setState(() {});
+                              CategoryImageField(
+                                image: _image,
+                                onChanged: (file) {
+                                  setState(() {
+                                    _image = file;
+                                  });
                                 },
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    color: colors.fieldBg,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: _image == null
-                                      ? Center(
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.camera_alt,
-                                                color: colors.textSecondary,
-                                                size: 24,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                AppLocalizations.of(context)!.translate('pick_image'),
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color: colors.textSecondary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      : Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 54,
-                                                height: 54,
-                                                decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  image: DecorationImage(
-                                                    image: FileImage(_image!),
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  _image!.path.split('/').last,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Gilroy',
-                                                    color: colors.textPrimary,
-                                                  ),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: Icon(Icons.close, color: colors.textPrimary),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _image = null;
-                                                  });
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                ),
                               ),
                               if (!isActive) const SizedBox(height: 10),
                               if (!isActive)

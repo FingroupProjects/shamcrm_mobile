@@ -45,7 +45,6 @@ import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -234,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
+    FirebaseApi().markHomeNotReady();
     _searchController.dispose();
     super.dispose();
   }
@@ -848,41 +848,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final RemoteMessage? initialMessage =
           args?['initialMessage'] as RemoteMessage?;
 
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) {
+        debugPrint('HomeScreen: ⚠️ Widget unmounted');
+        return;
+      }
+
+      final firebaseApi = FirebaseApi();
+      firebaseApi.markHomeReady();
+      await firebaseApi.consumePendingPushNavigation();
+
       if (initialMessage != null) {
         debugPrint('HomeScreen: ✅ Получено initialMessage из PinScreen');
         debugPrint('HomeScreen: 📦 Data: ${initialMessage.data}');
-
-        // ✅ КРИТИЧНО: Ждем пока HomeScreen полностью загрузится
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        if (!mounted) {
-          debugPrint('HomeScreen: ⚠️ Widget unmounted');
-          return;
-        }
-
-        // ✅ ИСПРАВЛЕНИЕ: Сразу обрабатываем сообщение
-        FirebaseApi? firebaseApi;
-        if (Firebase.apps.isNotEmpty) {
-          try {
-            Firebase.app();
-            firebaseApi = FirebaseApi();
-            debugPrint('HomeScreen: ✅ FirebaseApi создан');
-          } catch (e) {
-            debugPrint('HomeScreen: ❌ Ошибка FirebaseApi: $e');
-          }
-        }
-
-        if (firebaseApi != null) {
-          try {
-            debugPrint('HomeScreen: 🚀 Обработка initialMessage');
-            await firebaseApi.handleMessage(initialMessage);
-            debugPrint('HomeScreen: ✅ initialMessage обработано');
-          } catch (e) {
-            debugPrint('HomeScreen: ❌ Ошибка обработки: $e');
-          }
-        }
+        await firebaseApi.handleMessage(initialMessage);
+        debugPrint('HomeScreen: ✅ initialMessage обработано');
       } else {
-        debugPrint('HomeScreen: ℹ️ Нет initialMessage (обычный запуск)');
+        debugPrint('HomeScreen: ℹ️ Нет FCM initialMessage');
       }
     } catch (e, stackTrace) {
       debugPrint('HomeScreen: ❌ Критическая ошибка: $e');

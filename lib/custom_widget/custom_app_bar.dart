@@ -493,18 +493,11 @@ class _CustomAppBarState extends State<CustomAppBar>
     _firebaseOpenedAppSubscription =
         FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('Push-уведомление открыто: ${message.data}');
-      if (message.data['type'] == 'message') {
-        // Проверяем что виджет еще mounted перед вызовом setState
-        if (mounted) {
-          setState(() {
-            _hasNewNotification = true;
-          });
-          prefs.setBool('hasNewNotification', true);
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => NotificationsScreen()),
-          );
-        }
+      if (mounted) {
+        setState(() {
+          _hasNewNotification = true;
+        });
+        prefs.setBool('hasNewNotification', true);
       }
     });
   }
