@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -644,76 +645,40 @@ class FirebaseApi {
 
       debugPrint('✅ Chat loaded: ${getChatById.type}');
 
-      String? chatName;
-      Widget screen;
-
-      switch (getChatById.type) {
-        case 'lead':
-          chatName = getChatById.name;
-          break;
-
-        case 'task':
-          final chatProfileTask = await _apiService.getTaskProfile(chatId);
-          chatName = chatProfileTask.name;
-          break;
-
-        case 'corporate':
-          final prefs = await SharedPreferences.getInstance();
-          final String userId = prefs.getString('userID') ?? '';
-
-          if (getChatById.group != null) {
-            chatName = getChatById.group!.name;
-          } else {
-            if (getChatById.chatUsers.isEmpty) {
-              if (message.data.containsKey('sender_name')) {
-                chatName = message.data['sender_name'];
-              } else {
-                try {
-                  final allChatsResponse =
-                      await _apiService.getAllChats('corporate', 1);
-                  final allChats = allChatsResponse.data;
-                  final targetChat = allChats.firstWhere(
-                      (chat) => chat.id == chatId,
-                      orElse: () => throw Exception('Chat not found'));
-                  chatName = targetChat.name;
-                } catch (e) {
-                  chatName = getChatById.name;
-                }
-              }
-            } else if (getChatById.chatUsers.length == 1) {
-              chatName = getChatById.chatUsers[0].participant.name;
-            } else {
-              int userIndex = getChatById.chatUsers.indexWhere(
-                  (user) => user.participant.id.toString() == userId);
-              if (userIndex != -1) {
-                int otherUserIndex = (userIndex == 0) ? 1 : 0;
-                chatName =
-                    getChatById.chatUsers[otherUserIndex].participant.name;
-              } else {
-                chatName = getChatById.chatUsers[0].participant.name;
-              }
-            }
-          }
-          break;
-
-        default:
-          debugPrint('❌ Unknown chat type: ${getChatById.type}');
-          Navigator.of(navigatorKey.currentContext!).pop(); // Закрываем лоадер
-          return;
+      if (getChatById.type != 'lead' &&
+          getChatById.type != 'task' &&
+          getChatById.type != 'corporate') {
+        debugPrint('❌ Unknown chat type: ${getChatById.type}');
+        Navigator.of(navigatorKey.currentContext!).pop();
+        return;
       }
 
-      screen = ChatSmsScreen(
+      final prefs = await SharedPreferences.getInstance();
+      final chatName = await ChatTitleResolver.resolve(
+        apiService: _apiService,
+        chat: getChatById,
+        currentUserId: prefs.getString('userID'),
+        pushFallback: ChatTitleResolver.fromPush(
+          data: message.data,
+          notificationTitle: message.notification?.title,
+        ),
+      );
+      debugPrint('🎯 Resolved push chat title: "$chatName"');
+
+      final screen = ChatSmsScreen(
         chatItem: Chats(
           id: chatId,
           uniqueId: getChatById.uniqueId,
-          name: chatName ?? 'Чат #$chatId',
+          name: ChatTitleResolver.clean(chatName) ?? 'Чат #$chatId',
           canSendMessage: getChatById.canSendMessage,
           image: '',
-          channel: '',
+          channel: getChatById.channelName,
           lastMessage: '',
           createDate: '',
           unreadCount: 1,
-          chatUsers: [],
+          chatUsers: const [],
+          type: getChatById.type,
+          group: getChatById.group,
         ).toChatItem(),
         chatId: chatId,
         chatUniqueId: getChatById.uniqueId,

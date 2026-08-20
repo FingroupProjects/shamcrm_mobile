@@ -218,17 +218,31 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
     _loadingPages
         .clear(); // ✅ ИСПРАВЛЕНИЕ: Очищаем список загружающихся страниц
-    final cached = await _offlineRepository.readCachedChats(
-      endPoint: endPoint,
-      page: 1,
-      query: _currentQuery,
-      salesFunnelId: _currentSalesFunnelId,
-      filters: _currentFilters,
-    );
-    if (cached != null) {
-      emit(ChatsLoaded(cached));
-    } else {
-      emit(ChatsLoading());
+    final hasLiveData = state is ChatsLoaded &&
+        (state as ChatsLoaded).chatsPagination.data.isNotEmpty;
+    final cached = hasLiveData
+        ? null
+        : await _offlineRepository.readCachedChats(
+            endPoint: endPoint,
+            page: 1,
+            query: _currentQuery,
+            salesFunnelId: _currentSalesFunnelId,
+            filters: _currentFilters,
+          );
+    if (!hasLiveData) {
+      if (cached != null) {
+        final sortedCached = _sortChatsIfNeeded(cached.data, endPoint);
+        emit(ChatsLoaded(PaginationDTO(
+          data: sortedCached,
+          count: cached.count,
+          total: cached.total,
+          perPage: cached.perPage,
+          currentPage: cached.currentPage,
+          totalPage: cached.totalPage,
+        )));
+      } else {
+        emit(ChatsLoading());
+      }
     }
 
     if (await _checkInternetConnection()) {
@@ -274,12 +288,14 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
         // _prefetchNextPages(2, emit);
       } catch (e) {
-        emit(ChatsError(_toUserFriendlyErrorMessage(e)));
+        debugPrint(
+            'ChatsBloc._refetchChatsEvent: Refresh failed, keep live data=$hasLiveData, error=$e');
+        if (!hasLiveData) {
+          emit(ChatsError(_toUserFriendlyErrorMessage(e)));
+        }
       }
-    } else {
-      if (cached == null) {
-        emit(ChatsError('Нет подключения к интернету'));
-      }
+    } else if (!hasLiveData && cached == null) {
+      emit(ChatsError('Нет подключения к интернету'));
     }
   }
 

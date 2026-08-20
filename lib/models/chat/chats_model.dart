@@ -103,15 +103,13 @@ class Chats {
     return Chats(
       id: SafeConverters.toInt(json['id']),
       uniqueId: SafeConverters.toStringOrNull(json['unique_id']),
-      name: json['user'] != null
-          ? SafeConverters.toSafeString(json['user']['name'],
-              defaultValue: 'Без имени')
-          : json['task'] != null
-              ? SafeConverters.toSafeString(json['task']['name'])
-              : json['lead'] != null
-                  ? SafeConverters.toSafeString(json['lead']['name'],
-                      defaultValue: 'Без имени')
-                  : '',
+      name: _resolveChatName(
+        json: json,
+        group: group,
+        task: task,
+        user: user,
+        chatUsers: users,
+      ),
       image: SafeConverters.toSafeString(json['image']),
       user: user,
       customName: customName,
@@ -153,10 +151,70 @@ class Chats {
   }
 
   String? get displayName {
-    if (type == 'support' && customName != null) return customName;
-    if (group != null && group!.name.isNotEmpty) return group!.name;
-    if (task != null && task!.name!.isNotEmpty) return task!.name;
-    return name;
+    if (type == 'support' && customName != null && customName!.isNotEmpty) {
+      return customName;
+    }
+    final groupName = group?.name.trim() ?? '';
+    if (groupName.isNotEmpty) return groupName;
+    final taskName = task?.name?.trim() ?? '';
+    if (taskName.isNotEmpty) return taskName;
+    final userName = user?.name.trim() ?? '';
+    if (userName.isNotEmpty) return userName;
+    if (name.trim().isNotEmpty) return name;
+    return _nameFromChatUsers(chatUsers) ?? name;
+  }
+
+  static String _cleanName(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty || trimmed == 'null' || trimmed == 'Без имени') {
+      return '';
+    }
+    return trimmed;
+  }
+
+  static String? _nameFromChatUsers(List<ChatUser> chatUsers) {
+    if (chatUsers.isEmpty) return null;
+    final currentId = int.tryParse(userID.value) ?? 0;
+    if (currentId != 0) {
+      for (final chatUser in chatUsers) {
+        if (chatUser.id == currentId) continue;
+        final otherName = _cleanName(chatUser.name);
+        if (otherName.isNotEmpty) return otherName;
+      }
+    }
+    for (final chatUser in chatUsers) {
+      final fallbackName = _cleanName(chatUser.name);
+      if (fallbackName.isNotEmpty) return fallbackName;
+    }
+    return null;
+  }
+
+  static String _resolveChatName({
+    required Map<String, dynamic> json,
+    Group? group,
+    Task? task,
+    ChatUser? user,
+    required List<ChatUser> chatUsers,
+  }) {
+    final groupName = _cleanName(group?.name);
+    if (groupName.isNotEmpty) return groupName;
+
+    final userName = _cleanName(user?.name);
+    if (userName.isNotEmpty) return userName;
+
+    final taskName = _cleanName(task?.name);
+    if (taskName.isNotEmpty) return taskName;
+
+    final leadJson = json['lead'];
+    if (leadJson is Map) {
+      final leadName = _cleanName(leadJson['name']?.toString());
+      if (leadName.isNotEmpty) return leadName;
+    }
+
+    final rootName = _cleanName(json['name']?.toString());
+    if (rootName.isNotEmpty) return rootName;
+
+    return _nameFromChatUsers(chatUsers) ?? '';
   }
 
   static String _getLastMessageText(Map<String, dynamic> lastMessage) {
@@ -339,6 +397,20 @@ class ChatUser {
           json['participant'] != null ? json['participant']['last_seen'] : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'participant': {
+        'id': id,
+        'name': name,
+        'login': login,
+        'email': email,
+        'phone': phone,
+        'image': image,
+        'last_seen': lastSeen,
+      },
+    };
+  }
 }
 
 class Group {
@@ -369,6 +441,18 @@ class Group {
       updatedAt: json['updated_at'] ?? '',
       organizationId: json['organization_id'] ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'img_url': imgUrl,
+      'author_id': authorId,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'organization_id': organizationId,
+    };
   }
 }
 

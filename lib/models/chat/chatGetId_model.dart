@@ -60,24 +60,14 @@ class ChatsGetId {
       }
     } else if (data['user'] != null) {
       debugPrint('   Found single user object');
-      final userJson = SafeConverters.toMap(data['user']);
-      final participant = Participant(
-        id: SafeConverters.toInt(userJson['id']),
-        name: SafeConverters.toSafeString(userJson['name']),
-        login: SafeConverters.toSafeString(userJson['login']),
-        email: SafeConverters.toSafeString(userJson['email']),
-        phone: SafeConverters.toSafeString(userJson['phone']),
-        image: SafeConverters.toSafeString(userJson['image']),
-        lastSeen: SafeConverters.toStringOrNull(userJson['last_seen']),
-        deletedAt: SafeConverters.toStringOrNull(userJson['deleted_at']),
-      );
-      chatUsersList = [
-        ChatUser(
-          type: 'user',
-          participant: participant,
-        )
-      ];
-      debugPrint('   ✅ Created chatUser from single user: ${participant.name}');
+      final userJson = SafeConverters.toMapOrNull(data['user']);
+      if (userJson != null) {
+        chatUsersList = [
+          ChatUser.fromJson(userJson),
+        ];
+        debugPrint(
+            '   ✅ Created chatUser from single user: ${chatUsersList.first.participant.name}');
+      }
     } else {
       debugPrint('   ⚠️ No chatUsers or user found');
     }
@@ -89,29 +79,37 @@ class ChatsGetId {
     debugPrint('   type: ${data['type']}');
     debugPrint('   raw name: "${data['name']}"');
     debugPrint('   group: ${data['group']}');
+    debugPrint('   lead: ${data['lead']}');
+
+    String pickName(dynamic value) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isEmpty || text == 'null' || text == 'Без имени') return '';
+      return text;
+    }
 
     if (data['type'] == 'lead') {
-      final channelMap = SafeConverters.toMapOrNull(data['channel']);
-      String channelName = SafeConverters.toSafeString(
-        channelMap?['name'],
-        defaultValue: 'telegram_account',
-      );
-      final integrationMap = SafeConverters.toMapOrNull(data['integration']);
-      name = SafeConverters.toSafeString(integrationMap?['name'], defaultValue: channelName);
-      debugPrint('   ✅ Lead name: $name');
-    } else if (data['type'] == 'corporate') {
-      name = SafeConverters.toSafeString(data['name']);
-      debugPrint('   ✅ Corporate raw name: "$name"');
-
-      if (name.isEmpty && data['group'] != null) {
-        name = SafeConverters.toSafeString(SafeConverters.toMap(data['group'])['name']);
-        debugPrint('   ✅ Using group name: $name');
+      final lead = SafeConverters.toMapOrNull(data['lead']);
+      if (lead != null) {
+        name = pickName(lead['name']);
+        if (name.isEmpty) name = pickName(lead['full_name']);
       }
+      if (name.isEmpty) name = pickName(data['name']);
+      debugPrint('   ✅ Lead client name: $name');
+    } else if (data['type'] == 'corporate') {
+      name = pickName(data['name']);
+      if (name.isEmpty && data['group'] != null) {
+        name = pickName(SafeConverters.toMap(data['group'])['name']);
+      }
+      if (name.isEmpty && data['user'] != null) {
+        name = pickName(SafeConverters.toMap(data['user'])['name']);
+      }
+      debugPrint('   ✅ Corporate name: $name');
     } else if (data['type'] == 'task') {
-      name = SafeConverters.toSafeString(SafeConverters.toMapOrNull(data['task'])?['name']);
+      name = pickName(SafeConverters.toMapOrNull(data['task'])?['name']);
+      if (name.isEmpty) name = pickName(data['name']);
       debugPrint('   ✅ Task name: $name');
     } else {
-      name = SafeConverters.toSafeString(data['name']);
+      name = pickName(data['name']);
       debugPrint('   ✅ Default name: $name');
     }
 
@@ -225,10 +223,18 @@ class ChatUser {
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? participantJson =
+        SafeConverters.toMapOrNull(json['participant']) ??
+            SafeConverters.toMapOrNull(json['user']);
+    if (participantJson == null &&
+        (json['id'] != null || json['name'] != null)) {
+      participantJson = json;
+    }
+
     return ChatUser(
       type: SafeConverters.toSafeString(json['type']),
-      participant: SafeConverters.toMapOrNull(json['participant']) != null
-          ? Participant.fromJson(SafeConverters.toMap(json['participant']))
+      participant: participantJson != null
+          ? Participant.fromJson(participantJson)
           : Participant.empty(),
     );
   }

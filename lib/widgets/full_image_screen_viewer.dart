@@ -2,14 +2,11 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/chat_media_download_manager.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
 class FullImageScreenViewer extends StatefulWidget {
   final List<String> imagePaths;
@@ -33,16 +30,35 @@ class FullImageScreenViewer extends StatefulWidget {
 
 class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
   late final PageController _pageController;
-  bool _isDownloading = false;
-  int _downloadProgress = 0;
   int _currentIndex = 0;
   bool _showControls = true;
+
+  ChatDownloadTask? get _downloadTask {
+    if (widget.imagePaths.isEmpty) return null;
+    return ChatMediaDownloadManager.instance
+        .taskFor(widget.imagePaths[_currentIndex]);
+  }
+
+  bool get _isDownloading => _downloadTask?.isInProgress == true;
+  int get _downloadProgress => _downloadTask?.progress ?? 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex.clamp(0, widget.imagePaths.length - 1);
     _pageController = PageController(initialPage: _currentIndex);
+    ChatMediaDownloadManager.instance.addListener(_onDownloadChanged);
+  }
+
+  void _onDownloadChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    ChatMediaDownloadManager.instance.removeListener(_onDownloadChanged);
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -53,66 +69,12 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
     }
   }
 
-  Future<void> saveNetworkImage(String url, BuildContext context) async {
-    try {
-      setState(() {
-        _isDownloading = true;
-        _downloadProgress = 0;
-      });
-
-      final response = await LoggedDioClient.create().get(
-        url,
-        options: Options(responseType: ResponseType.bytes),
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            final percent = ((received / total) * 100).clamp(0, 100).round();
-            if (percent != _downloadProgress && mounted) {
-              setState(() {
-                _downloadProgress = percent;
-              });
-            }
-          }
-        },
-      );
-
-      final result = await ImageGallerySaverPlus.saveImage(
-        Uint8List.fromList(response.data),
-        quality: 60,
-        name: "chat_image_${DateTime.now().millisecondsSinceEpoch}",
-      );
-
-      final success = result['isSuccess'] == true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)?.translate(
-                      success ? 'image_saved_success' : 'image_save_failed',
-                    ) ??
-                (success
-                    ? 'Изображение загружено. ✅'
-                    : 'Изображение не удалось сохранить. ❌'),
-          ),
-          backgroundColor: success ? AppColors.primaryBlue : Colors.red,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)?.translate('image_load_error') ??
-                'Ошибка загрузки изображения!',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _downloadProgress = 0;
-        });
-      }
-    }
+  void saveNetworkImage(String url, BuildContext context) {
+    ChatMediaDownloadManager.instance.start(
+      sourceUrl: url,
+      fileName: widget.fileName,
+      kind: ChatDownloadKind.image,
+    );
   }
 
   @override
@@ -316,7 +278,8 @@ class _PersistentPreviewImage extends StatefulWidget {
   });
 
   @override
-  State<_PersistentPreviewImage> createState() => _PersistentPreviewImageState();
+  State<_PersistentPreviewImage> createState() =>
+      _PersistentPreviewImageState();
 }
 
 class _PersistentPreviewImageState extends State<_PersistentPreviewImage> {
@@ -331,9 +294,10 @@ class _PersistentPreviewImageState extends State<_PersistentPreviewImage> {
         final width = constraints.maxWidth.isFinite && constraints.maxWidth > 0
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
-        final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
-            ? constraints.maxHeight
-            : MediaQuery.of(context).size.height;
+        final height =
+            constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                ? constraints.maxHeight
+                : MediaQuery.of(context).size.height;
 
         return Stack(
           fit: StackFit.expand,
@@ -460,7 +424,8 @@ class _PersistentPreviewImageState extends State<_PersistentPreviewImage> {
               ],
             ),
           ),
-          child: const Icon(Icons.image_rounded, color: Colors.white70, size: 30),
+          child:
+              const Icon(Icons.image_rounded, color: Colors.white70, size: 30),
         ),
       ),
     );

@@ -3,6 +3,8 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
+import 'package:crm_task_manager/services/chat_media_download_manager.dart';
+import 'package:crm_task_manager/widgets/chat_download_progress_overlay.dart';
 
 class FileMessageBubble extends StatelessWidget {
   final String time;
@@ -151,24 +153,47 @@ class FileMessageBubble extends StatelessWidget {
                   crossAxisAlignment:
                       CrossAxisAlignment.center, // Центрируем по вертикали
                   children: [
-                    Image.asset(
-                      iconPath,
+                    SizedBox(
                       width: 32,
                       height: 32,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(
-                          fallbackIconPath,
-                          width: 32,
-                          height: 32,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/icons/files/file.png',
-                              width: 32,
-                              height: 32,
-                            );
-                          },
-                        );
-                      },
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Image.asset(
+                            iconPath,
+                            width: 32,
+                            height: 32,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                fallbackIconPath,
+                                width: 32,
+                                height: 32,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/icons/files/file.png',
+                                    width: 32,
+                                    height: 32,
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          ListenableBuilder(
+                            listenable: ChatMediaDownloadManager.instance,
+                            builder: (context, _) {
+                              final task = ChatMediaDownloadManager.instance
+                                  .taskFor(filePath);
+                              if (task == null || !task.showOverlay) {
+                                return const SizedBox.shrink();
+                              }
+                              return ChatDownloadProgressOverlay(
+                                task: task,
+                                compact: true,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(
                         width: 10), // Add this line to create spacing

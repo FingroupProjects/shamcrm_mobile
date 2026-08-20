@@ -182,10 +182,11 @@ class ChatOfflineRepository {
   }
 
   Map<String, dynamic> _chatToCacheJson(Chats chat) {
+    final resolvedName = (chat.displayName ?? chat.name).trim();
     return {
       'id': chat.id,
       'uniqueId': chat.uniqueId,
-      'name': chat.name,
+      'name': resolvedName.isNotEmpty ? resolvedName : chat.name,
       'image': chat.image,
       'taskFrom': chat.taskFrom,
       'taskTo': chat.taskTo,
@@ -199,10 +200,16 @@ class ChatOfflineRepository {
       'type': chat.type,
       'customName': chat.customName,
       'customImage': chat.customImage,
+      'group': chat.group?.toJson(),
+      'user': chat.user?.toJson(),
+      'chatUsers': chat.chatUsers.map((user) => user.toJson()).toList(),
     };
   }
 
   Chats _chatFromCacheJson(Map<String, dynamic> json) {
+    final groupJson = json['group'];
+    final userJson = json['user'];
+    final chatUsersJson = json['chatUsers'];
     return Chats(
       id: json['id'] as int? ?? 0,
       uniqueId: json['uniqueId'] as String?,
@@ -218,7 +225,19 @@ class ChatOfflineRepository {
       unreadCount: json['unreadCount'] as int? ?? 0,
       canSendMessage: json['canSendMessage'] == true,
       type: json['type']?.toString(),
-      chatUsers: const [],
+      chatUsers: chatUsersJson is List
+          ? chatUsersJson
+              .whereType<Map>()
+              .map((user) =>
+                  ChatUser.fromJson(Map<String, dynamic>.from(user)))
+              .toList()
+          : const [],
+      group: groupJson is Map
+          ? Group.fromJson(Map<String, dynamic>.from(groupJson))
+          : null,
+      user: userJson is Map
+          ? ChatUser.fromJson(Map<String, dynamic>.from(userJson))
+          : null,
       customName: json['customName']?.toString(),
       customImage: json['customImage']?.toString(),
     );
