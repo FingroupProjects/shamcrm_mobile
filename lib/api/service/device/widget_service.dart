@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,6 +49,7 @@ class WidgetService {
           'WidgetService: Storing pending navigation from SharedPreferences: $localPendingScreen',
         );
         _pendingScreenNavigation = localPendingScreen;
+        await _consumePendingNativePush();
         return;
       }
     } catch (e) {
@@ -70,6 +73,25 @@ class WidgetService {
     }
     
     debugPrint('WidgetService: _pendingScreenNavigation = $_pendingScreenNavigation');
+    await _consumePendingNativePush();
+  }
+
+  static Future<void> _consumePendingNativePush() async {
+    try {
+      final raw = await platform.invokeMethod<String>('getPendingPush');
+      if (raw == null || raw.isEmpty) {
+        return;
+      }
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        debugPrint('WidgetService: forwarding pending native push: $decoded');
+        await FirebaseApi().handleNativePushTap(
+          Map<String, dynamic>.from(decoded),
+        );
+      }
+    } catch (e) {
+      debugPrint('WidgetService: Error consuming pending push: $e');
+    }
   }
 
   static Future<void> _persistPendingNavigation(String screenIdentifier) async {
@@ -95,6 +117,16 @@ class WidgetService {
     debugPrint('WidgetService: Method: ${call.method}');
     debugPrint('WidgetService: Arguments: ${call.arguments}');
     debugPrint('WidgetService: onNavigateFromWidgetByScreen is null: ${onNavigateFromWidgetByScreen == null}');
+
+    if (call.method == 'openFromPush') {
+      final args = call.arguments;
+      if (args is Map) {
+        await FirebaseApi().handleNativePushTap(
+          Map<String, dynamic>.from(args),
+        );
+      }
+      return;
+    }
 
     if (call.method == 'navigateFromWidget') {
       final args = call.arguments as Map<dynamic, dynamic>?;

@@ -26,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String _pendingIncomingCallPushPayloadKey =
     'sip_pending_incoming_call_push_payload_v1';
+const String _pendingPushTapPayloadKey = 'pending_push_tap_payload_v1';
 
 bool _isIncomingCallPushData(Map<String, dynamic> data) {
   return data['type']?.toString().trim() == 'incoming_call';
@@ -182,7 +183,10 @@ class FirebaseApi {
   RemoteMessage? _initialMessage;
   bool _isInitialized = false;
   bool _backgroundHandlerRegistered = false;
+  bool _homeScreenReady = false;
   StreamSubscription<String>? _tokenRefreshSubscription;
+  String? _lastOpenedPushKey;
+  DateTime? _lastOpenedPushAt;
 
   static void ensureBackgroundHandlerRegistered() {
     _instance._registerBackgroundHandler();
@@ -491,35 +495,77 @@ class FirebaseApi {
     );
   }
 
+  void markHomeReady() {
+    _homeScreenReady = true;
+  }
+
+  void markHomeNotReady() {
+    _homeScreenReady = false;
+  }
+
+  Future<void> handleNativePushTap(Map<String, dynamic> raw) async {
+    final data = _stringifyPushData(raw);
+    if (data.isEmpty) {
+      return;
+    }
+    if (_isIncomingCallPushData(data) ||
+        _isIncomingCallTerminationPushData(data)) {
+      return;
+    }
+    debugPrint('FirebaseApi: native push tap: $data');
+    await _persistPendingPush(data);
+    if (_homeScreenReady) {
+      await consumePendingPushNavigation();
+    }
+  }
+
+  Future<void> consumePendingPushNavigation() async {
+    final data = await _takePendingPush();
+    if (data == null) {
+      return;
+    }
+    await handleMessageFromData(data);
+  }
+
   Future<void> handleMessage(RemoteMessage? message) async {
+    if (message == null) {
+      debugPrint('❌ Message is NULL');
+      return;
+    }
+    await handleMessageFromData(
+      Map<String, dynamic>.from(message.data),
+      notificationTitle: message.notification?.title,
+    );
+  }
+
+  Future<void> handleMessageFromData(
+    Map<String, dynamic> rawData, {
+    String? notificationTitle,
+  }) async {
     try {
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('🔔 FIREBASE API: PUSH NOTIFICATION RECEIVED');
       debugPrint('════════════════════════════════════════════════════════');
 
-      if (message == null) {
-        debugPrint('❌ Message is NULL');
-        return;
-      }
+      final data = _stringifyPushData(rawData);
+      debugPrint('📦 Message Data: $data');
 
-      debugPrint('📦 Message Data: ${message.data}');
-
-      if (message.data.isEmpty) {
+      if (data.isEmpty) {
         debugPrint('❌ Message data is EMPTY');
         return;
       }
 
-      if (_isIncomingCallPushData(message.data)) {
+      if (_isIncomingCallPushData(data)) {
         await _handleIncomingCallPushMessage(
-          message,
+          RemoteMessage(data: data.map((key, value) => MapEntry(key, value.toString()))),
           source: 'handle_message',
           openSipScreen: true,
         );
         return;
       }
 
-      final type = message.data['type'];
-      final id = message.data['id'];
+      final type = _normalizePushType(data);
+      final id = type == null ? null : _normalizePushId(type, data);
 
       debugPrint('🎯 Notification Type: $type');
       debugPrint('🎯 Notification ID: $id');
@@ -529,30 +575,54 @@ class FirebaseApi {
         return;
       }
 
-      // ✅ КРИТИЧНО: Ждем готовность навигатора
+      if (!_homeScreenReady) {
+        debugPrint('FirebaseApi: HomeScreen not ready, persist push $type:$id');
+        await _persistPendingPush({
+          ...data,
+          'type': type,
+          'id': id,
+          if (notificationTitle != null) 'title': notificationTitle,
+        });
+        return;
+      }
+
       debugPrint('⏳ Waiting for Navigator...');
       int attempts = 0;
       while (navigatorKey.currentState == null && attempts < 20) {
-        await Future.delayed(Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 300));
         attempts++;
       }
 
       if (navigatorKey.currentState == null) {
         debugPrint('❌ Navigator STILL NULL after waiting');
+        await _persistPendingPush({
+          ...data,
+          'type': type,
+          'id': id,
+          if (notificationTitle != null) 'title': notificationTitle,
+        });
         return;
       }
       debugPrint('✅ Navigator is READY');
 
-      // ✅ Проверяем домены и ApiService
+      if (_shouldSkipDuplicatePush(type, id)) {
+        debugPrint('FirebaseApi: skip duplicate push $type:$id');
+        return;
+      }
+
       await _ensureDomainsConfigured();
 
       if (!_isInitialized) {
         await _apiService.initialize();
       }
 
-      // ✅ ИСПРАВЛЕНИЕ: СРАЗУ открываем нужный экран, БЕЗ перехода на /home
       debugPrint('🎯 Opening specific screen directly for type: $type');
-      await navigateToSpecificScreen(type, id, message);
+      await navigateToSpecificScreen(
+        type,
+        id,
+        data,
+        notificationTitle: notificationTitle,
+      );
 
       debugPrint('════════════════════════════════════════════════════════');
       debugPrint('✅ PUSH NOTIFICATION HANDLED SUCCESSFULLY');
@@ -567,37 +637,154 @@ class FirebaseApi {
     }
   }
 
-// ✅ ИСПРАВЛЕНИЕ: Упрощенная навигация - СРАЗУ на нужный экран
+  Map<String, dynamic> _stringifyPushData(Map<dynamic, dynamic> raw) {
+    final data = <String, dynamic>{};
+    raw.forEach((key, value) {
+      if (key == null) {
+        return;
+      }
+      data[key.toString()] = value;
+    });
+    return data;
+  }
+
+  String? _pickPushValue(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) {
+        continue;
+      }
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  String? _normalizePushType(Map<String, dynamic> data) {
+    final raw = _pickPushValue(data, <String>['type', 'event']);
+    if (raw == null) {
+      return null;
+    }
+    switch (raw.toLowerCase()) {
+      case 'message':
+      case 'chat_message':
+      case 'new_message':
+        return 'message';
+      default:
+        return raw;
+    }
+  }
+
+  String? _normalizePushId(String type, Map<String, dynamic> data) {
+    if (type == 'message') {
+      return _pickPushValue(data, <String>['chat_id', 'chatId', 'id']);
+    }
+    return _pickPushValue(data, <String>[
+      'id',
+      'task_id',
+      'lead_id',
+      'event_id',
+      'deal_id',
+      'order_id',
+      'chat_id',
+      'chatId',
+    ]);
+  }
+
+  bool _shouldSkipDuplicatePush(String type, String id) {
+    final key = '$type:$id';
+    final now = DateTime.now();
+    if (_lastOpenedPushKey == key &&
+        _lastOpenedPushAt != null &&
+        now.difference(_lastOpenedPushAt!) < const Duration(seconds: 3)) {
+      return true;
+    }
+    _lastOpenedPushKey = key;
+    _lastOpenedPushAt = now;
+    return false;
+  }
+
+  Future<void> _persistPendingPush(Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _pendingPushTapPayloadKey,
+        jsonEncode(<String, dynamic>{
+          ...data,
+          '_saved_at_ms': DateTime.now().millisecondsSinceEpoch,
+        }),
+      );
+    } catch (error) {
+      debugPrint('FirebaseApi: failed to persist pending push: $error');
+    }
+  }
+
+  Future<Map<String, dynamic>?> _takePendingPush() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_pendingPushTapPayloadKey);
+      if (raw == null || raw.isEmpty) {
+        return null;
+      }
+      await prefs.remove(_pendingPushTapPayloadKey);
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final data = _stringifyPushData(decoded);
+        final savedAt = int.tryParse(data['_saved_at_ms']?.toString() ?? '');
+        if (savedAt != null &&
+            DateTime.now().millisecondsSinceEpoch - savedAt > 60000) {
+          debugPrint('FirebaseApi: pending push expired');
+          return null;
+        }
+        data.remove('_saved_at_ms');
+        return data;
+      }
+    } catch (error) {
+      debugPrint('FirebaseApi: failed to take pending push: $error');
+    }
+    return null;
+  }
+
   Future<void> navigateToSpecificScreen(
-      String type, String id, RemoteMessage message) async {
+    String type,
+    String id,
+    Map<String, dynamic> data, {
+    String? notificationTitle,
+  }) async {
     try {
       debugPrint('🚀 navigateToSpecificScreen: type=$type, id=$id');
 
       switch (type) {
         case 'message':
-          await navigateToChatScreen(id, message);
+          await navigateToChatScreen(
+            id,
+            data,
+            notificationTitle: notificationTitle,
+          );
           break;
         case 'task':
         case 'taskFinished':
         case 'taskOutDated':
-          await navigateToTaskScreen(id, message);
+          await navigateToTaskScreen(id, data);
           break;
         case 'lead':
         case 'notice':
         case 'updateLeadStatus':
-          await navigateToLeadScreen(id, message);
+          await navigateToLeadScreen(id, data);
           break;
         case 'myTaskOutDated':
-          await navigateToMyTaskScreen(id, message);
+          await navigateToMyTaskScreen(id, data);
           break;
         case 'eventId':
-          await navigateToEventScreen(id, message);
+          await navigateToEventScreen(id, data);
           break;
         case 'dealDeadLineNotification':
-          await navigateToDealScreen(id, message);
+          await navigateToDealScreen(id, data);
           break;
         case 'orders':
-          await navigateToOrdersScreen(id, message);
+          await navigateToOrdersScreen(id, data);
           break;
         default:
           debugPrint('❓ Unknown type: $type');
@@ -608,7 +795,11 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToChatScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToChatScreen(
+    String id,
+    Map<String, dynamic> data, {
+    String? notificationTitle,
+  }) async {
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('💬 NAVIGATE TO CHAT SCREEN');
     debugPrint('═══════════════════════════════════════════════════════');
@@ -659,8 +850,8 @@ class FirebaseApi {
         chat: getChatById,
         currentUserId: prefs.getString('userID'),
         pushFallback: ChatTitleResolver.fromPush(
-          data: message.data,
-          notificationTitle: message.notification?.title,
+          data: data,
+          notificationTitle: notificationTitle ?? data['title']?.toString(),
         ),
       );
       debugPrint('🎯 Resolved push chat title: "$chatName"');
@@ -987,14 +1178,16 @@ class FirebaseApi {
 
   // ✅ АНАЛОГИЧНО для остальных методов навигации - используем _apiService
 
-  Future<void> navigateToTaskScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToTaskScreen(String id, Map<String, dynamic> data) async {
     try {
       debugPrint('📋 NAVIGATE TO TASK SCREEN: id=$id');
 
-      final taskId = message.data['id'];
-      final taskNumber = int.tryParse(message.data['taskNumber'] ?? '');
+      final taskId = _pickPushValue(data, <String>['id', 'task_id']) ?? id;
+      final taskNumber = int.tryParse(
+        _pickPushValue(data, <String>['taskNumber', 'task_number']) ?? '',
+      );
 
-      if (taskId == null || navigatorKey.currentState == null) {
+      if (taskId.isEmpty || navigatorKey.currentState == null) {
         debugPrint('❌ Invalid taskId or navigator');
         return;
       }
@@ -1053,13 +1246,13 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToLeadScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToLeadScreen(String id, Map<String, dynamic> data) async {
     try {
       debugPrint('👤 NAVIGATE TO LEAD SCREEN: id=$id');
 
-      final leadId = message.data['id'];
+      final leadId = _pickPushValue(data, <String>['id', 'lead_id']) ?? id;
 
-      if (leadId == null || navigatorKey.currentState == null) {
+      if (leadId.isEmpty || navigatorKey.currentState == null) {
         debugPrint('❌ Invalid leadId or navigator');
         return;
       }
@@ -1083,12 +1276,14 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToMyTaskScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToMyTaskScreen(String id, Map<String, dynamic> data) async {
     try {
-      final myTaskId = message.data['id'];
-      final taskNumber = int.tryParse(message.data['task_number'] ?? '');
+      final myTaskId = _pickPushValue(data, <String>['id', 'task_id']) ?? id;
+      final taskNumber = int.tryParse(
+        _pickPushValue(data, <String>['task_number', 'taskNumber']) ?? '',
+      );
 
-      if (myTaskId != null && navigatorKey.currentState != null) {
+      if (myTaskId.isNotEmpty && navigatorKey.currentState != null) {
         await navigatorKey.currentState!.push(
           MaterialPageRoute(
             builder: (context) => MyTaskDetailsScreen(
@@ -1107,9 +1302,11 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToEventScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToEventScreen(String id, Map<String, dynamic> data) async {
     try {
-      final eventId = message.data['id'];
+      final eventId = int.tryParse(
+        _pickPushValue(data, <String>['id', 'event_id']) ?? id,
+      );
       if (eventId != null && navigatorKey.currentState != null) {
         await navigatorKey.currentState!.push(
           MaterialPageRoute(
@@ -1125,10 +1322,10 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToDealScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToDealScreen(String id, Map<String, dynamic> data) async {
     try {
-      final dealId = message.data['id'];
-      if (dealId != null && navigatorKey.currentState != null) {
+      final dealId = _pickPushValue(data, <String>['id', 'deal_id']) ?? id;
+      if (dealId.isNotEmpty && navigatorKey.currentState != null) {
         await navigatorKey.currentState!.push(
           MaterialPageRoute(
             builder: (context) => DealDetailsScreen(
@@ -1147,9 +1344,11 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToOrdersScreen(String id, RemoteMessage message) async {
+  Future<void> navigateToOrdersScreen(String id, Map<String, dynamic> data) async {
     try {
-      final orderId = int.tryParse(message.data['id'] ?? '');
+      final orderId = int.tryParse(
+        _pickPushValue(data, <String>['id', 'order_id']) ?? id,
+      );
       if (orderId != null && navigatorKey.currentState != null) {
         await navigatorKey.currentState!.push(
           MaterialPageRoute(

@@ -8,11 +8,11 @@ import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/switch.dart';
+import 'package:crm_task_manager/page_2/category/category_image_field.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 class SubCategoryEditBottomSheet {
   static Future<Map<String, dynamic>?> show(
@@ -39,14 +39,6 @@ class SubCategoryEditBottomSheet {
     String selectedType = initialDisplayType;
     bool isAffectingPrice = initialHasPriceCharacteristics;
 
-    Future<void> _pickImage() async {
-      final pickedFile =
-      await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-        _isImageChanged = true;
-      }
-    }
 
     return await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
@@ -148,120 +140,14 @@ class SubCategoryEditBottomSheet {
                                 isAffectingPrice: isAffectingPrice,
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!
-                                    .translate('image_message'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: context.appColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  await _pickImage();
-                                  setState(() {});
+                              CategoryImageField(
+                                image: _image,
+                                onChanged: (file) {
+                                  setState(() {
+                                    _image = file;
+                                    _isImageChanged = true;
+                                  });
                                 },
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      height: 60,
-                                      decoration: BoxDecoration(
-                                        color: context.appColors.fieldBg,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: context.appColors.fieldBg,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: _image == null
-                                          ? Center(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.camera_alt,
-                                              color: context.appColors.textSecondary,
-                                              size: 24,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              AppLocalizations.of(
-                                                  context)!
-                                                  .translate(
-                                                  'pick_image'),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontFamily: 'Gilroy',
-                                                color: context.appColors.textSecondary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                          : Padding(
-                                        padding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 16),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 54,
-                                              height: 54,
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                BorderRadius.circular(
-                                                    8),
-                                                image: DecorationImage(
-                                                  image:
-                                                  FileImage(_image!),
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                _image!.path
-                                                    .split('/')
-                                                    .last,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight:
-                                                  FontWeight.w500,
-                                                  fontFamily: 'Gilroy',
-                                                  color:
-                                                  context.appColors.textPrimary,
-                                                ),
-                                                overflow:
-                                                TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                  Icons.close,
-                                                  color:
-                                                  context.appColors.textPrimary),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _image = null;
-                                                  _isImageChanged = true;
-                                                });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
                               const SizedBox(height: 10),
                               CustomButton(

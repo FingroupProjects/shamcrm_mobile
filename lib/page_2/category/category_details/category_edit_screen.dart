@@ -5,10 +5,10 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/page_2/category/category_image_field.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 class CategoryEditBottomSheet {
   static Future<Map<String, dynamic>?> show(
@@ -26,18 +26,6 @@ class CategoryEditBottomSheet {
     bool _isImageChanged = false;
     int categoryId = initialCategoryId;
     final colors = context.appColors;
-
-    Future<void> _pickImage() async {
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        _image = File(pickedFile.path);
-        _isImageSelected = true;
-        _isImageChanged = true;
-      } else {
-        _isImageSelected = false;
-      }
-    }
 
     return await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -104,130 +92,16 @@ class CategoryEditBottomSheet {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!
-                                    .translate('image_message'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w500,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              GestureDetector(
-                                onTap: () async {
-                                  await _pickImage();
-                                  setState(() {});
+                              CategoryImageField(
+                                image: _image,
+                                showError: !_isImageSelected,
+                                onChanged: (file) {
+                                  setState(() {
+                                    _image = file;
+                                    _isImageChanged = true;
+                                    _isImageSelected = file != null;
+                                  });
                                 },
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      height: 200,
-                                      decoration: BoxDecoration(
-                                        color: colors.fieldBg,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: !_isImageSelected
-                                              ? colors.error
-                                              : colors.borderSubtle,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: _image == null
-                                          ? Center(
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.camera_alt,
-                                                    color: colors.textSecondary,
-                                                    size: 24,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    AppLocalizations.of(
-                                                            context)!
-                                                        .translate(
-                                                            'pick_image'),
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      fontFamily: 'Gilroy',
-                                                      color: colors.textSecondary,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : Stack(
-                                              children: [
-                                                Center(
-                                                  child: Container(
-                                                    width: double.infinity,
-                                                    height: 180,
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      image: DecorationImage(
-                                                        image:
-                                                            FileImage(_image!),
-                                                        fit: BoxFit.contain,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Positioned(
-                                                  top: 8,
-                                                  right: 8,
-                                                  child: IconButton(
-                                                    icon: Icon(Icons.close,
-                                                        color: colors.textPrimary),
-                                                    onPressed: () {
-                                                      setState(() {
-                                                        _image = null;
-                                                        _isImageChanged = true;
-                                                      });
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                    ),
-                                    if (_image != null)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 8),
-                                        child: Text(
-                                          _image!.path.split('/').last,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            fontFamily: 'Gilroy',
-                                            color: colors.textPrimary,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    if (!_isImageSelected)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Text(
-                                          AppLocalizations.of(context)!
-                                              .translate('required_image'),
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: colors.error,
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
                               ),
                             ],
                           ),

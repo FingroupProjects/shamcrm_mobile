@@ -32,6 +32,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import org.json.JSONObject
 
 class MainActivity : FlutterFragmentActivity() {
     
@@ -141,6 +142,7 @@ class MainActivity : FlutterFragmentActivity() {
     companion object {
         private const val PREFS_NAME = "WidgetNavigation"
         private const val KEY_PENDING_SCREEN = "pending_screen"
+        private const val KEY_PENDING_PUSH = "pending_push_payload"
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -165,6 +167,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
         
         handleWidgetIntent(intent)
+        handlePushIntent(intent)
         updateIncomingCallWindowMode(intent)
         handleSipNotificationAction(intent, "activity-create")
         handleSipCallIntent(intent, "activity-create")
@@ -199,6 +202,9 @@ class MainActivity : FlutterFragmentActivity() {
                     val pending = getPendingNavigation()
                     clearPendingNavigation()
                     result.success(pending)
+                }
+                "getPendingPush" -> {
+                    result.success(consumePendingPush())
                 }
                 "showForegroundPush" -> {
                     val title = call.argument<String>("title")
@@ -458,6 +464,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
+        handlePushIntent(intent)
         updateIncomingCallWindowMode(intent)
         handleSipNotificationAction(intent, "activity-new-intent")
         handleSipCallIntent(intent, "activity-new-intent")
@@ -875,6 +882,100 @@ class MainActivity : FlutterFragmentActivity() {
             if (!screenIdentifier.isNullOrEmpty()) {
                 savePendingNavigation(screenIdentifier)
             }
+        }
+    }
+
+    private fun handlePushIntent(intent: Intent?) {
+        val payload = extractPushPayload(intent) ?: return
+        Log.d("MainActivity", "Push tap extras: $payload")
+        savePendingPush(payload)
+        handler.postDelayed({
+            sendPushToFlutter(payload)
+        }, 400)
+    }
+
+    private fun extractPushPayload(intent: Intent?): HashMap<String, Any>? {
+        intent ?: return null
+        val type = firstNonEmptyExtra(intent, "type", "event") ?: return null
+        if (type == "incoming_call" ||
+            type == "call_cancelled" ||
+            type == "call_canceled" ||
+            type == "call_ended" ||
+            type == "call_end"
+        ) {
+            return null
+        }
+        val id = firstNonEmptyExtra(
+            intent,
+            "chat_id",
+            "chatId",
+            "id",
+            "task_id",
+            "lead_id",
+            "event_id",
+            "deal_id",
+        ) ?: return null
+
+        return hashMapOf(
+            "type" to type,
+            "id" to id,
+            "chat_id" to (firstNonEmptyExtra(intent, "chat_id", "chatId") ?: id),
+            "sender_name" to (firstNonEmptyExtra(intent, "sender_name", "senderName") ?: ""),
+            "title" to (firstNonEmptyExtra(intent, "title", "sender_name") ?: ""),
+            "chat_type" to (firstNonEmptyExtra(intent, "chat_type", "chatType") ?: ""),
+        )
+    }
+
+    private fun firstNonEmptyExtra(intent: Intent, vararg keys: String): String? {
+        val extras = intent.extras ?: return null
+        for (key in keys) {
+            val value = extras.get(key)?.toString()?.trim()
+            if (!value.isNullOrEmpty() && !value.equals("null", ignoreCase = true)) {
+                return value
+            }
+        }
+        return null
+    }
+
+    private fun sendPushToFlutter(payload: Map<String, Any>) {
+        val channel = methodChannel
+        if (channel == null) {
+            savePendingPush(payload)
+            return
+        }
+        channel.invokeMethod("openFromPush", payload)
+    }
+
+    private fun savePendingPush(payload: Map<String, Any>) {
+        val json = JSONObject(payload)
+        json.put("_saved_at_ms", System.currentTimeMillis())
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_PENDING_PUSH, json.toString())
+            .apply()
+    }
+
+    private fun consumePendingPush(): String? {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val raw = prefs.getString(KEY_PENDING_PUSH, null)
+        if (!raw.isNullOrEmpty()) {
+            prefs.edit().remove(KEY_PENDING_PUSH).apply()
+        }
+        if (raw.isNullOrEmpty()) {
+            return null
+        }
+        return try {
+            val json = JSONObject(raw)
+            val savedAt = json.optLong("_saved_at_ms", 0L)
+            if (savedAt > 0L && System.currentTimeMillis() - savedAt > 60_000L) {
+                Log.d("MainActivity", "Pending push expired")
+                null
+            } else {
+                json.remove("_saved_at_ms")
+                json.toString()
+            }
+        } catch (_: Exception) {
+            raw
         }
     }
 
