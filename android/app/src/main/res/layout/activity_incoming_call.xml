@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Disabled custom shamCRM incoming-call UI. Incoming calls now use the
+     system CallStyle / OEM native screen. IncomingCallActivity finishes
+     immediately and does not inflate this layout.
+     Restore via LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY = true. -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
