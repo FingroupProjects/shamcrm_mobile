@@ -1318,41 +1318,50 @@ extension _SipMainViewsExtension on _SipScreenState {
     final keypadForeground = _sipKeypadForeground();
     final keypadSecondary = _sipKeypadSecondary();
     return GestureDetector(
-      onTap: _expandDialPanel,
-      onLongPress: _showDialActions,
-      child: CupertinoTextField(
-        controller: _sipIdController,
-        focusNode: _dialFocusNode,
-        readOnly: true,
-        showCursor: true,
-        cursorColor: keypadForeground,
-        cursorWidth: 2,
-        cursorHeight: fontSize,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        style: TextStyle(
-          fontFamily: 'SF Pro Display',
-          fontSize: fontSize,
-          fontWeight: FontWeight.w400,
-          color: keypadForeground.withValues(alpha: 0.98),
-          letterSpacing: 0,
-          shadows: _sipKeypadShadows(),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        _dialFocusNode.requestFocus();
+        _expandDialPanel();
+      },
+      onLongPressStart: (details) {
+        unawaited(_showDialActions(details.globalPosition));
+      },
+      child: AbsorbPointer(
+        child: CupertinoTextField(
+          controller: _sipIdController,
+          focusNode: _dialFocusNode,
+          readOnly: true,
+          enableInteractiveSelection: false,
+          showCursor: true,
+          cursorColor: keypadForeground,
+          cursorWidth: 2,
+          cursorHeight: fontSize,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            fontFamily: 'SF Pro Display',
+            fontSize: fontSize,
+            fontWeight: FontWeight.w400,
+            color: keypadForeground.withValues(alpha: 0.98),
+            letterSpacing: 0,
+            shadows: _sipKeypadShadows(),
+          ),
+          placeholder: AppLocalizations.of(context)!
+              .translate('telephony_enter_number'),
+          placeholderStyle: TextStyle(
+            fontSize: placeholderSize,
+            fontWeight: FontWeight.w300,
+            color: keypadSecondary.withValues(alpha: 0.78),
+            letterSpacing: 0,
+            shadows: _sipKeypadShadows(),
+          ),
+          magnifierConfiguration: TextMagnifierConfiguration.disabled,
+          padding: EdgeInsets.symmetric(
+            horizontal: isVeryCompact ? 2 : 6,
+            vertical: isVeryCompact ? 0 : 2,
+          ),
+          decoration: const BoxDecoration(),
         ),
-        placeholder:
-            AppLocalizations.of(context)!.translate('telephony_enter_number'),
-        placeholderStyle: TextStyle(
-          fontSize: placeholderSize,
-          fontWeight: FontWeight.w300,
-          color: keypadSecondary.withValues(alpha: 0.78),
-          letterSpacing: 0,
-          shadows: _sipKeypadShadows(),
-        ),
-        magnifierConfiguration: TextMagnifierConfiguration.disabled,
-        padding: EdgeInsets.symmetric(
-          horizontal: isVeryCompact ? 2 : 6,
-          vertical: isVeryCompact ? 0 : 2,
-        ),
-        decoration: const BoxDecoration(),
       ),
     );
   }
@@ -1393,6 +1402,7 @@ extension _SipMainViewsExtension on _SipScreenState {
           child: CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: _expandDialPanel,
+            onLongPress: () => unawaited(_showDialActions()),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
