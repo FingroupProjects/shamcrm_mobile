@@ -1,71 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Disabled custom shamCRM incoming-call UI. Incoming calls now use the
-     system CallStyle / OEM native screen. IncomingCallActivity finishes
-     immediately and does not inflate this layout.
-     Restore via LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY = true. -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_incoming_call_screen"
-    android:paddingStart="24dp"
-    android:paddingTop="34dp"
-    android:paddingEnd="24dp"
-    android:paddingBottom="32dp">
-
-    <LinearLayout
-        android:id="@+id/llIncomingHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/tvCallBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_incoming_call_badge"
-            android:paddingStart="14dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="8dp"
-            android:text="Входящий звонок"
-            android:textColor="#FFF8FCFF"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvIncomingAppLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="SHAMCRM Телефония"
-            android:textColor="#B8D9EEFF"
-            android:textSize="15sp" />
-    </LinearLayout>
+    android:paddingStart="28dp"
+    android:paddingTop="56dp"
+    android:paddingEnd="28dp"
+    android:paddingBottom="48dp">
 
     <LinearLayout
         android:id="@+id/llCallerCenter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/llIncomingHeader"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="72dp"
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
         <FrameLayout
-            android:layout_width="132dp"
-            android:layout_height="132dp"
+            android:layout_width="118dp"
+            android:layout_height="118dp"
             android:background="@drawable/bg_incoming_avatar_ring"
-            android:padding="14dp">
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/ivCallerAvatar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_incoming_avatar_core"
-                android:padding="18dp"
+                android:padding="28dp"
                 android:scaleType="centerInside"
-                android:src="@drawable/sham_crm_logo" />
+                android:src="@drawable/ic_incoming_person" />
         </FrameLayout>
 
         <TextView
@@ -86,46 +51,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:gravity="center"
-            android:text="Ответьте или отклоните вызов"
+            android:text="Входящий звонок"
             android:textColor="#B9D3E6F6"
             android:textSize="16sp" />
-
-        <LinearLayout
-            android:id="@+id/llHintCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="@drawable/bg_incoming_hint_card"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="20dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="16dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Звонок через SHAMCRM"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Нативный экран входящего вызова"
-                    android:textColor="#B4D5E5F5"
-                    android:textSize="13sp" />
-            </LinearLayout>
-        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -140,15 +68,11 @@
             android:id="@+id/btnDecline"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_incoming_action_card"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:orientation="vertical"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="72dp"
@@ -163,7 +87,7 @@
                 android:layout_marginTop="14dp"
                 android:text="Отклонить"
                 android:textColor="#FFFFFFFF"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -171,15 +95,11 @@
             android:id="@+id/btnAnswer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_incoming_action_card"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:orientation="vertical"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp">
+            android:orientation="vertical">
 
             <ImageView
                 android:layout_width="72dp"
@@ -194,7 +114,7 @@
                 android:layout_marginTop="14dp"
                 android:text="Ответить"
                 android:textColor="#FFFFFFFF"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
