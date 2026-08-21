@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/services/chat_media_download_manager.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';

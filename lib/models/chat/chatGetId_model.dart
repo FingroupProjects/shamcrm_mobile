@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart' hide ChatUser;
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
 
