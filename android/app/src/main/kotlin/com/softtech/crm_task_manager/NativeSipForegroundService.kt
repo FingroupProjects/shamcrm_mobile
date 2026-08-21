@@ -33,10 +33,11 @@ class NativeSipForegroundService : Service() {
         const val ACTION_STOP = "com.shamcrm.native_sip.STOP"
 
         private const val CHANNEL_SERVICE_ID = "shamcrm_sip_runtime"
-        private const val CHANNEL_CALLS_ID = "shamcrm_sip_calls_silent_v3"
+        private const val CHANNEL_CALLS_ID = "shamcrm_sip_calls_v4"
         private val LEGACY_CALL_CHANNEL_IDS = listOf(
             "shamcrm_sip_calls",
             "shamcrm_sip_calls_v2",
+            "shamcrm_sip_calls_silent_v3",
         )
         private const val NOTIFICATION_SERVICE_ID = 7301
         private const val NOTIFICATION_CALL_ID = 7302
@@ -47,10 +48,6 @@ class NativeSipForegroundService : Service() {
         private var serviceRunning = false
         @Volatile
         private var serviceStartRequested = false
-
-        // Custom IncomingCallActivity UI is disabled. Incoming calls use the
-        // system CallStyle notification / OEM native incoming-call screen.
-        private const val LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY = false
 
         @Synchronized
         fun start(context: Context): Boolean {
@@ -184,11 +181,13 @@ class NativeSipForegroundService : Service() {
             val callState = snapshot["callState"]?.toString()
             if (
                 callState != "incoming" ||
-                NativeSipBridge.isAppInForeground()
+                NativeSipBridge.isAppInForeground() ||
+                IncomingCallActivity.isVisible() ||
+                IncomingCallUiPolicy.prefersSystemIncomingUi()
             ) {
                 Log.d(
                     TAG,
-                    "Incoming UI watchdog stopped: callState=$callState, appForeground=${NativeSipBridge.isAppInForeground()}",
+                    "Incoming UI watchdog stopped: callState=$callState, appForeground=${NativeSipBridge.isAppInForeground()}, activityVisible=${IncomingCallActivity.isVisible()}, systemIncomingUi=${IncomingCallUiPolicy.prefersSystemIncomingUi()}",
                 )
                 return
             }
@@ -199,20 +198,19 @@ class NativeSipForegroundService : Service() {
                 "state" to "incoming",
                 "remoteIdentity" to snapshot["remoteIdentity"],
             )
-            Log.d(TAG, "Incoming UI watchdog retry=$incomingUiRetryCount: keep system CallStyle notification")
+            Log.d(TAG, "Incoming UI watchdog retry=$incomingUiRetryCount")
             NativeSipBridge.recordDiagnosticEvent(
                 event = "incoming_ui_watchdog_retry",
                 details = hashMapOf(
                     "retry" to incomingUiRetryCount,
                     "notificationsEnabled" to notificationManager.areNotificationsEnabled(),
                     "fullScreenAllowed" to canUseFullScreenIntent(),
-                    "customIncomingActivity" to LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY,
+                    "systemIncomingUi" to IncomingCallUiPolicy.prefersSystemIncomingUi(),
                 ),
             )
+            incomingPresentationKey = null
             showIncomingCallNotification(incomingEvent)
-            if (LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY) {
-                launchIncomingCallActivity(incomingEvent, "watchdog-$incomingUiRetryCount")
-            }
+            launchIncomingCallUiIfNeeded(incomingEvent, "watchdog-$incomingUiRetryCount")
             if (incomingUiRetryCount >= 2) {
                 return
             }
@@ -613,7 +611,14 @@ class NativeSipForegroundService : Service() {
         }
         val declineIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_DECLINE)
         val answerIntent = answerActivityPendingIntent()
-        val contentIntent = mainActivityPendingIntent(openCall = true)
+        val launchCustomIncomingUi = IncomingCallUiPolicy.shouldLaunchCustomIncomingActivity(
+            NativeSipBridge.isAppInForeground(),
+        )
+        val contentIntent = if (launchCustomIncomingUi) {
+            incomingCallActivityPendingIntent(event)
+        } else {
+            mainActivityPendingIntent(openCall = true)
+        }
         val caller = Person.Builder()
             .setName(remoteIdentity)
             .setImportant(true)
@@ -642,11 +647,8 @@ class NativeSipForegroundService : Service() {
             .setAutoCancel(false)
             .setContentIntent(contentIntent)
 
-        if (LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY) {
-            val incomingUiIntent = incomingCallActivityPendingIntent(event)
-            notificationBuilder
-                .setFullScreenIntent(incomingUiIntent, true)
-                .setContentIntent(incomingUiIntent)
+        if (launchCustomIncomingUi) {
+            notificationBuilder.setFullScreenIntent(contentIntent, true)
         }
 
         try {
@@ -855,7 +857,9 @@ class NativeSipForegroundService : Service() {
     }
 
     private fun shouldLaunchIncomingCallUi(): Boolean {
-        return LAUNCH_CUSTOM_INCOMING_CALL_ACTIVITY && !NativeSipBridge.isAppInForeground()
+        return IncomingCallUiPolicy.shouldLaunchCustomIncomingActivity(
+            NativeSipBridge.isAppInForeground(),
+        )
     }
 
     private fun isDeviceLocked(): Boolean {
@@ -884,7 +888,7 @@ class NativeSipForegroundService : Service() {
 
     private fun launchIncomingCallUiIfNeeded(event: HashMap<String, Any?>, source: String) {
         if (!shouldLaunchIncomingCallUi()) {
-            Log.d(TAG, "Incoming UI launch skipped[$source]: app is foreground")
+            Log.d(TAG, "Incoming UI launch skipped[$source]: customActivity=${shouldLaunchIncomingCallUi()}, systemIncomingUi=${IncomingCallUiPolicy.prefersSystemIncomingUi()}")
             return
         }
         if (IncomingCallActivity.isVisible()) {
