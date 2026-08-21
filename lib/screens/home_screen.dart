@@ -270,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     int? targetIndexGroup1;
     int? targetIndexGroup2;
 
-    if (kShowSip &&
+    if (sipEnabled &&
         (screenIdentifier == 'sip_journal' ||
             screenIdentifier == 'sip' ||
             screenIdentifier == 'sip_dial')) {

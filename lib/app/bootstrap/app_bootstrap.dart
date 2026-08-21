@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/app/crash_reporting/crash_reporter.dart';
 import 'package:crm_task_manager/app/firebase_options.dart';
+import 'package:crm_task_manager/core/platform/app_platform.dart';
 import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
 import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
@@ -50,6 +51,11 @@ Future<void> safeInitializeOfflineRuntime() async {
 }
 
 Future<void> safeInitializeFirebase() async {
+  if (!AppPlatform.supportsFirebase) {
+    debugPrint('main: Firebase skipped on this platform');
+    return;
+  }
+
   try {
     await initializeFirebase().timeout(const Duration(seconds: 8));
     await initializeCrashlytics();

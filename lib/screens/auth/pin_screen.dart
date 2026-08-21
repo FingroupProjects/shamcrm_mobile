@@ -304,7 +304,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   Future<bool> _shouldBypassPinForActiveSipCall() async {
-    if (!kShowSip) return false;
+    if (!sipEnabled) return false;
     try {
       final sipService = SipService();
       await sipService.initialize();
@@ -433,7 +433,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   void _navigateToSipCallOnly() {
-    if (!kShowSip || !mounted) return;
+    if (!sipEnabled || !mounted) return;
 
     Future.delayed(const Duration(milliseconds: 50), () {
       if (!mounted) return;

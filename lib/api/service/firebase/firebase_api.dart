@@ -460,7 +460,7 @@ class FirebaseApi {
     required String source,
     bool openSipScreen = false,
   }) async {
-    if (!kShowSip) {
+    if (!sipEnabled) {
       return;
     }
     final payload = Map<String, dynamic>.from(message.data);
