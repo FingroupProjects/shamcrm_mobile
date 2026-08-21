@@ -333,3 +333,108 @@ class _GlassButton extends StatelessWidget {
     );
   }
 }
+
+class _DialLiquidGlassToolbar extends StatelessWidget {
+  const _DialLiquidGlassToolbar({
+    required this.anchorAbove,
+    required this.anchorBelow,
+    required this.buttons,
+  });
+
+  final Offset anchorAbove;
+  final Offset anchorBelow;
+  final List<Widget> buttons;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return CustomSingleChildLayout(
+      delegate: TextSelectionToolbarLayoutDelegate(
+        anchorAbove: anchorAbove,
+        anchorBelow: anchorBelow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: isDark ? 0.30 : 0.62),
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          Colors.white.withValues(alpha: 0.24),
+                          Colors.white.withValues(alpha: 0.08),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.78),
+                          Colors.white.withValues(alpha: 0.34),
+                        ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.20),
+                    blurRadius: 26,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < buttons.length; i++) ...[
+                    if (i > 0)
+                      Container(
+                        width: 1,
+                        height: 22,
+                        color: Colors.white.withValues(
+                          alpha: isDark ? 0.16 : 0.30,
+                        ),
+                      ),
+                    buttons[i],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DialGlassMenuButton extends StatelessWidget {
+  const _DialGlassMenuButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      minimumSize: Size.zero,
+      onPressed: onPressed,
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'SF Pro Display',
+          color: isDark ? Colors.white : const Color(0xFF111827),
+        ),
+      ),
+    );
+  }
+}

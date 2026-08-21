@@ -2118,6 +2118,8 @@
   "paste": "Вставить",
   "clipboard": "Буфер обмена",
   "clipboard_empty": "Буфер обмена пуст",
+  "select_text_all": "Выделить всё",
+  "copied": "Скопировано",
   "bold": "Жирный",
   "italic": "Курсив",
   "strikethrough": "Зачеркнутый",

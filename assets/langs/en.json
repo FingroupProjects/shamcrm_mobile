@@ -2100,6 +2100,8 @@
   "paste": "Paste",
   "clipboard": "Clipboard",
   "clipboard_empty": "Clipboard is empty",
+  "select_text_all": "Select all",
+  "copied": "Copied",
   "bold": "Bold",
   "italic": "Italic",
   "strikethrough": "Strikethrough",
