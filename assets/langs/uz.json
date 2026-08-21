@@ -2202,6 +2202,8 @@
   "paste": "Joylashtirish",
   "clipboard": "Bufer",
   "clipboard_empty": "Bufer bo'sh",
+  "select_text_all": "Hammasini belgilash",
+  "copied": "Nusxa olindi",
   "bold": "Qalin",
   "italic": "Kursiv",
   "strikethrough": "Ustidan chizilgan",

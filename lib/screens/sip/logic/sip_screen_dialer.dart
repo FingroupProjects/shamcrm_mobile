@@ -41,12 +41,41 @@ extension _SipScreenDialerExtension on _SipScreenState {
 
   void _handleDialChanged() {
     if (!mounted) return;
+    _syncDialSelectionToolbar();
+    final text = _sipIdController.text;
+    if (text == _lastDialTextForSuggestions) {
+      return;
+    }
+    _lastDialTextForSuggestions = text;
     _contactSearchDebounce?.cancel();
     _contactSearchDebounce = Timer(const Duration(milliseconds: 60), () {
       if (!mounted) return;
       _refreshContactSuggestions();
       _handleDialServerSuggestionsChanged(_sipIdController.text);
       _updateView(() {});
+    });
+  }
+
+  void _syncDialSelectionToolbar() {
+    final selection = _sipIdController.selection;
+    final text = _sipIdController.text;
+    if (!selection.isValid || selection.isCollapsed || text.isEmpty) {
+      _dialShouldSelectAllOnToolbar = true;
+      _lastDialSelectionKey = null;
+      return;
+    }
+
+    final key = '${selection.start}:${selection.end}:${text.length}';
+    if (key == _lastDialSelectionKey) {
+      return;
+    }
+    _lastDialSelectionKey = key;
+    _dialToolbarDebounce?.cancel();
+    _dialToolbarDebounce = Timer(const Duration(milliseconds: 40), () {
+      if (!mounted) return;
+      final current = _sipIdController.selection;
+      if (!current.isValid || current.isCollapsed) return;
+      _dialEditableTextState?.showToolbar();
     });
   }
 
@@ -112,7 +141,180 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final text = await _clipboardDialText();
     if (text.isEmpty) return false;
     _insertDialText(text);
+    HapticFeedback.lightImpact();
     return true;
+  }
+
+  String _selectedDialText() {
+    final value = _sipIdController.value;
+    final selection = value.selection;
+    if (selection.isValid && !selection.isCollapsed) {
+      return value.text.substring(selection.start, selection.end);
+    }
+    return value.text;
+  }
+
+  Future<bool> _copyDial({bool notify = false}) async {
+    final text = _selectedDialText().trim();
+    if (text.isEmpty) return false;
+    await Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.mediumImpact();
+    if (notify && mounted) {
+      _showSipSnackBar(AppLocalizations.of(context)!.translate('copied'));
+    }
+    return true;
+  }
+
+  Future<bool> _cutDial() async {
+    final value = _sipIdController.value;
+    final selection = value.selection;
+    final copied = await _copyDial();
+    if (!copied) return false;
+    if (selection.isValid && !selection.isCollapsed) {
+      final newText = value.text.replaceRange(selection.start, selection.end, '');
+      _sipIdController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start),
+      );
+    } else {
+      _clearDial();
+    }
+    _dialFocusNode.requestFocus();
+    return true;
+  }
+
+  void _selectAllDial() {
+    final text = _sipIdController.text;
+    if (text.isEmpty) return;
+    _sipIdController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: text.length,
+    );
+    _dialFocusNode.requestFocus();
+  }
+
+  Widget _dialContextMenuBuilder(
+    BuildContext context,
+    EditableTextState editableTextState,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final value = editableTextState.textEditingValue;
+    final selection = value.selection;
+    final text = value.text;
+    final hasText = text.isNotEmpty;
+    final hasSelection = selection.isValid && !selection.isCollapsed;
+    final isAllSelected = hasText &&
+        selection.start == 0 &&
+        selection.end == text.length;
+    _dialEditableTextState = editableTextState;
+    final anchors = editableTextState.contextMenuAnchors;
+
+    if (hasText && _dialShouldSelectAllOnToolbar) {
+      _dialShouldSelectAllOnToolbar = false;
+      if (!isAllSelected) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _selectAllDial();
+          editableTextState.showToolbar();
+        });
+      }
+    }
+
+    final buttons = <Widget>[
+      if (hasText)
+        _DialGlassMenuButton(
+          label: l10n.translate('cut'),
+          onPressed: () {
+            ContextMenuController.removeAny();
+            unawaited(_cutDial());
+          },
+        ),
+      if (hasText)
+        _DialGlassMenuButton(
+          label: l10n.translate('copy'),
+          onPressed: () {
+            ContextMenuController.removeAny();
+            unawaited(_copyDial());
+          },
+        ),
+      _DialGlassMenuButton(
+        label: l10n.translate('paste'),
+        onPressed: () {
+          ContextMenuController.removeAny();
+          unawaited(_pasteDialFromMenu());
+        },
+      ),
+      if (hasText && !isAllSelected)
+        _DialGlassMenuButton(
+          label: l10n.translate('select_text_all'),
+          onPressed: () {
+            _selectAllDial();
+            editableTextState.showToolbar();
+          },
+        ),
+    ];
+
+    return _DialLiquidGlassToolbar(
+      anchorAbove: anchors.primaryAnchor,
+      anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
+      buttons: buttons,
+    );
+  }
+
+  Future<void> _pasteDialFromMenu() async {
+    final pasted = await _pasteDial();
+    if (!pasted && mounted) {
+      _showSipSnackBar(
+        AppLocalizations.of(context)!.translate('clipboard_empty'),
+        isError: true,
+      );
+    }
+  }
+
+  void _onDialPointerDown(PointerDownEvent event) {
+    _dialPointers[event.pointer] = event.position;
+    if (_dialPointers.length == 3) {
+      _dialThreeFingerStartSpan = _dialPointerSpan();
+      _dialThreeFingerFired = false;
+    }
+  }
+
+  void _onDialPointerMove(PointerMoveEvent event) {
+    if (!_dialPointers.containsKey(event.pointer)) return;
+    _dialPointers[event.pointer] = event.position;
+    if (_dialPointers.length != 3 ||
+        _dialThreeFingerStartSpan == null ||
+        _dialThreeFingerFired) {
+      return;
+    }
+    final span = _dialPointerSpan();
+    final delta = span - _dialThreeFingerStartSpan!;
+    if (delta < -36) {
+      _dialThreeFingerFired = true;
+      unawaited(_copyDial(notify: true));
+    } else if (delta > 36) {
+      _dialThreeFingerFired = true;
+      unawaited(_pasteDialFromMenu());
+    }
+  }
+
+  void _onDialPointerUp(PointerEvent event) {
+    _dialPointers.remove(event.pointer);
+    if (_dialPointers.length < 3) {
+      _dialThreeFingerStartSpan = null;
+      _dialThreeFingerFired = false;
+    }
+  }
+
+  double _dialPointerSpan() {
+    final points = _dialPointers.values.toList();
+    var maxDistance = 0.0;
+    for (var i = 0; i < points.length; i++) {
+      for (var j = i + 1; j < points.length; j++) {
+        maxDistance = math.max(maxDistance, (points[i] - points[j]).distance);
+      }
+    }
+    return maxDistance;
   }
 
   Future<void> _showDialActions([Offset? globalPosition]) async {

@@ -139,6 +139,14 @@ class _SipScreenState extends State<SipScreen>
   bool _suspendDraftAutosave = false;
   bool _isDialPanelCollapsed = false;
   bool _isDialActionsSheetVisible = false;
+  bool _dialShouldSelectAllOnToolbar = true;
+  EditableTextState? _dialEditableTextState;
+  String? _lastDialSelectionKey;
+  Timer? _dialToolbarDebounce;
+  String _lastDialTextForSuggestions = '';
+  final Map<int, Offset> _dialPointers = <int, Offset>{};
+  double? _dialThreeFingerStartSpan;
+  bool _dialThreeFingerFired = false;
   bool _isCreatingCallbackReminder = false;
   String _contactsViewQuery = '';
   _SipContactsTabSource _contactsTabSource = _SipContactsTabSource.contacts;
@@ -399,6 +407,7 @@ class _SipScreenState extends State<SipScreen>
     _serverDialSearchDebounce?.cancel();
     _draftSaveDebounce?.cancel();
     _journalSearchDebounce?.cancel();
+    _dialToolbarDebounce?.cancel();
     _leadSearchDebounce?.cancel();
     _unifiedSearchDebounce?.cancel();
     _contactsLeadSearchDebounce?.cancel();
