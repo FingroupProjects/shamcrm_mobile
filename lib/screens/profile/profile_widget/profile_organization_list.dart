@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
@@ -21,6 +22,22 @@ class OrganizationWidget extends StatefulWidget {
 }
 
 class _OrganizationWidgetState extends State<OrganizationWidget> {
+  bool _isFuzaylovazamTenant = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTenantFlag();
+  }
+
+  Future<void> _loadTenantFlag() async {
+    final isFuzaylovazam = await ApiService().isFuzaylovazamTenant();
+    if (!mounted) return;
+    setState(() {
+      _isFuzaylovazamTenant = isFuzaylovazam;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -112,7 +129,9 @@ class _OrganizationWidgetState extends State<OrganizationWidget> {
             Padding(
               padding: EdgeInsets.zero,
               child: Text(
-                localizations.translate('organizations'),
+                localizations.translate(
+                  _isFuzaylovazamTenant ? 'shop' : 'organizations',
+                ),
                 style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
                   color: labelInk,

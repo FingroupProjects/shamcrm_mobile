@@ -229,6 +229,12 @@ extension ApiInitX on ApiService {
     return subdomain != null && ApiService._stomatradeSubdomains.contains(subdomain);
   }
 
+  Future<bool> isFuzaylovazamTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null &&
+        ApiService._fuzaylovazamSubdomains.contains(subdomain);
+  }
+
   Future<void> ensureInitialized() async {
     if (baseUrl != null && baseUrl!.isNotEmpty) return;
 

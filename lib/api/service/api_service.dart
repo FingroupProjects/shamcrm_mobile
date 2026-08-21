@@ -264,6 +264,13 @@ class ApiService extends ApiServiceBase {
     'stomatrade-new-back',
   };
 
+  static const Set<String> _fuzaylovazamSubdomains = {
+    'fuzaylovazam7gmailcom',
+    'fuzaylovazam7gmailcom-back',
+    'fuzaylovazam7gmailcom-new',
+    'fuzaylovazam7gmailcom-new-back',
+  };
+
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 

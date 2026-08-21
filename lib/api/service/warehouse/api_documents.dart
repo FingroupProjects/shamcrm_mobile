@@ -1046,9 +1046,9 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
   }
 
-  Future<List<WareHouse>> getStorage() async {
+  Future<List<WareHouse>> getStorage({bool useAll = false}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-    final path = await _appendQueryParams('/storage');
+    final path = await _appendQueryParams(useAll ? '/storage-all' : '/storage');
     if (kDebugMode) {
       //debugPrint('ApiService: getStorage - Generated path: $path');
     }

@@ -19,7 +19,7 @@ class StorageBloc extends Bloc<StorageEvent, StorageState> {
 
     if (await _checkInternetConnection()) {
       try {
-        final storageList = await apiService.getStorage();
+        final storageList = await apiService.getStorage(useAll: event.useAll);
         allStorageFetched = storageList.isEmpty;
         emit(StorageLoaded(storageList));
       } catch (e) {

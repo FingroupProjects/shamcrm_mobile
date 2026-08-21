@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
@@ -47,7 +48,13 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
   @override
   void initState() {
     super.initState();
-    context.read<StorageBloc>().add(FetchStorage());
+    _fetchStorages();
+  }
+
+  Future<void> _fetchStorages() async {
+    final useAll = await ApiService().isFuzaylovazamTenant();
+    if (!mounted) return;
+    context.read<StorageBloc>().add(FetchStorage(useAll: useAll));
   }
 
   @override
@@ -236,7 +243,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           enabled: !isLoading,
           decoration: CustomDropdownDecoration(
             closedFillColor: colors.surfaceElevated,
-            expandedFillColor: colors.surfacePrimary,
+            expandedFillColor: colors.surfaceElevated,
             closedBorder: Border.all(
               color: hasError ? colors.error : colors.borderSubtle,
               width: hasError ? 2 : 1,
@@ -247,6 +254,47 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
+            listItemDecoration: ListItemDecoration(
+              splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
+              highlightColor: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+              selectedColor: colors.buttonPrimaryBg.withValues(alpha: 0.16),
+            ),
+            searchFieldDecoration: SearchFieldDecoration(
+              fillColor: colors.surfaceElevated,
+              textStyle: TextStyle(
+                color: colors.textPrimary,
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              hintStyle: TextStyle(
+                color: colors.textSecondary,
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colors.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colors.buttonPrimaryBg),
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                size: 22,
+                color: colors.textSecondary,
+              ),
+              suffixIcon: (onClear) => IconButton(
+                onPressed: onClear,
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
@@ -263,13 +311,14 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           },
           headerBuilder: (context, selectedItem, enabled) {
             if (isLoading) {
-              return const Center(
+              return Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                   ),
                 ),
               );
@@ -287,13 +336,14 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
           },
           hintBuilder: (context, hintText, enabled) {
             if (isLoading) {
-              return const Center(
+              return Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
                   ),
                 ),
               );
