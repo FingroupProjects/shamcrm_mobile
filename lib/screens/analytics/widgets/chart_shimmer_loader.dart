@@ -10,61 +10,15 @@ class AnalyticsChartShimmerLoader extends StatelessWidget {
     final shimmerColor =
         context.appColors.surfaceElevated.withValues(alpha: 0.92);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(10, 8, 20, 20),
       child: ShimmerWave(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Container(
-              height: 12,
-              width: 140,
-              decoration: BoxDecoration(
-                color: shimmerColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: const [
-                  _Bar(width: 18, heightFactor: 0.35),
-                  SizedBox(width: 10),
-                  _Bar(width: 18, heightFactor: 0.65),
-                  SizedBox(width: 10),
-                  _Bar(width: 18, heightFactor: 0.45),
-                  SizedBox(width: 10),
-                  _Bar(width: 18, heightFactor: 0.8),
-                  SizedBox(width: 10),
-                  _Bar(width: 18, heightFactor: 0.55),
-                  SizedBox(width: 10),
-                  _Bar(width: 18, heightFactor: 0.7),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: shimmerColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: shimmerColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            for (var i = 0; i < _barHeights.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              _Bar(heightFactor: _barHeights[i], color: shimmerColor),
+            ],
           ],
         ),
       ),
@@ -72,30 +26,111 @@ class AnalyticsChartShimmerLoader extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  final double width;
-  final double heightFactor;
+const List<double> _barHeights = [
+  0.38,
+  0.62,
+  0.48,
+  0.78,
+  0.55,
+  0.70,
+  0.42,
+  0.86,
+  0.58,
+  0.66,
+  0.50,
+  0.74,
+];
 
-  const _Bar({required this.width, required this.heightFactor});
+class _Bar extends StatelessWidget {
+  final double heightFactor;
+  final Color color;
+
+  const _Bar({required this.heightFactor, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final shimmerColor =
-        context.appColors.surfaceElevated.withValues(alpha: 0.92);
     return Expanded(
       child: Align(
         alignment: Alignment.bottomCenter,
         child: FractionallySizedBox(
           heightFactor: heightFactor,
-          child: Container(
-            width: width,
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: shimmerColor,
+              color: color,
               borderRadius: BorderRadius.circular(8),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class AnalyticsChartFooterSkeleton extends StatelessWidget {
+  final double padding;
+
+  const AnalyticsChartFooterSkeleton({
+    super.key,
+    this.padding = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final shimmerColor = colors.surfaceElevated.withValues(alpha: 0.92);
+    return Container(
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: colors.borderSubtle),
+        ),
+      ),
+      child: ShimmerWave(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _FooterBlock(color: shimmerColor),
+            _FooterBlock(color: shimmerColor, alignEnd: true),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterBlock extends StatelessWidget {
+  final Color color;
+  final bool alignEnd;
+
+  const _FooterBlock({
+    required this.color,
+    this.alignEnd = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 10,
+          width: 88,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 18,
+          width: 56,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
     );
   }
 }

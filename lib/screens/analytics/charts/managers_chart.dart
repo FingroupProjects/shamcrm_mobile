@@ -425,7 +425,9 @@ class _ManagersChartState extends State<ManagersChart> {
                       ),
           ),
           // Footer
-          if (!_isLoading && _error == null)
+          if (_isLoading)
+            AnalyticsChartFooterSkeleton(padding: responsive.cardPadding)
+          else if (_error == null)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
               decoration: BoxDecoration(

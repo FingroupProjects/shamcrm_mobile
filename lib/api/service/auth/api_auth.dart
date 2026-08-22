@@ -147,10 +147,7 @@ extension ApiAuthX on ApiService {
     }
 
     try {
-      final response = await _analyticsRequest(
-        path,
-        bypassCache: true,
-      );
+      final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

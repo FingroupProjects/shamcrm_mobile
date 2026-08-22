@@ -588,7 +588,9 @@ class _SourcesChartState extends State<SourcesChart> {
                       ),
           ),
           // Footer
-          if (!_isLoading && _error == null && _channels.isNotEmpty)
+          if (_isLoading)
+            AnalyticsChartFooterSkeleton(padding: responsive.cardPadding)
+          else if (_error == null && _channels.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
               decoration: BoxDecoration(

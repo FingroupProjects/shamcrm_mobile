@@ -24,6 +24,7 @@ import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sales_planning/widgets/sales_plan_dashboard_widget.dart';
 import 'package:flutter/foundation.dart';
@@ -83,16 +84,42 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'calls_by_hour': 'Calls by hour',
   };
 
+  static const List<String> _defaultVisibleChartKeys = [
+    'conversion',
+    'lead_sources',
+    'manager_deals',
+    'speed_chart',
+    'achieving_goals',
+    'achieving_tasks',
+    'online_store_orders',
+    'top_selling_products',
+    'telephony_and_events',
+    'conversion_by_statuses',
+  ];
+
+  static List<DashboardSettingItem> _defaultChartSettings() {
+    return [
+      for (var i = 0; i < _defaultVisibleChartKeys.length; i++)
+        DashboardSettingItem(
+          id: i + 1,
+          name: _fallbackChartTitles[_defaultVisibleChartKeys[i]] ??
+              _defaultVisibleChartKeys[i],
+          nameEn: _defaultVisibleChartKeys[i],
+          position: i + 1,
+        ),
+    ];
+  }
+
   String? _selectedPeriodKey;
   List<String> _selectedManagerIds = [];
   List<String> _selectedFunnelIds = [];
   List<String> _selectedSourceIds = [];
   int _chartsVersion = 0;
-  bool _isLoadingChartSettings = true;
   String? _chartSettingsError;
   final Map<String, String> _chartTitlesByKey = {};
   final Set<String> _availableChartKeys = {};
   List<DashboardSettingItem> _orderedChartSettings = [];
+  bool _hasResolvedChartSettings = false;
 
   // Stats data
   bool _hasLoadedStatsOnce = false;
@@ -129,6 +156,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _loadStats();
     _loadDashboardSettings();
     _loadChartVisibilityPrefs();
+    _notifyFirstContentReady();
   }
 
   Future<void> _initializeDefaultFilters() async {
@@ -136,7 +164,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final organizationId = await apiService.getSelectedOrganization() ?? '1';
     final salesFunnelId = await apiService.getSelectedSalesFunnel();
 
-    if (salesFunnelId != null && salesFunnelId.isNotEmpty && mounted) {
+    if (salesFunnelId != null &&
+        salesFunnelId.isNotEmpty &&
+        mounted &&
+        (_selectedFunnelIds.length != 1 ||
+            _selectedFunnelIds.first != salesFunnelId)) {
       setState(() {
         _selectedFunnelIds = [salesFunnelId];
       });
@@ -268,11 +300,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _loadDashboardSettings() async {
-    setState(() {
-      _isLoadingChartSettings = true;
-      _chartSettingsError = null;
-    });
-
     try {
       final apiService = ApiService();
       final settings = await apiService.getDashboardSettingsV2();
@@ -297,6 +324,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       });
 
       if (!mounted) return;
+      final nextCanonicalKeys = _canonicalKeysOf(orderedSettings);
+      if (orderedSettings.isEmpty || nextCanonicalKeys.isEmpty) {
+        _finishChartSettingsWithFallback();
+        return;
+      }
+
+      final currentCanonicalKeys = _canonicalKeysOf(_orderedChartSettings);
+      final sameOrder =
+          _sameStringList(currentCanonicalKeys, nextCanonicalKeys);
+      final sameTitles = titlesByKey.length == _chartTitlesByKey.length &&
+          titlesByKey.entries
+              .every((entry) => _chartTitlesByKey[entry.key] == entry.value);
+
+      if (_hasResolvedChartSettings &&
+          sameOrder &&
+          sameTitles &&
+          _chartSettingsError == null) {
+        return;
+      }
+
       setState(() {
         _availableChartKeys
           ..clear()
@@ -305,19 +352,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ..clear()
           ..addAll(titlesByKey);
         _orderedChartSettings = orderedSettings;
-        _isLoadingChartSettings = false;
+        _hasResolvedChartSettings = true;
+        _chartSettingsError = null;
       });
-      if (orderedSettings.isNotEmpty) {
-        _notifyFirstContentReady();
-      }
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _chartSettingsError = 'analytics_chart_settings_error';
-        _orderedChartSettings = [];
-        _isLoadingChartSettings = false;
-      });
+      _finishChartSettingsWithFallback();
     }
+  }
+
+  void _finishChartSettingsWithFallback() {
+    if (!mounted) return;
+    if (_hasResolvedChartSettings && _orderedChartSettings.isNotEmpty) return;
+    setState(() {
+      _orderedChartSettings = _defaultChartSettings();
+      _hasResolvedChartSettings = true;
+    });
   }
 
   Future<void> _loadStats() async {
@@ -362,17 +411,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Future<void> _refreshData({bool reloadCharts = true}) async {
     ApiService.clearAnalyticsResponseCache();
+    if (reloadCharts && mounted) {
+      setState(() {
+        _chartsVersion++;
+        _hasLoadedStatsOnce = false;
+      });
+    }
     await Future.wait([
       _loadStats(),
       _loadDashboardSettings(),
     ]);
+  }
 
-    if (reloadCharts) {
-      // Hard reload for filter changes: recreate chart widgets.
-      setState(() {
-        _chartsVersion++;
-      });
+  List<String> _canonicalKeysOf(List<DashboardSettingItem> items) {
+    final keys = <String>[];
+    final added = <String>{};
+    for (final item in items) {
+      final canonicalKey = _chartCanonicalKey(item.nameEn.trim());
+      if (canonicalKey == null || added.contains(canonicalKey)) continue;
+      added.add(canonicalKey);
+      keys.add(canonicalKey);
     }
+    return keys;
+  }
+
+  bool _sameStringList(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i] != right[i]) return false;
+    }
+    return true;
   }
 
   String? _chartCanonicalKey(String key) {
@@ -416,43 +484,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildStableChartPlaceholder() {
+  Widget _buildChartOrderPlaceholder() {
+    final colors = context.appColors;
     final responsive = ResponsiveHelper(context);
-    final height = responsive.chartHeight + (responsive.cardPadding * 2) + 44;
-
-    // Не показываем отдельный loader, но заранее резервируем размер первого
-    // графика. После загрузки настроек содержимое появляется внутри того же
-    // места и dashboard больше не пересчитывает высоту рывком.
     return Container(
-      height: height,
       decoration: BoxDecoration(
-        color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
+        color: colors.surfacePrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
         border: Border.all(
-          color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+          color: colors.borderSubtle.withValues(alpha: 0.4),
         ),
+      ),
+      child: SizedBox(
+        height: responsive.chartHeight,
+        child: const AnalyticsChartShimmerLoader(),
       ),
     );
   }
 
   List<Widget> _buildChartWidgets() {
-    if (_isLoadingChartSettings || _isLoadingLocalChartPrefs) {
-      if (!widget.showInitialLoader) {
-        return [_buildStableChartPlaceholder()];
-      }
+    if (!_hasResolvedChartSettings) {
       return [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Center(
-            child: CircularProgressIndicator(
-              color: context.appColors.buttonPrimaryBg,
-            ),
+        for (var i = 0; i < 3; i++)
+          _KeepAliveChart(
+            key: ValueKey('chart_order_placeholder_$i'),
+            child: _buildChartOrderPlaceholder(),
           ),
-        ),
       ];
     }
 
-    if (_chartSettingsError != null && _availableChartKeys.isEmpty) {
+    if (_chartSettingsError != null &&
+        _availableChartKeys.isEmpty &&
+        _orderedChartSettings.isEmpty) {
       return [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1038,7 +1101,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return RefreshIndicator(
       color: context.appColors.buttonPrimaryBg,
       backgroundColor: context.appColors.surfacePrimary,
-      onRefresh: () => _refreshData(reloadCharts: false),
+      onRefresh: () => _refreshData(reloadCharts: true),
       child: Builder(
         builder: (context) {
           final chartWidgets = _buildChartWidgets();
@@ -1237,7 +1300,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 class _KeepAliveChart extends StatefulWidget {
   final Widget child;
 
-  const _KeepAliveChart({required this.child});
+  const _KeepAliveChart({super.key, required this.child});
 
   @override
   State<_KeepAliveChart> createState() => _KeepAliveChartState();

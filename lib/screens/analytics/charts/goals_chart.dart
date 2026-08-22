@@ -327,7 +327,9 @@ class _GoalsChartState extends State<GoalsChart> {
                       ),
           ),
           // Footer
-          if (!_isLoading && _error == null && _goals.isNotEmpty)
+          if (_isLoading)
+            AnalyticsChartFooterSkeleton(padding: responsive.cardPadding)
+          else if (_error == null && _goals.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
               decoration: BoxDecoration(

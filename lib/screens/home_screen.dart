@@ -73,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isBackgroundLoading = false;
   bool _isInitialized = false;
   int _dashboardReloadNonce = 0;
+  String _lastScreensStructureKey = '';
   DateTime? _lastPermissionUpdate;
   DateTime? _lastResumeSyncAt;
   String _profileHeaderName = 'Профиль';
@@ -998,7 +999,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Задачи
     if (hasPermission('task.read')) {
-      widgetsGroup1.add(TaskScreen());
+      widgetsGroup1.add(TaskScreen(key: const ValueKey('home_tasks')));
       titleKeysGroup1.add('appbar_tasks');
       navBarTitleKeysGroup1.add('appbar_tasks');
       activeIconsGroup1.add('assets/icons/MyNavBar/tasks_ON.png');
@@ -1099,6 +1100,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       widgetsGroup1.add(NoAccessScreen());
       titleKeysGroup1.add('');
     }
+
+    final structureKey = <String>[
+      ...navBarTitleKeysGroup1,
+      '::',
+      ...navBarTitleKeysGroup2,
+      '::',
+      '$_dashboardReloadNonce',
+    ].join('|');
+    if (_isInitialized && structureKey == _lastScreensStructureKey) {
+      return;
+    }
+    _lastScreensStructureKey = structureKey;
 
     if (mounted) {
       setState(() {

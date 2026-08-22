@@ -633,7 +633,9 @@ class _KpiChartState extends State<KpiChart> {
                       ),
           ),
           // Footer
-          if (!_isLoading && _error == null && _total > 0)
+          if (_isLoading)
+            AnalyticsChartFooterSkeleton(padding: responsive.cardPadding)
+          else if (_error == null && _total > 0)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
               decoration: BoxDecoration(

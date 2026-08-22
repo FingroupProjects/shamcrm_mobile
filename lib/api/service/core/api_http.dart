@@ -1,6 +1,12 @@
 part of '../api_service.dart';
 
 extension ApiHttpX on ApiService {
+  bool _shouldApplyAnalyticsDashboardFilters(String path) {
+    final pathOnly = path.split('?').first;
+    return pathOnly.contains('/v2/dashboard') ||
+        pathOnly.contains('/dashboard-settings');
+  }
+
   String _appendAnalyticsFiltersToPath(String path) {
     final filters = ApiService._analyticsFilters;
     if (filters == null || filters.isEmpty) {
@@ -8,6 +14,10 @@ extension ApiHttpX on ApiService {
         debugPrint(
             '🟡 _appendAnalyticsFiltersToPath: No filters to apply to $path');
       }
+      return path;
+    }
+
+    if (!_shouldApplyAnalyticsDashboardFilters(path)) {
       return path;
     }
 

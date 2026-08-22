@@ -451,7 +451,9 @@ class _ConversionChartState extends State<ConversionChart> {
                       ),
           ),
           // Footer
-          if (!_isLoading && _error == null && _conversionData.isNotEmpty)
+          if (_isLoading)
+            AnalyticsChartFooterSkeleton(padding: responsive.cardPadding)
+          else if (_error == null && _conversionData.isNotEmpty)
             Container(
               padding: EdgeInsets.all(responsive.cardPadding),
               decoration: BoxDecoration(

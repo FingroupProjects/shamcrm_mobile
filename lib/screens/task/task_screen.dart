@@ -37,7 +37,12 @@ class TaskScreen extends StatefulWidget {
   final int? projectId;
   final String? projectName;
 
-  TaskScreen({this.initialStatusId, this.projectId, this.projectName});
+  TaskScreen({
+    super.key,
+    this.initialStatusId,
+    this.projectId,
+    this.projectName,
+  });
 
   @override
   _TaskScreenState createState() => _TaskScreenState();
