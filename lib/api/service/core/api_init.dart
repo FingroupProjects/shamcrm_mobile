@@ -235,6 +235,48 @@ extension ApiInitX on ApiService {
         ApiService._fuzaylovazamSubdomains.contains(subdomain);
   }
 
+  Future<bool> isFingroupcrmTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null &&
+        ApiService._fingroupcrmSubdomains.contains(subdomain);
+  }
+
+  Future<bool> isAdminOrManagerRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    final roles = <String>{};
+
+    void addRoleSource(String? raw) {
+      if (raw == null || raw.isEmpty) return;
+      for (final part in raw.split(',')) {
+        final role = part.trim().toLowerCase();
+        if (role.isNotEmpty) roles.add(role);
+      }
+    }
+
+    addRoleSource(prefs.getString('userRoleName'));
+    addRoleSource(prefs.getString('userRoles'));
+    final cachedRoles = prefs.getStringList('cached_user_roles');
+    if (cachedRoles != null) {
+      for (final role in cachedRoles) {
+        addRoleSource(role);
+      }
+    }
+
+    if (roles.isEmpty) {
+      final userId = prefs.getString('userID');
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          final profile = await getUserById(int.parse(userId));
+          for (final role in profile.role ?? []) {
+            addRoleSource(role.name);
+          }
+        } catch (_) {}
+      }
+    }
+
+    return roles.contains('admin') || roles.contains('manager');
+  }
+
   Future<void> ensureInitialized() async {
     if (baseUrl != null && baseUrl!.isNotEmpty) return;
 

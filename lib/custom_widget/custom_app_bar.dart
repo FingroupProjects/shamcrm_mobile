@@ -18,6 +18,7 @@ import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
+import 'package:crm_task_manager/screens/lead/masterclass_qr_scanner_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
@@ -55,9 +56,11 @@ class CustomAppBar extends StatefulWidget {
   final bool showSeparateTaskFilter;
   final bool showSeparateMyTasks;
   final bool showNotification;
+  final bool showNotificationInMenu;
   final bool showCalendar;
   final bool showCalendarDashboard;
   final bool showCallCenter; // Новый параметр
+  final bool showMasterclassQrScanner;
   final bool showGps; // Новый параметр
   final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
 
@@ -300,6 +303,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIconChat = false, // Значение по умолчанию
     this.showFilterIconTaskChat = false, // Значение по умолчанию
     this.showCallCenter = true, // Значение по умолчанию
+    this.showMasterclassQrScanner = false,
     this.onManagersLeadSelected,
     this.onManagersDealSelected,
     this.onStatusDealSelected,
@@ -325,6 +329,7 @@ class CustomAppBar extends StatefulWidget {
     this.showProjectsMenuItem = false,
     this.onProjectsPressed,
     this.showNotification = true,
+    this.showNotificationInMenu = false,
     this.showSeparateFilter = false,
     this.showCalendar = true,
     this.showCalendarDashboard = false,
@@ -386,6 +391,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadGps = false; // Новая переменная для GPS®
   bool _canOpenTimesheet = false;
   bool _canReadSalesPlanning = false;
+  bool _canShowMasterclassQrScanner = false;
   // DEAL custom fields were moved to filter screen
 
   late Timer _timer;
@@ -674,6 +680,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadTimesheet = await _apiService.canReadTimesheet();
     final canReadSalesPlanning =
         await _apiService.hasPermission('planning.read');
+    var canShowMasterclassQr = false;
+    if (widget.showMasterclassQrScanner) {
+      final isFingroupcrm = await _apiService.isFingroupcrmTenant();
+      if (isFingroupcrm) {
+        canShowMasterclassQr = await _apiService.isAdminOrManagerRole();
+      }
+    }
     if (!mounted) return;
     setState(() {
       _canReadNotice = canReadNotice;
@@ -683,6 +696,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadGps = canReadGps;
       _canOpenTimesheet = canReadTimesheet;
       _canReadSalesPlanning = canReadSalesPlanning;
+      _canShowMasterclassQrScanner = canShowMasterclassQr;
     });
   }
 
@@ -1053,7 +1067,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
 
                   // Иконка уведомлений
-                  if (widget.showNotification)
+                  if (widget.showNotification && !widget.showNotificationInMenu)
                     Transform.translate(
                       offset: const Offset(10, 0),
                       child: Tooltip(
@@ -1089,20 +1103,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                                 ),
                             ],
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _hasNewNotification = false;
-                            });
-                            SharedPreferences.getInstance().then((prefs) {
-                              prefs.setBool('hasNewNotification', false);
-                            });
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => NotificationsScreen(),
-                              ),
-                            );
-                          },
+                          onPressed: _openNotifications,
                         ),
                       ),
                     ),
@@ -1508,7 +1509,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                                       ? filterIconColor
                                       : inactiveIconColor,
                                 ),
-                                if (_hasOverdueTasks)
+                                if (_hasOverdueTasks ||
+                                    (_hasNewNotification &&
+                                        widget.showNotificationInMenu))
                                   Positioned(
                                     right: 0,
                                     top: 0,
@@ -1529,6 +1532,12 @@ class _CustomAppBarState extends State<CustomAppBar>
                             color: context.appColors.surfacePrimary,
                             onSelected: (String value) {
                               switch (value) {
+                                case 'masterclass_qr':
+                                  _openMasterclassQrScanner(context);
+                                  break;
+                                case 'notifications':
+                                  _openNotifications();
+                                  break;
                                 case 'filter_task':
                                   navigateToTaskManagerFilterScreen(context);
                                   break;
@@ -1618,6 +1627,57 @@ class _CustomAppBarState extends State<CustomAppBar>
                             },
                             itemBuilder: (BuildContext context) =>
                                 <PopupMenuEntry<String>>[
+                                  if (_canShowMasterclassQrScanner)
+                                    PopupMenuItem<String>(
+                                      value: 'masterclass_qr',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.qr_code_scanner,
+                                            color: inactiveIconColor,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate(
+                                                  'masterclass_qr_scanner')),
+                                        ],
+                                      ),
+                                    ),
+                                  if (widget.showNotification &&
+                                      widget.showNotificationInMenu)
+                                    PopupMenuItem<String>(
+                                      value: 'notifications',
+                                      child: Row(
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              _buildAppBarAssetIcon(
+                                                context,
+                                                'assets/icons/AppBar/notification.png',
+                                              ),
+                                              if (_hasNewNotification)
+                                                Positioned(
+                                                  right: 0,
+                                                  child: FadeTransition(
+                                                    opacity: _blinkAnimation,
+                                                    child: Container(
+                                                      width: 10,
+                                                      height: 10,
+                                                      decoration: BoxDecoration(
+                                                        color: alertColor,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('notification')),
+                                        ],
+                                      ),
+                                    ),
                                   if (widget.showDashboardChartSettingsMenuItem)
                                     PopupMenuItem<String>(
                                       value: 'dashboard_chart_settings',
@@ -1873,7 +1933,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _hasTrailingActions() {
     return widget.showFilterIconOnSelectCallCenter ||
         widget.showSearchIcon ||
-        widget.showNotification ||
+        (widget.showNotification && !widget.showNotificationInMenu) ||
         widget.showFilterIconChat ||
         widget.showFilterIconTaskChat ||
         widget.showDashboardIcon ||
@@ -1884,6 +1944,30 @@ class _CustomAppBarState extends State<CustomAppBar>
         widget.showSeparateMyTasks ||
         (widget.showCalendarDashboard && _canReadCalendar) ||
         widget.showMenuIcon;
+  }
+
+  void _openMasterclassQrScanner(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MasterclassQrScannerScreen(),
+      ),
+    );
+  }
+
+  void _openNotifications() {
+    setState(() {
+      _hasNewNotification = false;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('hasNewNotification', false);
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationsScreen(),
+      ),
+    );
   }
 
   void navigateToLeadManagerFilterScreen(BuildContext context) {

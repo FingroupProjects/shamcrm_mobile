@@ -33,6 +33,43 @@ String _stripHtmlTags(String html) {
   }
 }
 
+final _trailingEmptyHtmlBlockRegExp = RegExp(
+  r'(<(p|div)(?:\s[^>]*)?>\s*(?:(?:<br\s*/?>|&nbsp;|\u00a0)\s*)*</\2>\s*)+$',
+  caseSensitive: false,
+);
+
+String _sanitizeMessageHtml(String html) {
+  return html
+      .replaceAll(
+          RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true),
+          '')
+      .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '')
+      .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '')
+      .replaceAll(_trailingEmptyHtmlBlockRegExp, '');
+}
+
+bool _isVisuallyEmptyHtmlBlock(dom.Element node) {
+  for (final child in node.nodes) {
+    if (child is dom.Text) {
+      final content = child.text.replaceAll(
+        RegExp(r'[\s\u00a0\u200B-\u200D\uFEFF]'),
+        '',
+      );
+      if (content.isNotEmpty) return false;
+    } else if (child is dom.Element) {
+      if (child.localName == 'br') continue;
+      if (!_isVisuallyEmptyHtmlBlock(child)) return false;
+    }
+  }
+  return true;
+}
+
+void _trimTrailingLineBreaks(List<TextSpan> spans) {
+  while (spans.isNotEmpty && spans.last.text == '\n') {
+    spans.removeLast();
+  }
+}
+
 class MessageBubble extends StatelessWidget {
   final String message;
   final String time;
@@ -568,15 +605,7 @@ class MessageBubble extends StatelessWidget {
       );
     }
 
-    // Предобработка HTML: убираем служебные теги
-    String cleanedHtml = text
-        // Убираем служебные теги Quill-редактора
-        .replaceAll(
-            RegExp(r'<span class="ql-cursor"[^>]*>.*?</span>', dotAll: true),
-            '')
-        .replaceAll(RegExp(r'<span[^>]*>\s*</span>'), '') // Пустые span
-        // Убираем невидимые символы
-        .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+    final cleanedHtml = _sanitizeMessageHtml(text);
 
     // Оригинальная логика для HTML
     final document = parse(cleanedHtml);
@@ -650,8 +679,15 @@ class MessageBubble extends StatelessWidget {
             node.localName == 'h2' ||
             node.localName == 'h3' ||
             node.localName == 'blockquote') {
-          // Блочные элементы - обрабатываем их содержимое без самих тегов
-          // Добавляем перенос строки перед блоком если это не первый элемент
+          // Пустой блок Quill (<p><br></p>) — один перенос, без второго от <br>
+          if (_isVisuallyEmptyHtmlBlock(node)) {
+            if (spans.isNotEmpty && !isFirstInBlock) {
+              spans.add(TextSpan(text: '\n', style: currentStyle));
+            }
+            needsLineBreak = spans.isNotEmpty;
+            return;
+          }
+
           if (spans.isNotEmpty && !isFirstInBlock) {
             spans.add(TextSpan(text: '\n', style: currentStyle));
           }
@@ -660,7 +696,6 @@ class MessageBubble extends StatelessWidget {
             parseNode(child, newStyle);
           }
 
-          // Помечаем что после блока нужен перенос
           needsLineBreak = true;
           return;
         } else if (node.localName == 'span') {
@@ -683,6 +718,8 @@ class MessageBubble extends StatelessWidget {
       parseNode(node, baseStyle, isFirstInBlock: isFirst);
       isFirst = false;
     }
+
+    _trimTrailingLineBreaks(spans);
 
     // Если нет span'ов (только теги без текста), возвращаем пустой текст
     if (spans.isEmpty) {

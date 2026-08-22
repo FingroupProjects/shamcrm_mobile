@@ -2210,4 +2210,163 @@ extension ApiLeadsX on ApiService {
       );
     }
   }
+
+  bool _isMissingMasterclassCheckInRoute(http.Response response) {
+    if (response.statusCode != 404) return false;
+    final message =
+        (_extractPrimaryMessageFromResponse(response) ?? '').toLowerCase();
+    return message.isEmpty ||
+        message.contains('could not be found') ||
+        message.contains('route');
+  }
+
+  bool _isTechnicalMasterclassToken(String text) {
+    final value = text.trim();
+    if (value.isEmpty) return true;
+    if (value.startsWith('{') || value.startsWith('[')) return true;
+    if (RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(value)) return true;
+    if (RegExp(r'^\d+$').hasMatch(value)) return true;
+    return false;
+  }
+
+  bool _isUserFacingMasterclassText(String text) {
+    if (_isTechnicalMasterclassToken(text)) return false;
+    return RegExp(r'[A-Za-zА-Яа-яЁё]').hasMatch(text) &&
+        (text.contains(' ') || RegExp(r'[А-Яа-яЁё]').hasMatch(text));
+  }
+
+  void _collectMasterclassUserTexts(dynamic value, List<String> texts) {
+    if (value == null) return;
+    if (value is Map) {
+      for (final entry in value.entries) {
+        final key = entry.key.toString().toLowerCase();
+        if (key == 'id' ||
+            key == 'lead_status_id' ||
+            key == 'status_id' ||
+            key == 'name' ||
+            key == 'phone' ||
+            key == 'telephone' ||
+            key == 'mobile' ||
+            key == 'code' ||
+            key == 'status' ||
+            key == 'type') {
+          continue;
+        }
+        _collectMasterclassUserTexts(entry.value, texts);
+      }
+      return;
+    }
+    if (value is List) {
+      for (final item in value) {
+        _collectMasterclassUserTexts(item, texts);
+      }
+      return;
+    }
+
+    final text = value
+        .toString()
+        .replaceAll(RegExp(r'\{[^}]*\}'), ' ')
+        .trim();
+    if (text.contains('\n')) {
+      for (final line in text.split('\n')) {
+        _collectMasterclassUserTexts(line, texts);
+      }
+      return;
+    }
+    if (_isUserFacingMasterclassText(text) && !texts.contains(text)) {
+      texts.add(text);
+    }
+  }
+
+  String? _extractMasterclassPhone(dynamic value) {
+    if (value == null) return null;
+    if (value is Map) {
+      final rawPhone = value['phone'] ??
+          value['telephone'] ??
+          value['mobile'] ??
+          value['phone_number'];
+      if (rawPhone != null) {
+        final phone = rawPhone.toString().trim();
+        if (phone.isNotEmpty && phone != 'null') return phone;
+      }
+      for (final item in value.values) {
+        final nested = _extractMasterclassPhone(item);
+        if (nested != null) return nested;
+      }
+      return null;
+    }
+    if (value is List) {
+      for (final item in value) {
+        final nested = _extractMasterclassPhone(item);
+        if (nested != null) return nested;
+      }
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _parseMasterclassCheckInResponse(
+      http.Response response) {
+    Map<String, dynamic> body = {};
+    try {
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        body = decoded;
+      } else if (decoded is Map) {
+        body = Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+
+    final texts = <String>[];
+    const messageKeys = {
+      'message',
+      'error',
+      'errors',
+      'description',
+      'detail',
+      'details',
+      'title',
+      'text',
+      'info',
+    };
+
+    void walk(dynamic value) {
+      if (value is Map) {
+        value.forEach((key, nested) {
+          if (messageKeys.contains(key.toString().toLowerCase())) {
+            _collectMasterclassUserTexts(nested, texts);
+          } else {
+            walk(nested);
+          }
+        });
+      } else if (value is List) {
+        for (final item in value) {
+          walk(item);
+        }
+      }
+    }
+
+    walk(body);
+
+    return {
+      'texts': texts,
+      'phone': _extractMasterclassPhone(body),
+    };
+  }
+
+  Future<Map<String, dynamic>> checkInMasterclassTicket(String qr) async {
+    final body = {'qr': qr};
+    var response =
+        await _postRequest('/v3/masterclass-tickets/check-in', body);
+
+    if (_isMissingMasterclassCheckInRoute(response)) {
+      response = await _postRequest('/masterclass-tickets/check-in', body);
+    }
+
+    final parsed = _parseMasterclassCheckInResponse(response);
+    return {
+      'statusCode': response.statusCode,
+      'texts': parsed['texts'],
+      'phone': parsed['phone'],
+    };
+  }
 }

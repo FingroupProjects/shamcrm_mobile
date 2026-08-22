@@ -222,6 +222,16 @@ class ChatUser {
     required this.participant,
   });
 
+  bool get canStartCorporateChat {
+    final normalizedType = type.trim().toLowerCase();
+    if (normalizedType == 'telegram' ||
+        normalizedType == 'telegram_account' ||
+        normalizedType == 'telegram_bot') {
+      return false;
+    }
+    return participant.isShamCrmAccount;
+  }
+
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? participantJson =
         SafeConverters.toMapOrNull(json['participant']) ??
@@ -249,6 +259,7 @@ class Participant {
   final String image;
   final String? lastSeen;
   final String? deletedAt;
+  final String? telegramUserId;
 
   Participant({
     required this.id,
@@ -259,7 +270,11 @@ class Participant {
     required this.image,
     this.lastSeen,
     this.deletedAt,
+    this.telegramUserId,
   });
+
+  /// Сотрудник ShamCRM: есть логин. У Telegram/внешних аккаунтов логин пустой.
+  bool get isShamCrmAccount => login.trim().isNotEmpty;
 
   factory Participant.fromJson(Map<String, dynamic> json) {
     return Participant(
@@ -271,6 +286,7 @@ class Participant {
       image: SafeConverters.toSafeString(json['image']),
       lastSeen: SafeConverters.toStringOrNull(json['last_seen']),
       deletedAt: SafeConverters.toStringOrNull(json['deleted_at']),
+      telegramUserId: SafeConverters.toStringOrNull(json['telegram_user_id']),
     );
   }
 
@@ -284,6 +300,7 @@ class Participant {
       image: '',
       lastSeen: null,
       deletedAt: null,
+      telegramUserId: null,
     );
   }
 }

@@ -38,6 +38,11 @@ class ParticipantProfileScreen extends StatelessWidget {
     this.buttonChat,
   });
 
+  /// Кнопка «Перейти в чат» только для сотрудников ShamCRM.
+  /// У Telegram и внешних аккаунтов login пустой.
+  bool get _canOpenCorporateChat =>
+      buttonChat == true && login.trim().isNotEmpty;
+
   String formatDate(String? date, BuildContext context) {
     if (date == null || date.isEmpty) {
       return AppLocalizations.of(context)!.translate('unknow');
@@ -365,7 +370,7 @@ class ParticipantProfileScreen extends StatelessWidget {
                         ),
                       );
                     }
-                    return buttonChat == true
+                    return _canOpenCorporateChat
                         ? ElevatedButton(
                             onPressed: () {
                               context

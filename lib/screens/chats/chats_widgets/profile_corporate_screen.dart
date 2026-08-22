@@ -109,6 +109,8 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                     'phone': user.participant.phone,
                     'login': user.participant.login,
                     'last_seen': user.participant.lastSeen.toString(),
+                    'can_open_chat':
+                        user.canStartCorporateChat ? 'true' : 'false',
                   })
               .toList();
           isGroupChat = getChatById.group != null;
@@ -411,7 +413,10 @@ class _CorporateProfileScreenState extends State<CorporateProfileScreen> {
                                       login: memberDetails[index]['login']!,
                                       lastSeen: memberDetails[index]
                                           ['last_seen']!,
-                                      buttonChat: true,
+                                      buttonChat:
+                                          memberDetails[index]
+                                              ['can_open_chat'] ==
+                                          'true',
                                     ),
                                   ),
                                 );

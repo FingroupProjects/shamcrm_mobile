@@ -2922,7 +2922,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         return Date().timeIntervalSince(issuedAt) > Constants.maximumIncomingPushAge
     }
 
-    private func handleIncomingCallTerminationPush(_ payload: VoIPIncomingPayload) {
+    private func handleIncomingCallTerminationPush(
+        _ payload: VoIPIncomingPayload,
+        completion: @escaping () -> Void
+    ) {
         let cancelledCallId = payload.callId?.trimmingCharacters(in: .whitespacesAndNewlines)
         let currentCallId = snapshot.callId?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let cancelledCallId, !cancelledCallId.isEmpty, cancelledCallId == currentCallId else {
@@ -2931,7 +2934,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "current_call_id": snapshot.callId ?? "",
                 "reason": "no_matching_active_call",
             ])
-            reportOrphanTerminationPush(payload)
+            reportOrphanTerminationPush(payload, completion: completion)
             return
         }
 
@@ -2941,25 +2944,69 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "call_id": cancelledCallId,
         ])
         // Пуш-отмена — это тоже VoIP-пуш: обязательна попытка
-        // reportNewIncomingCall. С UUID уже показанного звонка она
-        // завершается безвредным duplicate-error, после чего звонок
-        // закрывается штатно.
-        callKitManager?.reportPushComplianceAttempt(payload: payload.replacingUUID(callUUID))
-        callKitManager?.reportCallEnded(callUUID: callUUID, reason: .remoteEnded)
-        handleCallEnded(reason: .remoteEnded, callUUID: callUUID, remoteIdentity: snapshot.remoteIdentity)
+        // reportNewIncomingCall до PushKit completion. С UUID уже
+        // показанного звонка она завершается безвредным duplicate-error.
+        reportCallKitThenEnd(
+            payload: payload.replacingUUID(callUUID),
+            reason: .remoteEnded,
+            diagnosticEvent: "push_call_end_reported"
+        ) { [weak self] in
+            self?.handleCallEnded(
+                reason: .remoteEnded,
+                callUUID: callUUID,
+                remoteIdentity: self?.snapshot.remoteIdentity
+            )
+            completion()
+        }
     }
 
     /// VoIP-пуш об отмене звонка, которого у нас уже нет. Чтобы не попасть
     /// под системный watchdog PushKit, репортим входящий и сразу же
     /// завершаем его как remoteEnded.
-    private func reportOrphanTerminationPush(_ payload: VoIPIncomingPayload) {
-        guard let callKitManager else { return }
+    private func reportOrphanTerminationPush(
+        _ payload: VoIPIncomingPayload,
+        completion: @escaping () -> Void
+    ) {
+        reportCallKitThenEnd(
+            payload: payload,
+            reason: .remoteEnded,
+            diagnosticEvent: "push_call_end_orphan_reported",
+            completion: completion
+        )
+    }
+
+    /// Протухший VoIP-пуш всё равно обязан пройти reportNewIncomingCall.
+    /// Иначе iOS 13+ может полностью отключить доставку VoIP этому приложению.
+    private func reportExpiredIncomingPush(
+        _ payload: VoIPIncomingPayload,
+        completion: @escaping () -> Void
+    ) {
+        reportCallKitThenEnd(
+            payload: payload,
+            reason: .failed,
+            diagnosticEvent: "push_received_expired_reported",
+            completion: completion
+        )
+    }
+
+    private func reportCallKitThenEnd(
+        payload: VoIPIncomingPayload,
+        reason: CXCallEndedReason,
+        diagnosticEvent: String,
+        completion: @escaping () -> Void
+    ) {
+        guard let callKitManager else {
+            completion()
+            return
+        }
+
         callKitManager.reportPushComplianceAttempt(payload: payload) { [weak self] _ in
-            callKitManager.reportCallEnded(callUUID: payload.uuid, reason: .remoteEnded)
-            self?.appendDiagnosticLog("push_call_end_orphan_reported", [
+            callKitManager.reportCallEnded(callUUID: payload.uuid, reason: reason)
+            self?.appendDiagnosticLog(diagnosticEvent, [
                 "call_uuid": payload.uuid.uuidString,
                 "call_id": payload.callId ?? "",
             ])
+            completion()
         }
     }
 
@@ -3859,8 +3906,7 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
         completion: @escaping () -> Void
     ) {
         if payload.isTerminationEvent {
-            handleIncomingCallTerminationPush(payload)
-            completion()
+            handleIncomingCallTerminationPush(payload, completion: completion)
             return
         }
         guard !isExpiredIncomingPush(payload) else {
@@ -3870,7 +3916,7 @@ extension IOSNativeSipManager: IOSVoIPPushManagerDelegate {
                 "issued_at_ms": payload.issuedAt.map { String(Int64($0.timeIntervalSince1970 * 1000)) } ?? "",
                 "max_age_seconds": String(Int(Constants.maximumIncomingPushAge)),
             ])
-            completion()
+            reportExpiredIncomingPush(payload, completion: completion)
             return
         }
         // Persist the Push/Linkedid identity before any REGISTER callback can fire.

@@ -151,6 +151,7 @@ extension ApiFcmVoipX on ApiService {
           'token': voipToken,
           'platform': 'ios',
           'provider': 'apns_voip',
+          'push_type': 'voip',
           if (organizationId != null) 'organization_id': organizationId,
           if (userId.trim().isNotEmpty) 'user_id': userId.trim(),
         }),
@@ -240,6 +241,7 @@ extension ApiFcmVoipX on ApiService {
         'type': 'mobile',
         'platform': 'ios',
         'provider': 'apns_voip',
+        'push_type': 'voip',
         if (normalizedToken != null && normalizedToken.isNotEmpty)
           'token': normalizedToken,
         if (organizationId != null) 'organization_id': organizationId,
@@ -380,6 +382,7 @@ extension ApiFcmVoipX on ApiService {
       'extension': extension,
       'platform': 'ios',
       'provider': 'apns_voip',
+      'push_type': 'voip',
       if (organizationId != null) 'organization_id': organizationId,
       'user_id': userId.trim(),
     };

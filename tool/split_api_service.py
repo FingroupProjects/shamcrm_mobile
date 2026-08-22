@@ -72,6 +72,7 @@ STATIC_NAMES = [
     "workdayReadPermission",
     "_tojsokhtmontjSubdomains",
     "_stomatradeSubdomains",
+    "_fingroupcrmSubdomains",
     "navigatorKey",
     "scaffoldMessengerKey",
     "_lastWorkdayWarningAt",

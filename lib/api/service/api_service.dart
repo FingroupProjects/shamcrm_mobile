@@ -271,6 +271,13 @@ class ApiService extends ApiServiceBase {
     'fuzaylovazam7gmailcom-new-back',
   };
 
+  static const Set<String> _fingroupcrmSubdomains = {
+    'fingroupcrm',
+    'fingroupcrm-back',
+    'fingroupcrm-new-back',
+    'fingroupcrm-new',
+  };
+
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
