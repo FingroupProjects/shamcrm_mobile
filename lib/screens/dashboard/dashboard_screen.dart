@@ -28,7 +28,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/sales_dashboard_bloc
 import 'package:crm_task_manager/bloc/sales_plan/sales_plan_dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_plan/sales_plan_dashboard_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -107,8 +106,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? tutorialProgress;
   bool _hasDashboardIndexPermission = false;
   bool _isPermissionsChecked = false;
-  bool _isDashboardReady = false;
-  static bool _sessionHasShownContent = false;
   int _analyticsFilterTrigger = 0;
   int _analyticsChartSettingsTrigger = 0;
 
@@ -118,16 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _isDashboardReady = _sessionHasShownContent;
     _initializeData();
-  }
-
-  void _markDashboardReady() {
-    _sessionHasShownContent = true;
-    if (!mounted || _isDashboardReady) return;
-    setState(() {
-      _isDashboardReady = true;
-    });
   }
 
   Future<void> _initializeData() async {
@@ -141,21 +129,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (isFirstTime) {
         await Future.wait([
           _loadUserRoles(),
-          _checkAccountingDashboardPermission(), // НОВОЕ: Проверяем право
+          _checkAccountingDashboardPermission(),
         ]);
         await prefs.setBool('isFirstTime', false);
       } else {
         await _loadUserRoles();
-        await _checkAccountingDashboardPermission(); // НОВОЕ: Проверяем право
+        await _checkAccountingDashboardPermission();
       }
 
-      // Tutorial/progress не должен держать главный loader.
       _checkPermissionsAndTutorial();
-      _markDashboardReady();
-    } catch (_) {
-      // Dashboard continues with the available chart/cache states.
-      _markDashboardReady();
-    }
+    } catch (_) {}
   }
 
   // НОВОЕ: Метод для проверки права на дашборд учёта
@@ -746,7 +729,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           chartSettingsTrigger: _analyticsChartSettingsTrigger,
                           showStatistics: userRoles.contains('admin'),
                           showInitialLoader: false,
-                          onFirstContentReady: _markDashboardReady,
                         )
                       : RefreshIndicator(
                           color: const Color(0xff1E2E52),
@@ -763,26 +745,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                 ),
               ],
-            ),
-          if (!isClickAvatarIcon && !_isDashboardReady)
-            const IgnorePointer(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Positioned.fill(
-                    child: AppBackgroundOverlay(
-                      preset: AppBackgroundPreset.aurora,
-                      forceRender: true,
-                    ),
-                  ),
-                  Center(
-                    child: PlayStoreImageLoading(
-                      size: 64,
-                      duration: Duration(milliseconds: 1050),
-                    ),
-                  ),
-                ],
-              ),
             ),
         ],
       ),
@@ -881,12 +843,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               message: state.message,
               isSuccess: false,
             );
-          }
-          if (state is SalesDashboardPriorityLoaded ||
-              state is SalesDashboardLoadingSecondary ||
-              state is SalesDashboardFullyLoaded ||
-              state is SalesDashboardLoaded) {
-            _markDashboardReady();
           }
         },
         builder: (context, state) {

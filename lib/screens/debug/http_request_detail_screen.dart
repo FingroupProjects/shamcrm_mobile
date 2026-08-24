@@ -209,14 +209,18 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
                     ),
                   ],
           ),
-          child: IconButton(
-            icon: Icon(
-              Icons.share_rounded,
-              color: textColor,
-              size: 20,
-            ),
-            onPressed: _shareLogAsFile,
-            tooltip: 'Share',
+          child: Builder(
+            builder: (shareButtonContext) {
+              return IconButton(
+                icon: Icon(
+                  Icons.share_rounded,
+                  color: textColor,
+                  size: 20,
+                ),
+                onPressed: () => _shareLogAsFile(shareButtonContext),
+                tooltip: 'Share',
+              );
+            },
           ),
         ),
       ],
@@ -1017,7 +1021,26 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
     return '${time.day.toString().padLeft(2, '0')}/${time.month.toString().padLeft(2, '0')}/${time.year} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _shareLogAsFile() async {
+  Rect _resolveShareOrigin(BuildContext shareButtonContext) {
+    final renderObject = shareButtonContext.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      final size = renderObject.size;
+      if (size.width > 0 && size.height > 0) {
+        return renderObject.localToGlobal(Offset.zero) & size;
+      }
+    }
+
+    final viewSize = MediaQuery.sizeOf(shareButtonContext);
+    final topInset = MediaQuery.paddingOf(shareButtonContext).top;
+    return Rect.fromLTWH(
+      (viewSize.width - 56).clamp(8.0, viewSize.width - 8),
+      topInset + 8,
+      44,
+      44,
+    );
+  }
+
+  Future<void> _shareLogAsFile(BuildContext shareButtonContext) async {
     String? filePath;
     try {
       final log = widget.log;
@@ -1035,16 +1058,20 @@ class _HttpRequestDetailScreenState extends State<HttpRequestDetailScreen>
       await file.writeAsString(fileContent, flush: true);
       final exists = await file.exists();
       final size = exists ? await file.length() : 0;
+      if (!mounted || !shareButtonContext.mounted) return;
+      final shareOrigin = _resolveShareOrigin(shareButtonContext);
 
       debugPrint('[HTTP Inspector] Share export start');
       debugPrint('[HTTP Inspector] File path: $filePath');
       debugPrint('[HTTP Inspector] File exists: $exists');
       debugPrint('[HTTP Inspector] File size: $size bytes');
+      debugPrint('[HTTP Inspector] Share origin: $shareOrigin');
 
       await Share.shareXFiles(
         [XFile(file.path)],
         text: 'HTTP Request Export',
         subject: 'HTTP Request Export',
+        sharePositionOrigin: shareOrigin,
       );
 
       debugPrint('[HTTP Inspector] Share export success');

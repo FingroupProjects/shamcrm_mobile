@@ -37,7 +37,7 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
       final apiService = ApiService();
       final response = await apiService.getLeadChannels();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _channels = response.channels;

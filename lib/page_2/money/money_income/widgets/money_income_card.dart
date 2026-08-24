@@ -208,11 +208,13 @@ class MoneyIncomeCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       localizations
-                              .translate(
-                                  'sending_to_another_cash_register') // Отправка на другую кассу: {cashRegister}
-                              .replaceAll('{cashRegister}',
-                                  document.cashRegister?.name ?? '') ??
-                          'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
+                          .translate('receiving_from_another_cash_register')
+                          .replaceAll(
+                            '{cashRegister}',
+                            document.senderCashregister?.name ??
+                                document.cashRegister?.name ??
+                                '',
+                          ),
                       style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Gilroy',

@@ -83,7 +83,7 @@ class _TaskStatsByProjectChartState extends State<TaskStatsByProjectChart> {
       final sorted = List<ProjectTaskStats>.from(response.projects)
         ..sort((a, b) => b.totalTasks.compareTo(a.totalTasks));
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _projects = sorted.take(10).toList();

@@ -51,7 +51,7 @@ class _CompletedTasksChartState extends State<CompletedTasksChart> {
       final apiService = ApiService();
       final response = await apiService.getCompletedTasksChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _monthly = response.monthlyCompleted;

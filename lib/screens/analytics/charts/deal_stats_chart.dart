@@ -52,7 +52,7 @@ class _DealStatsChartState extends State<DealStatsChart> {
       final apiService = ApiService();
       final response = await apiService.getDealStatsData();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _monthly = response.data;

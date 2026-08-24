@@ -75,7 +75,7 @@ class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
       final apiService = ApiService();
       final response = await apiService.getRepliesToMessagesChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

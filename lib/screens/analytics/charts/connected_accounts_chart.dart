@@ -98,7 +98,7 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
       final sorted = List<ConnectedAccount>.from(response.channels)
         ..sort((a, b) => b.totalChats.compareTo(a.totalChats));
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

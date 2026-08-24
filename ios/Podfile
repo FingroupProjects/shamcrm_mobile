@@ -52,6 +52,9 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       config.build_settings['ENABLE_BITCODE'] = 'NO'
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym' unless config.name == 'Debug'
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+      config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
 
       if target.name == 'permission_handler_apple'
         config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [

@@ -585,7 +585,7 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                localizations.translate('cash_register_transfer'),
+                                localizations.translate('receive_another_cash_register'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',

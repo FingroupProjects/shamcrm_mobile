@@ -19,6 +19,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_call_overlay_host.dart';
 import 'package:crm_task_manager/widgets/update_dialog.dart';
+import 'package:crm_task_manager/widgets/app_fade_page_route.dart';
 import 'package:crm_task_manager/widgets/http_inspector_fab.dart';
 import 'package:crm_task_manager/widgets/in_app_update_corner_indicator.dart';
 import 'package:crm_task_manager/widgets/native_internet_aware_wrapper_WITH_GAME.dart';
@@ -239,11 +240,20 @@ class _MyAppState extends State<MyApp> {
             routes: {
               '/local_auth': (context) => AuthScreen(),
               '/login': (context) => LoginScreen(),
-              '/home': (context) => HomeScreen(),
               '/chats': (context) => ChatsScreen(),
               '/pin_setup': (context) => PinSetupScreen(),
               '/pin_screen': (context) => PinScreen(),
               '/profile': (context) => ProfileScreen(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == '/home') {
+                return AppFadePageRoute<void>(
+                  settings: settings,
+                  builder: (_) => const HomeScreen(),
+                  duration: const Duration(milliseconds: 340),
+                );
+              }
+              return null;
             },
           );
         },

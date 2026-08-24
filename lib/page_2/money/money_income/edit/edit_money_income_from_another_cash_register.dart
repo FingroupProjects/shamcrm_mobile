@@ -4,6 +4,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
+import 'package:crm_task_manager/page_2/money/widgets/cash_register_currency.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -133,14 +134,35 @@ class _EditMoneyIncomeAnotherCashRegisterState
       return;
     }
 
+    if (selectedCashRegister!.id == selectedSenderCashRegister!.id) {
+      _showSnackBar(
+        AppLocalizations.of(context)!
+            .translate('cash_registers_must_be_different'),
+        false,
+      );
+      return;
+    }
+
+    if (cashRegisterCurrenciesMismatch(
+      context,
+      selectedSenderCashRegister,
+      selectedCashRegister,
+    )) {
+      _showSnackBar(
+        AppLocalizations.of(context)!
+            .translate('cash_register_currencies_must_match'),
+        false,
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    String? isoDate;
+    String formattedDate;
 
     try {
-      DateTime? parsedDate =
-          DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
-      isoDate = DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate);
+      formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss')
+          .format(DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text));
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -156,7 +178,7 @@ class _EditMoneyIncomeAnotherCashRegisterState
     final bloc = context.read<MoneyIncomeBloc>();
 
     // ИЗМЕНЕНО: Проверяем только изменения данных, БЕЗ проверки approved
-    final dataChanged = !areDatesEqual(widget.document.date ?? '', isoDate) ||
+    final dataChanged = !areDatesEqual(widget.document.date ?? '', formattedDate) ||
         widget.document.amount != _amountController.text.trim() ||
         (widget.document.comment ?? '') != _commentController.text.trim() ||
         widget.document.cashRegister?.id.toString() !=
@@ -168,12 +190,15 @@ class _EditMoneyIncomeAnotherCashRegisterState
       // Отправляем только изменения данных
       bloc.add(UpdateMoneyIncome(
         id: widget.document.id,
-        date: isoDate,
-        amount: double.parse(_amountController.text.trim()),
+        date: formattedDate,
+        amount: double.parse(
+          _amountController.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
+        ),
         operationType: MoneyIncomeOperationType.send_another_cash_register.name,
         comment: _commentController.text.trim(),
         cashRegisterId: selectedCashRegister?.id,
         senderCashRegisterId: selectedSenderCashRegister?.id,
+        exchangeRate: 1,
       ));
     } else {
       // Если данные не изменились, просто закрываем
@@ -182,6 +207,20 @@ class _EditMoneyIncomeAnotherCashRegisterState
       }
       Navigator.pop(context,
           _isStatusChanged); // Возвращаем флаг изменений в родительский экран
+    }
+  }
+
+  void _warnIfCurrenciesMismatch() {
+    if (cashRegisterCurrenciesMismatch(
+      context,
+      selectedSenderCashRegister,
+      selectedCashRegister,
+    )) {
+      _showSnackBar(
+        AppLocalizations.of(context)!
+            .translate('cash_register_currencies_must_match'),
+        false,
+      );
     }
   }
 
@@ -295,6 +334,8 @@ class _EditMoneyIncomeAnotherCashRegisterState
                       const SizedBox(height: 8),
                       _buildApproveButton(localizations),
                       const SizedBox(height: 16),
+                      _buildDateField(localizations),
+                      const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         title: AppLocalizations.of(context)!
                                 .translate('sender_cash_register') ??
@@ -307,6 +348,7 @@ class _EditMoneyIncomeAnotherCashRegisterState
                             setState(() {
                               selectedSenderCashRegister = selectedRegionData;
                             });
+                            _warnIfCurrenciesMismatch();
                           } catch (e) {
                             debugPrint(
                                 'Error selecting sender cash register: $e');
@@ -318,8 +360,6 @@ class _EditMoneyIncomeAnotherCashRegisterState
                           }
                         },
                       ),
-                      const SizedBox(height: 16),
-                      _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
                         title: AppLocalizations.of(context)!
@@ -333,6 +373,7 @@ class _EditMoneyIncomeAnotherCashRegisterState
                             setState(() {
                               selectedCashRegister = selectedRegionData;
                             });
+                            _warnIfCurrenciesMismatch();
                           } catch (e) {
                             debugPrint(
                                 'Error selecting receiver cash register: $e');

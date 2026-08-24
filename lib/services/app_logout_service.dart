@@ -13,6 +13,7 @@ import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/services/dashboard_prefetch_service.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +96,7 @@ class AppLogoutService {
 
       ApiService.clearAnalyticsFilters();
       ApiService.clearAnalyticsResponseCache();
+      DashboardPrefetchService.reset();
 
       final prefs = await SharedPreferences.getInstance();
       final preservedAppearanceValues = <String, Object?>{

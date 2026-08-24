@@ -59,7 +59,7 @@ class _ConversionChartState extends State<ConversionChart> {
       final apiService = ApiService();
       final response = await apiService.getLeadConversionDataV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _conversionData = response.monthlyData;

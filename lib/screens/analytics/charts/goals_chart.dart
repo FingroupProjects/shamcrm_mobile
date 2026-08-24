@@ -72,7 +72,7 @@ class _GoalsChartState extends State<GoalsChart> {
       final apiService = ApiService();
       final response = await apiService.getUsersChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _goals = response.users;

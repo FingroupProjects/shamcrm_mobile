@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 import '../../../../models/page_2/dashboard/cash_balance_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/cash_register_card.dart';
+import '../details/cash_register_details.dart';
 
 class CashBalanceContent extends StatefulWidget {
   const CashBalanceContent({super.key});
@@ -14,40 +16,42 @@ class CashBalanceContent extends StatefulWidget {
 }
 
 class _CashBalanceContentState extends State<CashBalanceContent> {
+  void _openCashRegister(CashRegisters cashRegister) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CashRegisterDetailsScreen(
+          cashRegister: cashRegister,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCashBalanceList(CashBalanceResponse data) {
     final cashRegisters = data.result?.cashBalanceSummary?.cashRegisters ?? [];
-    
-    return SingleChildScrollView(
+
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (cashRegisters.isNotEmpty) ...[
-            // Показываем список кассовых регистров
-            ...cashRegisters.map((cashRegister) => Container(
-              margin: EdgeInsets.only(bottom: 12),
-              child: CashRegisterCard(
-                cashRegister: cashRegister,
-                onClick: (register) {
-                  // Обработка нажатия на кассовый регистр
-                  debugPrint('Выбран кассовый регистр: ${register.name}');
-                },
-                onLongPress: (register) {
-                  // Обработка длительного нажатия
-                  debugPrint('Длительное нажатие на кассовый регистр: ${register.name}');
-                },
-                isSelectionMode: false,
-                isSelected: false,
-              ),
-            )).toList(),
-          ],
-        ],
-      ),
+      itemCount: cashRegisters.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final cashRegister = cashRegisters[index];
+        return CashRegisterCard(
+          cashRegister: cashRegister,
+          onClick: _openCashRegister,
+          onLongPress: (_) {},
+          isSelectionMode: false,
+          isSelected: false,
+        );
+      },
     );
   }
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -55,26 +59,20 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
           Icon(
             Icons.account_balance_wallet_outlined,
             size: 64,
-            color: Color(0xff99A4BA),
+            color: colors.textMuted,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             localizations.translate('no_cash_register_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 18,
+            style: textStyles.titleMd.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             localizations.translate('cash_register_info_unavailable'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 14,
-              color: Color(0xff99A4BA),
-            ),
+            style: textStyles.bodySm.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -83,22 +81,20 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             localizations.translate('loading_data'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              color: Color(0xff64748B),
-            ),
+            style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
           ),
         ],
       ),
@@ -107,18 +103,20 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Color(0xffFEF2F2),
+            color: colors.surfacePrimary.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color(0xffFECACA),
+              color: colors.error.withValues(alpha: 0.34),
               width: 1,
             ),
           ),
@@ -128,45 +126,42 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
               Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 localizations.translate('error_loading_dialog'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 18,
+                style: textStyles.titleMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  color: Color(0xff64748B),
-                ),
+                style: textStyles.bodySm.copyWith(color: colors.textSecondary),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardCashBalanceBloc>().add(const LoadCashBalanceReport());
+                  context
+                      .read<SalesDashboardCashBalanceBloc>()
+                      .add(const LoadCashBalanceReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   localizations.translate('retry'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
                   ),
@@ -181,14 +176,15 @@ class _CashBalanceContentState extends State<CashBalanceContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardCashBalanceBloc, SalesDashboardCashBalanceState>(
+    return BlocBuilder<SalesDashboardCashBalanceBloc,
+        SalesDashboardCashBalanceState>(
       builder: (context, state) {
         if (state is SalesDashboardCashBalanceLoading) {
           return _buildLoadingState();
         } else if (state is SalesDashboardCashBalanceError) {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardCashBalanceLoaded) {
-          if (state.data.result?.cashBalanceSummary?.cashRegisters == null || 
+          if (state.data.result?.cashBalanceSummary?.cashRegisters == null ||
               state.data.result!.cashBalanceSummary!.cashRegisters!.isEmpty) {
             return _buildEmptyState();
           }

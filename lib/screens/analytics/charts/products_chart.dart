@@ -86,7 +86,7 @@ class _ProductsChartState extends State<ProductsChart> {
       final apiService = ApiService();
       final response = await apiService.getTopSellingProductsChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

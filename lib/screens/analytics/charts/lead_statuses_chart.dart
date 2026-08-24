@@ -40,7 +40,7 @@ class _LeadStatusesChartState extends State<LeadStatusesChart> {
         toDate: '2025-12-31',
       );
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _items = response.items;

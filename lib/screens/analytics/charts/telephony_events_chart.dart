@@ -117,7 +117,7 @@ class _TelephonyEventsChartState extends State<TelephonyEventsChart> {
       final apiService = ApiService();
       final response = await apiService.getTelephonyAndEventsChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

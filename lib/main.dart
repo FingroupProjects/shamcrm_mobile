@@ -22,7 +22,7 @@ void main() {
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
-
+      
       final apiService = ApiService();
       final authService = AuthService();
       await requestTrackingAuthorizationIfNeeded();
@@ -30,7 +30,7 @@ void main() {
       await safeInitializeFirebase();
 
       final sessionValidation = await validateApplicationSession(apiService);
-
+      
       String? token;
       String? pin;
       bool isDomainChecked = false;

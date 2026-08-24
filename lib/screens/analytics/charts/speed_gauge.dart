@@ -67,7 +67,7 @@ class _SpeedGaugeState extends State<SpeedGauge>
         to: response.speedTimeFormat,
       );
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _speedHours = normalizedSpeed;

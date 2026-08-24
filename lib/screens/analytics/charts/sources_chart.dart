@@ -60,7 +60,7 @@ class _SourcesChartState extends State<SourcesChart> {
       final apiService = ApiService();
       final response = await apiService.getSourceOfLeadsChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _channels = response.activeSources;

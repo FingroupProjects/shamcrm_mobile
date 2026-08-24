@@ -4,6 +4,10 @@ import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+class ChartReadyNotification extends Notification {
+  const ChartReadyNotification();
+}
+
 class AnalyticsChartRequestPolicy {
   static const Set<int> _fatalStatusCodes = {409, 422, 500};
   static final Map<String, int> _attemptsByChart = {};
@@ -16,9 +20,18 @@ class AnalyticsChartRequestPolicy {
     _retryTimersByChart.remove(chartId)?.cancel();
   }
 
-  static void reset(String chartId) {
+  static void reset(String chartId, {State? readyState}) {
     cancelPendingRetry(chartId);
     _attemptsByChart.remove(chartId);
+    _dispatchReady(readyState);
+  }
+
+  static void _dispatchReady(State? readyState) {
+    if (readyState == null || !readyState.mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!readyState.mounted) return;
+      const ChartReadyNotification().dispatch(readyState.context);
+    });
   }
 
   static Future<void> handleLoadError({
@@ -36,6 +49,7 @@ class AnalyticsChartRequestPolicy {
         return;
       }
       setStateCallback(onFatalError);
+      _dispatchReady(state);
       return;
     }
 

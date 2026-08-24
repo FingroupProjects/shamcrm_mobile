@@ -54,7 +54,7 @@ class _KpiChartState extends State<KpiChart> {
       final apiService = ApiService();
       final response = await apiService.getTaskChartDataV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _taskData = response.data;

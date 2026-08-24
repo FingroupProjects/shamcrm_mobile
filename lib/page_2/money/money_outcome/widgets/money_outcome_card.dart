@@ -86,6 +86,16 @@ class MoneyOutcomeCard extends StatelessWidget {
       return null;
     }
 
+    if (document.operationType ==
+        MoneyOutcomeOperationType.send_another_cash_register.name) {
+      final sender = document.senderCashregister?.name ?? '';
+      final receiver = document.cashRegister?.name ?? '';
+      return localizations
+          .translate('sending_to_another_cash_register')
+          .replaceAll('{cashRegister}',
+              receiver.isEmpty ? sender : receiver);
+    }
+
     if (document.model?.name?.isNotEmpty ?? false) {
       return '${localizations.translate('client') ?? 'Клиент'} ${document.model!.name}';
     }
@@ -222,22 +232,6 @@ class MoneyOutcomeCard extends StatelessWidget {
                       ),
                     ),
                   ],
-
-                  // if (document.operationType == MoneyOutcomeOperationType.send_another_cash_register.name) ...[
-                  //   const SizedBox(height: 8),
-                  //   Text(
-                  //     localizations
-                  //         .translate('sending_to_another_cash_register') // Отправка на другую кассу: {cashRegister}
-                  //         .replaceAll('{cashRegister}', document.cashRegister?.name ?? '') ??
-                  //         'Перевод в другую кассу ${document.cashRegister?.name ?? ''}',
-                  //     style: const TextStyle(
-                  //       fontSize: 14,
-                  //       fontFamily: 'Gilroy',
-                  //       fontWeight: FontWeight.w400,
-                  //       color: Color(0xff99A4BA),
-                  //     ),
-                  //   )
-                  // ],
                 ],
               ),
             ),

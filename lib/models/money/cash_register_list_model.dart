@@ -79,14 +79,14 @@ class CashRegistersDataResponse {
   });
 
   factory CashRegistersDataResponse.fromJson(Map<String, dynamic> json) {
+    final result = SafeConverters.toMapOrNull(json["result"]);
+    final items = SafeConverters.toList(result?["data"])
+        .map(SafeConverters.toMapOrNull)
+        .whereType<Map<String, dynamic>>()
+        .map(CashRegisterData.fromJson)
+        .toList();
     return CashRegistersDataResponse(
-      result: SafeConverters.toMapOrNull(json["result"]) != null &&
-              SafeConverters.toList(json["result"]["data"]).isNotEmpty
-          ? SafeConverters.toList(json["result"]["data"])
-              .whereType<Map<String, dynamic>>()
-              .map((x) => CashRegisterData.fromJson(x))
-              .toList()
-          : [],
+      result: items,
       errors: json["errors"],
     );
   }

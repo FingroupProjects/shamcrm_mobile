@@ -10,6 +10,7 @@ import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_scr
 import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_creen.dart';
 import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/employee/employee_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -38,6 +39,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   bool _hasStorage = false;
   bool _hasUnit = false;
   bool _hasSupplier = false;
+  bool _hasEmployee = false;
   bool _hasProduct = false;
   bool _hasPriceType = false;
   bool _hasCashRegister = false;
@@ -72,6 +74,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasStorage = await _apiService.hasPermission('storage.read');
       _hasUnit = await _apiService.hasPermission('unit.read');
       _hasSupplier = await _apiService.hasPermission('supplier.read');
+      _hasEmployee = true;
       _hasProduct = await _apiService.hasPermission('product.read');
       _hasPriceType = await _apiService.hasPermission('price_type.read');
       _hasCashRegister = await _apiService.hasPermission('cash_register.read');
@@ -88,6 +91,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       _hasStorage = false;
       _hasUnit = false;
       _hasSupplier = false;
+      _hasEmployee = true;
       _hasProduct = false;
       _hasPriceType = false;
       _hasCashRegister = false;
@@ -143,6 +147,18 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
           title: AppLocalizations.of(context)!.translate('supplier') ??
               'Поставщик',
           icon: Icons.business_outlined,
+          color: refColor,
+        ),
+      );
+    }
+
+    if (_hasEmployee) {
+      allReferences.add(
+        ReferenceItem(
+          keyName: 'employee',
+          title: AppLocalizations.of(context)!.translate('employees') ??
+              'Сотрудники',
+          icon: Icons.badge_outlined,
           color: refColor,
         ),
       );
@@ -280,6 +296,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const SupplierCreen()),
+      );
+    } else if (reference.keyName == 'employee') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const EmployeeScreen()),
       );
     } else if (reference.keyName == 'warehouse') {
       Navigator.push(

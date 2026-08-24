@@ -80,7 +80,7 @@ class _OrdersChartState extends State<OrdersChart> {
       final apiService = ApiService();
       final response = await apiService.getOnlineStoreOrdersChartV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

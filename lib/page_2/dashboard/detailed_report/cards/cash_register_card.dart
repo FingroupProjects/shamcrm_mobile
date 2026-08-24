@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 
@@ -23,87 +24,121 @@ class CashRegisterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+    final balance = cashRegister.balance ?? 0;
+    final isPositive = balance >= 0;
 
     return GestureDetector(
       onTap: () => onClick(cashRegister),
       onLongPress: () => onLongPress(cashRegister),
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFDDE8F5) : const Color(0xFFE9EDF5),
+          color: isSelected
+              ? colors.surfaceElevated.withValues(alpha: 0.98)
+              : colors.surfacePrimary.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)],
+          border: Border.all(
+            color: isSelected ? colors.borderPrimary : colors.borderSubtle,
+            width: isSelected ? 1.4 : 1,
+          ),
+          boxShadow: context.appShadows.card,
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${localizations.translate('cash_register_name')}: ${cashRegister.name ?? 'Не указано'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff1E2E52),
+                    cashRegister.name?.trim().isNotEmpty == true
+                        ? cashRegister.name!
+                        : localizations.translate('not_specified'),
+                    style: textStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('currency_label')}: ${cashRegister.currencyName ?? 'Не указана'}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xff1E2E52),
-                    ),
+                  const SizedBox(height: 10),
+                  _InfoRow(
+                    label: localizations.translate('currency_label'),
+                    value: cashRegister.currencyName?.trim().isNotEmpty == true
+                        ? cashRegister.currencyName!
+                        : localizations.translate('not_specified'),
+                    valueColor: colors.textPrimary,
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        '${localizations.translate('cash_balance')}:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        parseNumberToString(cashRegister.balance),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: (cashRegister.balance ?? 0) >= 0
-                              ? const Color(0xff10B981)
-                              : const Color(0xffEF4444),
-                        ),
-                      ),
-                    ],
+                  _InfoRow(
+                    label: localizations.translate('cash_balance'),
+                    value: parseNumberToString(balance, nullValue: '0'),
+                    valueColor: isPositive ? colors.success : colors.error,
                   ),
                 ],
               ),
             ),
-            if (isSelectionMode) ...[
+            if (isSelectionMode)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: Icon(
                   isSelected
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
+                  size: 24,
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.textMuted,
                   size: 24,
                 ),
               ),
-            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
+    return Row(
+      children: [
+        Text(
+          '$label:',
+          style: textStyles.bodySm.copyWith(color: colors.textSecondary),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: textStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w600,
+              color: valueColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

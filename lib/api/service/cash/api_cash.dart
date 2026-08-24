@@ -117,6 +117,36 @@ extension ApiCashX on ApiService {
     }
   }
 
+  Future<CashRegisterDetailsResponse> getCashRegisterDetails(
+    int id, {
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final path = await _appendQueryParams(
+      '/cashRegister/$id?page=$page&per_page=$perPage',
+    );
+
+    if (kDebugMode) {
+      debugPrint('ApiService: getCashRegisterDetails - path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final result = SafeConverters.toMapOrNull(data['result']);
+      if (result == null) {
+        throw Exception('Нет данных по кассе');
+      }
+      return CashRegisterDetailsResponse.fromJson(result);
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки кассы',
+      response.statusCode,
+    );
+  }
+
   Future<CashRegisterModel> postCashRegister(AddCashDeskModel value) async {
     final response = await _postRequest('/cashRegister', value.toJson());
     final data = json.decode(response.body);
@@ -324,24 +354,39 @@ extension ApiCashX on ApiService {
   }
 
   Future<CashRegistersDataResponse> getAllCashRegisters() async {
-    final path = await _appendQueryParams('/cashRegister');
+    final allRegisters = <CashRegisterData>[];
+    var page = 1;
+    var totalPages = 1;
 
-    final response = await _getRequest(path);
+    do {
+      final path = await _appendQueryParams(
+        '/cashRegister?page=$page&per_page=100',
+      );
+      final response = await _getRequest(path);
+      if (response.statusCode != 200) {
+        throw Exception('Ошибка при получении данных!');
+      }
 
-    late CashRegistersDataResponse cashRegistersData;
-
-    if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      if (data['result'] != null) {
-        cashRegistersData = CashRegistersDataResponse.fromJson(data);
-      } else {
+      if (data['result'] == null) {
         throw Exception('Результат отсутствует в ответе');
       }
-    } else {
-      throw Exception('Ошибка при получении данных!');
-    }
 
-    return cashRegistersData;
+      final pageResponse = CashRegistersDataResponse.fromJson(data);
+      allRegisters.addAll(pageResponse.result ?? const []);
+
+      final pagination = SafeConverters.toMapOrNull(
+        SafeConverters.toMapOrNull(data['result'])?['pagination'],
+      );
+      totalPages = SafeConverters.toInt(
+        pagination?['total_pages'],
+        defaultValue: 1,
+      );
+      if (totalPages < 1) totalPages = 1;
+      page++;
+    } while (page <= totalPages);
+
+    return CashRegistersDataResponse(result: allRegisters);
   }
 
   Future<IncomeCategoriesDataResponse> getAllIncomeCategories() async {

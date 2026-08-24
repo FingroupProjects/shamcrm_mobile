@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
+import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/charts/advertising_roi_chart.dart';
 import 'package:crm_task_manager/screens/analytics/charts/connected_accounts_chart.dart';
@@ -21,10 +21,10 @@ import 'package:crm_task_manager/screens/analytics/charts/telephony_by_hour_char
 import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart.dart';
 import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
+import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
 import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
-import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sales_planning/widgets/sales_plan_dashboard_widget.dart';
 import 'package:flutter/foundation.dart';
@@ -136,6 +136,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   bool _isLoadingLocalChartPrefs = true;
   bool _didNotifyFirstContentReady = false;
   Map<String, bool> _chartVisibility = {};
+  late final _ChartRevealController _revealController;
 
   void _notifyFirstContentReady() {
     if (_didNotifyFirstContentReady) return;
@@ -153,10 +154,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _lastChartSettingsTrigger = widget.chartSettingsTrigger;
     _selectedPeriodKey = _defaultPeriodKey;
     _initializeDefaultFilters();
+    _revealController = _ChartRevealController(
+      batchSize: _ChartRevealController.defaultBatchSize,
+    )..addListener(_onRevealControllerChanged);
     _loadStats();
     _loadDashboardSettings();
     _loadChartVisibilityPrefs();
-    _notifyFirstContentReady();
+  }
+
+  void _onRevealControllerChanged() {
+    if (_revealController.batchRevealed) {
+      _notifyFirstContentReady();
+    }
+  }
+
+  @override
+  void dispose() {
+    _revealController
+      ..removeListener(_onRevealControllerChanged)
+      ..dispose();
+    super.dispose();
   }
 
   Future<void> _initializeDefaultFilters() async {
@@ -386,7 +403,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         _conversionChange = stats.conversion.percent;
         _hasLoadedStatsOnce = true;
       });
-      _notifyFirstContentReady();
     } catch (e) {
       // Keep default values on error
     }
@@ -415,6 +431,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       setState(() {
         _chartsVersion++;
         _hasLoadedStatsOnce = false;
+        _revealController.reset();
       });
     }
     await Future.wait([
@@ -473,33 +490,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildStatsSkeletonCard() {
-    final colors = context.appColors;
-    return ShimmerWave(
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-    );
+    return const AnalyticsStatCardSkeleton();
   }
 
   Widget _buildChartOrderPlaceholder() {
-    final colors = context.appColors;
-    final responsive = ResponsiveHelper(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(responsive.borderRadius),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.4),
-        ),
-      ),
-      child: SizedBox(
-        height: responsive.chartHeight,
-        child: const AnalyticsChartShimmerLoader(),
-      ),
-    );
+    return const AnalyticsFullCardSkeleton();
   }
 
   List<Widget> _buildChartWidgets() {
@@ -650,7 +645,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       if (chartWidget == null) continue;
       addedCanonicalKeys.add(canonicalKey);
-      widgets.add(_KeepAliveChart(child: chartWidget));
+      widgets.add(
+        _KeepAliveChart(
+          revealIndex: widgets.length,
+          revealController: _revealController,
+          child: chartWidget,
+        ),
+      );
+    }
+    _revealController.updateChartCount(widgets.length);
+    if (widgets.isEmpty && _hasResolvedChartSettings) {
+      _notifyFirstContentReady();
     }
 
     if (widgets.isNotEmpty) return widgets;
@@ -1297,10 +1302,65 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 }
 
+class _ChartRevealController extends ChangeNotifier {
+  static const int defaultBatchSize = 2;
+
+  _ChartRevealController({this.batchSize = defaultBatchSize});
+
+  final int batchSize;
+  final Set<int> _readyIndexes = {};
+  int _chartCount = 0;
+  bool batchRevealed = false;
+
+  int get _effectiveBatchSize {
+    if (_chartCount <= 0) return batchSize;
+    return batchSize < _chartCount ? batchSize : _chartCount;
+  }
+
+  void updateChartCount(int count) {
+    if (_chartCount == count) return;
+    _chartCount = count;
+    _tryReveal();
+  }
+
+  void markReady(int index) {
+    if (!_readyIndexes.add(index)) return;
+    _tryReveal();
+  }
+
+  void reset() {
+    _readyIndexes.clear();
+    batchRevealed = false;
+    notifyListeners();
+  }
+
+  bool shouldShow(int index) {
+    if (index >= _effectiveBatchSize) return true;
+    return batchRevealed;
+  }
+
+  void _tryReveal() {
+    if (batchRevealed) return;
+    final needed = _effectiveBatchSize;
+    if (needed <= 0) return;
+    final ready = Iterable<int>.generate(needed).every(_readyIndexes.contains);
+    if (!ready) return;
+    batchRevealed = true;
+    notifyListeners();
+  }
+}
+
 class _KeepAliveChart extends StatefulWidget {
   final Widget child;
+  final int? revealIndex;
+  final _ChartRevealController? revealController;
 
-  const _KeepAliveChart({super.key, required this.child});
+  const _KeepAliveChart({
+    super.key,
+    required this.child,
+    this.revealIndex,
+    this.revealController,
+  });
 
   @override
   State<_KeepAliveChart> createState() => _KeepAliveChartState();
@@ -1314,7 +1374,40 @@ class _KeepAliveChartState extends State<_KeepAliveChart>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return widget.child;
+    final controller = widget.revealController;
+    final index = widget.revealIndex;
+    if (controller == null || index == null) {
+      return widget.child;
+    }
+
+    return NotificationListener<ChartReadyNotification>(
+      onNotification: (_) {
+        controller.markReady(index);
+        return true;
+      },
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) {
+          final showContent = controller.shouldShow(index);
+          return Stack(
+            children: [
+              widget.child,
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: showContent,
+                  child: AnimatedOpacity(
+                    opacity: showContent ? 0 : 1,
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeOut,
+                    child: const AnalyticsFullCardSkeleton(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 

@@ -239,13 +239,21 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
     );
   }
 
-  String _getOperationName(BuildContext context, String operationType) {
+  String _getOperationName(
+    BuildContext context,
+    String operationType, {
+    bool isIncome = false,
+  }) {
     final localizations = AppLocalizations.of(context)!;
     switch (operationType) {
       case 'client_return':
         return localizations.translate('client_return');
       case 'send_another_cash_register':
-        return localizations.translate('send_another_cash_register');
+        return localizations.translate(
+          isIncome
+              ? 'receive_another_cash_register'
+              : 'send_another_cash_register',
+        );
       case 'client_payment':
         return localizations.translate('client_payment');
       case 'supplier_payment':
@@ -284,7 +292,11 @@ class _CashBalanceDialogState extends State<CashBalanceDialog> {
               Expanded(
                 child: Builder(
                   builder: (context) => Text(
-                    _getOperationName(context, movement.operationType ?? ''),
+                    _getOperationName(
+                      context,
+                      movement.operationType ?? '',
+                      isIncome: isIncome,
+                    ),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 14,

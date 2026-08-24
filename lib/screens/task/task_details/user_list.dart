@@ -97,23 +97,30 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   }
 
   Future<List<UserData>> _searchUsers(String query) async {
-    final normalizedQuery = query.trim();
-    final response = await _apiService.getAllUser(
-      search: normalizedQuery.isEmpty ? null : normalizedQuery,
-      page: 1,
-      perPage: _pageSize,
-    );
-    final result = response.result ?? <UserData>[];
-    if (mounted) {
-      setState(() {
-        usersList = result;
-        if (normalizedQuery.isEmpty) {
-          initialUsersList = result;
-        }
-      });
-      _selectedUsersController.value = List<UserData>.from(selectedUsersData);
+    try {
+      final normalizedQuery = query.trim();
+      final response = await _apiService.getAllUser(
+        search: normalizedQuery.isEmpty ? null : normalizedQuery,
+        page: 1,
+        perPage: _pageSize,
+      );
+      final result = response.result ?? <UserData>[];
+      if (mounted) {
+        setState(() {
+          usersList = result;
+          if (normalizedQuery.isEmpty) {
+            initialUsersList = result;
+          }
+        });
+        _selectedUsersController.value = List<UserData>.from(selectedUsersData);
+      }
+      return [selectAllItem, ...result];
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('UserMultiSelectWidget: failed to search users: $error');
+      }
+      return [selectAllItem, ...usersList];
     }
-    return [selectAllItem, ...result];
   }
 
   void _syncSelectedUsers({bool notifyParent = false}) {
@@ -206,7 +213,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     }
 
     return selectedUsersData
-        .map((user) => '${user.name} ${user.lastname}'.trim())
+        .map((user) => user.displayName)
         .where((name) => name.isNotEmpty)
         .join(', ');
   }
@@ -399,8 +406,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                   child: Text(
                                     isSelectAll
                                         ? localizations.translate('select_all')
-                                        : '${item.name} ${item.lastname}'
-                                            .trim(),
+                                        : item.displayName,
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,

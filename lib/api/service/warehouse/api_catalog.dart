@@ -421,8 +421,8 @@ extension ApiWarehouseCatalogX on ApiService {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final encodedSearch = search?.trim();
     final basePath = encodedSearch != null && encodedSearch.isNotEmpty
-        ? '/category/get/subcategories?search=${Uri.encodeQueryComponent(encodedSearch)}'
-        : '/category/get/subcategories';
+        ? '/category?search=${Uri.encodeQueryComponent(encodedSearch)}'
+        : '/category';
     final path = await _appendQueryParams(basePath);
     if (kDebugMode) {
       //debugPrint('ApiService: getSubCategoryAttributes - Generated path: $path');
@@ -432,13 +432,9 @@ extension ApiWarehouseCatalogX on ApiService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
-      ////debugPrint('Response data: $data'); // Debug: //print the response
-      if (data.containsKey('data')) {
-        return (data['data'] as List).map((item) {
-          ////debugPrint('Item: $item'); // Debug: //print each item
-          return SubCategoryAttributesData.fromJson(
-              item as Map<String, dynamic>);
-        }).toList();
+      final rawItems = _categoryListFromResponse(data);
+      if (rawItems != null) {
+        return _flattenSubCategoryAttributes(rawItems);
       } else {
         throw Exception('Ошибка: Неверный формат данных');
       }
@@ -446,6 +442,49 @@ extension ApiWarehouseCatalogX on ApiService {
       throw Exception(
           'Ошибка загрузки просмотра товаров: ${response.statusCode}');
     }
+  }
+
+  List<dynamic>? _categoryListFromResponse(Map<String, dynamic> data) {
+    final result = data['result'];
+    if (result is List) return result;
+    if (result is Map && result['data'] is List) {
+      return result['data'] as List;
+    }
+    if (data['data'] is List) return data['data'] as List;
+    return null;
+  }
+
+  List<SubCategoryAttributesData> _flattenSubCategoryAttributes(
+    List<dynamic> items, {
+    Map<String, dynamic>? parent,
+  }) {
+    final flattened = <SubCategoryAttributesData>[];
+
+    for (final item in items) {
+      if (item is! Map) continue;
+      final json = Map<String, dynamic>.from(item);
+      if (parent != null && json['parent'] == null) {
+        json['parent'] = parent;
+      }
+
+      flattened.add(SubCategoryAttributesData.fromJson(json));
+
+      final nested = json['subcategories'];
+      if (nested is List && nested.isNotEmpty) {
+        flattened.addAll(
+          _flattenSubCategoryAttributes(
+            nested,
+            parent: {
+              'id': json['id'],
+              'name': json['name'],
+              'image': json['image'],
+            },
+          ),
+        );
+      }
+    }
+
+    return flattened;
   }
 
   Future<Map<String, dynamic>> createGoods({
@@ -1567,5 +1606,90 @@ extension ApiWarehouseCatalogX on ApiService {
       debugPrint("Error fetching data for period $period: $e");
       rethrow;
     }
+  }
+
+  Future<List<EmployeeModel>> getEmployees({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    String path = await _appendQueryParams(
+      '/employee?page=$page&per_page=$perPage',
+    );
+    if (search != null && search.isNotEmpty) {
+      path += '&search=$search';
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final result = data['result'];
+      final List<dynamic> items = result is Map<String, dynamic>
+          ? (result['data'] as List<dynamic>? ?? const [])
+          : (result is List ? result : const []);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(EmployeeModel.fromJson)
+          .toList();
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка загрузки сотрудников',
+      response.statusCode,
+    );
+  }
+
+  Future<void> createEmployee(EmployeeModel employee) async {
+    final path = await _appendQueryParams('/employee');
+    final response = await _postRequest(path, employee.toRequestBody());
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка создания сотрудника',
+      response.statusCode,
+    );
+  }
+
+  Future<void> updateEmployee({
+    required int id,
+    required EmployeeModel employee,
+  }) async {
+    final path = await _appendQueryParams('/employee/$id');
+    final response = await _patchRequest(path, employee.toRequestBody());
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return;
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка обновления сотрудника',
+      response.statusCode,
+    );
+  }
+
+  Future<void> deleteEmployee(int employeeId) async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final path = await _appendQueryParams('/employee/$employeeId');
+    final response = await _deleteRequestWithBody(path, {
+      'organization_id': organizationId,
+      'sales_funnel_id': salesFunnelId,
+    });
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return;
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка удаления сотрудника',
+      response.statusCode,
+    );
   }
 }

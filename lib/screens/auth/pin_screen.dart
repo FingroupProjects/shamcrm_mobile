@@ -7,13 +7,16 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
+import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/dashboard_prefetch_service.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
+import 'package:crm_task_manager/widgets/app_fade_page_route.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
@@ -407,29 +410,29 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   void _navigateToHome() {
     if (!mounted) return;
 
-    // ✅ КРИТИЧНО: Проверяем флаг верификации
     if (!_isPinVerified) {
       debugPrint('PinScreen: PIN не верифицирован, отменяем навигацию');
       return;
     }
 
-    debugPrint('PinScreen: PIN верифицирован, переход на HomeScreen');
+    debugPrint('PinScreen: PIN верифицирован, плавный переход на HomeScreen');
     unawaited(ChatUnreadCounterService.instance.initialize());
 
-    // ✅ ИСПРАВЛЕНИЕ: Передаем initialMessage через arguments
-    Future.delayed(Duration(milliseconds: 50), () {
-      if (!mounted) return;
+    // Pre-warm analytics cache while the fade transition plays so that charts
+    // have data ready by the time DashboardScreen renders.
+    unawaited(DashboardPrefetchService.prefetchAnalyticsData());
 
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/home',
-          (route) => false,
-          arguments: {
-            'initialMessage': widget.initialMessage, // ⬅️ Передаем сообщение
-          },
-        );
-      }
-    });
+    Navigator.of(context).pushAndRemoveUntil(
+      AppFadePageRoute<void>(
+        settings: RouteSettings(
+          name: '/home',
+          arguments: {'initialMessage': widget.initialMessage},
+        ),
+        builder: (_) => const HomeScreen(),
+        duration: const Duration(milliseconds: 380),
+      ),
+      (_) => false,
+    );
   }
 
   void _navigateToSipCallOnly() {

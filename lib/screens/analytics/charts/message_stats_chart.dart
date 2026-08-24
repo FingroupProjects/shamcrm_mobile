@@ -38,7 +38,7 @@ class _MessageStatsChartState extends State<MessageStatsChart> {
       final apiService = ApiService();
       final response = await apiService.getMessageStats();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

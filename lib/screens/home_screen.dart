@@ -1247,9 +1247,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           Widget safeBody = Stack(
             children: [
-              SafeArea(
-                bottom: true,
-                child: currentWidget,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeIn,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+                child: SafeArea(
+                  key: ValueKey(currentWidget.runtimeType),
+                  bottom: true,
+                  child: currentWidget,
+                ),
               ),
               if (_showProfileScreen) _buildEmbeddedProfileOverlay(context),
             ],

@@ -84,6 +84,9 @@ class _Bar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    // Use a slightly darker tint than the card surface so shimmer bars are
+    // clearly visible in both light and dark mode.
+    final barColor = colors.textSecondary.withValues(alpha: 0.13);
     return Expanded(
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -92,7 +95,7 @@ class _Bar extends StatelessWidget {
           child: Container(
             width: 18,
             decoration: BoxDecoration(
-              color: colors.borderSubtle.withValues(alpha: 0.7),
+              color: barColor,
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -122,7 +125,7 @@ class SimpleSkeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: colors.borderSubtle.withValues(alpha: 0.18),
+        color: colors.textSecondary.withValues(alpha: 0.10),
         borderRadius: borderRadius ?? BorderRadius.circular(8),
       ),
     );

@@ -115,7 +115,7 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
       final sorted = List<TargetedAdCampaign>.from(response.topCampaigns)
         ..sort((a, b) => b.totalReaches.compareTo(a.totalReaches));
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

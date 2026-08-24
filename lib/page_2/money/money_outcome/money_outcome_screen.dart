@@ -14,10 +14,12 @@ import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
 import '../../../custom_widget/app_bar_selection_mode.dart';
 import '../../../widgets/snackbar_widget.dart';
 import '../../widgets/document_confirm_dialog.dart';
+import 'add/add_money_outcome_from_another_cash_register.dart';
 import 'add/add_money_outcome_from_client.dart';
 import 'add/add_money_outcome_other_outcome.dart';
 import 'add/add_money_outcome_salary_payment.dart';
 import 'add/add_money_outcome_supplier_return.dart';
+import 'edit/edit_money_outcome_from_another_cash_register.dart';
 import 'edit/edit_money_outcome_from_client.dart';
 import 'edit/edit_money_outcome_other_outcome.dart';
 import 'edit/edit_money_outcome_salary_payment.dart';
@@ -183,6 +185,9 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
         break;
       case MoneyOutcomeOperationType.salary_payment:
         targetScreen = EditMoneyOutcomeSalaryPayment(document: document);
+        break;
+      case MoneyOutcomeOperationType.send_another_cash_register:
+        targetScreen = EditMoneyOutcomeAnotherCashRegister(document: document);
         break;
     }
 
@@ -607,6 +612,10 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                     } else if (value ==
                         MoneyOutcomeOperationType.salary_payment.name) {
                       targetScreen = const AddMoneyOutcomeSalaryPayment();
+                    } else if (value ==
+                        MoneyOutcomeOperationType
+                            .send_another_cash_register.name) {
+                      targetScreen = const AddMoneyOutcomeAnotherCashRegister();
                     } else {
                       return;
                     }
@@ -690,6 +699,32 @@ class _MoneyOutcomeScreenState extends State<MoneyOutcomeScreen> {
                             Expanded(
                               child: Text(
                                 localizations.translate('clientreturn'),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: MoneyOutcomeOperationType
+                            .send_another_cash_register.name,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.swap_horiz,
+                              color: colors.textPrimary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                localizations
+                                    .translate('send_another_cash_register'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontFamily: 'Gilroy',

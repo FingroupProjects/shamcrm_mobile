@@ -93,7 +93,7 @@ class _TelephonyByHourChartState extends State<TelephonyByHourChart> {
         date: _selectedDate,
       );
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

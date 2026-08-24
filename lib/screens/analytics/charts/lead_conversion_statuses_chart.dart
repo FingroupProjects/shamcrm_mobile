@@ -111,7 +111,7 @@ class _LeadConversionStatusesChartState
       final apiService = ApiService();
       final response = await apiService.getLeadConversionByStatuses();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

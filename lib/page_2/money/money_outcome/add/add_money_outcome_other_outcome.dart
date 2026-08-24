@@ -155,13 +155,7 @@ class _AddMoneyOutcomeOtherOutcomeState
     return Scaffold(
       backgroundColor: colors.surfacePrimary,
       appBar: _buildAppBar(localizations),
-      body: MultiBlocProvider(
-        // Добавлен MultiBlocProvider - ИСПРАВЛЕНИЕ
-        providers: [
-          BlocProvider(create: (_) => GetAllOutcomeCategoryBloc()),
-        ],
-        child: MultiBlocListener(
-          // Заменен BlocListener на MultiBlocListener - ИСПРАВЛЕНИЕ
+      body: MultiBlocListener(
           listeners: [
             BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
               listener: (context, state) {
@@ -241,7 +235,6 @@ class _AddMoneyOutcomeOtherOutcomeState
             ),
           ),
         ),
-      ),
     );
   }
 

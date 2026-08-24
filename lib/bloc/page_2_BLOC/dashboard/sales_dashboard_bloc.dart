@@ -99,6 +99,8 @@ class SalesDashboardBloc
       List<AllProfitabilityData>? profitabilityData;
       final fullGraphErrors = Map<String, String>.from(graphErrors);
       final loadedChartKeys = <String>{};
+      const firstBatchKeys = ['salesDynamics', 'netProfit'];
+      var firstBatchRevealed = false;
       final chartFutures = [
         _loadChartData(
           'salesDynamics',
@@ -146,6 +148,15 @@ class SalesDashboardBloc
           }
         }
 
+        if (!firstBatchRevealed &&
+            firstBatchKeys.every(loadedChartKeys.contains)) {
+          firstBatchRevealed = true;
+        }
+
+        final visibleChartKeys = firstBatchRevealed
+            ? Set<String>.from(loadedChartKeys)
+            : <String>{};
+
         emit(SalesDashboardLoadingSecondary(
           salesDashboardTopPart: salesDashboardTopResponse ??
               DashboardTopPart(result: null, errors: null),
@@ -157,7 +168,7 @@ class SalesDashboardBloc
           orderDashboardData: orderDashboardData,
           expenseStructureData: expenseStructureData,
           profitabilityData: profitabilityData,
-          loadedChartKeys: Set<String>.from(loadedChartKeys),
+          loadedChartKeys: visibleChartKeys,
           graphErrors: Map<String, String>.from(fullGraphErrors),
         ));
       }

@@ -109,6 +109,7 @@ import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/cash_register_details_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/debtors_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/creditors_model.dart';
@@ -123,6 +124,7 @@ import 'package:crm_task_manager/models/page_2/incoming_document_history_model.d
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/lead_order_model.dart';
+import 'package:crm_task_manager/models/page_2/employee_model.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
 import 'package:crm_task_manager/models/page_2/monthly_call_stats.dart';
 import 'package:crm_task_manager/models/page_2/operator_model.dart';

@@ -51,6 +51,7 @@ import 'package:crm_task_manager/bloc/history_my-task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/history_task/task_history_bloc.dart';
 import 'package:crm_task_manager/bloc/income/income_bloc.dart';
 import 'package:crm_task_manager/bloc/income_category_list/income_category_list_bloc.dart';
+import 'package:crm_task_manager/bloc/outcome_category_list/outcome_category_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_by_id/leadById_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_channel_list/lead_channel_bloc.dart';
@@ -102,6 +103,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/lead_order.dart/lead_order_blo
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_by_lead/order_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_history/history_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/employee_bloc/employee_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/supplier_bloc/supplier_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bloc/variant_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/variant_bottom_sheet_bloc.dart';
@@ -157,6 +159,7 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider(create: (context) => GetAllLeadBloc(apiService: apiService)),
     BlocProvider(create: (context) => GetAllCashRegisterBloc()),
     BlocProvider(create: (context) => GetAllIncomeCategoryBloc()),
+    BlocProvider(create: (context) => GetAllOutcomeCategoryBloc()),
     BlocProvider(create: (context) => GetAllSupplierBloc()),
     BlocProvider(create: (context) => GetAllRegionBloc()),
     BlocProvider(create: (context) => GetAllLeadMultiBloc()),
@@ -257,6 +260,7 @@ List<SingleChildWidget> createAppProviders({
     BlocProvider<IncomingDocumentHistoryBloc>( create: (context) =>    IncomingDocumentHistoryBloc(context.read<ApiService>()),),
     BlocProvider(create: (context) => ClientReturnBloc(apiService)),
     BlocProvider(create: (context) => SupplierBloc(apiService)),
+    BlocProvider(create: (context) => EmployeeBloc(apiService)),
     BlocProvider(create: (context) => MeasureUnitsBloc(apiService)),
     BlocProvider(create: (context) => WareHouseBloc(apiService)),
     BlocProvider(create: (context) => PriceTypeScreenBloc(apiService)),

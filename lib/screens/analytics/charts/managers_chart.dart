@@ -83,7 +83,7 @@ class _ManagersChartState extends State<ManagersChart> {
       final apiService = ApiService();
       final response = await apiService.getDealsByManagersV2();
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _managers = response.managers;

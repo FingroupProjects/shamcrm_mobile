@@ -132,7 +132,7 @@ class _AdvertisingRoiChartState extends State<AdvertisingRoiChart> {
       final sorted = List<AdvertisingRoiCampaign>.from(response.campaigns)
         ..sort((a, b) => b.totalLeads.compareTo(a.totalLeads));
 
-      AnalyticsChartRequestPolicy.reset(chartId);
+      AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
       setState(() {
         _data = response;

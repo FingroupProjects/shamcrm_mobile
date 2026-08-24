@@ -45,7 +45,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = AppLocalizations.of(context);
+    final localization = AppLocalizations.of(context)!;
     final colors = context.appColors;
 
     return GestureDetector(
@@ -95,7 +95,7 @@ class _WareHouseCardState extends State<WareHouseCard> {
               children: [
                 Expanded(
                   child: Text(
-                    '${localization!.translate('empty_0') ?? 'Склад'} ${widget.warehouse.name ?? 'N/A'}',
+                    widget.warehouse.name ?? 'N/A',
                     style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Gilroy',

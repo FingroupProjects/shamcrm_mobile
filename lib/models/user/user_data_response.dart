@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 UsersDataResponse usersDataResponseFromJson(String str) =>
     UsersDataResponse.fromJson(json.decode(str));
 
@@ -17,18 +19,31 @@ class UsersDataResponse {
 
   factory UsersDataResponse.fromJson(Map<String, dynamic> json) =>
       UsersDataResponse(
-        result: json["result"] == null
-            ? []
-            : List<UserData>.from(
-                json["result"]!.map((x) => UserData.fromJson(x))),
-        errors: json["errors"],
+        result: _parseUsers(json['result']),
+        errors: json['errors'],
       );
 
+  static List<UserData> _parseUsers(dynamic raw) {
+    final items = raw is List
+        ? raw
+        : SafeConverters.toList(SafeConverters.toMapOrNull(raw)?['data']);
+
+    final users = <UserData>[];
+    for (final item in items) {
+      final map = SafeConverters.toMapOrNull(item);
+      if (map == null) continue;
+      final user = UserData.fromJson(map);
+      if (user.id <= 0) continue;
+      users.add(user);
+    }
+    return users;
+  }
+
   Map<String, dynamic> toJson() => {
-        "result": result == null
+        'result': result == null
             ? []
             : List<dynamic>.from(result!.map((x) => x.toJson())),
-        "errors": errors,
+        'errors': errors,
       };
 }
 
@@ -51,24 +66,30 @@ class UserData {
     this.image,
   });
 
+  String get displayName {
+    final fullName = '$name $lastname'.trim();
+    if (fullName.isNotEmpty) return fullName;
+    return login?.trim().isNotEmpty == true ? login!.trim() : '';
+  }
+
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
-        id: json["id"],
-        name: json["name"],
-        lastname: json["lastname"],
-        login: json["login"],
-        email: json["email"],
-        phone: json["phone"],
-        image: json["image"],
+        id: SafeConverters.toInt(json['id']),
+        name: SafeConverters.toSafeString(json['name']),
+        lastname: SafeConverters.toSafeString(json['lastname']),
+        login: SafeConverters.toStringOrNull(json['login']),
+        email: SafeConverters.toStringOrNull(json['email']),
+        phone: SafeConverters.toStringOrNull(json['phone']),
+        image: SafeConverters.toStringOrNull(json['image']),
       );
 
   Map<String, dynamic> toJson() => {
-        "id": id,
-        "name": name,
-        "lastname": lastname,
-        "login": login,
-        "email": email,
-        "phone": phone,
-        "image": image,
+        'id': id,
+        'name': name,
+        'lastname': lastname,
+        'login': login,
+        'email': email,
+        'phone': phone,
+        'image': image,
       };
 
   @override
@@ -80,8 +101,5 @@ class UserData {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() {
-    // return 'UserData{id: $id, name: $name, login: $login, email!mail, phone: $phone, image: $image}';
-    return name;
-  }
+  String toString() => displayName;
 }
