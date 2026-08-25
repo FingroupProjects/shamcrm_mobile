@@ -25,6 +25,17 @@ class ShamcrmFirebaseMessagingReceiver : FlutterFirebaseMessagingReceiver() {
                 if (isIncomingCallPush(data)) {
                     val applicationContext = context.applicationContext
                     NativeSipBridge.initialize(applicationContext)
+                    if (!NativeSipBridge.isPersistentEnabled()) {
+                        NativeSipBridge.recordDiagnosticEvent(
+                            event = "push_wake_skipped_not_enabled",
+                            details = hashMapOf(
+                                "source" to "android_native_fcm",
+                                "call_id" to pick(data, "call_id", "id"),
+                            ),
+                        )
+                        super.onReceive(context, intent)
+                        return
+                    }
                     if (isExpiredIncomingCallPush(data)) {
                         NativeSipBridge.recordDiagnosticEvent(
                             event = "push_received_expired",

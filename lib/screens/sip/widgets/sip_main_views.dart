@@ -24,7 +24,9 @@ extension _SipMainViewsExtension on _SipScreenState {
                 ? 'Сеть потеряна. Ждём восстановление соединения'
                 : isRegistered
                     ? null
-                    : 'Подключите линию для звонков в фоне';
+                    : _sipRuntime.wantsSipConnection
+                        ? 'Подключите линию для звонков в фоне'
+                        : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),

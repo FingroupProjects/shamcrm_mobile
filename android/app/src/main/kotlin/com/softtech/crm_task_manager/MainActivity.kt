@@ -335,6 +335,9 @@ class MainActivity : FlutterFragmentActivity() {
                     NativeSipBridge.unregister()
                     result.success(true)
                 }
+                "stopRuntimeIfIdle" -> {
+                    result.success(NativeSipBridge.stopRuntimeIfIdle())
+                }
                 "getStateSnapshot" -> {
                     result.success(NativeSipBridge.getStateSnapshot())
                 }

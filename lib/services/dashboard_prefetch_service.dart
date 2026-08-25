@@ -4,20 +4,42 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/foundation.dart';
 
 /// Pre-warms [ApiService._analyticsResponseCache] so that when
-/// [AnalyticsScreen] loads, every chart widget gets an instant cache
-/// hit instead of firing cold network requests.
-///
-/// Call [prefetchAnalyticsData] as early as possible (e.g. immediately
-/// after PIN is verified) and let it run in the background. Errors are
-/// silently swallowed — the individual chart widgets will retry on their own.
+/// [AnalyticsScreen] loads, chart widgets get cache hits instead of
+/// cold network requests.
 class DashboardPrefetchService {
   DashboardPrefetchService._();
 
-  static bool _prefetchStarted = false;
+  static const String defaultPeriodKey = 'current_year';
 
-  /// Kick off all V2 analytics API calls in parallel.
-  /// Safe to call multiple times — subsequent calls while a prefetch is
-  /// already in-flight are no-ops.
+  static bool _prefetchStarted = false;
+  static Future<void>? _filtersReady;
+
+  /// Applies the same default dashboard filters that [AnalyticsScreen] uses,
+  /// so prefetch URLs match the later chart requests.
+  static Future<void> applyDefaultFilters() {
+    return _filtersReady ??= _applyDefaultFilters();
+  }
+
+  static Future<void> _applyDefaultFilters() async {
+    final api = ApiService();
+    await api.ensureSelectedSalesFunnelInitialized();
+    final organizationId = await api.getSelectedOrganization() ?? '1';
+    final salesFunnelId = await api.getSelectedSalesFunnel();
+
+    final payload = <String, dynamic>{
+      'organization_id': organizationId,
+      'period': defaultPeriodKey,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'sales_funnel_id': salesFunnelId,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'salesFunnels': [salesFunnelId],
+    };
+
+    ApiService.setAnalyticsFilters(payload);
+  }
+
+  /// Kick off analytics API calls in the background.
+  /// Safe to call multiple times — subsequent calls are no-ops.
   static Future<void> prefetchAnalyticsData() async {
     if (_prefetchStarted) return;
     _prefetchStarted = true;
@@ -34,26 +56,36 @@ class DashboardPrefetchService {
       }
     }
 
+    await applyDefaultFilters();
+
+    // First paint only needs settings, KPI cards and the first visible charts.
     await Future.wait([
       safe(api.getDashboardSettingsV2),
       safe(api.getDashboardStatisticsV2),
       safe(api.getLeadConversionDataV2),
+      safe(api.getSourceOfLeadsChartV2),
+    ]);
+
+    // Remaining charts fill the cache after the first cards can already render.
+    unawaited(Future.wait([
       safe(api.getLeadConversionByStatuses),
       safe(api.getLeadProcessSpeedV2),
       safe(api.getUsersChartV2),
       safe(api.getTaskChartDataV2),
-      safe(api.getSourceOfLeadsChartV2),
       safe(api.getDealsByManagersV2),
       safe(api.getCompletedTasksChartV2),
       safe(api.getTelephonyAndEventsChartV2),
       safe(api.getOnlineStoreOrdersChartV2),
-    ]);
+    ]));
 
     if (kDebugMode) {
-      debugPrint('DashboardPrefetchService: prefetch complete ✅');
+      debugPrint('DashboardPrefetchService: first-wave prefetch complete');
     }
   }
 
   /// Reset so the next login session can prefetch again.
-  static void reset() => _prefetchStarted = false;
+  static void reset() {
+    _prefetchStarted = false;
+    _filtersReady = null;
+  }
 }

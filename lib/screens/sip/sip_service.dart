@@ -85,7 +85,7 @@ class SipService extends ChangeNotifier
       EventChannel('com.shamcrm/native_sip/events');
   static const Duration _secureStorageReadTimeout = Duration(seconds: 3);
   static const Duration _nativeStartupStepTimeout = Duration(seconds: 4);
-  static const Duration _iosVoipTokenSyncTimeout = Duration(seconds: 8);
+  static const Duration _iosVoipTokenSyncTimeout = Duration(seconds: 20);
 
   final SIPUAHelper _helper = SIPUAHelper();
   final Connectivity _connectivity = Connectivity();
@@ -131,6 +131,7 @@ class SipService extends ChangeNotifier
   Future<void>? _nativeSipBridgeInitializationFuture;
   Future<void>? _prepareRuntimePermissionsFuture;
   String? _lastSyncedIosVoipPushToken;
+  Future<void> _voipTokenOpChain = Future<void>.value();
   Future<void>? _recentCallLogsRequest;
   DateTime? _recentCallLogsFetchedAt;
   int _recentCallLogsRequestToken = 0;
@@ -331,6 +332,9 @@ class SipService extends ChangeNotifier
       _startConnectivityMonitoring();
       _startRegistrationWatchdog();
       _configLoaded = true;
+      if (Platform.isAndroid && !wantsSipConnection) {
+        unawaited(_invokeNativeSipMethod<bool>('stopRuntimeIfIdle', null, false));
+      }
       unawaited(refreshRecentCallLogs(force: true));
       unawaited(ensureInternalNumber());
       unawaited(_restorePersistentConnection());
@@ -978,6 +982,9 @@ class SipService extends ChangeNotifier
       if (registration == SipRegistrationUiStatus.registered ||
           registration == SipRegistrationUiStatus.registering) {
         _shouldStayConnected = true;
+        if (Platform.isIOS) {
+          unawaited(_syncVoipTokenAfterSipConnect());
+        }
         return;
       }
     }
@@ -1777,6 +1784,10 @@ class SipService extends ChangeNotifier
   Future<void> connect() async {
     if (_isActiveUiCallStatus(_state.callStatus)) {
       _shouldStayConnected = true;
+      _sipEnabled = true;
+      if (Platform.isIOS) {
+        unawaited(_syncVoipTokenAfterSipConnect());
+      }
       return;
     }
     if (!_hasSipCredentials()) {
@@ -1806,11 +1817,6 @@ class SipService extends ChangeNotifier
       return;
     }
 
-    if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
-        _helper.connecting) {
-      return;
-    }
-
     _shouldStayConnected = true;
     _sipEnabled = true;
     _persistentSipEnabled = true;
@@ -1819,10 +1825,17 @@ class SipService extends ChangeNotifier
     await _writeSecureStorage(key: _enabledKey, value: 'true');
     unawaited(_syncIncomingCallPushPreference(true));
     if (Platform.isIOS) {
-      // VoIP token belongs to an active SIP connection. Do not register it
-      // merely because the app started or SipService was initialized.
+      // Always enqueue a token upload on Connect, even if SIP is already
+      // registering. A previous Disconnect may have revoked the backend token
+      // while native Linphone kept the line alive.
       unawaited(_syncVoipTokenAfterSipConnect());
     }
+
+    if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
+        _helper.connecting) {
+      return;
+    }
+
     _logSipConfig('connect');
     await _startSipRegistration();
   }
@@ -2004,17 +2017,19 @@ class SipService extends ChangeNotifier
   }
 
   Future<void> revokeVoipTokenAndClearLocal() async {
-    if (Platform.isIOS) {
-      try {
-        final token = await getVoipPushToken();
-        await _apiService
-            .deleteVoipToken(voipToken: token)
-            .timeout(_iosVoipTokenSyncTimeout);
-      } catch (error) {
-        debugPrint('SipService: VoIP token revoke skipped: $error');
+    await _enqueueVoipTokenOp(() async {
+      if (Platform.isIOS) {
+        try {
+          final token = await getVoipPushToken();
+          await _apiService
+              .deleteVoipToken(voipToken: token)
+              .timeout(_iosVoipTokenSyncTimeout);
+        } catch (error) {
+          debugPrint('SipService: VoIP token revoke skipped: $error');
+        }
       }
-    }
-    await _clearLocalVoipToken();
+      await _clearLocalVoipToken();
+    });
   }
 
   Future<void> _clearLocalVoipToken() async {
@@ -2025,6 +2040,8 @@ class SipService extends ChangeNotifier
 
   bool get hasSavedCredentials => _hasSipCredentials();
   bool get isSipEnabled => _sipEnabled;
+  bool get wantsSipConnection =>
+      _sipEnabled || _shouldStayConnected || _persistentSipEnabled;
 
   Future<void> makeCall() async {
     await makeCallTo(_state.sipId);
@@ -2626,34 +2643,42 @@ class SipService extends ChangeNotifier
     // PushKit can issue a token even for users who never enabled SIP. Keep it
     // locally and sync it only after the user explicitly connects SIP.
     if (_shouldStayConnected && _sipEnabled) {
-      unawaited(_syncIosVoipPushTokenWithBackend(normalizedToken));
+      unawaited(_syncVoipTokenAfterSipConnect(force: false));
     }
   }
 
-  Future<void> _syncVoipTokenAfterSipConnect() async {
-    if (!Platform.isIOS || !_shouldStayConnected || !_sipEnabled) {
+  Future<void> _enqueueVoipTokenOp(Future<void> Function() op) {
+    final previous = _voipTokenOpChain;
+    final next = previous.catchError((_) {}).then((_) => op());
+    _voipTokenOpChain = next;
+    return next;
+  }
+
+  Future<void> _syncVoipTokenAfterSipConnect({bool force = true}) async {
+    if (!Platform.isIOS) {
       return;
     }
 
-    try {
-      final token = await getVoipPushToken();
-      if (token != null && token.trim().isNotEmpty) {
-        await _syncIosVoipPushTokenWithBackend(token, force: true)
-            .timeout(_iosVoipTokenSyncTimeout);
-      } else {
-        // This covers a token that was received before authorization or while
-        // the backend was unavailable. Do not send an old pending token when
-        // a newer current token is already available.
-        await _apiService
-            .sendPendingVoipTokenIfNeeded()
-            .timeout(_iosVoipTokenSyncTimeout);
+    await _enqueueVoipTokenOp(() async {
+      if (!_shouldStayConnected || !_sipEnabled) {
+        return;
       }
-    } catch (error) {
-      // sendVoipToken keeps the token pending; it will be retried on the next
-      // explicit SIP connect, never during ordinary app startup.
-      debugPrint(
-          'SipService VoIP token sync after SIP connect skipped: $error');
-    }
+
+      try {
+        final token = await getVoipPushToken();
+        if (token != null && token.trim().isNotEmpty) {
+          await _syncIosVoipPushTokenWithBackend(token, force: force)
+              .timeout(_iosVoipTokenSyncTimeout);
+        } else {
+          await _apiService
+              .sendPendingVoipTokenIfNeeded()
+              .timeout(_iosVoipTokenSyncTimeout);
+        }
+      } catch (error) {
+        debugPrint(
+            'SipService VoIP token sync after SIP connect skipped: $error');
+      }
+    });
   }
 
   void _handleNativePushTokenInvalidatedEvent() {
@@ -2778,8 +2803,10 @@ class SipService extends ChangeNotifier
     }
 
     try {
-      await _apiService.sendVoipToken(normalizedToken);
-      _lastSyncedIosVoipPushToken = normalizedToken;
+      final synced = await _apiService.sendVoipToken(normalizedToken);
+      if (synced) {
+        _lastSyncedIosVoipPushToken = normalizedToken;
+      }
     } catch (error) {
       debugPrint('SipService: failed to sync iOS VoIP token: $error');
     }
@@ -2857,12 +2884,13 @@ class SipService extends ChangeNotifier
     required String? message,
     required bool busyFlag,
   }) {
+    if (protocolCode == '603') {
+      return false;
+    }
     if (busyFlag) {
       return true;
     }
-    if (protocolCode == '486' ||
-        protocolCode == '600' ||
-        protocolCode == '603') {
+    if (protocolCode == '486' || protocolCode == '600') {
       return true;
     }
     final blob = '$sipReason $phrase $message'.toLowerCase();
@@ -2880,6 +2908,9 @@ class SipService extends ChangeNotifier
     required String? phrase,
     required String? message,
   }) {
+    if (protocolCode == '603') {
+      return true;
+    }
     final hasCode = protocolCode != null &&
         protocolCode.trim().isNotEmpty &&
         protocolCode.trim() != '0';
@@ -3683,6 +3714,7 @@ class SipService extends ChangeNotifier
       case 'registered':
         _persistentSipEnabled = true;
         _shouldStayConnected = true;
+        _sipEnabled = true;
         _cancelReconnect();
         unawaited(_writeSecureStorage(key: _enabledKey, value: 'true'));
         _state = _state.copyWith(
@@ -3690,6 +3722,9 @@ class SipService extends ChangeNotifier
           clearError: true,
         );
         _refreshOutboundNumberAfterRegistration();
+        if (Platform.isIOS) {
+          unawaited(_syncVoipTokenAfterSipConnect(force: false));
+        }
         break;
       case 'failed':
         if (_shouldIgnoreTransientAuthorizationChallenge(message)) {

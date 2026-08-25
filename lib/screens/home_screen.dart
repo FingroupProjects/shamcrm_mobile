@@ -131,7 +131,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // перехода с PIN/авторизации — так системный диалог показывается уже
         // при первом входе и не теряется между маршрутами.
         unawaited(FirebaseApi().initNotifications());
-        _loadDataInBackground();
+        // Give the dashboard the network first. Prefetch + first charts
+        // finish much faster if leads/tasks/settings are not competing.
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !_isBackgroundLoading) {
+            _loadDataInBackground();
+          }
+        });
         _handleInitialMessage();
         _checkPendingWidgetNavigation();
       }

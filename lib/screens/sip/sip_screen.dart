@@ -219,6 +219,16 @@ class _SipScreenState extends State<SipScreen>
     });
   }
 
+  bool _shouldShowSipStatusBanner(SipUiState state) {
+    if (state.callStatus == SipCallUiStatus.incoming) {
+      return true;
+    }
+    if (state.registrationStatus == SipRegistrationUiStatus.registered) {
+      return false;
+    }
+    return _sipService.wantsSipConnection;
+  }
+
   Future<void> _handleBackNavigation() async {
     if (_backNavigationInProgress || !mounted) return;
     _backNavigationInProgress = true;
@@ -481,10 +491,7 @@ class _SipScreenState extends State<SipScreen>
                         : Column(
                             children: [
                               _buildTopBar(context, state),
-                              if (state.callStatus ==
-                                      SipCallUiStatus.incoming ||
-                                  state.registrationStatus !=
-                                      SipRegistrationUiStatus.registered)
+                              if (_shouldShowSipStatusBanner(state))
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16),

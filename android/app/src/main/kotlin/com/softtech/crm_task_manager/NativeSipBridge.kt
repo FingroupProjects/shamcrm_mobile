@@ -70,11 +70,32 @@ object NativeSipBridge {
 
     private fun startRuntimeServiceIfPossible(reason: String) {
         val context = appContext ?: return
+        if (!shouldKeepRuntimeAlive()) {
+            Log.d(TAG, "Foreground SIP service skipped: $reason")
+            return
+        }
         val started = NativeSipForegroundService.start(context)
         if (!started) {
             currentSnapshot["message"] = "Сервис телефонии не был запущен: $reason"
             Log.w(TAG, "Foreground SIP service was not started: $reason")
         }
+    }
+
+    fun shouldKeepRuntimeAlive(): Boolean {
+        if (isPersistentEnabled()) {
+            return true
+        }
+        return isActiveCallState(currentSnapshot["callState"]?.toString())
+    }
+
+    fun stopRuntimeIfIdle(): Boolean {
+        val context = appContext ?: return false
+        if (shouldKeepRuntimeAlive()) {
+            return false
+        }
+        SipKeepAliveWorker.cancel(context)
+        NativeSipForegroundService.stop(context)
+        return true
     }
 
     fun initialize(context: Context) {

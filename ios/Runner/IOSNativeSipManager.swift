@@ -1586,10 +1586,24 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func declineCall() -> Bool {
         if let call = resolveIncomingCallForAction() {
-            return linphone_call_decline(call, LinphoneReasonDeclined) == 0
+            locallyTerminatedCall = call
+            appendDiagnosticLog("[VOIP] DECLINE_REQUESTED", [
+                "call_uuid": snapshot.callUUID ?? "",
+                "call_id": snapshot.callId ?? "",
+                "sip_call_id": callId(from: call) ?? snapshot.sipCallId ?? "",
+            ])
+            let status = linphone_call_decline(call, LinphoneReasonDeclined)
+            if status != 0 {
+                locallyTerminatedCall = nil
+            }
+            return status == 0
         }
 
         deferredAction = .decline
+        appendDiagnosticLog("[VOIP] DECLINE_DEFERRED", [
+            "call_uuid": snapshot.callUUID ?? "",
+            "call_id": snapshot.callId ?? "",
+        ])
         return false
     }
 
@@ -2654,7 +2668,24 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "remote_identity": invitePayload.handle,
             ])
             if snapshot.callUUID == nil {
-                reportIncomingCall(payload: invitePayload)
+                // INVITE arrived before the matching VoIP push. Present the
+                // live SIP call directly — do not go through the PushKit
+                // handler, which can reset snapshot/CallKit UUID and race
+                // a second incoming report.
+                snapshot.callUUID = invitePayload.uuid.uuidString
+                snapshot.callId = invitePayload.callId
+                snapshot.callState = "incoming"
+                snapshot.message = message ?? "Incoming call received"
+                persistSnapshot()
+                emitCallEvent(
+                    state: "incoming",
+                    remoteIdentity: snapshot.remoteIdentity,
+                    callUUID: snapshot.callUUID,
+                    callId: snapshot.callId,
+                    message: snapshot.message,
+                    extra: pendingIncomingPayload?.toFlutterDictionary() ?? [:]
+                )
+                reportIncomingCallToSystemIfNeeded(payload: invitePayload)
             } else {
                 if let uuid = resolvedCallUUID(from: nil) {
                     callKitManager?.refreshIncomingCallDisplay(callUUID: uuid, payload: invitePayload)
@@ -3750,11 +3781,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             .lowercased()
 
         let protocolCode = Int(details["protocol_code"] ?? "") ?? 0
+        // 603 Decline is a reject, not "busy here". Treating it as busy
+        // made the UI show "абонент занят" after a local/remote decline.
         let isBusy = reason == LinphoneReasonBusy ||
             protocolCode == 486 ||
             protocolCode == 600 ||
-            protocolCode == 603 ||
-            joined.contains("busy") ||
+            joined.contains("busy here") ||
             joined.contains("486")
         if isBusy {
             details["busy_signal"] = "true"
@@ -3971,6 +4003,17 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         didReceiveEndFor callUUID: UUID,
         payload: VoIPIncomingPayload?
     ) {
+        if let currentUUID = snapshot.callUUID,
+           currentUUID.caseInsensitiveCompare(callUUID.uuidString) != .orderedSame {
+            appendDiagnosticLog("callkit_end_ignored_stale_uuid", [
+                "ended_uuid": callUUID.uuidString,
+                "current_uuid": currentUUID,
+                "call_state": snapshot.callState,
+                "call_id": payload?.callId ?? snapshot.callId ?? "",
+            ])
+            return
+        }
+
         let action = snapshot.callState == "incoming" ? "decline" : "end"
         emitCallActionEvent(action: action, callUUID: callUUID, payload: payload)
         if action == "decline" {

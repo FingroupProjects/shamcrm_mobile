@@ -302,6 +302,7 @@ class ApiService extends ApiServiceBase {
   static Map<String, dynamic>? _analyticsFilters;
 
   static final Map<String, String> _analyticsResponseCache = {};
+  static final Map<String, Future<http.Response>> _analyticsInFlight = {};
 
   static const String _pendingFcmKey = 'pending_fcm_token';
 
@@ -341,6 +342,7 @@ class ApiService extends ApiServiceBase {
 
   static void clearAnalyticsResponseCache() {
     _analyticsResponseCache.clear();
+    _analyticsInFlight.clear();
   }
 }
 

@@ -217,7 +217,8 @@ extension _SipScreenCallStateExtension on _SipScreenState {
     }
 
     if (state.registrationStatus == SipRegistrationUiStatus.disconnected &&
-        previousStatus == SipRegistrationUiStatus.registered) {
+        previousStatus == SipRegistrationUiStatus.registered &&
+        _sipRuntime.wantsSipConnection) {
       return ('Телефония отключена от сервера', false);
     }
 

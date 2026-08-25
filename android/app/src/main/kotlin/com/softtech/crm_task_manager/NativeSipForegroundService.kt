@@ -51,6 +51,11 @@ class NativeSipForegroundService : Service() {
 
         @Synchronized
         fun start(context: Context): Boolean {
+            NativeSipBridge.initialize(context.applicationContext)
+            if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
+                Log.d(TAG, "Skip foreground SIP service: line was never connected")
+                return false
+            }
             if (serviceRunning || serviceStartRequested) {
                 return true
             }
@@ -77,6 +82,9 @@ class NativeSipForegroundService : Service() {
 
         fun stop(context: Context) {
             cancelScheduledRestart(context)
+            if (!serviceRunning && !serviceStartRequested) {
+                return
+            }
             try {
                 context.startService(
                     Intent(context, NativeSipForegroundService::class.java).apply {
@@ -224,22 +232,31 @@ class NativeSipForegroundService : Service() {
         serviceStartRequested = false
         explicitStopRequested = false
         NativeSipBridge.initialize(applicationContext)
+        createNotificationChannels()
         NativeSipBridge.recordDiagnosticEvent(
             event = "foreground_service_created",
             details = hashMapOf(
                 "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
             ),
         )
-        NativeSipBridge.addObserver(bridgeObserver)
-        createNotificationChannels()
-        startRegistrationHeartbeat()
+        // startForegroundService() requires startForeground() even when we
+        // immediately decide the line was never connected and should stop.
         try {
             startSipForeground(buildServiceNotification(NativeSipBridge.getStateSnapshot()))
-            reconcileIncomingCallFromSnapshot("service-created")
         } catch (error: Throwable) {
             Log.e(TAG, "startForeground failed: ${error.message}", error)
+            explicitStopRequested = true
             stopSelf()
+            return
         }
+        if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
+            Log.d(TAG, "Stop idle SIP service: user never connected the line")
+            stopIdleRuntime("service-created")
+            return
+        }
+        NativeSipBridge.addObserver(bridgeObserver)
+        startRegistrationHeartbeat()
+        reconcileIncomingCallFromSnapshot("service-created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -252,13 +269,14 @@ class NativeSipForegroundService : Service() {
         )
         when (intent?.action) {
             ACTION_STOP -> {
-                explicitStopRequested = true
-                cancelScheduledRestart(applicationContext)
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
+                stopIdleRuntime("explicit-stop")
                 return START_NOT_STICKY
             }
             ACTION_START, ACTION_RESTART -> {
+                if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
+                    stopIdleRuntime("idle-start")
+                    return START_NOT_STICKY
+                }
                 explicitStopRequested = false
                 cancelScheduledRestart(applicationContext)
                 NativeSipBridge.restoreRegistrationIfNeeded(startService = false)
@@ -270,12 +288,27 @@ class NativeSipForegroundService : Service() {
             NativeSipActionReceiver.ACTION_ANSWER -> NativeSipBridge.acceptCall()
             NativeSipActionReceiver.ACTION_DECLINE -> NativeSipBridge.declineCall()
             NativeSipActionReceiver.ACTION_HANGUP -> NativeSipBridge.hangup()
-            else -> NativeSipBridge.restoreRegistrationIfNeeded(startService = false)
+            else -> {
+                if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
+                    stopIdleRuntime("idle-restart")
+                    return START_NOT_STICKY
+                }
+                NativeSipBridge.restoreRegistrationIfNeeded(startService = false)
+            }
         }
 
         updateServiceNotification()
         reconcileIncomingCallFromSnapshot("service-started")
         return START_STICKY
+    }
+
+    private fun stopIdleRuntime(reason: String) {
+        explicitStopRequested = true
+        cancelScheduledRestart(applicationContext)
+        SipKeepAliveWorker.cancel(applicationContext)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        Log.d(TAG, "Idle SIP runtime stopped: $reason")
     }
 
     override fun onDestroy() {

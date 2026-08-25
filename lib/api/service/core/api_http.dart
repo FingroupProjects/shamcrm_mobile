@@ -409,14 +409,36 @@ extension ApiHttpX on ApiService {
       debugPrint('🟠 _analyticsRequest cache BYPASS: $filteredPath');
     }
 
-    final response = await _getRequest(filteredPath);
-    if (response.statusCode == 200) {
-      ApiService._analyticsResponseCache[filteredPath] = response.body;
-      if (kDebugMode) {
-        debugPrint('🟢 _analyticsRequest cache SAVE: $filteredPath');
+    if (!bypassCache) {
+      final inFlight = ApiService._analyticsInFlight[filteredPath];
+      if (inFlight != null) {
+        if (kDebugMode) {
+          debugPrint('🟡 _analyticsRequest in-flight JOIN: $filteredPath');
+        }
+        return inFlight;
       }
     }
-    return response;
+
+    final request = () async {
+      final response = await _getRequest(filteredPath);
+      if (response.statusCode == 200) {
+        ApiService._analyticsResponseCache[filteredPath] = response.body;
+        if (kDebugMode) {
+          debugPrint('🟢 _analyticsRequest cache SAVE: $filteredPath');
+        }
+      }
+      return response;
+    }();
+
+    if (!bypassCache) {
+      ApiService._analyticsInFlight[filteredPath] = request;
+    }
+
+    try {
+      return await request;
+    } finally {
+      ApiService._analyticsInFlight.remove(filteredPath);
+    }
   }
 
   Future<Map<String, dynamic>> _getAnalyticsChartJsonMap(

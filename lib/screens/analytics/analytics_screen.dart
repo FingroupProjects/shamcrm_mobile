@@ -27,6 +27,7 @@ import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_shee
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sales_planning/widgets/sales_plan_dashboard_widget.dart';
+import 'package:crm_task_manager/services/dashboard_prefetch_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -153,9 +154,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _lastFilterTrigger = widget.filterTrigger;
     _lastChartSettingsTrigger = widget.chartSettingsTrigger;
     _selectedPeriodKey = _defaultPeriodKey;
+    _orderedChartSettings = _defaultChartSettings();
+    _hasResolvedChartSettings = true;
     _initializeDefaultFilters();
     _revealController = _ChartRevealController(
-      batchSize: _ChartRevealController.defaultBatchSize,
+      batchSize: 1,
     )..addListener(_onRevealControllerChanged);
     _loadStats();
     _loadDashboardSettings();
@@ -177,30 +180,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _initializeDefaultFilters() async {
-    final apiService = ApiService();
-    final organizationId = await apiService.getSelectedOrganization() ?? '1';
-    final salesFunnelId = await apiService.getSelectedSalesFunnel();
+    await DashboardPrefetchService.applyDefaultFilters();
+    if (!mounted) return;
 
+    final salesFunnelId = await ApiService().getSelectedSalesFunnel();
     if (salesFunnelId != null &&
         salesFunnelId.isNotEmpty &&
-        mounted &&
         (_selectedFunnelIds.length != 1 ||
             _selectedFunnelIds.first != salesFunnelId)) {
       setState(() {
         _selectedFunnelIds = [salesFunnelId];
       });
     }
-
-    final payload = <String, dynamic>{
-      'organization_id': organizationId,
-      'period': _defaultPeriodKey,
-      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
-        'sales_funnel_id': salesFunnelId,
-      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
-        'salesFunnels': [salesFunnelId],
-    };
-
-    ApiService.setAnalyticsFilters(payload);
   }
 
   @override
@@ -1335,16 +1326,14 @@ class _ChartRevealController extends ChangeNotifier {
   }
 
   bool shouldShow(int index) {
+    if (batchRevealed) return true;
     if (index >= _effectiveBatchSize) return true;
-    return batchRevealed;
+    return _readyIndexes.contains(index);
   }
 
   void _tryReveal() {
     if (batchRevealed) return;
-    final needed = _effectiveBatchSize;
-    if (needed <= 0) return;
-    final ready = Iterable<int>.generate(needed).every(_readyIndexes.contains);
-    if (!ready) return;
+    if (_readyIndexes.isEmpty) return;
     batchRevealed = true;
     notifyListeners();
   }

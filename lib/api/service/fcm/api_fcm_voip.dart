@@ -90,7 +90,7 @@ extension ApiFcmVoipX on ApiService {
     // НЕ удаляем здесь! Удаление только в sendDeviceToken при успехе
   }
 
-  Future<void> sendVoipToken(String voipToken) async {
+  Future<bool> sendVoipToken(String voipToken) async {
     try {
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('sendVoipToken: Начало отправки iOS VoIP токена');
@@ -106,7 +106,7 @@ extension ApiFcmVoipX on ApiService {
           status: 'pending_base_url',
           error: 'Base URL is not initialized',
         );
-        return;
+        return false;
       }
 
       final token = await getToken();
@@ -117,7 +117,7 @@ extension ApiFcmVoipX on ApiService {
           status: 'pending_auth',
           error: 'Authorization token is missing',
         );
-        return;
+        return false;
       }
 
       final organizationId = await getSelectedOrganization();
@@ -131,7 +131,7 @@ extension ApiFcmVoipX on ApiService {
           status: 'pending_user_id',
           error: 'User ID is missing',
         );
-        return;
+        return false;
       }
       final url =
           '$baseUrl/user/add-voip-token/${userId.trim()}${organizationId != null ? '?organization_id=$organizationId' : ''}';
@@ -167,15 +167,16 @@ extension ApiFcmVoipX on ApiService {
           status: 'synced',
           httpCode: response.statusCode,
         );
-      } else {
-        debugPrint('sendVoipToken: Ошибка ${response.statusCode} → отложенный');
-        await _savePendingVoipToken(voipToken);
-        await _saveVoipSyncDiagnostics(
-          status: 'failed',
-          httpCode: response.statusCode,
-          error: response.body,
-        );
+        return true;
       }
+      debugPrint('sendVoipToken: Ошибка ${response.statusCode} → отложенный');
+      await _savePendingVoipToken(voipToken);
+      await _saveVoipSyncDiagnostics(
+        status: 'failed',
+        httpCode: response.statusCode,
+        error: response.body,
+      );
+      return false;
     } catch (e, s) {
       debugPrint('sendVoipToken: Исключение: $e\n$s');
       await _savePendingVoipToken(voipToken);
@@ -183,6 +184,7 @@ extension ApiFcmVoipX on ApiService {
         status: 'exception',
         error: e.toString(),
       );
+      return false;
     } finally {
       debugPrint('═══════════════════════════════════════════════════════════');
     }
