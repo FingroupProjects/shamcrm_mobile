@@ -206,6 +206,7 @@ class _AddMoneyIncomeAnotherCashRegisterState
                       _buildDateField(localizations),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        useAllForFuzaylovazam: true,
                         title: AppLocalizations.of(context)!
                                 .translate('sender_cash_register') ??
                             'Касса-отправитель',
@@ -231,6 +232,7 @@ class _AddMoneyIncomeAnotherCashRegisterState
                       ),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        useAllForFuzaylovazam: true,
                         title: AppLocalizations.of(context)!
                                 .translate('receiver_cash_register') ??
                             'Касса-получатель',

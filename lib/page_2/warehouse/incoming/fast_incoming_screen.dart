@@ -53,19 +53,28 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
   bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
   bool _hasApprovePermission = false;
+  bool _isCartReady = false;
   String _currencyTitle = 'TJS';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    unawaited(_resetCartSession());
     unawaited(_loadCurrency());
     unawaited(_loadStoragesAndSync());
     unawaited(_checkApprovePermission());
   }
 
+  Future<void> _resetCartSession() async {
+    await _repository.clearCart();
+    if (!mounted) return;
+    setState(() => _isCartReady = true);
+  }
+
   @override
   void dispose() {
+    unawaited(_repository.clearCart());
     _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
@@ -767,7 +776,9 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
       body: StreamBuilder<List<RmkCartItem>>(
         stream: _repository.watchCart(),
         builder: (context, cartSnapshot) {
-          final cartItems = cartSnapshot.data ?? const <RmkCartItem>[];
+          final cartItems = _isCartReady
+              ? (cartSnapshot.data ?? const <RmkCartItem>[])
+              : const <RmkCartItem>[];
           final cartQuantities = {
             for (final item in cartItems) item.goodId: item.quantity,
           };

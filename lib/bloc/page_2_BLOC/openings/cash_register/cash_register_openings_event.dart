@@ -6,6 +6,10 @@ class LoadCashRegisterOpenings extends CashRegisterOpeningsEvent {
   LoadCashRegisterOpenings({this.search});
 }
 
+class LoadMoreCashRegisterOpenings extends CashRegisterOpeningsEvent {
+  LoadMoreCashRegisterOpenings();
+}
+
 class RefreshCashRegisterOpenings extends CashRegisterOpeningsEvent {
   final String? search;
   final Map<String, dynamic>? filter;

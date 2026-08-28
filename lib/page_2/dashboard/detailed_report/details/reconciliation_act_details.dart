@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -123,7 +124,7 @@ class _ReconciliationActDetailsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(context),
-      backgroundColor: Colors.white,
+      backgroundColor: context.appColors.backgroundPrimary,
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: ListView(
@@ -139,8 +140,10 @@ class _ReconciliationActDetailsScreenState
   AppBar _buildAppBar(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    final colors = context.appColors;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       forceMaterialTransparency: true,
       elevation: 0,
       centerTitle: false,
@@ -150,10 +153,10 @@ class _ReconciliationActDetailsScreenState
         child: Transform.translate(
           offset: const Offset(0, -2),
           child: IconButton(
-            icon: Image.asset(
-              'assets/icons/arrow-left.png',
-              width: 24,
-              height: 24,
+            icon: Icon(
+              Icons.arrow_back_ios,
+              size: 20,
+              color: colors.iconPrimary,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -163,11 +166,11 @@ class _ReconciliationActDetailsScreenState
         offset: const Offset(-10, 0),
         child: Text(
           "${localizations.translate('reconciliation_act_details')} №${currentItem.id ?? ''}",
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -205,11 +208,11 @@ class _ReconciliationActDetailsScreenState
   Widget _buildLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w400,
-        color: Color(0xff99A4BA),
+        color: context.appColors.textSecondary,
       ),
     );
   }
@@ -217,11 +220,11 @@ class _ReconciliationActDetailsScreenState
   Widget _buildValue(String value) {
     return Text(
       value,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontFamily: 'Gilroy',
         fontWeight: FontWeight.w500,
-        color: Color(0xff1E2E52),
+        color: context.appColors.textPrimary,
       ),
       overflow: TextOverflow.visible,
     );

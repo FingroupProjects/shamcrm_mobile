@@ -3423,10 +3423,14 @@ extension ApiWarehouseDocumentsX on ApiService {
   }
 
   /// Получить первоначальные остатки по товарам
-  Future<GoodsOpeningsResponse> getGoodsOpenings({String? search}) async {
+  Future<GoodsOpeningsResponse> getGoodsOpenings({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     String path = await _appendQueryParams('/good-initial-balance');
 
-    path += '&is_service=0';
+    path += '&is_service=0&page=$page&per_page=$perPage';
 
     // Добавляем параметр search, если он передан
     if (search != null && search.trim().isNotEmpty) {
@@ -3559,8 +3563,14 @@ extension ApiWarehouseDocumentsX on ApiService {
   }
 
   /// Получить первоначальные остатки по клиентам
-  Future<ClientOpeningsResponse> getClientOpenings({String? search}) async {
+  Future<ClientOpeningsResponse> getClientOpenings({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     String path = await _appendQueryParams('/initial-balance/lead');
+
+    path += '&page=$page&per_page=$perPage';
 
     // Добавляем параметр search, если он передан
     if (search != null && search.trim().isNotEmpty) {
@@ -3718,8 +3728,14 @@ extension ApiWarehouseDocumentsX on ApiService {
   }
 
   /// Получить первоначальные остатки по поставщикам
-  Future<SupplierOpeningsResponse> getSupplierOpenings({String? search}) async {
+  Future<SupplierOpeningsResponse> getSupplierOpenings({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     String path = await _appendQueryParams('/initial-balance/supplier');
+
+    path += '&page=$page&per_page=$perPage';
 
     // Добавляем параметр search, если он передан
     if (search != null && search.trim().isNotEmpty) {

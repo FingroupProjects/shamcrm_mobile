@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/detailed_report_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
@@ -668,12 +669,23 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                           const SizedBox(height: 16),
                           _buildReferencesButton(),
                         ],
+                        const SizedBox(height: 16),
+                        _buildDetailedReportButton(),
                         const SizedBox(height: 20),
                       ],
                     ),
                   ),
               ],
             ),
+    );
+  }
+
+  void _navigateToDetailedReport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DetailedReportScreen(currentTabIndex: 0),
+      ),
     );
   }
 
@@ -684,14 +696,35 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     );
   }
 
+  Widget _buildDetailedReportButton() {
+    return _buildWideSectionButton(
+      title: 'Отчет',
+      icon: Icons.assessment_outlined,
+      onTap: _navigateToDetailedReport,
+    );
+  }
+
   Widget _buildReferencesButton() {
+    return _buildWideSectionButton(
+      title: AppLocalizations.of(context)!.translate('references') ??
+          'Справочники',
+      icon: Icons.library_books_outlined,
+      onTap: _navigateToReferences,
+    );
+  }
+
+  Widget _buildWideSectionButton({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     final colors = context.appColors;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: _navigateToReferences,
+        onTap: onTap,
         child: Container(
           width: double.infinity,
           height: 72,
@@ -721,23 +754,23 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.library_books_outlined,
+                  icon,
                   size: 28,
                   color: colors.buttonPrimaryBg,
                 ),
               ),
               const SizedBox(width: 16),
-              Text(
-                AppLocalizations.of(context)!.translate('references') ??
-                    'Справочники',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
-              const Spacer(),
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,

@@ -16,10 +16,12 @@ class GetAllGoodsListBloc
   DateTime? _lastLoadTime;
   static const Duration _cacheExpiration = Duration(minutes: 1);
   final apiService = ApiService();
+  bool _isBackgroundLoading = false;
 
   GetAllGoodsListBloc() : super(GetAllGoodsListInitial()) {
     on<GetAllGoodsListEv>(_getGoods);
     on<RefreshAllGoodsListEv>(_refreshGoods);
+    on<UpdateGoodsListInBackground>(_updateGoodsInBackground);
   }
 
   bool get _isCacheValid {
@@ -92,12 +94,88 @@ class GetAllGoodsListBloc
         currentPage: _currentPage,
         totalPages: _totalPages,
       ));
+
+      if (_currentPage < _totalPages && !_isBackgroundLoading) {
+        _loadRemainingPagesInBackground();
+      }
     } catch (e) {
       if (kDebugMode) {
         //print('GetAllGoodsListBloc: Error loading goods: $e');
       }
       emit(GetAllGoodsListError(message: friendlyError(e)));
     }
+  }
+
+  void _loadRemainingPagesInBackground() {
+    _isBackgroundLoading = true;
+
+    _fetchRemainingPages().then((_) {
+      _isBackgroundLoading = false;
+    }).catchError((error) {
+      _isBackgroundLoading = false;
+    });
+  }
+
+  Future<void> _fetchRemainingPages() async {
+    try {
+      List<GoodVariantItem> allGoods = List.from(_cachedGoods ?? []);
+      int currentPage = 2;
+      bool hasMorePages = true;
+
+      while (hasMorePages) {
+        try {
+          final pageResponse = await apiService.getGoodVariantsForDropdown(
+            page: currentPage,
+            perPage: 20,
+          );
+          final pageGoods = pageResponse.result?.data ?? [];
+          final pagination = pageResponse.result?.pagination;
+
+          if (pageGoods.isNotEmpty) {
+            allGoods.addAll(pageGoods);
+            _cachedGoods = allGoods;
+            _currentPage = pagination?.currentPage ?? currentPage;
+            _totalPages = pagination?.totalPages ?? currentPage;
+
+            if (pagination != null &&
+                pagination.currentPage != null &&
+                pagination.totalPages != null &&
+                pagination.currentPage! >= pagination.totalPages!) {
+              hasMorePages = false;
+            } else {
+              currentPage++;
+            }
+
+            add(UpdateGoodsListInBackground(allGoods, _totalPages));
+          } else {
+            hasMorePages = false;
+          }
+
+          if (hasMorePages) {
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+        } catch (e) {
+          hasMorePages = false;
+        }
+      }
+
+      _lastLoadTime = DateTime.now();
+    } catch (e) {
+      if (kDebugMode) {
+        //print('GetAllGoodsListBloc: Error in _fetchRemainingPages: $e');
+      }
+    }
+  }
+
+  Future<void> _updateGoodsInBackground(
+    UpdateGoodsListInBackground event,
+    Emitter<GetAllGoodsListState> emit,
+  ) async {
+    emit(GetAllGoodsListSuccess(
+      goodsList: event.data,
+      currentPage: _currentPage,
+      totalPages: event.totalPages,
+    ));
   }
 
   Future<bool> _checkInternetConnection() async {

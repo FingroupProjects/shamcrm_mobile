@@ -230,9 +230,6 @@ extension _SipScreenSearchExtension on _SipScreenState {
       });
 
       _rebuildDialSuggestions(serverSuggestions: suggestions);
-      if (mounted) {
-        _updateView(() {});
-      }
     } catch (_) {
       if (!mounted ||
           requestId != _dialSuggestionRequestId ||
@@ -240,7 +237,6 @@ extension _SipScreenSearchExtension on _SipScreenState {
         return;
       }
       _rebuildDialSuggestions(serverSuggestions: const []);
-      _updateView(() {});
     }
   }
 

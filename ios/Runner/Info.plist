@@ -96,7 +96,8 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>audio</string>
+		<!-- App Store 2.5.4: audio is not used. Keep voip + remote-notification. -->
+		<!-- <string>audio</string> -->
 		<string>remote-notification</string>
 		<string>voip</string>
 	</array>

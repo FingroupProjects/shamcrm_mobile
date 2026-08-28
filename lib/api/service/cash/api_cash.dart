@@ -160,7 +160,6 @@ extension ApiCashX on ApiService {
       }
     }
   }
-
   Future<bool> deleteCashRegister(int id) async {
     final response = await _deleteRequest('/cashRegister/$id');
     final data = json.decode(response.body);
@@ -1476,11 +1475,15 @@ extension ApiCashX on ApiService {
       throw e;
     }
   }
-
   /// Получить первоначальные остатки по кассам/складам
-  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings(
-      {String? search}) async {
+  Future<openings.CashRegisterOpeningsResponse> getCashRegisterOpenings({
+    String? search,
+    int page = 1,
+    int perPage = 20,
+  }) async {
     String path = await _appendQueryParams('/cash-register-initial-balance');
+
+    path += '&page=$page&per_page=$perPage';
 
     // Добавляем параметр search, если он передан
     if (search != null && search.trim().isNotEmpty) {
@@ -1567,7 +1570,7 @@ extension ApiCashX on ApiService {
       rethrow;
     }
   }
-
+   
   /// Получить список касс для выбора при создании остатка кассы
   Future<List<openings.CashRegister>> getCashRegisters({String? search}) async {
     try {

@@ -6,6 +6,10 @@ class LoadClientOpenings extends ClientOpeningsEvent {
   LoadClientOpenings({this.search});
 }
 
+class LoadMoreClientOpenings extends ClientOpeningsEvent {
+  LoadMoreClientOpenings();
+}
+
 class RefreshClientOpenings extends ClientOpeningsEvent {
   RefreshClientOpenings();
 }

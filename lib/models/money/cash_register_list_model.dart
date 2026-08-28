@@ -79,8 +79,11 @@ class CashRegistersDataResponse {
   });
 
   factory CashRegistersDataResponse.fromJson(Map<String, dynamic> json) {
-    final result = SafeConverters.toMapOrNull(json["result"]);
-    final items = SafeConverters.toList(result?["data"])
+    final rawResult = json['result'];
+    final rawItems = rawResult is List
+        ? rawResult
+        : SafeConverters.toList(SafeConverters.toMapOrNull(rawResult)?['data']);
+    final items = rawItems
         .map(SafeConverters.toMapOrNull)
         .whereType<Map<String, dynamic>>()
         .map(CashRegisterData.fromJson)

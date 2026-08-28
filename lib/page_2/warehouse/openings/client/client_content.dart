@@ -20,6 +20,29 @@ class ClientContent extends StatefulWidget {
 }
 
 class _ClientContentState extends State<ClientContent> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent - 200) {
+      return;
+    }
+    context.read<ClientOpeningsBloc>().add(LoadMoreClientOpenings());
+  }
+
   Future<void> _onRefresh() async {
     context.read<ClientOpeningsBloc>().add(LoadClientOpenings());
     await context.read<ClientOpeningsBloc>().stream.firstWhere(
@@ -30,17 +53,29 @@ class _ClientContentState extends State<ClientContent> {
         );
   }
 
-  Widget _buildClientList(List<ClientOpening> clients) {
+  Widget _buildClientList(
+    List<ClientOpening> clients, {
+    required bool hasReachedMax,
+  }) {
     final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: colors.buttonPrimaryBg,
       child: ListView.separated(
+        controller: _scrollController,
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: clients.length,
+        itemCount: clients.length + (hasReachedMax ? 0 : 1),
         itemBuilder: (context, index) {
+          if (index >= clients.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: PlayStoreImageLoading(size: 48),
+              ),
+            );
+          }
           return ClientCard(
             client: clients[index],
             onClick: (client) {
@@ -270,7 +305,10 @@ class _ClientContentState extends State<ClientContent> {
           if (state.clients.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildClientList(state.clients);
+          return _buildClientList(
+            state.clients,
+            hasReachedMax: state.hasReachedMax,
+          );
         }
 
         return _buildEmptyState();

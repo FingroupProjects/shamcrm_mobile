@@ -9,6 +9,7 @@ import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class RmkRepository {
@@ -431,7 +432,7 @@ class RmkRepository {
     );
 
     final payload = {
-      'date': createdAt.toUtc().toIso8601String(),
+      'date': DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(createdAt.toLocal()),
       'storage_id': storageId,
       'comment': 'RMK',
       'counterparty_id': leadId ?? 0,

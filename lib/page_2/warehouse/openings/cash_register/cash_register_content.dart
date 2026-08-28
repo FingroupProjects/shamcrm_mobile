@@ -21,11 +21,26 @@ class CashRegisterContent extends StatefulWidget {
 
 class _CashRegisterContentState extends State<CashRegisterContent> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent - 200) {
+      return;
+    }
+    context.read<CashRegisterOpeningsBloc>().add(LoadMoreCashRegisterOpenings());
   }
 
   Future<void> _onRefresh() async {
@@ -41,7 +56,10 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
     );
   }
 
-  Widget _buildCashRegisterList(List<CashRegisterOpening> cashRegisters) {
+  Widget _buildCashRegisterList(
+    List<CashRegisterOpening> cashRegisters, {
+    required bool hasReachedMax,
+  }) {
     final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
@@ -51,19 +69,17 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: cashRegisters.length,
+        itemCount: cashRegisters.length + (hasReachedMax ? 0 : 1),
         itemBuilder: (context, index) {
           if (index >= cashRegisters.length) {
-            return _isLoadingMore
-                ? const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(
-                      child: PlayStoreImageLoading(
-                        size: 48,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink();
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: PlayStoreImageLoading(
+                  size: 48,
+                ),
+              ),
+            );
           }
 
           return CashRegisterCard(
@@ -250,17 +266,12 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<CashRegisterOpeningsBloc, CashRegisterOpeningsState>(
       listener: (context, state) {
-        if (state is CashRegisterOpeningsLoaded) {
-          setState(() => _isLoadingMore = false);
-        }
-
         if (state is CashRegisterOpeningsPaginationError) {
           showCustomSnackBar(
             context: context,
             message: state.message,
             isSuccess: false,
           );
-          setState(() => _isLoadingMore = false);
         }
 
         // Обработка успешного удаления
@@ -319,7 +330,10 @@ class _CashRegisterContentState extends State<CashRegisterContent> {
           if (state.cashRegisters.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildCashRegisterList(state.cashRegisters);
+          return _buildCashRegisterList(
+            state.cashRegisters,
+            hasReachedMax: state.hasReachedMax,
+          );
         }
 
         return _buildEmptyState();

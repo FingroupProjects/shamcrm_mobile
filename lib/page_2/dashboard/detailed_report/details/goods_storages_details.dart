@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
@@ -8,7 +9,7 @@ void showGoodsStoragesDetailsDialog(
 ) {
   showDialog(
     context: context,
-    barrierColor: Colors.black.withValues(alpha: 0.45),
+    barrierColor: context.appColors.overlay,
     builder: (dialogContext) => GoodsStoragesDetailsDialog(goods: goods),
   );
 }
@@ -23,6 +24,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -33,15 +37,10 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
           maxHeight: MediaQuery.of(context).size.height * 0.8,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff1E2E52).withValues(alpha: 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: context.appShadows.floating,
         ),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -53,11 +52,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Остаток по складам',
-                      style: const TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 20,
+                      style: textStyles.titleLg.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xff1E2E52),
+                        color: colors.textPrimary,
                       ),
                     ),
                   ),
@@ -67,12 +64,12 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xffF1F5F9),
+                        color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
-                        color: Color(0xff1E2E52),
+                        color: colors.iconPrimary,
                         size: 28,
                       ),
                     ),
@@ -82,32 +79,28 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
               const SizedBox(height: 18),
               Text(
                 goods.name,
-                style: const TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
+                style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff475569),
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: 24),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xffDCE8F6),
+                  color: colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-                child: const Row(
+                child: Row(
                   children: [
                     SizedBox(
                       width: 48,
                       child: Text(
                         '#',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff5A6D96),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -115,11 +108,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                       flex: 3,
                       child: Text(
                         'Название',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff5A6D96),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -127,11 +118,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         'Кол-во',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff5A6D96),
+                          color: colors.textSecondary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -140,11 +129,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         'Сумма',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
+                        style: textStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xff5A6D96),
+                          color: colors.textSecondary,
                         ),
                         textAlign: TextAlign.end,
                       ),
@@ -155,14 +142,12 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
               const SizedBox(height: 14),
               Flexible(
                 child: goods.storages.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'Склады не найдены',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
+                          style: textStyles.bodyMd.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff64748B),
+                            color: colors.textMuted,
                           ),
                         ),
                       )
@@ -181,20 +166,10 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isEven
-                                  ? Colors.white
-                                  : const Color(0xffF8FAFC),
+                                  ? colors.surfacePrimary
+                                  : colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: const Color(0xffE2E8F0),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xff1E2E52)
-                                      .withValues(alpha: 0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              border: Border.all(color: colors.borderSubtle),
                             ),
                             child: Row(
                               children: [
@@ -202,11 +177,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                                   width: 48,
                                   child: Text(
                                     '${index + 1}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 15,
+                                    style: textStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xff42526E),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -214,11 +187,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                                   flex: 3,
                                   child: Text(
                                     storage.name,
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 15,
+                                    style: textStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff42526E),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -227,11 +198,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                                   child: Text(
                                     storage.quantity,
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 15,
+                                    style: textStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff42526E),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -240,11 +209,9 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                                   child: Text(
                                     storage.sum,
                                     textAlign: TextAlign.end,
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 15,
+                                    style: textStyles.bodyMd.copyWith(
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ),

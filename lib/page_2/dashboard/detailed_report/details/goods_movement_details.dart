@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -13,7 +14,7 @@ void showGoodsMovementDetailsDialog(
 ) {
   showDialog(
     context: context,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: context.appColors.overlay,
     builder: (BuildContext dialogContext) {
       return GoodsMovementDetailsDialog(variant: variant);
     },
@@ -101,23 +102,19 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   Widget _buildMovementItem(DashboardGoodsMovementHistory movement) {
+    final colors = context.appColors;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xffE2E8F0),
+          color: colors.borderSubtle,
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff1E2E52).withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: context.appShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +153,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('quantity_label'),
                     value: movement.quantity.toString(),
-                    valueColor: const Color(0xff1E2E52),
+                    valueColor: colors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -165,7 +162,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                   child: _buildInfoBox(
                     label: AppLocalizations.of(context)!.translate('price_label'),
                     value: movement.price,
-                    valueColor: const Color(0xff10B981),
+                    valueColor: colors.success,
                   ),
                 ),
               ],
@@ -186,9 +183,9 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Color(0xffF8FAFC),
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
@@ -196,18 +193,18 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(
+                Icon(
                   Icons.access_time,
                   size: 14,
-                  color: Color(0xff64748B),
+                  color: colors.textMuted,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(movement.date),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 12,
-                    color: Color(0xff64748B),
+                    color: colors.textMuted,
                   ),
                 ),
               ],
@@ -224,14 +221,16 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
     Color? valueColor,
     bool fullWidth = false,
   }) {
+    final colors = context.appColors;
+
     return Container(
       width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xffF1F5F9),
+        color: colors.fieldBg,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xffCBD5E1),
+          color: colors.fieldBorder,
           width: 1,
         ),
       ),
@@ -240,11 +239,11 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
         children: [
           Text(
             '$label:',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: Color(0xff475569),
+              color: colors.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -262,7 +261,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 fontFamily: 'Gilroy',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: valueColor ?? const Color(0xff1E2E52),
+                color: valueColor ?? colors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -274,6 +273,8 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   Widget _buildEmptyState() {
+    final colors = context.appColors;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -283,34 +284,34 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xffF8FAFC),
+              color: colors.surfaceElevated,
               borderRadius: BorderRadius.circular(50),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.history_outlined,
               size: 64,
-              color: Color(0xff64748B),
+              color: colors.iconSecondary,
             ),
           ),
           const SizedBox(height: 24),
           Text(
             AppLocalizations.of(context)!.translate('no_movements_found'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             AppLocalizations.of(context)!.translate('no_movements_hint'),
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 14,
-              color: Color(0xff64748B),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -319,21 +320,23 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   Widget _buildLoadingState() {
+    final colors = context.appColors;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.buttonPrimaryBg,
             strokeWidth: 3,
           ),
           const SizedBox(height: 24),
           Text(
             AppLocalizations.of(context)!.translate('loading_data_dialog'),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
-              color: Color(0xff64748B),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -342,6 +345,8 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
   }
 
   Widget _buildErrorState() {
+    final colors = context.appColors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -351,33 +356,33 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xffFEE2E2),
+                color: colors.error.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(50),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               AppLocalizations.of(context)!.translate('error_loading_dialog'),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               _errorMessage ?? '',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
-                color: Color(0xff64748B),
+                color: colors.textSecondary,
               ),
             ),
             const SizedBox(height: 24),
@@ -392,8 +397,8 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff1E2E52),
-                foregroundColor: Colors.white,
+                backgroundColor: colors.buttonPrimaryBg,
+                foregroundColor: colors.buttonPrimaryFg,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -409,6 +414,9 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final headerFg = context.adaptiveForegroundOn(colors.buttonPrimaryBg);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -419,31 +427,20 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
           maxWidth: 500,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff1E2E52).withOpacity(0.15),
-              spreadRadius: 0,
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: context.appShadows.floating,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xff1E2E52), Color(0xff2C3E68)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: colors.buttonPrimaryBg,
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
@@ -456,11 +453,11 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                       children: [
                         Text(
                           AppLocalizations.of(context)!.translate('goods_movement_history_title'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: headerFg,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -471,7 +468,7 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                             fontFamily: 'Gilroy',
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.8),
+                            color: headerFg.withValues(alpha: 0.8),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -513,8 +510,8 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

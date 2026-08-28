@@ -10,19 +10,23 @@ class SupplierOpeningsLoading extends SupplierOpeningsState {}
 class SupplierOpeningsLoaded extends SupplierOpeningsState {
   final List<SupplierOpening> suppliers;
   final String? search;
+  final bool hasReachedMax;
 
   SupplierOpeningsLoaded({
     required this.suppliers,
     this.search,
+    this.hasReachedMax = true,
   });
 
   SupplierOpeningsLoaded copyWith({
     List<SupplierOpening>? suppliers,
     String? search,
+    bool? hasReachedMax,
   }) {
     return SupplierOpeningsLoaded(
       suppliers: suppliers ?? this.suppliers,
       search: search ?? this.search,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }

@@ -5,14 +5,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
 import '../../../../api/service/api_service.dart';
+import '../../../../models/page_2/openings/supplier_openings_model.dart';
 import 'supplier_openings_event.dart';
 import 'supplier_openings_state.dart';
 
 class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsState> {
   final ApiService _apiService = ApiService();
+  static const int _perPage = 20;
+
+  int _currentPage = 1;
+  int _loadToken = 0;
+  List<SupplierOpening> _allItems = [];
+  String? _search;
+  bool _hasReachedMax = false;
+  bool _isLoadingMore = false;
 
   SupplierOpeningsBloc() : super(SupplierOpeningsInitial()) {
     on<LoadSupplierOpenings>(_onLoadSupplierOpenings);
+    on<LoadMoreSupplierOpenings>(_onLoadMoreSupplierOpenings);
     on<RefreshSupplierOpenings>(_onRefreshSupplierOpenings);
     on<DeleteSupplierOpening>(_onDeleteSupplierOpening);
     on<CreateSupplierOpening>(_onCreateSupplierOpening);
@@ -26,13 +36,76 @@ class SupplierOpeningsBloc extends Bloc<SupplierOpeningsEvent, SupplierOpeningsS
     try {
       emit(SupplierOpeningsLoading());
 
-      final response = await _apiService.getSupplierOpenings(search: event.search);
+      _currentPage = 1;
+      _search = event.search;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      final token = ++_loadToken;
+
+      final response = await _apiService.getSupplierOpenings(
+        search: event.search,
+        page: _currentPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
 
       final suppliers = response.result ?? [];
-      
-      emit(SupplierOpeningsLoaded(suppliers: suppliers, search: event.search));
+      _allItems = List.from(suppliers);
+      _hasReachedMax = response.pagination?.reachedMax(
+            fetchedCount: suppliers.length,
+            perPage: _perPage,
+          ) ??
+          suppliers.length < _perPage;
+
+      emit(SupplierOpeningsLoaded(
+        suppliers: List.from(_allItems),
+        search: event.search,
+        hasReachedMax: _hasReachedMax,
+      ));
     } catch (e) {
       emit(SupplierOpeningsError(message: friendlyError(e)));
+    }
+  }
+
+  Future<void> _onLoadMoreSupplierOpenings(
+    LoadMoreSupplierOpenings event,
+    Emitter<SupplierOpeningsState> emit,
+  ) async {
+    if (_isLoadingMore || _hasReachedMax) return;
+
+    _isLoadingMore = true;
+    final token = _loadToken;
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await _apiService.getSupplierOpenings(
+        search: _search,
+        page: nextPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
+
+      final suppliers = response.result ?? [];
+      final existingIds = _allItems.map((e) => e.id).toSet();
+      final uniqueSuppliers =
+          suppliers.where((item) => !existingIds.contains(item.id)).toList();
+      _currentPage = nextPage;
+      _allItems.addAll(uniqueSuppliers);
+      _hasReachedMax = uniqueSuppliers.isEmpty ||
+          (response.pagination?.reachedMax(
+                fetchedCount: suppliers.length,
+                perPage: _perPage,
+              ) ??
+              suppliers.length < _perPage);
+
+      emit(SupplierOpeningsLoaded(
+        suppliers: List.from(_allItems),
+        search: _search,
+        hasReachedMax: _hasReachedMax,
+      ));
+    } catch (_) {
+      // Keep the already loaded list visible.
+    } finally {
+      _isLoadingMore = false;
     }
   }
 

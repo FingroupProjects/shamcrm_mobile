@@ -1153,41 +1153,54 @@ extension _SipMainViewsExtension on _SipScreenState {
                 20,
                 isVeryCompact ? 0 : 2,
               ),
-              child: _dialNumberHeader(
-                constraints,
-                isCompact: isCompact,
-                isVeryCompact: isVeryCompact,
+              child: AnimatedBuilder(
+                animation: _sipIdController,
+                builder: (context, _) => _dialNumberHeader(
+                  constraints,
+                  isCompact: isCompact,
+                  isVeryCompact: isVeryCompact,
+                ),
               ),
             ),
           ),
           if (isRegistered && !isCompact)
-            _inlineDialSuggestion(constraints)
+            AnimatedBuilder(
+              animation: _sipIdController,
+              builder: (context, _) => ValueListenableBuilder<int>(
+                valueListenable: _dialSuggestionsTick,
+                builder: (context, _, __) =>
+                    _inlineDialSuggestion(constraints),
+              ),
+            )
           else
             SizedBox(height: suggestionHeight),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            child: Column(
-              children: List.generate(4, (row) {
-                final start = row * 3;
-                return Padding(
-                  padding: EdgeInsets.only(bottom: rowGap),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(3, (col) {
-                      final item = _SipScreenState._dialPadItems[start + col];
-                      final key = item['key']!;
-                      return _ios26DialKey(
-                        value: key,
-                        letters: item['letters']!,
-                        outerSize: keyOuterSize,
-                        onTap: () => _insertDialText(key),
-                        onLongPress:
-                            key == '0' ? () => _insertDialText('+') : null,
-                      );
-                    }),
-                  ),
-                );
-              }),
+            child: RepaintBoundary(
+              child: Column(
+                children: List.generate(4, (row) {
+                  final start = row * 3;
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: rowGap),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(3, (col) {
+                        final item = _SipScreenState._dialPadItems[start + col];
+                        final key = item['key']!;
+                        return _ios26DialKey(
+                          value: key,
+                          letters: item['letters']!,
+                          outerSize: keyOuterSize,
+                          onTap: () => _insertDialText(key),
+                          onLongPress: key == '0'
+                              ? () => _replaceLastDialChar('0', '+')
+                              : null,
+                        );
+                      }),
+                    ),
+                  );
+                }),
+              ),
             ),
           ),
           Padding(
@@ -1197,72 +1210,84 @@ extension _SipMainViewsExtension on _SipScreenState {
               horizontalPadding + 2,
               bottomPadding,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SizedBox(
-                  width: actionButtonSize,
-                  height: actionButtonSize,
-                  child: _sipIdController.text.isNotEmpty
-                      ? CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: _showAddDialDestinationSheet,
-                          child: Icon(
-                            CupertinoIcons.person_crop_circle_badge_plus,
-                            color: keypadForeground.withValues(alpha: 0.9),
-                            size: actionIconSize,
-                            shadows: _sipKeypadShadows(context),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                GestureDetector(
-                  onTap: isRegistered ? _startDialCall : null,
-                  child: Container(
-                    width: actionButtonSize,
-                    height: actionButtonSize,
-                    decoration: BoxDecoration(
-                      color: isRegistered
-                          ? const Color(0xFF34C759)
-                          : const Color(0xFFD1D5DB),
-                      shape: BoxShape.circle,
-                      boxShadow: isRegistered
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF34C759).withValues(
-                                  alpha: 0.35,
-                                ),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+            child: AnimatedBuilder(
+              animation: _sipIdController,
+              builder: (context, _) {
+                final hasNumber = _sipIdController.text.isNotEmpty;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: actionButtonSize,
+                      height: actionButtonSize,
+                      child: hasNumber
+                          ? CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: _showAddDialDestinationSheet,
+                              child: Icon(
+                                CupertinoIcons.person_crop_circle_badge_plus,
+                                color: keypadForeground.withValues(alpha: 0.9),
+                                size: actionIconSize,
+                                shadows: _sipKeypadShadows(context),
                               ),
-                            ]
-                          : null,
+                            )
+                          : const SizedBox.shrink(),
                     ),
-                    child: Icon(
-                      CupertinoIcons.phone_fill,
-                      color: Colors.white,
-                      size: actionIconSize + 2,
+                    GestureDetector(
+                      onTap: isRegistered ? _startDialCall : null,
+                      child: Container(
+                        width: actionButtonSize,
+                        height: actionButtonSize,
+                        decoration: BoxDecoration(
+                          color: isRegistered
+                              ? const Color(0xFF34C759)
+                              : const Color(0xFFD1D5DB),
+                          shape: BoxShape.circle,
+                          boxShadow: isRegistered
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF34C759).withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Icon(
+                          CupertinoIcons.phone_fill,
+                          color: Colors.white,
+                          size: actionIconSize + 2,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  width: actionButtonSize,
-                  height: actionButtonSize,
-                  child: _sipIdController.text.isNotEmpty
-                      ? CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: _backspaceDial,
-                          onLongPress: _clearDial,
-                          child: Icon(
-                            CupertinoIcons.delete_left_fill,
-                            color: keypadForeground.withValues(alpha: 0.9),
-                            size: actionIconSize - 1,
-                            shadows: _sipKeypadShadows(context),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-              ],
+                    SizedBox(
+                      width: actionButtonSize,
+                      height: actionButtonSize,
+                      child: hasNumber
+                          ? Listener(
+                              behavior: HitTestBehavior.opaque,
+                              onPointerDown: (_) => _backspaceDial(),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onLongPress: _clearDial,
+                                child: Center(
+                                  child: Icon(
+                                    CupertinoIcons.delete_left_fill,
+                                    color:
+                                        keypadForeground.withValues(alpha: 0.9),
+                                    size: actionIconSize - 1,
+                                    shadows: _sipKeypadShadows(context),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -1383,6 +1408,7 @@ extension _SipMainViewsExtension on _SipScreenState {
       width: outerSize,
       height: outerSize,
       child: LiquidPinKey(
+        key: ValueKey('sip_dial_$value'),
         digit: value,
         letters: letters,
         size: innerSize,

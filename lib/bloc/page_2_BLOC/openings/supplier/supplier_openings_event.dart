@@ -6,6 +6,10 @@ class LoadSupplierOpenings extends SupplierOpeningsEvent {
   LoadSupplierOpenings({this.search});
 }
 
+class LoadMoreSupplierOpenings extends SupplierOpeningsEvent {
+  LoadMoreSupplierOpenings();
+}
+
 class RefreshSupplierOpenings extends SupplierOpeningsEvent {
   RefreshSupplierOpenings();
 }

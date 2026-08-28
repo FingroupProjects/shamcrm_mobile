@@ -708,9 +708,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final localizations = AppLocalizations.of(context)!;
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
-    return Positioned.fill(
+    return ColoredBox(
+      color: colors.backgroundPrimary,
       child: Material(
-        color: Colors.transparent,
+        color: colors.backgroundPrimary,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -763,21 +764,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.search,
-                                color: colors.iconSecondary),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.notifications_none,
-                                color: colors.iconSecondary),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.more_vert,
-                                color: colors.iconSecondary),
                           ),
                         ],
                       ),
@@ -1251,25 +1237,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             currentWidget = EmptyScreen();
           }
 
-          Widget safeBody = Stack(
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 260),
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.easeOut,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
-                child: SafeArea(
-                  key: ValueKey(currentWidget.runtimeType),
-                  bottom: true,
-                  child: currentWidget,
-                ),
-              ),
-              if (_showProfileScreen) _buildEmbeddedProfileOverlay(context),
-            ],
-          );
+          final Widget safeBody = _showProfileScreen
+              ? _buildEmbeddedProfileOverlay(context)
+              : AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                  child: SafeArea(
+                    key: ValueKey(currentWidget.runtimeType),
+                    bottom: true,
+                    child: currentWidget,
+                  ),
+                );
 
           return Scaffold(
             body: safeBody,

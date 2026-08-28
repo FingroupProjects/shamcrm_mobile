@@ -10,19 +10,23 @@ class GoodsOpeningsLoading extends GoodsOpeningsState {}
 class GoodsOpeningsLoaded extends GoodsOpeningsState {
   final List<GoodsOpeningDocument> goods;
   final String? search;
+  final bool hasReachedMax;
 
   GoodsOpeningsLoaded({
     required this.goods,
     this.search,
+    this.hasReachedMax = true,
   });
 
   GoodsOpeningsLoaded copyWith({
     List<GoodsOpeningDocument>? goods,
     String? search,
+    bool? hasReachedMax,
   }) {
     return GoodsOpeningsLoaded(
       goods: goods ?? this.goods,
       search: search ?? this.search,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }

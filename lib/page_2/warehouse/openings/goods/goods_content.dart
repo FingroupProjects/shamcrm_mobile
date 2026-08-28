@@ -20,9 +20,16 @@ class GoodsContent extends StatefulWidget {
 }
 
 class _GoodsContentState extends State<GoodsContent> {
+  final ScrollController _scrollController = ScrollController();
   bool _isRefreshing = false;
   // Keep track of ScaffoldMessengerState to avoid unsafe lookups
   ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void didChangeDependencies() {
@@ -33,8 +40,18 @@ class _GoodsContentState extends State<GoodsContent> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _scaffoldMessenger = null;
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent - 200) {
+      return;
+    }
+    context.read<GoodsOpeningsBloc>().add(LoadMoreGoodsOpenings());
   }
 
   Future<void> _onRefresh() async {
@@ -58,17 +75,29 @@ class _GoodsContentState extends State<GoodsContent> {
     }
   }
 
-  Widget _buildGoodsList(List<GoodsOpeningDocument> goods) {
+  Widget _buildGoodsList(
+    List<GoodsOpeningDocument> goods, {
+    required bool hasReachedMax,
+  }) {
     final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: colors.buttonPrimaryBg,
       child: ListView.separated(
+        controller: _scrollController,
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: goods.length,
+        itemCount: goods.length + (hasReachedMax ? 0 : 1),
         itemBuilder: (context, index) {
+          if (index >= goods.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: PlayStoreImageLoading(size: 48),
+              ),
+            );
+          }
           return GoodsCard(
             goods: goods[index],
             onClick: (goods) {
@@ -325,7 +354,10 @@ class _GoodsContentState extends State<GoodsContent> {
           if (state.goods.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildGoodsList(state.goods);
+          return _buildGoodsList(
+            state.goods,
+            hasReachedMax: state.hasReachedMax,
+          );
         }
 
         // Default empty state

@@ -6,6 +6,10 @@ class LoadGoodsOpenings extends GoodsOpeningsEvent {
   LoadGoodsOpenings({this.search});
 }
 
+class LoadMoreGoodsOpenings extends GoodsOpeningsEvent {
+  LoadMoreGoodsOpenings();
+}
+
 class RefreshGoodsOpenings extends GoodsOpeningsEvent {
   RefreshGoodsOpenings();
 }

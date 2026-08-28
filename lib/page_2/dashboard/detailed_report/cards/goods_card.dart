@@ -83,11 +83,9 @@ class GoodsCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Сумма: ${goods.totalSum}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontFamily: 'Gilroy',
+                    style: textStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xff1E2E52),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],

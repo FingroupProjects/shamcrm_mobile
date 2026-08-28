@@ -4,14 +4,24 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../api/service/api_service.dart';
+import '../../../../models/page_2/openings/cash_register_openings_model.dart';
 import 'cash_register_openings_event.dart';
 import 'cash_register_openings_state.dart';
 
 class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegisterOpeningsState> {
   final ApiService _apiService = ApiService();
+  static const int _perPage = 20;
+
+  int _currentPage = 1;
+  int _loadToken = 0;
+  List<CashRegisterOpening> _allItems = [];
+  String? _search;
+  bool _hasReachedMax = false;
+  bool _isLoadingMore = false;
 
   CashRegisterOpeningsBloc() : super(CashRegisterOpeningsInitial()) {
     on<LoadCashRegisterOpenings>(_onLoadCashRegisterOpenings);
+    on<LoadMoreCashRegisterOpenings>(_onLoadMoreCashRegisterOpenings);
     on<RefreshCashRegisterOpenings>(_onRefreshCashRegisterOpenings);
     on<DeleteCashRegisterOpening>(_onDeleteCashRegisterOpening);
     on<CreateCashRegisterOpening>(_onCreateCashRegisterOpening);
@@ -27,18 +37,35 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
     }
     try {
       emit(CashRegisterOpeningsLoading());
+
+      _currentPage = 1;
+      _search = event.search;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      final token = ++_loadToken;
       
       if (kDebugMode) {
         debugPrint('🟡 CashRegisterOpeningsBloc: вызван getCashRegisterOpenings');
       }
       
-      final response = await _apiService.getCashRegisterOpenings(search: event.search);
+      final response = await _apiService.getCashRegisterOpenings(
+        search: event.search,
+        page: _currentPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
 
       if (kDebugMode) {
         debugPrint('🟡 CashRegisterOpeningsBloc: получен response, result: ${response.result?.length ?? 0} элементов');
       }
 
       final cashRegisters = response.result ?? [];
+      _allItems = List.from(cashRegisters);
+      _hasReachedMax = response.pagination?.reachedMax(
+            fetchedCount: cashRegisters.length,
+            perPage: _perPage,
+          ) ??
+          cashRegisters.length < _perPage;
       
       if (kDebugMode) {
         debugPrint('🟡 CashRegisterOpeningsBloc: cashRegisters count: ${cashRegisters.length}');
@@ -47,7 +74,11 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
         }
       }
       
-      emit(CashRegisterOpeningsLoaded(cashRegisters: cashRegisters, search: event.search));
+      emit(CashRegisterOpeningsLoaded(
+        cashRegisters: List.from(_allItems),
+        search: event.search,
+        hasReachedMax: _hasReachedMax,
+      ));
       
       if (kDebugMode) {
         debugPrint('🟢 CashRegisterOpeningsBloc: успешно загружено ${cashRegisters.length} касс');
@@ -57,7 +88,50 @@ class CashRegisterOpeningsBloc extends Bloc<CashRegisterOpeningsEvent, CashRegis
         debugPrint('🔴 CashRegisterOpeningsBloc: ОШИБКА при загрузке: $e');
         debugPrint('🔴 CashRegisterOpeningsBloc: STACK TRACE: $stackTrace');
       }
-      emit(CashRegisterOpeningsPaginationError(message: friendlyError(e)));
+      emit(CashRegisterOpeningsError(message: friendlyError(e)));
+    }
+  }
+
+  Future<void> _onLoadMoreCashRegisterOpenings(
+    LoadMoreCashRegisterOpenings event,
+    Emitter<CashRegisterOpeningsState> emit,
+  ) async {
+    if (_isLoadingMore || _hasReachedMax) return;
+
+    _isLoadingMore = true;
+    final token = _loadToken;
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await _apiService.getCashRegisterOpenings(
+        search: _search,
+        page: nextPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
+
+      final cashRegisters = response.result ?? [];
+      final existingIds = _allItems.map((e) => e.id).toSet();
+      final uniqueCashRegisters = cashRegisters
+          .where((item) => !existingIds.contains(item.id))
+          .toList();
+      _currentPage = nextPage;
+      _allItems.addAll(uniqueCashRegisters);
+      _hasReachedMax = uniqueCashRegisters.isEmpty ||
+          (response.pagination?.reachedMax(
+                fetchedCount: cashRegisters.length,
+                perPage: _perPage,
+              ) ??
+              cashRegisters.length < _perPage);
+
+      emit(CashRegisterOpeningsLoaded(
+        cashRegisters: List.from(_allItems),
+        search: _search,
+        hasReachedMax: _hasReachedMax,
+      ));
+    } catch (_) {
+      // Keep the already loaded list visible.
+    } finally {
+      _isLoadingMore = false;
     }
   }
 

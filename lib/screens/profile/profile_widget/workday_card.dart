@@ -10,6 +10,7 @@ import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WorkdayCard extends StatefulWidget {
   final String? organizationId;
@@ -91,8 +92,115 @@ class _WorkdayCardState extends State<WorkdayCard> {
     }
   }
 
+  static const _noticeKey = 'workday_selfie_notice_shown';
+
+  Future<bool> _showPhotoNoticeIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alreadyShown = prefs.getBool(_noticeKey) ?? false;
+    if (alreadyShown) return true;
+
+    if (!mounted) return false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final colors = ctx.appColors;
+        final textStyles = ctx.appTextStyles;
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: colors.surfacePrimary,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.camera_front_outlined,
+                    size: 34,
+                    color: colors.buttonPrimaryBg,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Фото при отметке',
+                  style: textStyles.titleLg.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                    fontSize: 18,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'При нажатии «Начать работу» или «Завершить работу» приложение автоматически сделает селфи с фронтальной камеры.\n\nФото вместе с геопозицией сохраняется в системе. Руководители и администраторы могут просматривать его в разделе «Табель».',
+                  style: textStyles.bodySm.copyWith(
+                    color: colors.textSecondary,
+                    height: 1.55,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: colors.buttonPrimaryBg,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    child: const Text('Понятно, продолжить'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(
+                    'Отмена',
+                    style: textStyles.bodySm.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await prefs.setBool(_noticeKey, true);
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _handleAction({required bool isStart}) async {
     if (_isSubmitting) return;
+
+    if (isStart) {
+      final proceed = await _showPhotoNoticeIfNeeded();
+      if (!proceed) return;
+    }
 
     setState(() {
       _isSubmitting = true;
@@ -231,11 +339,11 @@ class _WorkdayCardState extends State<WorkdayCard> {
     }
 
     if (record.isActive) {
-      return 'Рабочий день начат в ${_formatTime(record.startedAt!)}';
+      return 'Рабочий день начат в ${_formatTime(record.startedAt!)} · фото отправлено';
     }
 
     if (record.isCompleted) {
-      return 'Рабочий день уже завершен в ${_formatTime(record.endedAt!)}';
+      return 'Рабочий день завершён в ${_formatTime(record.endedAt!)} · фото отправлено';
     }
 
     return 'Нажмите «Начать», когда приступаете к работе.';
@@ -342,6 +450,28 @@ class _WorkdayCardState extends State<WorkdayCard> {
               fontWeight: FontWeight.w500,
               color: colors.textSecondary,
             ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.camera_front_outlined,
+                size: 14,
+                color: colors.textSecondary.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  'Селфи и геопозиция фиксируются при каждой отметке и доступны руководителю в табеле',
+                  style: textStyles.bodySm.copyWith(
+                    fontSize: 11,
+                    color: colors.textSecondary.withValues(alpha: 0.6),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

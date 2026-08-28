@@ -16,7 +16,10 @@ class GetAllCashRegisterBloc extends Bloc<GetAllCashRegisterEvent, GetAllCashReg
       try {
         emit(GetAllCashRegisterLoading());
 
-        var res = await ApiService().getAllCashRegisters();
+        final api = ApiService();
+        var res = event.useAll
+            ? await api.getCashRegisterAll()
+            : await api.getAllCashRegisters();
 
         emit(GetAllCashRegisterSuccess(dataCashRegisters: res));
       } catch (e) {

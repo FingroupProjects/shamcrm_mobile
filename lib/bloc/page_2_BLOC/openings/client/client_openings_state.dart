@@ -9,19 +9,23 @@ class ClientOpeningsLoading extends ClientOpeningsState {}
 class ClientOpeningsLoaded extends ClientOpeningsState {
   final List<ClientOpening> clients;
   final String? search;
+  final bool hasReachedMax;
 
   ClientOpeningsLoaded({
     required this.clients,
     this.search,
+    this.hasReachedMax = true,
   });
 
   ClientOpeningsLoaded copyWith({
     List<ClientOpening>? clients,
     String? search,
+    bool? hasReachedMax,
   }) {
     return ClientOpeningsLoaded(
       clients: clients ?? this.clients,
       search: search ?? this.search,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }

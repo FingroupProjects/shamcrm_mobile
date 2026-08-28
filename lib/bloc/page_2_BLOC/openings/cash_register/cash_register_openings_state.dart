@@ -9,21 +9,23 @@ class CashRegisterOpeningsLoading extends CashRegisterOpeningsState {}
 class CashRegisterOpeningsLoaded extends CashRegisterOpeningsState {
   final List<CashRegisterOpening> cashRegisters;
   final String? search;
+  final bool hasReachedMax;
 
   CashRegisterOpeningsLoaded({
     required this.cashRegisters,
     this.search,
+    this.hasReachedMax = true,
   });
 
   CashRegisterOpeningsLoaded copyWith({
     List<CashRegisterOpening>? cashRegisters,
     String? search,
     bool? hasReachedMax,
-    Pagination? pagination,
   }) {
     return CashRegisterOpeningsLoaded(
       cashRegisters: cashRegisters ?? this.cashRegisters,
       search: search ?? this.search,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }

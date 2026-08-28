@@ -421,7 +421,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
             title: CustomAppBarReports(
               title: isClickAvatarIcon
                   ? localizations!.translate('appbar_settings')
-                  : localizations!.translate('appbar_detailed_report'),
+                  : 'Отчет',
               onClickProfileAvatar: () {
                 setState(() {
                   isClickAvatarIcon = !isClickAvatarIcon;

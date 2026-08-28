@@ -323,9 +323,9 @@ extension _SipCallViewsExtension on _SipScreenState {
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (_) => onTap(),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size / 2),
         child: BackdropFilter(
@@ -1066,11 +1066,11 @@ extension _SipCallViewsExtension on _SipScreenState {
     );
   }
 
-  Future<void> _handleInCallTone(String tone) async {
+  void _handleInCallTone(String tone) {
     _updateView(() {
       _inCallDigits = '$_inCallDigits$tone';
     });
-    await _sipRuntime.sendDtmf(tone);
+    unawaited(_sipRuntime.sendDtmf(tone));
   }
 
   void _toggleInCallKeypad() {

@@ -18,6 +18,7 @@ class RefreshGoodVariantsForDialog extends GoodsDialogEvent {}
 class UpdateGoodVariantsInBackground extends GoodsDialogEvent {
   final List<GoodVariantItem> data;
   final int totalPages;
-  
-  UpdateGoodVariantsInBackground(this.data, this.totalPages);
+  final int loadId;
+
+  UpdateGoodVariantsInBackground(this.data, this.totalPages, this.loadId);
 }

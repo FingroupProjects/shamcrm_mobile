@@ -411,6 +411,7 @@ extension _SipScreenContactsExtension on _SipScreenState {
 
     _dialSuggestionTotalCount = uniqueSuggestions.length;
     _dialSuggestions = uniqueSuggestions.take(8).toList(growable: false);
+    _dialSuggestionsTick.value++;
   }
 
   void _handleContactsViewChanged(String value) {

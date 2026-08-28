@@ -213,6 +213,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState
                       ),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        useAllForFuzaylovazam: true,
                         title: localizations.translate('sender_cash_register'),
                         selectedCashRegisterId:
                             selectedSenderCashRegister?.id.toString(),
@@ -223,6 +224,7 @@ class _AddMoneyOutcomeAnotherCashRegisterState
                       ),
                       const SizedBox(height: 16),
                       CashRegisterGroupWidget(
+                        useAllForFuzaylovazam: true,
                         title: localizations.translate('receiver_cash_register'),
                         selectedCashRegisterId:
                             selectedReceiverCashRegister?.id.toString(),

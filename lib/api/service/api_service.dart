@@ -344,6 +344,27 @@ class ApiService extends ApiServiceBase {
     _analyticsResponseCache.clear();
     _analyticsInFlight.clear();
   }
+
+  Future<CashRegistersDataResponse> getCashRegisterAll() async {
+    final path = await _appendQueryParams('/cashRegister-all');
+    if (kDebugMode) {
+      debugPrint('ApiService: getCashRegisterAll - path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка при получении данных!');
+    }
+
+    final data = json.decode(response.body);
+    if (data is! Map || data['result'] == null) {
+      throw Exception('Результат отсутствует в ответе');
+    }
+
+    return CashRegistersDataResponse.fromJson(
+      Map<String, dynamic>.from(data),
+    );
+  }
 }
 
 class OrderStatusUpdateException implements Exception {

@@ -48,11 +48,15 @@ extension _SipScreenDialerExtension on _SipScreenState {
     }
     _lastDialTextForSuggestions = text;
     _contactSearchDebounce?.cancel();
-    _contactSearchDebounce = Timer(const Duration(milliseconds: 60), () {
+    if (text.isEmpty) {
+      _refreshContactSuggestions();
+      _handleDialServerSuggestionsChanged(text);
+      return;
+    }
+    _contactSearchDebounce = Timer(const Duration(milliseconds: 220), () {
       if (!mounted) return;
       _refreshContactSuggestions();
       _handleDialServerSuggestionsChanged(_sipIdController.text);
-      _updateView(() {});
     });
   }
 
@@ -92,7 +96,28 @@ extension _SipScreenDialerExtension on _SipScreenState {
       text: newText,
       selection: TextSelection.collapsed(offset: safeStart + value.length),
     );
-    _dialFocusNode.requestFocus();
+    if (!_dialFocusNode.hasFocus) {
+      _dialFocusNode.requestFocus();
+    }
+  }
+
+  void _replaceLastDialChar(String expected, String replacement) {
+    final currentValue = _sipIdController.value;
+    final text = currentValue.text;
+    if (text.isEmpty) return;
+
+    final selection = currentValue.selection;
+    final end = selection.isValid ? selection.end : text.length;
+    if (end <= 0 || end > text.length) return;
+    if (text.substring(end - 1, end) != expected) return;
+
+    final newText = text.replaceRange(end - 1, end, replacement);
+    _sipIdController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(
+        offset: end - 1 + replacement.length,
+      ),
+    );
   }
 
   void _backspaceDial() {
@@ -110,7 +135,6 @@ extension _SipScreenDialerExtension on _SipScreenState {
         text: newText,
         selection: TextSelection.collapsed(offset: start),
       );
-      _dialFocusNode.requestFocus();
       return;
     }
 
@@ -120,7 +144,6 @@ extension _SipScreenDialerExtension on _SipScreenState {
       text: newText,
       selection: TextSelection.collapsed(offset: start - 1),
     );
-    _dialFocusNode.requestFocus();
   }
 
   void _clearDial() {

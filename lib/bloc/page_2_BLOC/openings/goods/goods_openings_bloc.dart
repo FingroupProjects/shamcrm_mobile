@@ -4,14 +4,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
 import '../../../../api/service/api_service.dart';
+import '../../../../models/page_2/openings/goods_openings_model.dart';
 import 'goods_openings_event.dart';
 import 'goods_openings_state.dart';
 
 class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
   final ApiService _apiService = ApiService();
+  static const int _perPage = 20;
+
+  int _currentPage = 1;
+  int _loadToken = 0;
+  List<GoodsOpeningDocument> _allItems = [];
+  String? _search;
+  bool _hasReachedMax = false;
+  bool _isLoadingMore = false;
 
   GoodsOpeningsBloc() : super(GoodsOpeningsInitial()) {
     on<LoadGoodsOpenings>(_onLoadGoodsOpenings);
+    on<LoadMoreGoodsOpenings>(_onLoadMoreGoodsOpenings);
     on<RefreshGoodsOpenings>(_onRefreshGoodsOpenings);
     on<DeleteGoodsOpening>(_onDeleteGoodsOpening);
     on<CreateGoodsOpening>(_onCreateGoodsOpening);
@@ -25,13 +35,76 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
     try {
       emit(GoodsOpeningsLoading());
 
-      final response = await _apiService.getGoodsOpenings(search: event.search);
+      _currentPage = 1;
+      _search = event.search;
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+      final token = ++_loadToken;
+
+      final response = await _apiService.getGoodsOpenings(
+        search: event.search,
+        page: _currentPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
 
       final goods = response.result ?? [];
-      
-      emit(GoodsOpeningsLoaded(goods: goods, search: event.search));
+      _allItems = List.from(goods);
+      _hasReachedMax = response.pagination?.reachedMax(
+            fetchedCount: goods.length,
+            perPage: _perPage,
+          ) ??
+          goods.length < _perPage;
+
+      emit(GoodsOpeningsLoaded(
+        goods: List.from(_allItems),
+        search: event.search,
+        hasReachedMax: _hasReachedMax,
+      ));
     } catch (e) {
       emit(GoodsOpeningsError(message: friendlyError(e)));
+    }
+  }
+
+  Future<void> _onLoadMoreGoodsOpenings(
+    LoadMoreGoodsOpenings event,
+    Emitter<GoodsOpeningsState> emit,
+  ) async {
+    if (_isLoadingMore || _hasReachedMax) return;
+
+    _isLoadingMore = true;
+    final token = _loadToken;
+    try {
+      final nextPage = _currentPage + 1;
+      final response = await _apiService.getGoodsOpenings(
+        search: _search,
+        page: nextPage,
+        perPage: _perPage,
+      );
+      if (token != _loadToken) return;
+
+      final goods = response.result ?? [];
+      final existingIds = _allItems.map((e) => e.id).toSet();
+      final uniqueGoods =
+          goods.where((item) => !existingIds.contains(item.id)).toList();
+      _currentPage = nextPage;
+      _allItems.addAll(uniqueGoods);
+      _hasReachedMax = uniqueGoods.isEmpty ||
+          (response.pagination?.reachedMax(
+                fetchedCount: goods.length,
+                perPage: _perPage,
+              ) ??
+              goods.length < _perPage);
+
+      emit(GoodsOpeningsLoaded(
+        goods: List.from(_allItems),
+        search: _search,
+        hasReachedMax: _hasReachedMax,
+      ));
+    } catch (_) {
+      // Keep the already loaded list visible.
+    } finally {
+      _isLoadingMore = false;
     }
   }
 

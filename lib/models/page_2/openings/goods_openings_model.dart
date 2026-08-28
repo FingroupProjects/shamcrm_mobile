@@ -1,11 +1,15 @@
 import 'package:crm_task_manager/utils/safe_converters.dart';
 
+import 'openings_pagination.dart';
+
 class GoodsOpeningsResponse {
   final List<GoodsOpeningDocument>? result;
+  final OpeningsPagination? pagination;
   final dynamic errors;
 
   GoodsOpeningsResponse({
     this.result,
+    this.pagination,
     this.errors,
   });
 
@@ -27,6 +31,7 @@ class GoodsOpeningsResponse {
                 .whereType<Map<String, dynamic>>()
                 .map((x) => GoodsOpeningDocument.fromJson(x))
                 .toList(),
+            pagination: OpeningsPagination.fromResult(resultData),
             errors: json["errors"],
           );
         } else if (resultData is List) {
@@ -36,11 +41,16 @@ class GoodsOpeningsResponse {
                 .whereType<Map<String, dynamic>>()
                 .map((x) => GoodsOpeningDocument.fromJson(x))
                 .toList(),
+            pagination: OpeningsPagination.fromResult(json),
         errors: json["errors"],
       );
         }
       }
-      return GoodsOpeningsResponse(result: [], errors: json["errors"]);
+      return GoodsOpeningsResponse(
+        result: [],
+        pagination: OpeningsPagination.fromResult(json),
+        errors: json["errors"],
+      );
     }
     return GoodsOpeningsResponse(result: [], errors: null);
   }

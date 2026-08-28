@@ -1,11 +1,15 @@
 import 'package:crm_task_manager/utils/safe_converters.dart';
 
+import 'openings_pagination.dart';
+
 class CashRegisterOpeningsResponse {
   final List<CashRegisterOpening>? result;
+  final OpeningsPagination? pagination;
   final dynamic errors;
 
   CashRegisterOpeningsResponse({
     this.result,
+    this.pagination,
     this.errors,
   });
 
@@ -57,7 +61,11 @@ class CashRegisterOpeningsResponse {
         }
         // ignore: avoid_print
         print('🟢 CashRegisterOpeningsResponse.fromJson - успешно распарсено ${mappedList.length} элементов');
-        return CashRegisterOpeningsResponse(result: mappedList, errors: json["errors"]);
+        return CashRegisterOpeningsResponse(
+          result: mappedList,
+          pagination: OpeningsPagination.fromResult(resultData),
+          errors: json["errors"],
+        );
       } else if (resultData is List) {
         // Формат: {"result": [...]}
         // ignore: avoid_print
@@ -78,7 +86,11 @@ class CashRegisterOpeningsResponse {
             rethrow;
           }
         }
-        return CashRegisterOpeningsResponse(result: mappedList, errors: json["errors"]);
+        return CashRegisterOpeningsResponse(
+          result: mappedList,
+          pagination: OpeningsPagination.fromResult(json),
+          errors: json["errors"],
+        );
       } else {
         // ignore: avoid_print
         print('🟡 CashRegisterOpeningsResponse.fromJson - resultData не Map и не List, type: ${resultData.runtimeType}');

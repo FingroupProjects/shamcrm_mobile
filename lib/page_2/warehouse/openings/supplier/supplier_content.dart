@@ -20,9 +20,16 @@ class SupplierContent extends StatefulWidget {
 }
 
 class _SupplierContentState extends State<SupplierContent> {
+  final ScrollController _scrollController = ScrollController();
   bool _isRefreshing = false;
   // Keep track of ScaffoldMessengerState to avoid unsafe lookups
   ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void didChangeDependencies() {
@@ -33,8 +40,18 @@ class _SupplierContentState extends State<SupplierContent> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _scaffoldMessenger = null;
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <
+        _scrollController.position.maxScrollExtent - 200) {
+      return;
+    }
+    context.read<SupplierOpeningsBloc>().add(LoadMoreSupplierOpenings());
   }
 
   Future<void> _onRefresh() async {
@@ -58,17 +75,29 @@ class _SupplierContentState extends State<SupplierContent> {
     }
   }
 
-  Widget _buildSupplierList(List<SupplierOpening> suppliers) {
+  Widget _buildSupplierList(
+    List<SupplierOpening> suppliers, {
+    required bool hasReachedMax,
+  }) {
     final colors = context.appColors;
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: colors.buttonPrimaryBg,
       child: ListView.separated(
+        controller: _scrollController,
         separatorBuilder: (context, index) => const SizedBox(height: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: suppliers.length,
+        itemCount: suppliers.length + (hasReachedMax ? 0 : 1),
         itemBuilder: (context, index) {
+          if (index >= suppliers.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: PlayStoreImageLoading(size: 48),
+              ),
+            );
+          }
           return SupplierCard(
             supplier: suppliers[index],
             onClick: (supplier) {
@@ -324,7 +353,10 @@ class _SupplierContentState extends State<SupplierContent> {
           if (state.suppliers.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildSupplierList(state.suppliers);
+          return _buildSupplierList(
+            state.suppliers,
+            hasReachedMax: state.hasReachedMax,
+          );
         }
 
         // Default empty state

@@ -144,6 +144,7 @@ class _SipScreenState extends State<SipScreen>
   String? _lastDialSelectionKey;
   Timer? _dialToolbarDebounce;
   String _lastDialTextForSuggestions = '';
+  final ValueNotifier<int> _dialSuggestionsTick = ValueNotifier(0);
   final Map<int, Offset> _dialPointers = <int, Offset>{};
   double? _dialThreeFingerStartSpan;
   bool _dialThreeFingerFired = false;
@@ -432,6 +433,7 @@ class _SipScreenState extends State<SipScreen>
     _serverController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
+    _dialSuggestionsTick.dispose();
     _sipIdController.dispose();
     _journalSearchController.dispose();
     _searchViewController.dispose();

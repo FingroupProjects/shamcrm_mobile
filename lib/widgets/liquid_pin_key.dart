@@ -167,11 +167,44 @@ class _PinProgressDotsState extends State<PinProgressDots>
 }
 
 class _LiquidPinKeyState extends State<LiquidPinKey> {
+  static const _longPressDelay = Duration(milliseconds: 420);
+
   bool _isPressed = false;
+  final Set<int> _activePointers = <int>{};
+  Timer? _longPressTimer;
 
   void _setPressed(bool value) {
     if (_isPressed == value) return;
     setState(() => _isPressed = value);
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    if (!_activePointers.add(event.pointer)) return;
+    if (_activePointers.length != 1) return;
+
+    _setPressed(true);
+    widget.onPressed();
+    _longPressTimer?.cancel();
+    if (widget.onLongPress != null) {
+      _longPressTimer = Timer(_longPressDelay, () {
+        if (!mounted || _activePointers.isEmpty) return;
+        widget.onLongPress!();
+      });
+    }
+  }
+
+  void _handlePointerRelease(int pointer) {
+    if (!_activePointers.remove(pointer)) return;
+    if (_activePointers.isNotEmpty) return;
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    _setPressed(false);
+  }
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -182,21 +215,15 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
       button: true,
       label: widget.digit,
       child: Center(
-        child: GestureDetector(
+        child: Listener(
           behavior: HitTestBehavior.opaque,
-          onTapDown: (_) => _setPressed(true),
-          onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
-          onTap: widget.onPressed,
-          onLongPress: widget.onLongPress,
-          onLongPressEnd:
-              widget.onLongPress == null ? null : (_) => _setPressed(false),
-          onLongPressCancel:
-              widget.onLongPress == null ? null : () => _setPressed(false),
+          onPointerDown: _handlePointerDown,
+          onPointerUp: (event) => _handlePointerRelease(event.pointer),
+          onPointerCancel: (event) => _handlePointerRelease(event.pointer),
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(end: _isPressed ? 1 : 0),
-            duration: const Duration(milliseconds: 210),
-            curve: Curves.easeOutCubic,
+            duration: const Duration(milliseconds: 70),
+            curve: Curves.easeOut,
             builder: (context, pressure, child) {
               return Transform(
                 alignment: Alignment.center,
@@ -209,8 +236,8 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
               );
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 190),
-              curve: Curves.easeOutCubic,
+              duration: const Duration(milliseconds: 70),
+              curve: Curves.easeOut,
               width: widget.size,
               height: widget.size,
               decoration: BoxDecoration(
@@ -228,11 +255,10 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
               ),
               child: ClipOval(
                 child: _LiquidBackdropLens(
-                  isPressed: _isPressed,
                   isDarkBackground: widget.isDarkBackground,
                   child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 190),
-                    curve: Curves.easeOutCubic,
+                    duration: const Duration(milliseconds: 70),
+                    curve: Curves.easeOut,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
@@ -382,12 +408,10 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
 }
 
 class _LiquidBackdropLens extends StatefulWidget {
-  final bool isPressed;
   final bool isDarkBackground;
   final Widget child;
 
   const _LiquidBackdropLens({
-    required this.isPressed,
     required this.isDarkBackground,
     required this.child,
   });
@@ -432,38 +456,23 @@ class _LiquidBackdropLensState extends State<_LiquidBackdropLens> {
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(end: widget.isPressed ? 1 : 0),
-      duration: const Duration(milliseconds: 230),
-      curve: Curves.easeOutCubic,
+    ImageFilter filter = ImageFilter.blur(sigmaX: 8, sigmaY: 8);
+    final shader = _shader;
+    if (shader != null && ImageFilter.isShaderFilterSupported) {
+      shader
+        ..setFloat(2, 0)
+        ..setFloat(3, 0.13)
+        ..setFloat(4, 1.05)
+        ..setFloat(5, widget.isDarkBackground ? 1 : 0);
+      filter = ImageFilter.compose(
+        outer: ImageFilter.shader(shader),
+        inner: ImageFilter.blur(sigmaX: 2.6, sigmaY: 2.6),
+      );
+    }
+
+    return BackdropFilter(
+      filter: filter,
       child: widget.child,
-      builder: (context, progress, child) {
-        ImageFilter filter = ImageFilter.blur(
-          sigmaX: widget.isPressed ? 6 : 8,
-          sigmaY: widget.isPressed ? 6 : 8,
-        );
-
-        final shader = _shader;
-        if (shader != null && ImageFilter.isShaderFilterSupported) {
-          shader
-            ..setFloat(2, progress)
-            ..setFloat(3, 0.13)
-            ..setFloat(4, 1.05)
-            ..setFloat(5, widget.isDarkBackground ? 1 : 0);
-          filter = ImageFilter.compose(
-            outer: ImageFilter.shader(shader),
-            inner: ImageFilter.blur(
-              sigmaX: widget.isPressed ? 1.8 : 2.6,
-              sigmaY: widget.isPressed ? 1.8 : 2.6,
-            ),
-          );
-        }
-
-        return BackdropFilter(
-          filter: filter,
-          child: child,
-        );
-      },
     );
   }
 }

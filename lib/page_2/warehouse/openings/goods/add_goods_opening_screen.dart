@@ -21,11 +21,13 @@ import 'goods_units_dropdown.dart';
 class AddGoodsOpeningScreen extends StatefulWidget {
   final String goodName;
   final int goodVariantId;
+  final GoodVariantItem? selectedGood;
 
   const AddGoodsOpeningScreen({
     super.key,
     required this.goodName,
     required this.goodVariantId,
+    this.selectedGood,
   });
 
   @override
@@ -55,10 +57,14 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
     quantityController = TextEditingController();
     priceController = TextEditingController();
 
+    // Use the selected variant from the dialog immediately so units
+    // auto-fill even when the good is not on the first list page.
+    _selectedGood = widget.selectedGood;
+
     // Load required data
     context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
 
-    // Load goods list to get the selected good data with units
+    // Load goods list to enrich the selected good data with units
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = context.read<GetAllGoodsListBloc>().state;
@@ -74,13 +80,17 @@ class _AddGoodsOpeningScreenState extends State<AddGoodsOpeningScreen> {
 
   void _loadSelectedGood(List<GoodVariantItem> goodsList) {
     try {
-      _selectedGood = goodsList.firstWhere(
+      final found = goodsList.firstWhere(
         (good) => good.id == widget.goodVariantId,
       );
+      _selectedGood = found;
       if (mounted) {
         setState(() {});
       }
     } catch (e) {
+      if (_selectedGood == null && mounted) {
+        setState(() {});
+      }
       debugPrint('AddGoodsOpeningScreen: Selected good not found in list');
     }
   }

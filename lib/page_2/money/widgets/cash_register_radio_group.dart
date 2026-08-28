@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_bloc.dart';
 import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_event.dart';
 import 'package:crm_task_manager/bloc/cash_register_list/cash_register_list_state.dart';
@@ -12,12 +13,14 @@ class CashRegisterGroupWidget extends StatefulWidget {
   final String? selectedCashRegisterId;
   final Function(CashRegisterData) onSelectCashRegister;
   final String? title;
+  final bool useAllForFuzaylovazam;
 
   const CashRegisterGroupWidget({
     super.key,
     required this.onSelectCashRegister,
     this.selectedCashRegisterId,
     this.title,
+    this.useAllForFuzaylovazam = false,
   });
 
   @override
@@ -38,9 +41,18 @@ class _CashRegisterGroupWidgetState extends State<CashRegisterGroupWidget> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
+        _fetchCashRegisters();
       }
     });
+  }
+
+  Future<void> _fetchCashRegisters() async {
+    final useAll = widget.useAllForFuzaylovazam &&
+        await ApiService().isFuzaylovazamTenant();
+    if (!mounted) return;
+    context
+        .read<GetAllCashRegisterBloc>()
+        .add(GetAllCashRegisterEv(useAll: useAll));
   }
 
   @override
