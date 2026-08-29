@@ -132,6 +132,7 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
 
   @override
   void dispose() {
+    soundRecordNotifier.resetEdgePadding();
     super.dispose();
   }
 
@@ -200,11 +201,17 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
         return Listener(
           onPointerDown: (details) async {
             state.setNewInitialDraggableHeight(details.position.dy);
-            state.resetEdgePadding();
+            // Do not call resetEdgePadding() here: it is async and used to
+            // cancel the recording we are about to start (and hide the input).
             soundRecordNotifier.isShow = true;
             state.record(widget.startRecording);
           },
           onPointerUp: (details) async {
+            if (!state.isLocked) {
+              state.finishRecording();
+            }
+          },
+          onPointerCancel: (details) async {
             if (!state.isLocked) {
               state.finishRecording();
             }

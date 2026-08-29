@@ -86,6 +86,10 @@ class SoundRecordNotifier extends ChangeNotifier {
 
   late AudioEncoderType encode;
 
+  /// Bumped whenever a record attempt is started or cancelled so in-flight
+  /// async work from a previous tap cannot start/stop the next session.
+  int _recordSession = 0;
+
   SoundRecordNotifier({
     required this.stopRecording,
     required this.sendRequestFunction,
@@ -101,9 +105,7 @@ class SoundRecordNotifier extends ChangeNotifier {
     this.lockScreenRecord = false,
     this.encode = AudioEncoderType.AAC,
     this.maxRecordTime,
-  }) {
-    record(() {});
-  }
+  });
 
   /// Map dBFS (−160…0) into a perceptually useful 0…1 bar height.
   static double normalizeDb(double dbfs) {
@@ -154,19 +156,19 @@ class SoundRecordNotifier extends ChangeNotifier {
   }
 
   finishRecording() {
-    if (buttonPressed) {
-      if (second > 1 || minute > 0) {
-        String path = mPath;
-        String time = '$minute:$second';
-        sendRequestFunction(File.fromUri(Uri(path: path)), time);
-        stopRecording!(time);
-      }
+    final time = '$minute:$second';
+    if (buttonPressed && (second > 1 || minute > 0) && mPath.isNotEmpty) {
+      sendRequestFunction(File.fromUri(Uri(path: mPath)), time);
     }
+    // Always notify the host. Short taps / aborted starts used to skip this
+    // and leave the chat input bar hidden (_voicePressed stuck true).
+    stopRecording?.call(time);
     resetEdgePadding();
   }
 
   /// used to reset all value to initial value when end the record
   resetEdgePadding() async {
+    final session = ++_recordSession;
     if (_initWidth == -33) {
       final ctx = key.currentContext;
       if (ctx != null) {
@@ -187,13 +189,24 @@ class SoundRecordNotifier extends ChangeNotifier {
     key = GlobalKey();
     heightPosition = 0;
     lockScreenRecord = false;
-    if (_timer != null) _timer!.cancel();
-    if (_timerCounter != null) _timerCounter!.cancel();
+    _timer?.cancel();
+    _timer = null;
+    _timerCounter?.cancel();
+    _timerCounter = null;
     await _stopAmplitudeListening();
+    if (session != _recordSession) {
+      return;
+    }
     final value = await recordMp3.isRecording();
+    if (session != _recordSession) {
+      return;
+    }
 
     if (value == true) {
       await recordMp3.stop();
+      if (session != _recordSession) {
+        return;
+      }
       recordMp3 = AudioRecorder();
       notifyListeners();
     }
@@ -301,34 +314,49 @@ class SoundRecordNotifier extends ChangeNotifier {
 
   /// this function to start record voice
   record(Function()? startRecord) async {
+    final session = ++_recordSession;
     if (!_isAcceptedPermission) {
       await Permission.microphone.request();
       await Permission.manageExternalStorage.request();
       await Permission.storage.request();
+      if (session != _recordSession) {
+        return;
+      }
       _isAcceptedPermission = true;
-    } else {
-      buttonPressed = true;
-      _clearAmplitude();
-      String recordFilePath = await getFilePath();
-      if (_timer != null) {
-        _timer?.cancel();
-      }
-      _timer = Timer(const Duration(milliseconds: 250), () async {
-        try {
-          await recordMp3.start(const RecordConfig(), path: recordFilePath);
-          _startAmplitudeListening();
-        } catch (_) {
-          // Keep UI alive even if start fails on a transient race.
-        }
-      });
-
-      if (startRecord != null) {
-        startRecord();
-      }
-
-      _mapCounterGenerater();
       notifyListeners();
+      return;
     }
+
+    buttonPressed = true;
+    isShow = true;
+    _clearAmplitude();
+    startRecord?.call();
+    notifyListeners();
+
+    final String recordFilePath = await getFilePath();
+    if (session != _recordSession) {
+      return;
+    }
+    _timer?.cancel();
+    _timer = Timer(const Duration(milliseconds: 250), () async {
+      if (session != _recordSession) {
+        return;
+      }
+      try {
+        await recordMp3.start(const RecordConfig(), path: recordFilePath);
+        if (session != _recordSession) {
+          try {
+            await recordMp3.stop();
+          } catch (_) {}
+          return;
+        }
+        _startAmplitudeListening();
+      } catch (_) {
+        // Keep UI alive even if start fails on a transient race.
+      }
+    });
+
+    _mapCounterGenerater();
     notifyListeners();
   }
 

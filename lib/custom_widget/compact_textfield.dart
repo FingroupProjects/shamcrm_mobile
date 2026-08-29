@@ -77,25 +77,46 @@ class _CompactTextFieldState extends State<CompactTextField> {
   }
 
   void _showKeyboardToolbar() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted || _overlayEntry != null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          _overlayEntry != null ||
+          !_effectiveFocusNode.hasFocus) {
+        return;
+      }
+
+      final overlay = Overlay.maybeOf(context);
+      if (overlay == null) {
+        return;
+      }
 
       _overlayEntry = OverlayEntry(
-        builder: (context) => Positioned(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+        builder: (overlayContext) => Positioned(
+          bottom: MediaQuery.viewInsetsOf(overlayContext).bottom,
           left: 0,
           right: 0,
-          child: _buildKeyboardToolbar(),
+          child: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              height: 44,
+              child: _buildKeyboardToolbar(),
+            ),
+          ),
         ),
       );
 
-      Overlay.of(context).insert(_overlayEntry!);
+      overlay.insert(_overlayEntry!);
     });
   }
 
   void _removeKeyboardToolbar() {
-    _overlayEntry?.remove();
+    final entry = _overlayEntry;
     _overlayEntry = null;
+    if (entry == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      entry.remove();
+    });
   }
 
   Widget _buildKeyboardToolbar() {

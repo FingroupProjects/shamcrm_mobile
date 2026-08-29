@@ -12,6 +12,8 @@ class NativeInternetMonitor with WidgetsBindingObserver {
 
   // ✅ Event Channel для получения событий от нативного кода
   static const EventChannel _eventChannel = EventChannel('com.shamcrm/network_status');
+  static const MethodChannel _methodChannel =
+      MethodChannel('com.shamcrm/network_status/methods');
 
   final _internetStatusController = StreamController<bool>.broadcast();
   Stream<bool> get internetStatus => _internetStatusController.stream;
@@ -21,6 +23,8 @@ class NativeInternetMonitor with WidgetsBindingObserver {
 
   StreamSubscription? _nativeSubscription;
   bool _isInitialized = false;
+  bool _isObserverAttached = false;
+  int _readyRetries = 0;
 
   bool get _supportsNativeNetworkChannel {
     if (kIsWeb) {
@@ -36,20 +40,38 @@ class NativeInternetMonitor with WidgetsBindingObserver {
     if (_isInitialized) {
       return;
     }
-    _isInitialized = true;
 
     debugPrint('🚀 NativeInternetMonitor: Инициализация...');
-    
-    WidgetsBinding.instance.addObserver(this);
+
+    if (!_isObserverAttached) {
+      WidgetsBinding.instance.addObserver(this);
+      _isObserverAttached = true;
+    }
 
     if (!_supportsNativeNetworkChannel) {
       debugPrint(
         '🚀 NativeInternetMonitor: native channel is not supported on this platform',
       );
-      _isConnected = true;
-      _internetStatusController.add(true);
+      _markInitializedAsConnected();
       return;
     }
+
+    final nativeReady = await _isNativeChannelReady();
+    if (!nativeReady) {
+      if (_readyRetries < 5) {
+        _readyRetries += 1;
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        return initialize();
+      }
+
+      debugPrint(
+        '🚀 NativeInternetMonitor: native channel is not registered, fallback to connected state',
+      );
+      _markInitializedAsConnected();
+      return;
+    }
+
+    _isInitialized = true;
     
     try {
       // ✅ Подписываемся на НАТИВНЫЕ события
@@ -98,8 +120,24 @@ class NativeInternetMonitor with WidgetsBindingObserver {
       
     } catch (e) {
       debugPrint('🚀 NativeInternetMonitor: ❌ Ошибка инициализации: $e');
-      _isConnected = true;
-      _internetStatusController.add(true);
+      _markInitializedAsConnected();
+    }
+  }
+
+  void _markInitializedAsConnected() {
+    _isInitialized = true;
+    _isConnected = true;
+    _internetStatusController.add(true);
+  }
+
+  Future<bool> _isNativeChannelReady() async {
+    try {
+      final ready = await _methodChannel.invokeMethod<bool>('isReady');
+      return ready == true;
+    } on MissingPluginException {
+      return false;
+    } catch (_) {
+      return false;
     }
   }
 

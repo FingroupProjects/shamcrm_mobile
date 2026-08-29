@@ -38,6 +38,7 @@ class MainActivity : FlutterFragmentActivity() {
     
     private val CHANNEL = "com.softtech.crm_task_manager/widget"
     private val NETWORK_EVENT_CHANNEL = "com.shamcrm/network_status"
+    private val NETWORK_METHOD_CHANNEL = "com.shamcrm/network_status/methods"
     private val IN_APP_UPDATE_METHOD_CHANNEL = "com.shamcrm/in_app_update/methods"
     private val IN_APP_UPDATE_EVENT_CHANNEL = "com.shamcrm/in_app_update/events"
     private val NATIVE_SIP_METHOD_CHANNEL = "com.shamcrm/native_sip/methods"
@@ -45,6 +46,7 @@ class MainActivity : FlutterFragmentActivity() {
     
     private var methodChannel: MethodChannel? = null
     private var networkEventChannel: EventChannel? = null
+    private var networkMethodChannel: MethodChannel? = null
     private var inAppUpdateMethodChannel: MethodChannel? = null
     private var inAppUpdateEventChannel: EventChannel? = null
     private var nativeSipMethodChannel: MethodChannel? = null
@@ -239,6 +241,18 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         
+        networkMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            NETWORK_METHOD_CHANNEL
+        )
+        networkMethodChannel?.setMethodCallHandler { call, result ->
+            if (call.method == "isReady") {
+                result.success(true)
+            } else {
+                result.notImplemented()
+            }
+        }
+
         networkEventChannel = EventChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             NETWORK_EVENT_CHANNEL

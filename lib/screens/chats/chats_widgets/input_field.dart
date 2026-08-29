@@ -1146,6 +1146,7 @@ class _InputFieldState extends State<InputField>
               _setVoicePressed(true);
             },
             stopRecording: (time) {
+              if (!mounted) return;
               _setVoicePressed(false);
             },
             sendRequestFunction: widget.sendRequestFunction,

@@ -11,6 +11,8 @@ import WidgetKit
     private var networkEventChannel: FlutterEventChannel?
     private var networkEventSink: FlutterEventSink?
     private var nativeSipManager: IOSNativeSipManager?
+    private var networkMethodChannel: FlutterMethodChannel?
+    private var channelAttachAttempts = 0
 
     private let appGroupId = "group.com.softtech.crmTaskManager"
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
@@ -25,19 +27,15 @@ import WidgetKit
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
+        let launched = super.application(application, didFinishLaunchingWithOptions: launchOptions)
 
-        guard let controller = window?.rootViewController as? FlutterViewController else {
-            return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-        }
-
-        setupWidgetMethodChannel(controller: controller)
-        setupNetworkEventChannel(controller: controller)
+        // Window / FlutterViewController is often still nil before super returns.
+        // Register channels from the engine messenger, then retry if needed.
+        attachCustomChannels()
         registerChatReplyNotificationCategory()
-        nativeSipManager = IOSNativeSipManager(controller: controller)
-        nativeSipManager?.initializeRuntimeIfNeeded()
         startNetworkMonitoring()
 
-        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+        return launched
     }
 
     override func applicationDidBecomeActive(_ application: UIApplication) {
@@ -60,10 +58,62 @@ import WidgetKit
         super.applicationWillResignActive(application)
     }
 
-    private func setupWidgetMethodChannel(controller: FlutterViewController) {
+    private func attachCustomChannels() {
+        guard let messenger = flutterMessenger() else {
+            channelAttachAttempts += 1
+            guard channelAttachAttempts < 10 else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.attachCustomChannels()
+            }
+            return
+        }
+
+        setupWidgetMethodChannel(messenger: messenger)
+        setupNetworkEventChannel(messenger: messenger)
+        setupNetworkMethodChannel(messenger: messenger)
+
+        if nativeSipManager == nil {
+            if let controller = flutterViewController() {
+                nativeSipManager = IOSNativeSipManager(controller: controller)
+                nativeSipManager?.initializeRuntimeIfNeeded()
+            } else if channelAttachAttempts < 10 {
+                channelAttachAttempts += 1
+                DispatchQueue.main.async { [weak self] in
+                    self?.attachCustomChannels()
+                }
+            }
+        }
+    }
+
+    private func flutterViewController() -> FlutterViewController? {
+        findFlutterViewController(from: window?.rootViewController)
+    }
+
+    private func findFlutterViewController(from root: UIViewController?) -> FlutterViewController? {
+        guard let root else { return nil }
+        if let flutter = root as? FlutterViewController {
+            return flutter
+        }
+        for child in root.children {
+            if let found = findFlutterViewController(from: child) {
+                return found
+            }
+        }
+        return findFlutterViewController(from: root.presentedViewController)
+    }
+
+    private func flutterMessenger() -> FlutterBinaryMessenger? {
+        if let controller = flutterViewController() {
+            return controller.binaryMessenger
+        }
+        return registrar(forPlugin: "ShamCrmAppChannels")?.messenger()
+    }
+
+    private func setupWidgetMethodChannel(messenger: FlutterBinaryMessenger) {
+        guard widgetMethodChannel == nil else { return }
         widgetMethodChannel = FlutterMethodChannel(
             name: "com.softtech.crm_task_manager/widget",
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
 
         widgetMethodChannel?.setMethodCallHandler { [weak self] call, result in
@@ -87,12 +137,28 @@ import WidgetKit
         }
     }
 
-    private func setupNetworkEventChannel(controller: FlutterViewController) {
+    private func setupNetworkEventChannel(messenger: FlutterBinaryMessenger) {
+        guard networkEventChannel == nil else { return }
         networkEventChannel = FlutterEventChannel(
             name: "com.shamcrm/network_status",
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
         networkEventChannel?.setStreamHandler(self)
+    }
+
+    private func setupNetworkMethodChannel(messenger: FlutterBinaryMessenger) {
+        guard networkMethodChannel == nil else { return }
+        networkMethodChannel = FlutterMethodChannel(
+            name: "com.shamcrm/network_status/methods",
+            binaryMessenger: messenger
+        )
+        networkMethodChannel?.setMethodCallHandler { call, result in
+            if call.method == "isReady" {
+                result(true)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
+        }
     }
 
     private func registerChatReplyNotificationCategory() {

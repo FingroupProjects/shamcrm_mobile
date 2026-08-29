@@ -107,11 +107,14 @@ Future<void> initializeCrashlytics() async {
   if (Firebase.apps.isEmpty) return;
 
   FlutterError.onError = (errorDetails) {
-    // Layout overflows are UI bugs, not process-killing crashes.
-    final isLayoutOverflow = errorDetails.exceptionAsString().toLowerCase().contains(
-          'renderflex overflowed',
+    // Layout overflows and known recoverable framework errors are not
+    // process-killing crashes.
+    final isNonFatal = _isLayoutOverflow(errorDetails.exception) ||
+        _isRecoverableFlutterError(
+          errorDetails.exception,
+          errorDetails.stack,
         );
-    if (isLayoutOverflow) {
+    if (isNonFatal) {
       FirebaseCrashlytics.instance.recordFlutterError(errorDetails);
       unawaited(
         reportIssue(
@@ -136,13 +139,14 @@ Future<void> initializeCrashlytics() async {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    final isNonFatal = _isRecoverableFlutterError(error, stack);
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: !isNonFatal);
     unawaited(
       reportIssue(
         source: 'platform_dispatcher',
         error: error,
         stackTrace: stack,
-        fatal: true,
+        fatal: !isNonFatal,
       ),
     );
     return true;
@@ -392,6 +396,26 @@ _IssueContext _buildIssueContext({
   );
 }
 
+bool _isLayoutOverflow(Object error) {
+  return error.toString().toLowerCase().contains('renderflex overflowed');
+}
+
+bool _isRecoverableFlutterError(Object error, StackTrace? stackTrace) {
+  final errorText =
+      '${error.toString()}\n${stackTrace?.toString() ?? ''}'.toLowerCase();
+
+  if (errorText.contains('missingpluginexception') &&
+      errorText.contains('com.shamcrm/network_status')) {
+    return true;
+  }
+
+  final isNullCheck = errorText.contains('null check operator used on a null value');
+  final isOverlayHitTest = errorText.contains('renderbox.hittest') ||
+      errorText.contains('_rendertheatermixin') ||
+      errorText.contains('overlay.dart');
+  return isNullCheck && isOverlayHitTest;
+}
+
 _CrashSeverity _classifyIssueSeverity({
   required String source,
   required Object error,
@@ -400,6 +424,15 @@ _CrashSeverity _classifyIssueSeverity({
 }) {
   final errorText =
       '${error.toString()}\n${stackTrace?.toString() ?? ''}'.toLowerCase();
+
+  if (_isLayoutOverflow(error) ||
+      _isRecoverableFlutterError(error, stackTrace)) {
+    return const _CrashSeverity(
+      emoji: '🟡',
+      title: 'Recoverable framework issue',
+      priority: 3,
+    );
+  }
 
   if (fatal) {
     return const _CrashSeverity(
@@ -480,6 +513,8 @@ String _detectIssueScreen({
     'lib/page_2/': 'page_2',
     'lib/api/service/firebase/firebase_api.dart': 'firebase',
     'missingpluginexception': 'native',
+    'renderbox.hittest': 'system',
+    '_rendertheatermixin': 'system',
     'platform_dispatcher': 'system',
     'flutter_error': 'flutter',
   };
@@ -517,6 +552,10 @@ String _detectIssueCategory({
   }
   if (text.contains('missingpluginexception')) {
     return 'native_bridge';
+  }
+  if (text.contains('renderbox.hittest') ||
+      text.contains('_rendertheatermixin')) {
+    return 'ui';
   }
   if (text.contains('lateinitializationerror')) {
     return 'initialization';
@@ -584,6 +623,8 @@ String _categoryLabelFor(String category) {
       return 'Permission';
     case 'native_bridge':
       return 'Native bridge';
+    case 'ui':
+      return 'UI';
     case 'initialization':
       return 'Init';
     case 'assertion':
