@@ -802,6 +802,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var speakerRouteRequestGeneration = 0
     private var selectedAudioRouteId: String?
     private var audioRouteSyncWorkItem: DispatchWorkItem?
+    private var audioRouteRepairWorkItem: DispatchWorkItem?
+    private var audioSessionConfiguredForCall = false
+    private var isApplyingAudioRoute = false
+    private var audioRouteRepairAttempts = 0
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -1402,8 +1406,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.callUUID = nil
         snapshot.callId = nil
         snapshot.muted = false
-        snapshot.speakerOn = false
-        selectedAudioRouteId = nil
+        resetCallAudioRoutePreference()
         persistSnapshot()
         emitRegistrationEvent(state: "disconnected", message: "Unregistration done")
         emitCallEvent(state: "ended", message: "Unregistration done")
@@ -1441,8 +1444,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.callState = "calling"
         // Каждый новый исходящий звонок стартует с обычного разговорного маршрута.
         // Это не даёт старому speaker-state из прошлого звонка залипать в UI.
-        selectedAudioRouteId = nil
-        snapshot.speakerOn = false
+        resetCallAudioRoutePreference()
         snapshot.remoteIdentity = target
         snapshot.message = "Outgoing call started"
         snapshot.callId = callId(from: call) ?? snapshot.callId
@@ -1662,8 +1664,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.remoteIdentity = nil
         snapshot.message = "Call ended locally"
         snapshot.muted = false
-        snapshot.speakerOn = false
-        selectedAudioRouteId = nil
+        resetCallAudioRoutePreference()
         persistSnapshot()
 
         if let endedCallUUID, let uuid = UUID(uuidString: endedCallUUID) {
@@ -1763,10 +1764,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         // Return to Flutter before Linphone/AVAudioSession rebuilds the route.
         // Applying it synchronously could leave the call controls unresponsive.
+        audioRouteRepairAttempts = 0
         DispatchQueue.main.async { [weak self] in
             self?.applySpeakerRoute(
                 enabled: enabled,
-                requestGeneration: requestGeneration
+                requestGeneration: requestGeneration,
+                reason: "user_toggle"
             )
         }
         return true
@@ -1835,6 +1838,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "generation": "\(requestGeneration)",
         ])
 
+        audioRouteRepairAttempts = 0
         DispatchQueue.main.async { [weak self] in
             self?.applyExplicitAudioRoute(
                 routeId,
@@ -1855,13 +1859,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         let session = AVAudioSession.sharedInstance()
+        isApplyingAudioRoute = true
+        defer { isApplyingAudioRoute = false }
         do {
-            try session.setCategory(
-                .playAndRecord,
-                mode: .voiceChat,
-                options: [.allowBluetooth, .allowBluetoothA2DP]
-            )
-            try session.setActive(true, options: [])
+            try ensureCallAudioSessionActive()
 
             let preferredInput: AVAudioSessionPortDescription?
             switch routeId {
@@ -1975,13 +1976,31 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             portType == .lineIn
     }
 
-    private func applySpeakerRoute(enabled: Bool, requestGeneration: Int) {
+    private func applySpeakerRoute(
+        enabled: Bool,
+        requestGeneration: Int,
+        reason: String = "speaker_toggle"
+    ) {
         guard requestGeneration == speakerRouteRequestGeneration else {
             return
         }
 
+        isApplyingAudioRoute = true
+        defer { isApplyingAudioRoute = false }
+
         guard let call = resolveCurrentCallForAction(), let core else {
-            configureAudioSessionForCallIfNeeded()
+            do {
+                try ensureCallAudioSessionActive()
+                try AVAudioSession.sharedInstance().overrideOutputAudioPort(
+                    enabled ? .speaker : .none
+                )
+            } catch {
+                appendDiagnosticLog("[VOIP] AUDIO_ROUTE_FAILED", [
+                    "speaker_on": enabled ? "true" : "false",
+                    "reason": reason,
+                    "error": error.localizedDescription,
+                ])
+            }
             emitAudioSessionEvent(state: "route_preference_updated", reason: "no_active_call")
             scheduleAudioRouteSync(reason: "speaker_request_no_active_call")
             return
@@ -2011,21 +2030,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             linphone_call_set_output_audio_device(call, selected)
         }
 
-        // Always sync AVAudioSession override with the requested route.
-        // Leaving a previous .speaker override active keeps output on the
-        // loudspeaker even after Linphone switches to the earpiece device.
+        // Do not call setCategory here. Rebuilding the session resets
+        // overrideOutputAudioPort and iOS briefly jumps to the loudspeaker,
+        // which inverted speaker/earpiece after a user toggle.
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(
-                .playAndRecord,
-                mode: .voiceChat,
-                options: [.allowBluetooth, .allowBluetoothA2DP]
+            try ensureCallAudioSessionActive()
+            try AVAudioSession.sharedInstance().overrideOutputAudioPort(
+                enabled ? .speaker : .none
             )
-            try session.setActive(true, options: [])
-            try session.overrideOutputAudioPort(enabled ? .speaker : .none)
         } catch {
             appendDiagnosticLog("[VOIP] AUDIO_ROUTE_FAILED", [
                 "speaker_on": enabled ? "true" : "false",
+                "reason": reason,
                 "error": error.localizedDescription,
             ])
             if selected == nil {
@@ -2036,11 +2052,80 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         appendDiagnosticLog("[VOIP] AUDIO_ROUTE_APPLIED", [
             "speaker_on": enabled ? "true" : "false",
+            "reason": reason,
             "route": audioRouteDescription(AVAudioSession.sharedInstance().currentRoute),
             "generation": "\(requestGeneration)",
         ])
         scheduleAudioRouteSync(
             reason: enabled ? "speaker_enabled" : "speaker_disabled"
+        )
+    }
+
+    private var isCallAudioActive: Bool {
+        snapshot.callState == "calling" ||
+            snapshot.callState == "ringing" ||
+            snapshot.callState == "early_media" ||
+            snapshot.callState == "incoming" ||
+            snapshot.callState == "in_call"
+    }
+
+    private var desiredSpeakerOn: Bool {
+        if let selectedAudioRouteId {
+            return selectedAudioRouteId == "speaker"
+        }
+        return snapshot.speakerOn
+    }
+
+    private func resetCallAudioRoutePreference() {
+        selectedAudioRouteId = nil
+        snapshot.speakerOn = false
+        audioSessionConfiguredForCall = false
+        audioRouteRepairAttempts = 0
+        audioRouteRepairWorkItem?.cancel()
+        audioRouteRepairWorkItem = nil
+        clearSpeakerAudioOverrideIfPossible()
+    }
+
+    private func clearSpeakerAudioOverrideIfPossible() {
+        do {
+            try AVAudioSession.sharedInstance().overrideOutputAudioPort(.none)
+        } catch {
+            // Best-effort: a leftover .speaker override makes the next call
+            // start on the loudspeaker while the UI still shows earpiece.
+        }
+    }
+
+    private func ensureCallAudioSessionActive() throws {
+        let session = AVAudioSession.sharedInstance()
+        let alreadyConfigured =
+            audioSessionConfiguredForCall &&
+            session.category == .playAndRecord &&
+            (session.mode == .voiceChat || session.mode == .default)
+        if !alreadyConfigured {
+            try session.setCategory(
+                .playAndRecord,
+                mode: .voiceChat,
+                options: [.allowBluetooth, .allowBluetoothA2DP]
+            )
+            audioSessionConfiguredForCall = true
+        }
+        try session.setActive(true, options: [])
+    }
+
+    private func applyCurrentAudioRoutePreference(reason: String) {
+        let requestGeneration = speakerRouteRequestGeneration
+        if selectedAudioRouteId == "bluetooth" || selectedAudioRouteId == "headset" {
+            applyExplicitAudioRoute(
+                selectedAudioRouteId ?? "earpiece",
+                requestGeneration: requestGeneration,
+                reason: reason
+            )
+            return
+        }
+        applySpeakerRoute(
+            enabled: desiredSpeakerOn,
+            requestGeneration: requestGeneration,
+            reason: reason
         )
     }
 
@@ -2180,8 +2265,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         case .began:
             emitAudioSessionEvent(state: "interruption_began")
         case .ended:
+            audioSessionConfiguredForCall = false
             configureAudioSessionForCallIfNeeded()
-            selectPreferredNonSpeakerAudioDevice(reason: "interruption_ended")
             syncAudioRouteState(reason: "interruption_ended")
             emitAudioSessionEvent(state: "interruption_ended")
         @unknown default:
@@ -2222,72 +2307,73 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             if selectedAudioRouteId == nil && !snapshot.speakerOn {
                 selectPreferredNonSpeakerAudioDevice(reason: reasonDescription)
             }
+        } else if isCallAudioActive && !isApplyingAudioRoute {
+            let outputKind = currentAudioOutputKind(
+                route: AVAudioSession.sharedInstance().currentRoute
+            )
+            let bluetoothOrHeadsetWanted =
+                selectedAudioRouteId == "bluetooth" ||
+                selectedAudioRouteId == "headset"
+            let speakerWanted = desiredSpeakerOn
+            let speakerObserved = outputKind == "speaker"
+            if !bluetoothOrHeadsetWanted && speakerWanted != speakerObserved {
+                scheduleAudioRouteRepair(reason: reasonDescription)
+            } else if speakerWanted == speakerObserved {
+                audioRouteRepairAttempts = 0
+            }
         }
         scheduleAudioRouteSync(reason: reasonDescription)
     }
 
     private func configureAudioSessionForCallIfNeeded() {
-        guard snapshot.callState == "calling" ||
-                snapshot.callState == "ringing" ||
-                snapshot.callState == "early_media" ||
-                snapshot.callState == "incoming" ||
-                snapshot.callState == "in_call" else {
+        guard isCallAudioActive else {
             return
         }
 
-        let session = AVAudioSession.sharedInstance()
         do {
             print("IOSNativeSipManager configureAudioSessionForCallIfNeeded -> callState=\(snapshot.callState), speakerOn=\(snapshot.speakerOn)")
-            try session.setCategory(
-                .playAndRecord,
-                mode: .voiceChat,
-                options: [.allowBluetooth, .allowBluetoothA2DP]
-            )
-            try session.setActive(true, options: [])
-            if selectedAudioRouteId == "speaker" || snapshot.speakerOn {
-                try session.overrideOutputAudioPort(.speaker)
-            } else if let selectedAudioRouteId {
-                try session.overrideOutputAudioPort(.none)
-                let requestGeneration = speakerRouteRequestGeneration
-                DispatchQueue.main.async { [weak self] in
-                    self?.applyExplicitAudioRoute(
-                        selectedAudioRouteId,
-                        requestGeneration: requestGeneration,
-                        reason: "audio_session_configured"
-                    )
-                }
-            } else {
-                try session.overrideOutputAudioPort(.none)
-                selectPreferredNonSpeakerAudioDevice(reason: "audio_session_configured")
-            }
+            try ensureCallAudioSessionActive()
+            applyCurrentAudioRoutePreference(reason: "audio_session_configured")
         } catch {
             emitAudioSessionEvent(state: "configuration_failed", reason: error.localizedDescription)
         }
+    }
+
+    private func scheduleAudioRouteRepair(reason: String) {
+        guard audioRouteRepairAttempts < 2 else {
+            return
+        }
+        audioRouteRepairWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.isCallAudioActive else {
+                return
+            }
+            self.audioRouteRepairAttempts += 1
+            self.applyCurrentAudioRoutePreference(reason: "repair_\(reason)")
+        }
+        audioRouteRepairWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: workItem)
     }
 
     private func syncAudioRouteState(reason: String) {
         let session = AVAudioSession.sharedInstance()
         let route = session.currentRoute
         let outputKind = currentAudioOutputKind(route: route)
-        let isCallActive =
-            snapshot.callState == "calling" ||
-            snapshot.callState == "ringing" ||
-            snapshot.callState == "early_media" ||
-            snapshot.callState == "incoming" ||
-            snapshot.callState == "in_call"
-        let observedSpeaker = isCallActive && outputKind == "speaker"
-        // Prefer the explicit user/route preference over a stale AVAudioSession
-        // observation — after disabling speaker the session can still report
-        // builtInSpeaker for a short window and was flipping the UI back on.
+        let isCallActive = isCallAudioActive
+        // Keep the user/route preference in UI. Hardware mismatches are repaired
+        // separately — rewriting output=earpiece while the loudspeaker is still
+        // active hid the inverted-speaker bug from Flutter.
         let resolvedSpeakerOn: Bool
-        if let selectedAudioRouteId {
-            resolvedSpeakerOn = isCallActive && selectedAudioRouteId == "speaker"
+        if !isCallActive {
+            resolvedSpeakerOn = false
+        } else if let selectedAudioRouteId {
+            resolvedSpeakerOn = selectedAudioRouteId == "speaker"
         } else if reason == "speaker_disabled" {
             resolvedSpeakerOn = false
         } else if reason == "speaker_enabled" {
-            resolvedSpeakerOn = isCallActive
+            resolvedSpeakerOn = true
         } else {
-            resolvedSpeakerOn = observedSpeaker
+            resolvedSpeakerOn = snapshot.speakerOn
         }
         print("IOSNativeSipManager syncAudioRouteState -> reason=\(reason), callState=\(snapshot.callState), previousSpeaker=\(snapshot.speakerOn), resolvedSpeaker=\(resolvedSpeakerOn), selected=\(selectedAudioRouteId ?? "nil"), output=\(outputKind), route=\(audioRouteDescription(route))")
         snapshot.speakerOn = resolvedSpeakerOn
@@ -2295,7 +2381,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         emitAudioSessionEvent(
             state: "route_changed",
             reason: reason,
-            output: resolvedSpeakerOn ? "speaker" : (outputKind == "speaker" ? "earpiece" : outputKind),
+            output: outputKind,
             route: audioRouteDescription(route)
         )
         emitCallEvent(state: snapshot.callState, message: snapshot.message)
@@ -2623,6 +2709,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         case LinphoneCallStateIncomingReceived, LinphoneCallStatePushIncomingReceived:
             locallyTerminatedCall = nil
             cancelIncomingInviteTimeout()
+            if previousCallState == "idle" ||
+                previousCallState == "ended" ||
+                previousCallState == "failed" {
+                selectedAudioRouteId = nil
+                snapshot.speakerOn = false
+                audioRouteRepairAttempts = 0
+            }
             let inviteReceivedAt = Date()
             let pushToInviteMilliseconds = incomingPushReceivedAt.map {
                 max(0, Int(inviteReceivedAt.timeIntervalSince($0) * 1000))
@@ -2747,9 +2840,19 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             snapshot.message = isOutgoingMedia
                 ? (message ?? "Network media connected")
                 : (message ?? "Call connected")
-            // Keep normal earpiece routing. Network ringback (~8s) still plays via RTP.
-            configureAudioSessionForCallIfNeeded()
-            selectPreferredNonSpeakerAudioDevice(reason: "call_connected")
+            // Re-apply the current speaker/earpiece preference. Do not rebuild
+            // AVAudioSession or force earpiece here: StreamsRunning fires more
+            // than once and setCategory was inverting the loudspeaker toggle.
+            if isFirstConnectedState {
+                applyCurrentAudioRoutePreference(reason: "call_connected")
+            } else {
+                let outputKind = currentAudioOutputKind(
+                    route: AVAudioSession.sharedInstance().currentRoute
+                )
+                if (outputKind == "speaker") != desiredSpeakerOn {
+                    applyCurrentAudioRoutePreference(reason: "streams_running_mismatch")
+                }
+            }
             syncAudioRouteState(reason: "call_connected")
             if isOutgoingMedia {
                 appendDiagnosticLog("[VOIP] OUTGOING_NETWORK_MEDIA", [
@@ -3494,8 +3597,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.remoteIdentity = nil
         snapshot.message = endedMessage(for: reason)
         snapshot.muted = false
-        snapshot.speakerOn = false
-        selectedAudioRouteId = nil
+        resetCallAudioRoutePreference()
         persistSnapshot()
         emitCallEvent(
             state: "ended",
@@ -4055,6 +4157,8 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
     }
 
     func callKitManagerDidDeactivateAudioSession(_ manager: IOSCallKitManager) {
+        audioSessionConfiguredForCall = false
+        clearSpeakerAudioOverrideIfPossible()
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
         } catch {

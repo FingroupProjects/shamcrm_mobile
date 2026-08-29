@@ -3305,7 +3305,12 @@ class SipService extends ChangeNotifier
       }
 
       if (output != null && output.trim().isNotEmpty) {
-        _currentAudioRouteType = _normalizeAudioRouteType(output);
+        final normalizedOutput = _normalizeAudioRouteType(output);
+        // A stale AVAudioSession speaker observation must not mark the UI
+        // as loudspeaker while the user still has earpiece selected.
+        _currentAudioRouteType = normalizedOutput == 'speaker' && !resolvedSpeakerOn
+            ? 'earpiece'
+            : normalizedOutput;
       }
       if (outputDeviceName != null && outputDeviceName.trim().isNotEmpty) {
         _currentAudioRouteName = outputDeviceName.trim();

@@ -36,6 +36,7 @@ class NativeSipManager(
     private var currentCall: Call? = null
     private var isSpeakerOn = false
     private var selectedAudioDeviceId: String? = null
+    private var applyingAudioRoute = false
     private var currentDomain: String = ""
     private var desiredRegistrationEnabled = false
     private var lastCallState: String = "idle"
@@ -424,6 +425,7 @@ class NativeSipManager(
             return true
         }
         return try {
+            applyingAudioRoute = true
             val desired = preferredAudioDevice(sipCore, speakerEnabled = enabled)
 
             if (desired != null) {
@@ -454,6 +456,8 @@ class NativeSipManager(
         } catch (error: Throwable) {
             Log.e(TAG, "setSpeaker failed: ${error.message}", error)
             false
+        } finally {
+            applyingAudioRoute = false
         }
     }
 
@@ -491,6 +495,7 @@ class NativeSipManager(
         if (normalizedId.isEmpty()) return false
 
         return try {
+            applyingAudioRoute = true
             val devices = sipCore.getAudioDevices().toList()
             val outputDevice = devices.firstOrNull { device ->
                 device.getId() == normalizedId &&
@@ -520,6 +525,8 @@ class NativeSipManager(
         } catch (error: Throwable) {
             Log.e(TAG, "setAudioRoute failed: ${error.message}", error)
             false
+        } finally {
+            applyingAudioRoute = false
         }
     }
 
@@ -856,8 +863,22 @@ class NativeSipManager(
                 ) {
                     return
                 }
+                if (applyingAudioRoute) {
+                    return
+                }
                 val routeType = audioRouteTypeKey(audioDevice)
-                isSpeakerOn = routeType == "speaker"
+                val speakerObserved = routeType == "speaker"
+                val inCall = isEarlyCallState(lastCallState) || lastCallState == "in_call"
+                val matchesUserPreference = selectedAudioDeviceId?.let { selectedId ->
+                    audioDevice.getId() == selectedId
+                } ?: (speakerObserved == isSpeakerOn)
+
+                if (inCall && !matchesUserPreference) {
+                    tryApplySpeakerPreference(core)
+                    return
+                }
+
+                isSpeakerOn = speakerObserved
                 updateProximityScreenOff(
                     callState = lastCallState,
                     reason = "audio_device_changed",
@@ -893,6 +914,10 @@ class NativeSipManager(
     }
 
     private fun tryApplySpeakerPreference(sipCore: Core) {
+        if (applyingAudioRoute) {
+            return
+        }
+        applyingAudioRoute = true
         try {
             val desired = selectedAudioDeviceId?.let { selectedId ->
                 sipCore.getAudioDevices().firstOrNull { it.getId() == selectedId }
@@ -907,6 +932,8 @@ class NativeSipManager(
             }
         } catch (error: Throwable) {
             Log.e(TAG, "tryApplySpeakerPreference failed: ${error.message}", error)
+        } finally {
+            applyingAudioRoute = false
         }
     }
 
