@@ -52,19 +52,23 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
 
   // Сортировка только для corporate
   List<Chats> _sortChatsIfNeeded(List<Chats> chats, String endPoint) {
-    if (endPoint == 'corporate') {
-      final indexedChats = chats.asMap().entries.toList();
+    // Чат техподдержки скрыт и не показывается в списке.
+    final visibleChats =
+        chats.where((chat) => chat.type != 'support').toList();
 
-      indexedChats.sort((a, b) {
-        if (a.value.type == 'support' && b.value.type != 'support') return -1;
-        if (a.value.type != 'support' && b.value.type == 'support') return 1;
-        return a.key.compareTo(b.key);
-      });
+    // if (endPoint == 'corporate') {
+    //   final indexedChats = visibleChats.asMap().entries.toList();
+    //
+    //   indexedChats.sort((a, b) {
+    //     if (a.value.type == 'support' && b.value.type != 'support') return -1;
+    //     if (a.value.type != 'support' && b.value.type == 'support') return 1;
+    //     return a.key.compareTo(b.key);
+    //   });
+    //
+    //   return indexedChats.map((e) => e.value).toList();
+    // }
 
-      return indexedChats.map((e) => e.value).toList();
-    }
-
-    return chats;
+    return visibleChats;
   }
 
   // Проверка подключения к интернету

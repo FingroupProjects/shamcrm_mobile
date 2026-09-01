@@ -225,6 +225,8 @@ class _EditClientOpeningScreenState extends State<EditClientOpeningScreen> {
                           onSelectLead: (lead) =>
                               setState(() => _selectedLead = lead),
                           showDebt: true,
+                          alwaysRefreshFromServer: true,
+                          clearCacheBeforeRefresh: true,
                         ),
                         const SizedBox(height: 16),
                         GestureDetector(

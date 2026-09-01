@@ -154,6 +154,7 @@ class _MyAppState extends State<MyApp> {
             debugShowCheckedModeBanner: false,
             title: 'shamCRM',
             navigatorKey: navigatorKey,
+            navigatorObservers: [appRouteObserver],
             scaffoldMessengerKey: scaffoldMessengerKey,
             theme: AppTheme.light(themeController.lightPalette),
             darkTheme: AppTheme.dark(themeController.darkPalette),

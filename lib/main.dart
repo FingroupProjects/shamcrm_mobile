@@ -30,7 +30,7 @@ void main() {
       await safeInitializeFirebase();
 
       final sessionValidation = await validateApplicationSession(apiService);
-      
+        
       String? token;
       String? pin;
       bool isDomainChecked = false;
@@ -74,4 +74,6 @@ void main() {
   });
 }
 // The following function is used to clear all application data in case of session validation failure.
+
+
 

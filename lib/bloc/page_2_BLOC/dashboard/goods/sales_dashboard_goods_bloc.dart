@@ -17,26 +17,41 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
         // Initial load (page 1)
         if (event.page == 1) {
           emit(SalesDashboardGoodsLoading());
-          final response = await apiService.getSalesDashboardGoodsReport(
-            page: event.page,
-            perPage: event.perPage,
-            filters: event.filter,
-            search: event.search,
-          );
+          final results = await Future.wait<Object>([
+            apiService.getSalesDashboardGoodsReport(
+              page: event.page,
+              perPage: event.perPage,
+              filters: event.filter,
+              search: event.search,
+            ),
+            apiService.getSalesDashboardGoodsReportTotalSum(
+              filters: event.filter,
+              search: event.search,
+            ),
+          ]);
+          final response = results[0] as ResultDashboardGoodsReport;
+          final totalSum = results[1] as String;
+
           emit(SalesDashboardGoodsLoaded(
             goods: response.data,
             pagination: response.pagination,
-            hasReachedMax: response.pagination.current_page >= response.pagination.total_pages,
+            hasReachedMax: response.pagination.current_page >=
+                response.pagination.total_pages,
+            totalSum: totalSum,
+            filter: event.filter,
+            search: event.search,
           ));
         } else {
           // Pagination load (page 2+)
           final currentState = state;
           if (currentState is SalesDashboardGoodsLoaded) {
+            final filter = event.filter ?? currentState.filter;
+            final search = event.search ?? currentState.search;
             final response = await apiService.getSalesDashboardGoodsReport(
               page: event.page,
               perPage: event.perPage,
-              filters: event.filter,
-              search: event.search,
+              filters: filter,
+              search: search,
             );
 
             // Append new data to existing data
@@ -46,7 +61,11 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
             emit(SalesDashboardGoodsLoaded(
               goods: updatedGoods,
               pagination: response.pagination,
-              hasReachedMax: response.pagination.current_page >= response.pagination.total_pages,
+              hasReachedMax: response.pagination.current_page >=
+                  response.pagination.total_pages,
+              totalSum: currentState.totalSum,
+              filter: filter,
+              search: search,
             ));
           }
         }
@@ -60,6 +79,9 @@ class SalesDashboardGoodsBloc extends Bloc<SalesDashboardGoodsEvent, SalesDashbo
             goods: currentState.goods,
             pagination: currentState.pagination,
             hasReachedMax: currentState.hasReachedMax,
+            totalSum: currentState.totalSum,
+            filter: currentState.filter,
+            search: currentState.search,
           ));
           // Return to previous loaded state
           emit(currentState);

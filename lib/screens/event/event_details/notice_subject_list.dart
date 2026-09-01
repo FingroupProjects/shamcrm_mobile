@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_bloc.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_event.dart';
 import 'package:crm_task_manager/bloc/notice_subject_list/notice_subject_list_state.dart';
@@ -13,54 +14,216 @@ class SubjectSelectionWidget extends StatefulWidget {
   final bool hasError;
 
   const SubjectSelectionWidget({
-    Key? key,
+    super.key,
     this.selectedSubject,
     required this.onSelectSubject,
     this.hasError = false,
-  }) : super(key: key);
+  });
 
   @override
   State<SubjectSelectionWidget> createState() => _SubjectSelectionWidgetState();
 }
 
 class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
+  static const int _pageSize = 20;
+  final ApiService _apiService = ApiService();
+  late final TextEditingController _textController;
   List<SubjectData> subjectList = [];
-  List<SubjectData> filteredList = [];
-  final TextEditingController _textController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isDropdownVisible = false;
 
   @override
   void initState() {
     super.initState();
+    _textController =
+        TextEditingController(text: widget.selectedSubject ?? '');
     context.read<GetAllSubjectBloc>().add(GetAllSubjectEv());
-    _textController.text = widget.selectedSubject ?? '';
-
-    _textController.addListener(() {
-      widget.onSelectSubject(_textController.text.trim());
-    });
-  }
-
-  void filterSearchResults(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        filteredList = List.from(subjectList);
-      } else {
-        filteredList = subjectList
-            .where((item) =>
-                item.title.toLowerCase().contains(query.toLowerCase().trim()))
-            .toList();
-      }
-    });
   }
 
   @override
   void dispose() {
     _textController.dispose();
-    _searchController.dispose();
-    _focusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubjectSelectionWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedSubject != widget.selectedSubject) {
+      final nextValue = widget.selectedSubject ?? '';
+      if (_textController.text != nextValue) {
+        _textController.value = _textController.value.copyWith(
+          text: nextValue,
+          selection: TextSelection.collapsed(offset: nextValue.length),
+          composing: TextRange.empty,
+        );
+      }
+    }
+  }
+
+  Future<List<SubjectData>> _searchSubjects(String query) async {
+    final response = await _apiService.getAllSubjects(
+      search: query,
+      page: 1,
+      perPage: _pageSize,
+    );
+    return response.result ?? <SubjectData>[];
+  }
+
+  Future<void> _openSubjectPicker() async {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+    final searchController = TextEditingController();
+    List<SubjectData> items = List<SubjectData>.from(subjectList);
+    bool isLoading = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.surfacePrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> handleSearch(String query) async {
+              setModalState(() {
+                isLoading = true;
+              });
+
+              try {
+                final results = await _searchSubjects(query);
+                if (!mounted) return;
+                setModalState(() {
+                  items = results;
+                });
+              } finally {
+                if (mounted) {
+                  setModalState(() {
+                    isLoading = false;
+                  });
+                }
+              }
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.borderPrimary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        AppLocalizations.of(context)!.translate('subject'),
+                        style: textStyles.titleMd.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: searchController,
+                        onChanged: handleSearch,
+                        decoration: InputDecoration(
+                          hintText:
+                              AppLocalizations.of(context)!.translate('search'),
+                          prefixIcon:
+                              Icon(Icons.search, color: colors.textSecondary),
+                          filled: true,
+                          fillColor: colors.fieldBackground,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        style: textStyles.bodyLg.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: isLoading
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                  color: colors.buttonPrimaryBg,
+                                ),
+                              )
+                            : items.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('no_data_to_display'),
+                                      style: textStyles.bodyMd.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    itemCount: items.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final item = items[index];
+                                      final isSelected =
+                                          item.title == _textController.text;
+                                      return Material(
+                                        color: colors.fieldBackground,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: ListTile(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          title: Text(
+                                            item.title,
+                                            style: textStyles.bodyMd.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                              color: colors.textPrimary,
+                                            ),
+                                          ),
+                                          trailing: isSelected
+                                              ? Icon(
+                                                  Icons.check,
+                                                  color: colors.buttonPrimaryBg,
+                                                )
+                                              : null,
+                                          onTap: () {
+                                            _textController.text = item.title;
+                                            widget.onSelectSubject(item.title);
+                                            Navigator.pop(context);
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    searchController.dispose();
   }
 
   @override
@@ -70,240 +233,126 @@ class _SubjectSelectionWidgetState extends State<SubjectSelectionWidget> {
       children: [
         Text(
           AppLocalizations.of(context)!.translate('subject'),
-          style: TextStyle(
-            fontSize: 16,
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
             color: context.appColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
-
+        const SizedBox(height: 4),
         BlocBuilder<GetAllSubjectBloc, GetAllSubjectState>(
           builder: (context, state) {
-            if (state is GetAllSubjectLoading) {
-              return _buildTextFieldSkeleton();
+            if (state is GetAllSubjectError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context)!.translate(state.message),
+                      style: const TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.red,
+                    elevation: 3,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              });
             }
+
             if (state is GetAllSubjectSuccess) {
               subjectList = state.dataSubject.result ?? [];
-              if (filteredList.isEmpty && !_isDropdownVisible) {
-                filteredList = List.from(subjectList);
-              }
             }
-            return _buildTextField();
-          },
-        ),
 
-        // Текст ошибки под полем (как в CustomTextField)
-        if (widget.hasError)
-          Padding(
-            padding: const EdgeInsets.only(top: 6, left: 12),
-            child: Text(
-              AppLocalizations.of(context)!.translate('field_required'),
-              style: TextStyle(
-                fontSize: 12,
-                color: context.appColors.error,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildTextFieldSkeleton() {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: context.appColors.surfaceElevated.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
-  Widget _buildTextField() {
-    final borderColor = widget.hasError
-        ? context.appColors.error
-        : context.appColors.borderSubtle;
-    final borderWidth = widget.hasError ? 2.0 : 1.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: context.appColors.surfacePrimary,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: borderColor,
-              width: borderWidth,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
                   controller: _textController,
-                  focusNode: _focusNode,
-                  style: TextStyle(
-                    fontSize: 14,
+                  onChanged: (value) {
+                    widget.onSelectSubject(value);
+                  },
+                  style: context.appTextStyles.bodyMd.copyWith(
                     fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
                     color: context.appColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!
                         .translate('select_subject'),
-                    hintStyle: TextStyle(
-                      fontSize: 14,
+                    hintStyle: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
-                      fontFamily: 'Gilroy',
                       color: context.appColors.textSecondary,
                     ),
-                    border: InputBorder.none,
+                    filled: true,
+                    fillColor: context.appColors.fieldBackground,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) {
-                    widget.onSelectSubject(value.trim());
-                  },
-                ),
-              ),
-              IconButton(
-                padding: const EdgeInsets.only(right: 10),
-                constraints: const BoxConstraints(
-                  minWidth: 36,
-                  minHeight: 36,
-                ),
-                icon: Icon(
-                  _isDropdownVisible
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: context.appColors.iconSecondary,
-                  size: 22,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isDropdownVisible = !_isDropdownVisible;
-                    if (!_isDropdownVisible) {
-                      _searchController.clear();
-                    }
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        if (_isDropdownVisible)
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            constraints: const BoxConstraints(maxHeight: 400),
-            decoration: BoxDecoration(
-              color: context.appColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: context.appColors.borderSubtle,
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText:
-                          AppLocalizations.of(context)!.translate('search'),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: context.appColors.textSecondary,
-                      ),
-                      filled: true,
-                      fillColor: context.appColors.surfacePrimary,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: context.appColors.borderSubtle,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: context.appColors.buttonPrimaryBg,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      vertical: 12,
+                      horizontal: 12,
                     ),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      color: context.appColors.textPrimary,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: context.appColors.borderSubtle,
+                        width: 1,
+                      ),
                     ),
-                    onChanged: filterSearchResults,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: widget.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: widget.hasError
+                            ? context.appColors.error
+                            : context.appColors.buttonPrimaryBg,
+                        width: 1,
+                      ),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: _openSubjectPicker,
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: context.appColors.iconPrimary,
+                      ),
+                    ),
                   ),
                 ),
-                Expanded(
-                  child:
-                      filteredList.isEmpty && _searchController.text.isNotEmpty
-                          ? Center(
-                              child: Text(
-                                AppLocalizations.of(context)!
-                                    .translate('no_data_to_display'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.appColors.textSecondary,
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: filteredList.length,
-                              itemBuilder: (context, index) {
-                                return Ink(
-                                  color: context.appColors.surfacePrimary,
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 0,
-                                    ),
-                                    minVerticalPadding: 0,
-                                    visualDensity: VisualDensity.compact,
-                                    title: Text(
-                                      filteredList[index].title,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Gilroy',
-                                        color: context.appColors.textPrimary,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      setState(() {
-                                        _textController.text =
-                                            filteredList[index].title;
-                                        _isDropdownVisible = false;
-                                        _searchController.clear();
-                                      });
-                                      widget.onSelectSubject(
-                                          filteredList[index].title.trim());
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                ),
+                if (widget.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 12),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('field_required'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.appColors.error,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
               ],
-            ),
-          ),
+            );
+          },
+        ),
       ],
     );
   }

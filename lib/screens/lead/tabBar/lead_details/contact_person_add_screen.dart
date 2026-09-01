@@ -8,6 +8,8 @@ import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/lead/region_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,8 +28,23 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController positionController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController telegramController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
   String selectedDialCode = '';
+  String? selectedRegion;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    positionController.dispose();
+    emailController.dispose();
+    telegramController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
 
   Color _screenPrimaryText(BuildContext context) =>
       context.appColors.textPrimary;
@@ -240,6 +257,82 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                                 label: AppLocalizations.of(context)!
                                     .translate('position'),
                               ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                backgroundColor:
+                                    _screenFieldBackground(context),
+                                textColor: primaryText,
+                                labelColor: _screenPrimaryText(context),
+                                hintColor: _screenHintText(context),
+                                borderColor: subtleBorder,
+                                focusedBorderColor:
+                                    context.appColors.buttonPrimaryBg,
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_email'),
+                                label: AppLocalizations.of(context)!
+                                    .translate('email'),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return null;
+                                  }
+                                  final email = value.trim();
+                                  final isValid = RegExp(
+                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                  ).hasMatch(email);
+                                  if (!isValid) {
+                                    return AppLocalizations.of(context)!
+                                        .translate('invalid_email');
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: telegramController,
+                                backgroundColor:
+                                    _screenFieldBackground(context),
+                                textColor: primaryText,
+                                labelColor: _screenPrimaryText(context),
+                                hintColor: _screenHintText(context),
+                                borderColor: subtleBorder,
+                                focusedBorderColor:
+                                    context.appColors.buttonPrimaryBg,
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_telegram_username'),
+                                label: AppLocalizations.of(context)!
+                                    .translate('telegram'),
+                              ),
+                              const SizedBox(height: 16),
+                              RegionRadioGroupWidget(
+                                selectedRegion: selectedRegion,
+                                openUpward: true,
+                                onSelectRegion:
+                                    (RegionData selectedRegionData) {
+                                  setState(() {
+                                    selectedRegion =
+                                        selectedRegionData.id.toString();
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: addressController,
+                                backgroundColor:
+                                    _screenFieldBackground(context),
+                                textColor: primaryText,
+                                labelColor: _screenPrimaryText(context),
+                                hintColor: _screenHintText(context),
+                                borderColor: subtleBorder,
+                                focusedBorderColor:
+                                    context.appColors.buttonPrimaryBg,
+                                hintText: AppLocalizations.of(context)!
+                                    .translate('enter_address'),
+                                label: AppLocalizations.of(context)!
+                                    .translate('address')
+                                    .replaceAll(':', ''),
+                              ),
                             ],
                           ),
                         ),
@@ -296,6 +389,15 @@ class _ContactPersonAddScreenState extends State<ContactPersonAddScreen> {
                                               name: nameController.text,
                                               phone: phone,
                                               position: positionController.text,
+                                              email: emailController.text
+                                                  .trim(),
+                                              tgId: telegramController.text
+                                                  .trim(),
+                                              address: addressController.text
+                                                  .trim(),
+                                              regionId: int.tryParse(
+                                                selectedRegion ?? '',
+                                              ),
                                             ),
                                           );
                                     }

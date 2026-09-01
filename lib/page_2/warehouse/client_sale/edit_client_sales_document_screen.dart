@@ -345,6 +345,7 @@ class _EditClientSalesDocumentScreenState
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -381,6 +382,7 @@ class _EditClientSalesDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.sale,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -800,6 +802,8 @@ class _EditClientSalesDocumentScreenState
               }
             }),
             showDebt: true,
+            alwaysRefreshFromServer: true,
+            clearCacheBeforeRefresh: true,
           ),
           const SizedBox(height: 16),
           StorageWidget(

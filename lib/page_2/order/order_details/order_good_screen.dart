@@ -1,7 +1,7 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -21,27 +21,6 @@ class OrderGoodsScreen extends StatefulWidget {
 }
 
 class _OrderGoodsState extends State<OrderGoodsScreen> {
-  String? baseUrl;
-  final ApiService _apiService = ApiService();
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeBaseUrl();
-  }
-
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final staticBaseUrl = await _apiService.getStaticBaseUrl();
-      setState(() {
-        baseUrl = staticBaseUrl;
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage';
-      });
-    }
-  }
   @override
   Widget build(BuildContext context) {
     return _buildGoodsList(widget.goods);
@@ -154,57 +133,13 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   }
 
   Widget _buildImageWidget(Good good) {
-    if (baseUrl == null) {
-      //debugPrint('Base URL is null for ${good.goodName}');
-      return _buildPlaceholderImage();
-    }
-
-    // Проверяем наличие файлов в good.files
     List<GoodFile> files = good.good.files;
     if (files.isEmpty && good.variantGood != null) {
-      // Если good.files пустой, используем variantGood.files
       files = good.variantGood!.files;
     }
 
-    //debugPrint('Good files for ${good.goodName}: ${good.good.files}');
-    //debugPrint('Variant good files for ${good.goodName}: ${good.variantGood?.files}');
-
-    if (files.isEmpty) {
-      //debugPrint('No files found for ${good.goodName}');
-      return _buildPlaceholderImage();
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        '${files[0].path}',
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          //debugPrint('Image loading error for ${good.goodName}: $error');
-          return _buildPlaceholderImage();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholderImage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    final colors = context.appColors;
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: colors.surfaceAccent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child:  Center(
-        child: Icon(Icons.image_not_supported, size: 40, color: colors.textSecondary),
-      ),
+    return ProductNetworkImage(
+      imageUrl: files.isNotEmpty ? files[0].path : null,
     );
   }
 

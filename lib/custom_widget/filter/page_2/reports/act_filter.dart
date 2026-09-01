@@ -96,7 +96,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
       }
     });
 
-    context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
     context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
   }
 
@@ -559,8 +559,11 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllSupplierInitial ||
-                    (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+                if (state is GetAllSupplierSuccess) {
+                  suppliersList = state.dataSuppliers.result ?? [];
+                }
+
+                if (state is GetAllSupplierInitial) {
                   context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
                   return const DropdownLoadingState();
                 }
@@ -714,9 +717,12 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is GetAllLeadInitial ||
-                    (state is GetAllLeadSuccess && leadsList.isEmpty)) {
-                  context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                if (state is GetAllLeadSuccess) {
+                  leadsList = state.dataLead.result ?? [];
+                }
+
+                if (state is GetAllLeadInitial) {
+                  context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
                   return const DropdownLoadingState();
                 }
 
@@ -739,7 +745,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                             )),
                         TextButton(
                           onPressed: () {
-                            context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                            context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
                           },
                           child: Text(
                               AppLocalizations.of(context)!

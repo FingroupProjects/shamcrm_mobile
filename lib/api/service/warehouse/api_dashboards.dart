@@ -134,6 +134,60 @@ extension ApiWarehouseDashboardsX on ApiService {
     }
   }
 
+  Future<String> getSalesDashboardGoodsReportTotalSum({
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    String path = '/dashboard/goods-report-total-sum?';
+
+    final categoryId = filters?['category_id'] as int?;
+    final daysWithoutMovement = filters?['days_without_movement'] as int?;
+    final goodId = filters?['good_id'] as int?;
+    final sumFrom = filters?['sum_from'] as String?;
+    final sumTo = filters?['sum_to'] as String?;
+
+    if (categoryId != null) path += '&category_id=$categoryId';
+    if (daysWithoutMovement != null) {
+      path += '&days_without_movement=$daysWithoutMovement';
+    }
+    if (goodId != null) path += '&good_id=$goodId';
+    if (sumFrom != null && sumFrom.isNotEmpty) path += '&sum_from=$sumFrom';
+    if (sumTo != null && sumTo.isNotEmpty) path += '&sum_to=$sumTo';
+    if (search != null && search.isNotEmpty) path += '&search=$search';
+
+    path = await _appendQueryParams(path);
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getSalesDashboardGoodsReportTotalSum - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = json.decode(response.body);
+        debugPrint("Полученная общая сумма по отчёту товаров: $rawData");
+
+        final resultData =
+            rawData is Map<String, dynamic> ? rawData['result'] : null;
+        final totalSource = resultData is Map
+            ? Map<String, dynamic>.from(resultData)
+            : rawData is Map<String, dynamic>
+                ? rawData
+                : <String, dynamic>{};
+
+        return DashboardGoodsReportTotal.fromJson(totalSource).totalSum;
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(
+          message ?? 'Ошибка при получении общей суммы отчёта товаров!',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<BatchData>> getBatchRemainders({
     required int goodVariantId,
     required int storageId,

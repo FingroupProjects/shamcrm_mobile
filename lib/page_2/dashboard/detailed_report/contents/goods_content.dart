@@ -7,6 +7,7 @@ import '../../../../bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../cards/goods_card.dart';
 import '../details/goods_storages_details.dart';
+import '../widgets/pinned_report_total.dart';
 
 class GoodsContent extends StatefulWidget {
   const GoodsContent({super.key});
@@ -95,6 +96,18 @@ class _GoodsContentState extends State<GoodsContent> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildContentWithTotal({
+    required Widget child,
+    required String totalSum,
+  }) {
+    return Column(
+      children: [
+        Expanded(child: child),
+        PinnedReportTotal(total: totalSum),
+      ],
     );
   }
 
@@ -269,10 +282,12 @@ class _GoodsContentState extends State<GoodsContent> {
         } else if (state is SalesDashboardGoodsError) {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardGoodsLoaded) {
-          if (state.goods.isEmpty) {
-            return _buildEmptyState();
-          }
-          return _buildGoodsList(state.goods, state.hasReachedMax);
+          return _buildContentWithTotal(
+            totalSum: state.totalSum,
+            child: state.goods.isEmpty
+                ? _buildEmptyState()
+                : _buildGoodsList(state.goods, state.hasReachedMax),
+          );
         }
 
         return _buildEmptyState();

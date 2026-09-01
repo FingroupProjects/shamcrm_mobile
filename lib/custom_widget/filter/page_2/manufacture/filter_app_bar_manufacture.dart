@@ -350,8 +350,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
           }
 
           if (state is GetAllAuthorInitial ||
-              state is GetAllAuthorLoading ||
-              (authors.isEmpty && state is! GetAllAuthorError)) {
+              state is GetAllAuthorLoading) {
             return const DropdownLoadingState();
           }
 

@@ -28,10 +28,33 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
   // Cache storage
   _CacheEntry<List<CategoryWithCount>>? _categoriesCache;
   final Map<String, _CacheEntry<List<Variant>>> _variantsCache = {};
-  final Map<int, _CacheEntry<List<Variant>>> _categoryVariantsCache = {};
+  final Map<String, _CacheEntry<List<Variant>>> _categoryVariantsCache = {};
 
   // Tracking
-  final Map<int, bool> _categoryFullyLoaded = {};
+  final Map<String, bool> _categoryFullyLoaded = {};
+
+  Map<String, dynamic>? _variantFilters({
+    int? categoryId,
+    int? storageId,
+  }) {
+    final resolvedStorageId = storageId ?? state.storageId;
+    final filters = <String, dynamic>{};
+    if (resolvedStorageId != null) {
+      filters['storage_id'] = resolvedStorageId;
+    }
+    if (categoryId != null) {
+      filters['category_id'] = categoryId;
+    }
+    return filters.isEmpty ? null : filters;
+  }
+
+  String _allCacheKey(int page, {int? storageId, bool? isService}) {
+    return 'all_${storageId ?? 'any'}_${isService ?? 'any'}_$page';
+  }
+
+  String _categoryCacheKey(int categoryId, {int? storageId}) {
+    return '${storageId ?? state.storageId ?? 'any'}_$categoryId';
+  }
 
   VariantBottomSheetBloc(this.apiService) : super(VariantBottomSheetState.initial()) {
     on<FetchVariants>(_fetchVariants);
@@ -59,7 +82,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
     emit(state.copyWith(
       isSearching: true,
-      // We no longer clear allVariants here so we don't lose the list!
+      isService: event.isService,
+      storageId: event.storageId,
     ));
 
     final lowerQuery = event.query.toLowerCase();
@@ -98,7 +122,13 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       // Search in parallel: categories AND variants
       final results = await Future.wait([
         apiService.getCategory(search: event.query),
-        apiService.getVariants(page: 1, search: event.query, perPage: _perPage, isService: event.isService),  // ADD isService
+        apiService.getVariants(
+          page: 1,
+          search: event.query,
+          perPage: _perPage,
+          isService: event.isService,
+          filters: _variantFilters(storageId: event.storageId),
+        ),
       ]);
 
       final categories = results[0] as List<CategoryData>;
@@ -157,7 +187,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         page: nextPage,
         search: state.searchQuery!,
         perPage: _perPage,
-        isService: state.isService,  // ADD THIS
+        isService: state.isService,
+        filters: _variantFilters(),
       );
 
       // Merge with existing (remove duplicates)
@@ -215,7 +246,11 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
   // ================== ALL VARIANTS ==================
   Future<void> _fetchVariants(FetchVariants event, Emitter<VariantBottomSheetState> emit) async {
-    final cacheKey = 'all_${event.page}';
+    final cacheKey = _allCacheKey(
+      event.page,
+      storageId: event.storageId,
+      isService: event.isService,
+    );
 
     // Check cache
     if (!event.forceReload && _variantsCache[cacheKey]?.isExpired(_cacheDuration) == false) {
@@ -231,6 +266,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         searchCategories: const [],
         searchVariants: const [],
         error: null,
+        isService: event.isService,
+        storageId: event.storageId,
       ));
       return;
     }
@@ -243,6 +280,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       searchQuery: null,
       searchCategories: const [],
       searchVariants: const [],
+      isService: event.isService,
+      storageId: event.storageId,
     ));
 
     if (!await _checkInternetConnection()) {
@@ -257,7 +296,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: event.page,
         perPage: _perPage,
-        isService: event.isService,  // ADD THIS
+        isService: event.isService,
+        filters: _variantFilters(storageId: event.storageId),
       );
 
       // Cache the result
@@ -288,7 +328,11 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
     if (state.isLoadingMore) return;
 
     final nextPage = event.currentPage + 1;
-    final cacheKey = 'all_$nextPage';
+    final cacheKey = _allCacheKey(
+      nextPage,
+      storageId: state.storageId,
+      isService: state.isService,
+    );
 
     // Check if already at last page
     if (state.allVariantsPagination != null &&
@@ -310,7 +354,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: nextPage,
         perPage: _perPage,
-        isService: state.isService,  // ADD THIS (also need to store in state)
+        isService: state.isService,
+        filters: _variantFilters(),
       );
 
       // Cache the page
@@ -427,10 +472,15 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       FetchVariantsByCategory event,
       Emitter<VariantBottomSheetState> emit,
       ) async {
+    final categoryCacheKey = _categoryCacheKey(
+      event.categoryId,
+      storageId: event.storageId,
+    );
+
     // Check cache
     if (!event.forceReload &&
-        _categoryVariantsCache[event.categoryId]?.isExpired(_cacheDuration) == false) {
-      final cached = _categoryVariantsCache[event.categoryId]!.data;
+        _categoryVariantsCache[categoryCacheKey]?.isExpired(_cacheDuration) == false) {
+      final cached = _categoryVariantsCache[categoryCacheKey]!.data;
       emit(state.copyWith(
         isLoading: false,
         selectedCategoryId: event.categoryId,
@@ -441,6 +491,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         searchCategories: const [],
         searchVariants: const [],
         error: null,
+        isService: event.isService,
+        storageId: event.storageId,
       ));
       return;
     }
@@ -453,6 +505,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       searchQuery: null,
       searchCategories: const [],
       searchVariants: const [],
+      isService: event.isService,
+      storageId: event.storageId,
     ));
 
     if (!await _checkInternetConnection()) {
@@ -467,13 +521,16 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: event.page,
         perPage: _perPage,
-        filters: {'category_id': event.categoryId},
-        isService: event.isService,  // ADD THIS
+        filters: _variantFilters(
+          categoryId: event.categoryId,
+          storageId: event.storageId,
+        ),
+        isService: event.isService,
       );
 
       // Cache the result
-      _categoryVariantsCache[event.categoryId] = _CacheEntry(response.data);
-      _categoryFullyLoaded[event.categoryId] = response.data.length < _perPage;
+      _categoryVariantsCache[categoryCacheKey] = _CacheEntry(response.data);
+      _categoryFullyLoaded[categoryCacheKey] = response.data.length < _perPage;
 
       emit(state.copyWith(
         isLoading: false,
@@ -500,7 +557,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       Emitter<VariantBottomSheetState> emit,
       ) async {
     if (state.isLoadingMore) return;
-    if (_categoryFullyLoaded[event.categoryId] == true) return;
+    final categoryCacheKey = _categoryCacheKey(event.categoryId);
+    if (_categoryFullyLoaded[categoryCacheKey] == true) return;
 
     final nextPage = event.currentPage + 1;
 
@@ -518,8 +576,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final response = await apiService.getVariants(
         page: nextPage,
         perPage: _perPage,
-        filters: {'category_id': event.categoryId},
-        isService: state.isService,  // ADD THIS
+        filters: _variantFilters(categoryId: event.categoryId),
+        isService: state.isService,
       );
 
       // Merge with existing (remove duplicates)
@@ -527,7 +585,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       final newVariants = response.data.where((v) => !existingIds.contains(v.id)).toList();
       final allVariants = [...state.categoryVariants, ...newVariants];
 
-      _categoryFullyLoaded[event.categoryId] = newVariants.length < _perPage;
+      _categoryFullyLoaded[categoryCacheKey] = newVariants.length < _perPage;
 
       emit(state.copyWith(
         isLoadingMore: false,

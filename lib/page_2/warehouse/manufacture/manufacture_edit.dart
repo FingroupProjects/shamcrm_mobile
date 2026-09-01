@@ -426,6 +426,7 @@ class _EditManufactureDocumentScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedSenderStorage ?? ''),
       ),
     );
 
@@ -461,6 +462,7 @@ class _EditManufactureDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.income,
+      storageId: int.tryParse(_selectedSenderStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {

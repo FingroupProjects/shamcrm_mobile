@@ -319,6 +319,7 @@ class _SupplierReturnDocumentEditScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -362,6 +363,7 @@ class _SupplierReturnDocumentEditScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.supplierReturn,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {

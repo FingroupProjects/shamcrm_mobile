@@ -44,6 +44,7 @@ class _NotesWidgetState extends State<NotesWidget> {
     final canCreate = await _apiService.hasPermission('notice.create');
     final canUpdate = await _apiService.hasPermission('notice.update');
     final canDelete = await _apiService.hasPermission('notice.delete');
+    if (!mounted) return;
     setState(() {
       _canCreateNotes = canCreate;
       _canUpdateNotes = canUpdate;

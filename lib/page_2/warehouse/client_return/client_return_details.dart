@@ -7,6 +7,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_delete.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_edit.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
@@ -979,8 +980,9 @@ class _ClientReturnDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
+                          color: colors.fieldBackground,
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colors.borderSubtle),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1003,7 +1005,7 @@ class _ClientReturnDocumentDetailsScreenState
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xff4CAF50),
+                                color: colors.success,
                               ),
                             ),
                           ],
@@ -1021,44 +1023,10 @@ class _ClientReturnDocumentDetailsScreenState
   }
 
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null ||
-        good.good == null ||
-        good.good!.files == null ||
-        good.good!.files!.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        '$baseUrl/${good.good!.files![0].path}',
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholderImage();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholderImage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    final colors = context.appColors;
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Icon(Icons.image_not_supported,
-            size: 40, color: colors.textSecondary),
-      ),
+    final files = good.good?.files;
+    return ProductNetworkImage(
+      imageUrl: files != null && files.isNotEmpty ? files[0].path : null,
+      baseUrl: baseUrl,
     );
   }
 

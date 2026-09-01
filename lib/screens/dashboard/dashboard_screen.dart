@@ -88,8 +88,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   DashboardType _activeDashboard = DashboardType.crm;
 
-  // НОВОЕ: Флаг для проверки прав на дашборд учёта
+  bool _hasCrmDashboardPermission = false;
   bool _hasAccountingDashboardPermission = false;
+  bool _areDashboardPermissionsReady = false;
 
   final GlobalKey keyNotificationIcon = GlobalKey();
   final GlobalKey keyMyTaskIcon = GlobalKey();
@@ -129,33 +130,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (isFirstTime) {
         await Future.wait([
           _loadUserRoles(),
-          _checkAccountingDashboardPermission(),
+          _checkDashboardPermissions(),
         ]);
         await prefs.setBool('isFirstTime', false);
       } else {
         await _loadUserRoles();
-        await _checkAccountingDashboardPermission();
+        await _checkDashboardPermissions();
       }
 
       _checkPermissionsAndTutorial();
     } catch (_) {}
   }
 
-  // НОВОЕ: Метод для проверки права на дашборд учёта
-  Future<void> _checkAccountingDashboardPermission() async {
+  bool get _canSwitchDashboards =>
+      _hasCrmDashboardPermission && _hasAccountingDashboardPermission;
+
+  Future<void> _checkDashboardPermissions() async {
     try {
-      final hasPermission =
-          await _apiService.hasPermission('accounting_dashboard');
-      if (mounted) {
-        setState(() {
-          _hasAccountingDashboardPermission = hasPermission;
-        });
-      }
+      final results = await Future.wait([
+        _apiService.hasPermission('section.dashboard'),
+        _apiService.hasPermission('accounting_dashboard'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _hasCrmDashboardPermission = results[0];
+        _hasAccountingDashboardPermission = results[1];
+        _areDashboardPermissionsReady = true;
+        if (_hasCrmDashboardPermission && !_hasAccountingDashboardPermission) {
+          _activeDashboard = DashboardType.crm;
+        } else if (!_hasCrmDashboardPermission &&
+            _hasAccountingDashboardPermission) {
+          _activeDashboard = DashboardType.accounting;
+        }
+      });
     } catch (e) {
-      debugPrint('Ошибка при проверке права accounting_dashboard: $e');
+      debugPrint('Ошибка при проверке прав дашборда: $e');
       if (mounted) {
         setState(() {
-          _hasAccountingDashboardPermission = false;
+          _areDashboardPermissionsReady = true;
         });
       }
     }
@@ -711,7 +723,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SizedBox(
                   height: MediaQuery.of(context).padding.top + kToolbarHeight,
                 ),
-                if (_hasAccountingDashboardPermission)
+                if (_canSwitchDashboards)
                   DashboardSwitcher(
                     activeDashboard: _activeDashboard,
                     onDashboardChanged: (type) {
@@ -721,7 +733,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 Expanded(
-                  child: _activeDashboard == DashboardType.crm
+                  child: !_areDashboardPermissionsReady
+                      ? const Center(child: CircularProgressIndicator())
+                      : _activeDashboard == DashboardType.crm &&
+                              _hasCrmDashboardPermission
                       ? AnalyticsScreen(
                           key: const ValueKey('dashboard_crm_analytics'),
                           showAppBar: false,

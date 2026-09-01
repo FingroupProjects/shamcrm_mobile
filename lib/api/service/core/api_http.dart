@@ -283,6 +283,14 @@ extension ApiHttpX on ApiService {
     }
   }
 
+  Future<void> _applySelectedOrganizationToBody(
+      Map<String, dynamic> body) async {
+    if (!body.containsKey('organization_id')) return;
+    body['organization_id'] = await resolveSelectedOrganizationId(
+      fallback: int.tryParse(body['organization_id']?.toString() ?? ''),
+    );
+  }
+
   Future<http.Response> _postRequest(
       String path, Map<String, dynamic> body) async {
     // Проверяем сессию только если эндпоинт требует этого
@@ -302,6 +310,7 @@ extension ApiHttpX on ApiService {
     }
 
     final token = await getToken();
+    await _applySelectedOrganizationToBody(body);
     final updatedPath = await _appendQueryParams(path);
     final fullUrl = '$baseUrl$updatedPath';
     debugPrint('ApiService: _postRequest with updatedPath: $fullUrl');
@@ -711,6 +720,7 @@ extension ApiHttpX on ApiService {
     }
 
     final token = await getToken();
+    await _applySelectedOrganizationToBody(body);
     final updatedPath = await _appendQueryParams(path);
     final fullUrl = '$baseUrl$updatedPath';
 
@@ -776,6 +786,7 @@ extension ApiHttpX on ApiService {
     }
 
     final token = await getToken();
+    await _applySelectedOrganizationToBody(body);
     final updatedPath = await _appendQueryParams(path);
     final fullUrl = '$baseUrl$updatedPath';
 
@@ -898,6 +909,7 @@ extension ApiHttpX on ApiService {
   Future<http.Response> _deleteRequestWithBody(
       String path, Map<String, dynamic> body) async {
     final token = await getToken();
+    await _applySelectedOrganizationToBody(body);
     final updatedPath = await _appendQueryParams(path);
     final request = http.Request('DELETE', Uri.parse('$baseUrl$updatedPath'));
     request.headers.addAll({

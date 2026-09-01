@@ -12,12 +12,20 @@ class CreateContactPerson extends ContactPersonEvent {
   final String name;
   final String phone;
   final String position;
+  final String? email;
+  final String? tgId;
+  final String? address;
+  final int? regionId;
 
   CreateContactPerson({
     required this.leadId,
     required this.name,
     required this.phone,
     required this.position,
+    this.email,
+    this.tgId,
+    this.address,
+    this.regionId,
   });
 }
 
@@ -27,6 +35,10 @@ class UpdateContactPerson extends ContactPersonEvent {
   final String name;
   final String phone;
   final String position;
+  final String? email;
+  final String? tgId;
+  final String? address;
+  final int? regionId;
 
   UpdateContactPerson({
     required this.leadId,
@@ -34,6 +46,10 @@ class UpdateContactPerson extends ContactPersonEvent {
     required this.name,
     required this.phone,
     required this.position,
+    this.email,
+    this.tgId,
+    this.address,
+    this.regionId,
   });
 }
 

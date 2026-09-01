@@ -2291,6 +2291,7 @@
   "theme_system": "Tizim mavzusi",
   "theme_system_description": "Qurilma sozlamalariga avtomatik ravishda moslashish",
   "barcode": "Shtrix-kod",
+  "barcode_hint": "Shtrix-kodni kiriting yoki skanerlang",
   "barcode_not_found": "Mahsulot shtrix-kod bo'yicha topilmadi",
   "barcode_success_add": "Mahsulot qo'shildi:",
   "barcode_success_increase": "Miqdori oshirildi:",

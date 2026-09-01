@@ -355,6 +355,8 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/income-documents');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final body = jsonEncode({
         'date': date,
@@ -362,7 +364,7 @@ extension ApiWarehouseDocumentsX on ApiService {
         'comment': comment,
         'counterparty_id': counterpartyId,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve, // Добавляем новый параметр
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
@@ -408,6 +410,8 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/rmk-income-documents');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final payload = <String, dynamic>{
         'date': date,
@@ -416,7 +420,7 @@ extension ApiWarehouseDocumentsX on ApiService {
         'counterparty_id': supplierId ?? 0,
         'supplier_id': supplierId ?? 0,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
         'payment_mode': debtAmount > 0 ? 'debt' : 'payment',
@@ -469,13 +473,15 @@ extension ApiWarehouseDocumentsX on ApiService {
 
     final path = await _appendQueryParams('/income-documents/$documentId');
     final uri = Uri.parse('$baseUrl$path');
+    final resolvedOrganizationId =
+        await resolveSelectedOrganizationId(fallback: organizationId);
     final body = jsonEncode({
       'date': date,
       'storage_id': storageId,
       'comment': comment,
       'counterparty_id': counterpartyId,
       'document_goods': documentGoods,
-      'organization_id': organizationId,
+      'organization_id': resolvedOrganizationId,
       'sales_funnel_id': salesFunnelId,
       if (exchangeRate != null) 'exchange_rate': exchangeRate,
     });
@@ -817,6 +823,8 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/expense-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final body = jsonEncode({
         'date': date,
@@ -824,7 +832,7 @@ extension ApiWarehouseDocumentsX on ApiService {
         'comment': comment,
         'counterparty_id': counterpartyId,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
@@ -1561,13 +1569,15 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/supplier-return-documents');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
       final body = jsonEncode({
         'date': date,
         'storage_id': storageId,
         'comment': comment,
         'counterparty_id': counterpartyId,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         'approve': approve,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
@@ -1614,13 +1624,15 @@ extension ApiWarehouseDocumentsX on ApiService {
       final path =
           await _appendQueryParams('/supplier-return-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
       final body = jsonEncode({
         'date': date,
         'storage_id': storageId,
         'comment': comment,
         'counterparty_id': counterpartyId,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
@@ -1982,6 +1994,8 @@ extension ApiWarehouseDocumentsX on ApiService {
       final path =
           await _appendQueryParams('/client-return-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final body = jsonEncode({
         'date': date,
@@ -1989,7 +2003,7 @@ extension ApiWarehouseDocumentsX on ApiService {
         'comment': comment,
         'counterparty_id': counterpartyId,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'sales_funnel_id': salesFunnelId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
@@ -2410,13 +2424,15 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/write-off-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final body = jsonEncode({
         'date': date,
         'storage_id': storageId,
         'comment': comment,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'article_id': articleId,
       });
 
@@ -2804,6 +2820,8 @@ extension ApiWarehouseDocumentsX on ApiService {
 
       final path = await _appendQueryParams('/movement-documents/$documentId');
       final uri = Uri.parse('$baseUrl$path');
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
 
       final body = jsonEncode({
         'date': date,
@@ -2811,7 +2829,7 @@ extension ApiWarehouseDocumentsX on ApiService {
         'recipient_storage_id': recipientStorageId,
         'comment': comment,
         'document_goods': documentGoods,
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'approve': approve,
       });
 
@@ -3174,6 +3192,8 @@ extension ApiWarehouseDocumentsX on ApiService {
   }) async {
     final path = await _appendQueryParams('/manufacture-documents/$documentId');
     final uri = Uri.parse('$baseUrl$path');
+    final resolvedOrganizationId =
+        await resolveSelectedOrganizationId(fallback: organizationId);
 
     final body = jsonEncode({
       'date': date,
@@ -3181,7 +3201,7 @@ extension ApiWarehouseDocumentsX on ApiService {
       'recipient_storage_id': recipientStorageId,
       'comment': comment,
       'document_goods': documentGoods,
-      'organization_id': organizationId,
+      'organization_id': resolvedOrganizationId,
       'approve': approve,
     });
 

@@ -434,6 +434,7 @@ class _EditClientReturnDocumentScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -470,6 +471,7 @@ class _EditClientReturnDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.clientReturn,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -792,6 +794,8 @@ class _EditClientReturnDocumentScreenState
               }
             }),
             showDebt: true,
+            alwaysRefreshFromServer: true,
+            clearCacheBeforeRefresh: true,
           ),
           const SizedBox(height: 16),
           StorageWidget(

@@ -212,6 +212,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   final GlobalKey keyLeadNavigateChat = GlobalKey();
   final GlobalKey keyLeadNotice = GlobalKey();
   final GlobalKey keyLeadDeal = GlobalKey();
+  final GlobalKey keyLeadOrders = GlobalKey();
   final GlobalKey keyLeadContactPerson = GlobalKey();
   late ScrollController _scrollController;
 
@@ -267,6 +268,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     _scrollController = ScrollController();
 
     _checkPermissions().then((_) {
+      if (!mounted) return;
       final leadId = int.parse(widget.leadId);
       context.read<OrganizationBloc>().add(FetchOrganizations());
       _loadSelectedOrganization();
@@ -293,7 +295,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       }
 
       _tryHideCombinedLoader();
-      _loadContactsToCache();
+      _maybeLoadContactsToCache();
     });
     _fetchTutorialProgress();
     _listenToPrefsChanges();
@@ -314,24 +316,39 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
   }
 
+  void _maybeLoadContactsToCache() {
+    if (!_canExportContact || !_isExportContactEnabled) {
+      if (mounted && _isLoadingContacts) {
+        setState(() {
+          _isLoadingContacts = false;
+        });
+      }
+      return;
+    }
+    _loadContactsToCache();
+  }
+
   Future<void> _loadContactsToCache() async {
     try {
       if (!await FlutterContacts.requestPermission()) {
+        if (!mounted) return;
         setState(() {
           _isLoadingContacts = false;
         });
         return;
       }
 
-      List<Contact> contacts =
-          await FlutterContacts.getContacts(withProperties: true);
+      final List<Contact> contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
 
-      Set<String> normalizedPhones = {};
+      if (!mounted) return;
+
+      final Set<String> normalizedPhones = {};
       for (var contact in contacts) {
         for (var phone in contact.phones) {
-          String normalizedPhone =
-              phone.number.replaceAll(RegExp(r'[^\d+]'), '');
-          normalizedPhones.add(normalizedPhone);
+          normalizedPhones.add(phone.number.replaceAll(RegExp(r'[^\d+]'), ''));
         }
       }
 
@@ -340,6 +357,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         _isLoadingContacts = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoadingContacts = false;
       });
@@ -360,7 +378,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         phoneNumber: phone,
       ),
     );
-    if (result == true) {
+    if (result == true && mounted) {
       String normalizedPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
       setState(() {
         _normalizedContactPhones.add(normalizedPhone);
@@ -389,13 +407,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Future<void> _listenToPrefsChanges() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     _prefsSubscription =
         Stream.periodic(Duration(seconds: 1)).listen((_) async {
+      if (!mounted) return;
       bool newValue = prefs.getBool('switchContact') ?? false;
       if (newValue != _isExportContactEnabled) {
         setState(() {
           _isExportContactEnabled = newValue;
         });
+        if (newValue) {
+          _maybeLoadContactsToCache();
+        }
       }
     });
   }
@@ -464,6 +487,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final progress = await _apiService.getTutorialProgress();
+      if (!mounted) return;
       setState(() {
         tutorialProgress = progress['result'];
       });
@@ -471,6 +495,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
           'tutorial_progress', json.encode(progress['result']));
       bool isTutorialShown =
           prefs.getBool('isTutorialShownLeadDetails') ?? false;
+      if (!mounted) return;
       setState(() {
         _isTutorialShown = isTutorialShown;
       });
@@ -487,11 +512,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final savedProgress = prefs.getString('tutorial_progress');
       if (savedProgress != null) {
+        if (!mounted) return;
         setState(() {
           tutorialProgress = json.decode(savedProgress);
         });
         bool isTutorialShown =
             prefs.getBool('isTutorialShownLeadDetails') ?? false;
+        if (!mounted) return;
         setState(() {
           _isTutorialShown = isTutorialShown;
         });
@@ -616,6 +643,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     bool isTutorialShown = prefs.getBool('isTutorialShownLeadDetails') ?? false;
 
     if (tutorialProgress == null ||
@@ -629,6 +657,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       _isTutorialInProgress = true;
     });
     await Future.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
 
     TutorialCoachMark(
       targets: targets,
@@ -649,19 +678,23 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       onSkip: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = true;
+            _isTutorialInProgress = false;
+          });
+        }
         return true;
       },
       onFinish: () {
         prefs.setBool('isTutorialShownLeadDetails', true);
         _apiService.markPageCompleted("leads", "view").catchError((e) {});
-        setState(() {
-          _isTutorialShown = true;
-          _isTutorialInProgress = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isTutorialShown = true;
+            _isTutorialInProgress = false;
+          });
+        }
       },
     ).show(context: context);
   }
@@ -674,6 +707,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     final canReadDeal = await _apiService.hasPermission('deal.read');
     final canExportContact = await _apiService.hasPermission('lead.create');
     final canReadOrder = await _apiService.hasPermission('order.read');
+    if (!mounted) return;
     setState(() {
       _canEditLead = canEdit;
       _canDeleteLead = canDelete;
@@ -950,22 +984,14 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
       return;
     }
 
-    debugPrint("Lead custom fields:");
-    for (var field in lead.leadCustomFieldValues) {
-      debugPrint("Custom Field - ID: ${field.id}, Value: ${field.value}");
-    }
-
     for (var fc in _fieldConfiguration) {
       // Пропускаем поле 'files', так как оно всегда показывается в конце
       if (fc.fieldName == 'files') {
         continue;
       }
 
-      debugPrint("Processing field: ${fc.fieldName}");
       final fieldValue = _getFieldValue(fc, lead);
-
       final fieldName = _getFieldName(fc);
-      debugPrint("Adding field: $fieldName with value: $fieldValue");
 
       details.add({
         'label': fieldName,
@@ -1134,6 +1160,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
     if (!_isTutorialShown) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         //showTutorial();
         setState(() {
           _isTutorialShown = true;
@@ -1168,15 +1195,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 listeners: [
                   BlocListener<LeadByIdBloc, LeadByIdState>(
                     listener: (context, state) {
+                      if (!mounted) return;
                       if (state is LeadByIdLoaded || state is LeadByIdError) {
                         _leadDataReady = true;
                         _tryHideCombinedLoader();
                       }
                       if (state is LeadByIdLoaded) {
+                        _updateDetails(state.lead);
                         _loadLeadActionAvailability(lead: state.lead);
                       }
                       if (state is LeadByIdError) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
                           showCustomSnackBar(
                             context: context,
                             message: AppLocalizations.of(context)!
@@ -1222,8 +1252,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                     }
 
                     if (state is LeadByIdLoaded) {
-                      LeadById lead = state.lead;
-                      _updateDetails(lead);
+                      final LeadById lead = state.lead;
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                         child: ListView(
@@ -1300,7 +1329,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                 entityId: int.parse(widget.leadId),
                                 clientPhone: lead.phone,
                                 autoFetch: false,
-                                key: GlobalKey(),
+                                key: keyLeadOrders,
                               ),
                             ContactPersonWidget(
                               leadId: int.parse(widget.leadId),
@@ -1614,20 +1643,15 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
               ),
             ),
           ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: details.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: _buildDetailItem(
-                details[index]['label']!,
-                details[index]['value']!,
-                details[index]['fieldName'] ?? '',
-              ),
-            );
-          },
+        ...details.map(
+          (item) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: _buildDetailItem(
+              item['label']!,
+              item['value']!,
+              item['fieldName'] ?? '',
+            ),
+          ),
         ),
       ],
     );
@@ -2297,6 +2321,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Future<void> _loadSelectedOrganization() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       selectedOrganization = prefs.getString('selectedOrganization');
     });

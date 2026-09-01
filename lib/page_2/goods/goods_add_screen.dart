@@ -377,7 +377,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
     return CustomTextField(
       controller: barcodeController,
       hintText: AppLocalizations.of(context)?.translate('barcode_hint') ??
-          'Введите или отсканируйте штрих-код',
+          'Введите или отсканируйте штрихкод',
       label: AppLocalizations.of(context)?.translate('barcode') ?? 'Штрих код',
       keyboardType: TextInputType.text,
       suffixIcon: Padding(
@@ -979,8 +979,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       maxLines: 5,
                       keyboardType: TextInputType.multiline,
                     ),
-                    const SizedBox(height: 8),
-                    _buildBarcodeField(),
                     const SizedBox(height: 8),
                     CustomTextField(
                       controller: priceController,

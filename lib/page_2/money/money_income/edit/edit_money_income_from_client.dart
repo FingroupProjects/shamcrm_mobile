@@ -60,8 +60,9 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         // Принудительно загружаем заново (даже если есть кэш)
-        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(
               showDebt: true,
+              clearOfflineCache: true,
             ));
       }
     });
@@ -389,7 +390,9 @@ class _EditMoneyIncomeFromClientState extends State<EditMoneyIncomeFromClient> {
                             });
                           }
                         },
-                        showDebt: true, // ← Показываем долг
+                        showDebt: true,
+                        alwaysRefreshFromServer: true,
+                        clearCacheBeforeRefresh: true,
                       ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),

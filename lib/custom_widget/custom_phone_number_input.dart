@@ -312,7 +312,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final fieldFill = colors.fieldBg;
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill);
-    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final fieldBorder = colors.borderSubtle;
+    final focusedBorder = colors.buttonPrimaryBg.withValues(alpha: 0.6);
 
     if (_isLoading) {
       return Column(
@@ -364,7 +365,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
             border: OutlineInputBorder(
               borderRadius: context.appRadius.input,
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: fieldBorder),
             ),
             filled: true,
             fillColor: fieldFill,
@@ -408,7 +409,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             focusedBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,
               borderSide: BorderSide(
-                color: context.adaptiveFocusBorderOn(fieldFill),
+                color: focusedBorder,
                 width: 1.2,
               ),
             ),

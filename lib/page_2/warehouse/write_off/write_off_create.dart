@@ -201,6 +201,7 @@ class CreateWriteOffDocumentScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -232,6 +233,7 @@ class CreateWriteOffDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.writeOff,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -433,7 +435,9 @@ class CreateWriteOffDocumentScreenState
             'unit_id': unitId,
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         approve: approve,
       ));
     } catch (e) {

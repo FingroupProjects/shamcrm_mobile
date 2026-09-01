@@ -60,7 +60,8 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
   Future<void> _refreshLeads(
       RefreshAllLeadEv event, Emitter<GetAllLeadState> emit) async {
-    // ИСПРАВЛЕНО: Очищаем правильный кэш
+    emit(GetAllLeadLoading());
+
     if (event.showDebt) {
       _cachedLeadsWithDebt = null;
       _lastLoadTimeWithDebt = null;
@@ -71,7 +72,6 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
     if (event.clearOfflineCache) {
       await _offlineRepository.clearCache();
-      emit(GetAllLeadLoading());
     }
     await _loadLeadsProgressive(
       emit,
@@ -118,8 +118,11 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
         //print('GetAllLeadBloc: Loading first page of leads (showDebt=$showDebt)...');
       }
 
-      final firstPageRes =
-          await _offlineRepository.refreshPage(page: 1, showDebt: showDebt);
+      final firstPageRes = await _offlineRepository.refreshPage(
+        page: 1,
+        showDebt: showDebt,
+        bypassCache: skipCacheRead,
+      );
 
       if (kDebugMode) {
         //print('GetAllLeadBloc: First page loaded with ${firstPageRes.result?.length ?? 0} leads (showDebt=$showDebt)');

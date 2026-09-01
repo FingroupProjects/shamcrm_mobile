@@ -312,8 +312,11 @@ class _EditMoneyOutcomeSupplierReturnState
             }
           },
           builder: (context, state) {
-            if (state is GetAllSupplierInitial ||
-                (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+            if (state is GetAllSupplierSuccess) {
+              suppliersList = state.dataSuppliers.result ?? [];
+            }
+
+            if (state is GetAllSupplierInitial) {
               context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
               return const DropdownLoadingState();
             }

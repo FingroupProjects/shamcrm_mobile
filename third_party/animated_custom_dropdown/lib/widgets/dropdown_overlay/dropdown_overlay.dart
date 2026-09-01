@@ -29,6 +29,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
   final Duration? futureRequestDelay;
   final int maxLines;
   final double? overlayHeight;
+  final bool openUpward;
   final TextStyle? hintStyle, headerStyle, noResultFoundStyle, listItemStyle;
   final EdgeInsets? headerPadding, listItemPadding, itemsListPadding;
   final Widget? searchRequestLoadingIndicator;
@@ -58,6 +59,7 @@ class _DropdownOverlay<T> extends StatefulWidget {
     required this.canCloseOutsideBounds,
     required this.maxLines,
     required this.overlayHeight,
+    this.openUpward = false,
     required this.dropdownType,
     required this.decoration,
     required this.hintStyle,
@@ -86,7 +88,8 @@ class _DropdownOverlay<T> extends StatefulWidget {
 }
 
 class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
-  bool displayOverly = true, displayOverlayBottom = true;
+  bool displayOverly = true;
+  late bool displayOverlayBottom;
   bool isSearchRequestLoading = false;
   bool isPaginationLoading = false;
   bool? mayFoundSearchRequestResult;
@@ -203,13 +206,17 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
   @override
   void initState() {
     super.initState();
+    displayOverlayBottom = !widget.openUpward;
     scrollController = widget.itemsScrollCtrl ?? ScrollController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final render1 = key1.currentContext?.findRenderObject() as RenderBox;
-      final render2 = key2.currentContext?.findRenderObject() as RenderBox;
+      if (!mounted || widget.openUpward) return;
+      final render1 = key1.currentContext?.findRenderObject() as RenderBox?;
+      final render2 = key2.currentContext?.findRenderObject() as RenderBox?;
+      if (render1 == null || render2 == null) return;
       final screenHeight = MediaQuery.of(context).size.height;
-      double y = render1.localToGlobal(Offset.zero).dy;
-      if (screenHeight - y < render2.size.height) {
+      final y = render1.localToGlobal(Offset.zero).dy;
+      final desiredHeight = widget.overlayHeight ?? render2.size.height;
+      if (screenHeight - y < desiredHeight) {
         displayOverlayBottom = false;
         setState(() {});
       }

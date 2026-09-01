@@ -6,6 +6,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_delete_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_edit_screen.dart';
@@ -909,21 +910,21 @@ class _SupplierReturnDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff99A4BA),
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1E2E52),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -938,21 +939,21 @@ class _SupplierReturnDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -967,11 +968,11 @@ class _SupplierReturnDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('price') ??
                                       'Цена',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff99A4BA),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -981,11 +982,11 @@ class _SupplierReturnDocumentDetailsScreenState
                                                   good.price ?? '0.00') ??
                                               0.00))
                                       .toStringAsFixed(2)),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -999,7 +1000,7 @@ class _SupplierReturnDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
+                          color: colors.fieldBackground,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: colors.borderSubtle),
                         ),
@@ -1014,7 +1015,7 @@ class _SupplierReturnDocumentDetailsScreenState
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: colors.textSecondary,
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1024,7 +1025,7 @@ class _SupplierReturnDocumentDetailsScreenState
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: colors.buttonPrimaryBg,
+                                color: colors.success,
                               ),
                             ),
                           ],
@@ -1042,43 +1043,10 @@ class _SupplierReturnDocumentDetailsScreenState
   }
 
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null ||
-        good.good == null ||
-        good.good!.files == null ||
-        good.good!.files!.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        '$baseUrl/${good.good!.files![0].path}',
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholderImage();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholderImage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: context.appColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Center(
-        child:
-            Icon(Icons.image_not_supported, size: 40, color: Color(0xff99A4BA)),
-      ),
+    final files = good.good?.files;
+    return ProductNetworkImage(
+      imageUrl: files != null && files.isNotEmpty ? files[0].path : null,
+      baseUrl: baseUrl,
     );
   }
 

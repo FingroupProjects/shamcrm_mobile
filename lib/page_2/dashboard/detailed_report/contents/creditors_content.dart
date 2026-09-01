@@ -5,7 +5,9 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import '../../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../../models/page_2/dashboard/creditors_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../utils/global_fun.dart';
 import '../cards/creditor_card.dart';
+import '../widgets/pinned_report_total.dart';
 
 class CreditorsContent extends StatefulWidget {
   const CreditorsContent({super.key});
@@ -16,8 +18,6 @@ class CreditorsContent extends StatefulWidget {
 
 class _CreditorsContentState extends State<CreditorsContent> {
   final ScrollController _scrollController = ScrollController();
-  bool isSelectionMode = false;
-  Set<int> selectedCreditors = {};
   bool _isLoadingMore = false;
 
   @override
@@ -49,27 +49,6 @@ class _CreditorsContentState extends State<CreditorsContent> {
     }
   }
 
-  void _onCreditorTap(Creditor creditor) {
-    if (isSelectionMode) {
-      setState(() {
-        if (selectedCreditors.contains(creditor.id)) {
-          selectedCreditors.remove(creditor.id);
-        } else {
-          selectedCreditors.add(creditor.id);
-        }
-      });
-    }
-  }
-
-  void _onCreditorLongPress(Creditor creditor) {
-    if (!isSelectionMode) {
-      setState(() {
-        isSelectionMode = true;
-        selectedCreditors.add(creditor.id);
-      });
-    }
-  }
-
   Widget _buildCreditorsList(CreditorsResponse data) {
     final colors = context.appColors;
 
@@ -93,16 +72,34 @@ class _CreditorsContentState extends State<CreditorsContent> {
               }
 
               final creditor = data.result!.creditors[index];
-              return CreditorCard(
-                creditor: creditor,
-                onClick: _onCreditorTap,
-                onLongPress: _onCreditorLongPress,
-                isSelectionMode: isSelectionMode,
-                isSelected: selectedCreditors.contains(creditor.id),
-              );
+              return CreditorCard(creditor: creditor);
             },
           )
         : _buildEmptyState();
+  }
+
+  Widget _buildContentWithTotal({
+    required Widget child,
+    required CreditorsResult? result,
+  }) {
+    return Column(
+      children: [
+        Expanded(child: child),
+        PinnedReportTotal(
+          total: parseNumberToString(result?.totalDebt, nullValue: '0'),
+          icon: Icons.account_balance_wallet_outlined,
+          showPrimaryTotal: false,
+          currencyTotals: (result?.totalDebtByCurrency ?? [])
+              .map(
+                (item) => PinnedReportCurrencyTotal(
+                  currency: item.currency,
+                  total: parseNumberToString(item.totalDebt, nullValue: '0'),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -246,10 +243,12 @@ class _CreditorsContentState extends State<CreditorsContent> {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardCreditorsLoaded) {
           _isLoadingMore = false;
-          if (state.result.result == null) {
-            return _buildEmptyState();
-          }
-          return _buildCreditorsList(state.result);
+          return _buildContentWithTotal(
+            result: state.result.result,
+            child: state.result.result == null
+                ? _buildEmptyState()
+                : _buildCreditorsList(state.result),
+          );
         }
 
         return _buildEmptyState();

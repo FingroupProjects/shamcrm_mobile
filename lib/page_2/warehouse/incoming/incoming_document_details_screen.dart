@@ -1,11 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_delete_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_update_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
@@ -911,8 +911,10 @@ class _IncomingDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: context.appColors.surfaceElevated,
+                          color: context.appColors.fieldBackground,
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: context.appColors.borderSubtle),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -935,7 +937,7 @@ class _IncomingDocumentDetailsScreenState
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: context.appColors.buttonPrimaryBg,
+                                color: context.appColors.success,
                               ),
                             ),
                           ],
@@ -953,44 +955,10 @@ class _IncomingDocumentDetailsScreenState
   }
 
   Widget _buildImageWidget(DocumentGood good) {
-    if (baseUrl == null ||
-        good.good == null ||
-        good.good!.files == null ||
-        good.good!.files!.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-
-    final imageUrl = resolveFileUrl(good.good!.files![0].path, baseUrl);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholderImage();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholderImage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: context.appColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Icon(Icons.image_not_supported,
-            size: 40, color: context.appColors.textSecondary),
-      ),
+    final files = good.good?.files;
+    return ProductNetworkImage(
+      imageUrl: files != null && files.isNotEmpty ? files[0].path : null,
+      baseUrl: baseUrl,
     );
   }
 

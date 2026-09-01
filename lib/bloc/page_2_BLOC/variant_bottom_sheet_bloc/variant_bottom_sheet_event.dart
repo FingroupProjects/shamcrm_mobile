@@ -3,8 +3,14 @@ abstract class VariantBottomSheetEvent {}
 class FetchVariants extends VariantBottomSheetEvent {
   final int page;
   final bool forceReload;
-  final bool? isService;  // ADD THIS
-  FetchVariants({this.page = 1, this.forceReload = false, this.isService});  // ADD isService
+  final bool? isService;
+  final int? storageId;
+  FetchVariants({
+    this.page = 1,
+    this.forceReload = false,
+    this.isService,
+    this.storageId,
+  });
 }
 
 class FetchMoreVariants extends VariantBottomSheetEvent {
@@ -34,13 +40,15 @@ class FetchVariantsByCategory extends VariantBottomSheetEvent {
   final String? categoryName;
   final int page;
   final bool forceReload;
-  final bool? isService;  // ADD THIS
+  final bool? isService;
+  final int? storageId;
   FetchVariantsByCategory({
     required this.categoryId,
     this.categoryName,
     this.page = 1,
     this.forceReload = false,
-    this.isService,  // ADD THIS
+    this.isService,
+    this.storageId,
   });
 }
 
@@ -56,8 +64,9 @@ class FetchMoreVariantsByCategory extends VariantBottomSheetEvent {
 // Унифицированный поиск по категориям И товарам
 class SearchAll extends VariantBottomSheetEvent {
   final String query;
-  final bool? isService;  // ADD THIS
-  SearchAll(this.query, {this.isService});  // ADD isService
+  final bool? isService;
+  final int? storageId;
+  SearchAll(this.query, {this.isService, this.storageId});
 }
 
 // Подгрузка следующей страницы результатов поиска

@@ -61,6 +61,7 @@ class LeadOfflineRepository {
     required int page,
     required bool showDebt,
     String? search,
+    bool bypassCache = false,
   }) async {
     final runtime = OfflineRuntime.maybeInstance;
     final result = runtime?.requestScheduler != null
@@ -70,12 +71,14 @@ class LeadOfflineRepository {
               page,
               showDebt: showDebt,
               search: search,
+              bypassCache: bypassCache,
             ),
           )
         : await _apiService.getLeadPage(
             page,
             showDebt: showDebt,
             search: search,
+            bypassCache: bypassCache,
           );
 
     final cacheRepository = _cacheRepository;

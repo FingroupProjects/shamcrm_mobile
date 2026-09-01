@@ -17,6 +17,18 @@ class ResultDashboardGoodsReport {
   }
 }
 
+class DashboardGoodsReportTotal {
+  final String totalSum;
+
+  DashboardGoodsReportTotal({required this.totalSum});
+
+  factory DashboardGoodsReportTotal.fromJson(Map<String, dynamic> json) {
+    return DashboardGoodsReportTotal(
+      totalSum: parseNumberToString(json['total_sum'], nullValue: '0'),
+    );
+  }
+}
+
 class Pagination {
   final int total;
   final int count;

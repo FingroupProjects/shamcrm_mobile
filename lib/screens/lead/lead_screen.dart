@@ -145,6 +145,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   int? _skipNextTabListenerIndex;
   PusherChannelsClient? _leadSocketClient;
   final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
+  LeadBloc? _leadBloc;
+  StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
 
   void _resetLeadLoaderFlags() {
     if (!mounted) return;
@@ -247,8 +249,9 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         ),
       ),
     ).then((result) {
-      if (result is int && mounted) {
-        _refreshAfterLeadCreated(result);
+      final statusId = LeadAddScreen.statusIdFromPopResult(result);
+      if (statusId != null && mounted) {
+        _refreshAfterLeadCreated(statusId);
       }
     });
   }
@@ -314,14 +317,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       }
     });
 
-    context.read<SalesFunnelBloc>().stream.listen((state) {
+    _salesFunnelSubscription =
+        context.read<SalesFunnelBloc>().stream.listen((state) {
       if (state is SalesFunnelLoaded && mounted) {
         setState(() {
           _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
         });
 
         // Просто загружаем статусы, listener будет создан в BlocListener
-        context.read<LeadBloc>().add(FetchLeadStatuses());
+        _leadBloc?.add(FetchLeadStatuses());
       }
     });
 
@@ -335,11 +339,17 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _tabTitles.isNotEmpty) return;
 
-      final leadState = context.read<LeadBloc>().state;
+      final leadState = _leadBloc?.state ?? context.read<LeadBloc>().state;
       if (leadState is! LeadLoading) {
-        context.read<LeadBloc>().add(FetchLeadStatuses());
+        (_leadBloc ?? context.read<LeadBloc>()).add(FetchLeadStatuses());
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _leadBloc = context.read<LeadBloc>();
   }
 
   Future<void> _initializeSalesFunnel() async {
@@ -1498,8 +1508,11 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                         ),
                                       ),
                                     ).then((result) {
-                                      if (result is int && mounted) {
-                                        _refreshAfterLeadCreated(result);
+                                      final statusId =
+                                          LeadAddScreen.statusIdFromPopResult(
+                                              result);
+                                      if (statusId != null && mounted) {
+                                        _refreshAfterLeadCreated(statusId);
                                       }
                                     });
                                   },
@@ -1517,25 +1530,29 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                                         builder: (context) => ContactsScreen(
                                             statusId: currentStatusId),
                                       ),
-                                    ).then((_) => context.read<LeadBloc>().add(
-                                          FetchLeads(
-                                            currentStatusId,
-                                            salesFunnelId: _selectedFunnel?.id,
-                                            advertisingCampaignIds:
-                                                _selectedAdvertisingCampaigns
-                                                        .isNotEmpty
-                                                    ? _selectedAdvertisingCampaigns
-                                                        .map((campaign) =>
-                                                            campaign.id)
-                                                        .toList()
-                                                    : null,
-                                            reasonForRefusalIds:
-                                                _selectedReasonForRefusalIds
-                                                        .isNotEmpty
-                                                    ? _selectedReasonForRefusalIds
-                                                    : null,
-                                          ),
-                                        ));
+                                    ).then((_) {
+                                      if (!mounted) return;
+                                      (_leadBloc ?? context.read<LeadBloc>())
+                                          .add(
+                                        FetchLeads(
+                                          currentStatusId,
+                                          salesFunnelId: _selectedFunnel?.id,
+                                          advertisingCampaignIds:
+                                              _selectedAdvertisingCampaigns
+                                                      .isNotEmpty
+                                                  ? _selectedAdvertisingCampaigns
+                                                      .map((campaign) =>
+                                                          campaign.id)
+                                                      .toList()
+                                                  : null,
+                                          reasonForRefusalIds:
+                                              _selectedReasonForRefusalIds
+                                                      .isNotEmpty
+                                                  ? _selectedReasonForRefusalIds
+                                                  : null,
+                                        ),
+                                      );
+                                    });
                                   },
                                 ),
                                 const SizedBox(height: 6),
@@ -1556,8 +1573,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ).then((result) {
-                      if (result is int && mounted) {
-                        _refreshAfterLeadCreated(result);
+                      final statusId =
+                          LeadAddScreen.statusIdFromPopResult(result);
+                      if (statusId != null && mounted) {
+                        _refreshAfterLeadCreated(statusId);
                       }
                     });
                   }
@@ -2221,9 +2240,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   int savedTabIndex = _currentTabIndex;
 
                   // Dispose старого контроллера если он существует
-                  if (_tabController.length > 0) {
-                    _tabController.dispose();
-                  }
+                  _disposeTabController();
 
                   // Создаем новый контроллер
                   _tabController =
@@ -2231,139 +2248,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   //print('LeadScreen: Created new TabController with length: ${_tabTitles.length}');
 
                   // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
-                  _tabController.addListener(() {
-                    if (!_tabController.indexIsChanging) {
-                      // ← КРИТИЧНО: Проверяем флаг пропуска!
-                      if (_skipNextTabListener &&
-                          _skipNextTabListenerIndex == _tabController.index) {
-                        debugPrint(
-                            'LeadScreen: TabController listener - SKIPPED (filter just applied)');
-                        setState(() {
-                          _skipNextTabListener = false;
-                          _skipNextTabListenerIndex = null;
-                          _currentTabIndex = _tabController.index;
-                        });
-                        return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
-                      }
-
-                      debugPrint(
-                          'LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
-                      setState(() {
-                        _currentTabIndex = _tabController.index;
-                      });
-                      final currentStatusId =
-                          _tabTitles[_currentTabIndex]['id'];
-                      if (_tabScrollController.hasClients) {
-                        _scrollToActiveTab();
-                      }
-
-                      bool hasActiveFilters = _selectedManagers.isNotEmpty ||
-                          _selectedRegions.isNotEmpty ||
-                          _selectedSources.isNotEmpty ||
-                          _selectedAdvertisingCampaigns.isNotEmpty ||
-                          _selectedReasonForRefusalIds.isNotEmpty ||
-                          _selectedStatuses != null ||
-                          _fromDate != null ||
-                          _toDate != null ||
-                          _hasSuccessDeals == true ||
-                          _hasInProgressDeals == true ||
-                          _hasFailureDeals == true ||
-                          _hasNotices == true ||
-                          _hasContact == true ||
-                          _hasChat == true ||
-                          _hasNoReplies == true ||
-                          _hasUnreadMessages == true ||
-                          _hasDeal == true ||
-                          _hasOrders == true ||
-                          _daysWithoutActivity != null ||
-                          _numberOfDaysDeal != null ||
-                          _directoryValues.isNotEmpty;
-
-                      if (mounted) {
-                        setState(() {
-                          _isFilterLoading = true;
-                          _shouldShowLoader = true;
-                        });
-                      }
-
-                      context.read<LeadBloc>().add(FetchLeads(
-                            currentStatusId,
-                            salesFunnelId: _selectedFunnel?.id,
-                            ignoreCache: false,
-                            query: _lastSearchQuery.isNotEmpty
-                                ? _lastSearchQuery
-                                : null,
-
-                            managerIds:
-                                hasActiveFilters && _selectedManagers.isNotEmpty
-                                    ? _selectedManagers
-                                        .map((manager) => manager.id)
-                                        .toList()
-                                    : null,
-                            regionsIds:
-                                hasActiveFilters && _selectedRegions.isNotEmpty
-                                    ? _selectedRegions
-                                        .map((region) => region.id)
-                                        .toList()
-                                    : null,
-                            sourcesIds:
-                                hasActiveFilters && _selectedSources.isNotEmpty
-                                    ? _selectedSources
-                                        .map((source) => source.id)
-                                        .toList()
-                                    : null,
-                            advertisingCampaignIds: hasActiveFilters &&
-                                    _selectedAdvertisingCampaigns.isNotEmpty
-                                ? _selectedAdvertisingCampaigns
-                                    .map((campaign) => campaign.id)
-                                    .toList()
-                                : null,
-                            reasonForRefusalIds: hasActiveFilters &&
-                                    _selectedReasonForRefusalIds.isNotEmpty
-                                ? _selectedReasonForRefusalIds
-                                : null,
-                            // ВАЖНО: всегда пробрасываем текущий статус вкладки,
-                            // чтобы в каждом запросе присутствовал lead_status_id
-                            statusIds: currentStatusId,
-                            fromDate: hasActiveFilters ? _fromDate : null,
-                            toDate: hasActiveFilters ? _toDate : null,
-                            hasSuccessDeals:
-                                hasActiveFilters ? _hasSuccessDeals : null,
-                            hasInProgressDeals:
-                                hasActiveFilters ? _hasInProgressDeals : null,
-                            hasFailureDeals:
-                                hasActiveFilters ? _hasFailureDeals : null,
-                            hasNotices: hasActiveFilters ? _hasNotices : null,
-                            hasContact: hasActiveFilters ? _hasContact : null,
-                            hasChat: hasActiveFilters ? _hasChat : null,
-                            hasNoReplies:
-                                hasActiveFilters ? _hasNoReplies : null,
-                            hasUnreadMessages:
-                                hasActiveFilters ? _hasUnreadMessages : null,
-                            hasDeal: hasActiveFilters ? _hasDeal : null,
-                            hasOrders: hasActiveFilters ? _hasOrders : null,
-                            daysWithoutActivity:
-                                hasActiveFilters ? _daysWithoutActivity : null,
-                            numberOfDaysDeal:
-                                hasActiveFilters ? _numberOfDaysDeal : null,
-                            directoryValues:
-                                hasActiveFilters && _directoryValues.isNotEmpty
-                                    ? _directoryValues
-                                    : null,
-                          ));
-
-                      if (kDebugMode) {
-                        debugPrint(
-                            'LeadScreen: FetchLeads dispatched for statusId: $currentStatusId');
-                        debugPrint(
-                            'LeadScreen: hasActiveFilters: $hasActiveFilters');
-                        if (hasActiveFilters) {
-                          debugPrint(
-                              'LeadScreen: Applied filters - managers: ${_selectedManagers.length}, regions: ${_selectedRegions.length}');
-                        }
-                      }
-                    }
-                  }); // ← Закрываем listener здесь, только для нового контроллера!
+                  _tabController.addListener(_onTabControllerChanged);
                 }
 
                 // Установка правильного индекса
@@ -2430,9 +2315,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                 }
               } else {
                 // Если табы пустые, создаем пустой контроллер
-                if (_tabController.length > 0) {
-                  _tabController.dispose();
-                }
+                _disposeTabController();
                 _tabController = TabController(length: 0, vsync: this);
                 _currentTabIndex = 0;
                 //print('LeadScreen: TabController reset to length 0 (no statuses available)');
@@ -2441,6 +2324,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
           }
         } else if (state is LeadError) {
           //print('LeadScreen: LeadError state received: ${state.message}');
+          if (!mounted) return;
 
           if (state.message.contains(
             AppLocalizations.of(context)!.translate('unauthorized_access'),
@@ -2697,7 +2581,118 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _disposeTabController() {
+    _tabController.removeListener(_onTabControllerChanged);
+    _tabController.dispose();
+  }
+
+  void _onTabControllerChanged() {
+    if (!mounted || _tabController.indexIsChanging) return;
+
+    if (_skipNextTabListener &&
+        _skipNextTabListenerIndex == _tabController.index) {
+      debugPrint(
+          'LeadScreen: TabController listener - SKIPPED (filter just applied)');
+      setState(() {
+        _skipNextTabListener = false;
+        _skipNextTabListenerIndex = null;
+        _currentTabIndex = _tabController.index;
+      });
+      return;
+    }
+
+    debugPrint(
+        'LeadScreen: TabController listener triggered, new index: ${_tabController.index}');
+    setState(() {
+      _currentTabIndex = _tabController.index;
+    });
+    if (_currentTabIndex < 0 || _currentTabIndex >= _tabTitles.length) {
+      return;
+    }
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    if (_tabScrollController.hasClients) {
+      _scrollToActiveTab();
+    }
+
+    final hasActiveFilters = _selectedManagers.isNotEmpty ||
+        _selectedRegions.isNotEmpty ||
+        _selectedSources.isNotEmpty ||
+        _selectedAdvertisingCampaigns.isNotEmpty ||
+        _selectedReasonForRefusalIds.isNotEmpty ||
+        _selectedStatuses != null ||
+        _fromDate != null ||
+        _toDate != null ||
+        _hasSuccessDeals == true ||
+        _hasInProgressDeals == true ||
+        _hasFailureDeals == true ||
+        _hasNotices == true ||
+        _hasContact == true ||
+        _hasChat == true ||
+        _hasNoReplies == true ||
+        _hasUnreadMessages == true ||
+        _hasDeal == true ||
+        _hasOrders == true ||
+        _daysWithoutActivity != null ||
+        _numberOfDaysDeal != null ||
+        _directoryValues.isNotEmpty;
+
+    setState(() {
+      _isFilterLoading = true;
+      _shouldShowLoader = true;
+    });
+
+    _leadBloc?.add(FetchLeads(
+      currentStatusId,
+      salesFunnelId: _selectedFunnel?.id,
+      ignoreCache: false,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      managerIds: hasActiveFilters && _selectedManagers.isNotEmpty
+          ? _selectedManagers.map((manager) => manager.id).toList()
+          : null,
+      regionsIds: hasActiveFilters && _selectedRegions.isNotEmpty
+          ? _selectedRegions.map((region) => region.id).toList()
+          : null,
+      sourcesIds: hasActiveFilters && _selectedSources.isNotEmpty
+          ? _selectedSources.map((source) => source.id).toList()
+          : null,
+      advertisingCampaignIds:
+          hasActiveFilters && _selectedAdvertisingCampaigns.isNotEmpty
+              ? _selectedAdvertisingCampaigns
+                  .map((campaign) => campaign.id)
+                  .toList()
+              : null,
+      reasonForRefusalIds:
+          hasActiveFilters && _selectedReasonForRefusalIds.isNotEmpty
+              ? _selectedReasonForRefusalIds
+              : null,
+      statusIds: currentStatusId,
+      fromDate: hasActiveFilters ? _fromDate : null,
+      toDate: hasActiveFilters ? _toDate : null,
+      hasSuccessDeals: hasActiveFilters ? _hasSuccessDeals : null,
+      hasInProgressDeals: hasActiveFilters ? _hasInProgressDeals : null,
+      hasFailureDeals: hasActiveFilters ? _hasFailureDeals : null,
+      hasNotices: hasActiveFilters ? _hasNotices : null,
+      hasContact: hasActiveFilters ? _hasContact : null,
+      hasChat: hasActiveFilters ? _hasChat : null,
+      hasNoReplies: hasActiveFilters ? _hasNoReplies : null,
+      hasUnreadMessages: hasActiveFilters ? _hasUnreadMessages : null,
+      hasDeal: hasActiveFilters ? _hasDeal : null,
+      hasOrders: hasActiveFilters ? _hasOrders : null,
+      daysWithoutActivity: hasActiveFilters ? _daysWithoutActivity : null,
+      numberOfDaysDeal: hasActiveFilters ? _numberOfDaysDeal : null,
+      directoryValues: hasActiveFilters && _directoryValues.isNotEmpty
+          ? _directoryValues
+          : null,
+    ));
+  }
+
   void _scrollToActiveTab() {
+    if (!mounted ||
+        _currentTabIndex < 0 ||
+        _currentTabIndex >= _tabKeys.length) {
+      return;
+    }
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null && _tabScrollController.hasClients) {
       final box = keyContext.findRenderObject() as RenderBox;
@@ -2723,6 +2718,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _salesFunnelSubscription?.cancel();
     for (final subscription in _leadSocketSubscriptions) {
       subscription.cancel();
     }
@@ -2730,7 +2726,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _listScrollController.removeListener(_onScroll);
     _listScrollController.dispose();
     _tabScrollController.dispose();
-    _tabController.dispose();
+    _disposeTabController();
     super.dispose();
   }
 }

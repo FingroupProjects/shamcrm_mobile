@@ -320,7 +320,11 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) =>
-          VariantSelectionBottomSheet(existingItems: _items, isService: false),
+          VariantSelectionBottomSheet(
+            existingItems: _items,
+            isService: false,
+            storageId: int.tryParse(_selectedStorage ?? ''),
+          ),
     );
 
     if (result != null) {
@@ -355,6 +359,7 @@ class _IncomingDocumentEditScreenState extends State<IncomingDocumentEditScreen>
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.income,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {

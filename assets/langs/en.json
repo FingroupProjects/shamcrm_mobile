@@ -2282,6 +2282,7 @@
   "theme_system": "System theme",
   "theme_system_description": "Automatically follow your device settings",
   "barcode": "Barcode",
+  "barcode_hint": "Enter or scan barcode",
   "barcode_not_found": "Product not found by barcode",
   "barcode_success_add": "Product added:",
   "barcode_success_increase": "Quantity increased:",

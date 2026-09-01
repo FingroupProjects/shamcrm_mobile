@@ -86,9 +86,9 @@ class CreateClienSalesDocumentScreenState
         // context.read<GetAllLeadBloc>().add(ResetLeadState());
 
         // Вариант 2: Принудительно загружаем заново (даже если есть кэш)
-        context.read<GetAllLeadBloc>().add(GetAllLeadEv(
+        context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(
               showDebt: true,
-              // forceRefresh: true, // Если ваш BLoC поддерживает этот параметры
+              clearOfflineCache: true,
             ));
       }
     });
@@ -312,6 +312,7 @@ class CreateClienSalesDocumentScreenState
       backgroundColor: Colors.transparent,
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -343,6 +344,7 @@ class CreateClienSalesDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.sale,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -524,7 +526,7 @@ class CreateClienSalesDocumentScreenState
     return parsedPrice;
   }
 
-  void _createDocument({bool approve = false}) {
+  void _createDocument({bool approve = false}) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
@@ -649,7 +651,9 @@ class CreateClienSalesDocumentScreenState
             if (hasUnits) 'unit_id': item['unit_id'],
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         salesFunnelId: 1,
         approve: approve,
         exchangeRate: _exchangeRateValue,
@@ -783,6 +787,8 @@ class CreateClienSalesDocumentScreenState
               }
             }),
             showDebt: true,
+            alwaysRefreshFromServer: true,
+            clearCacheBeforeRefresh: true,
           ),
           const SizedBox(height: 16),
           StorageWidget(

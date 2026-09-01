@@ -4,3 +4,5 @@ import 'package:flutter/material.dart';
 final GlobalKey<NavigatorState> navigatorKey = ApiService.navigatorKey;
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     ApiService.scaffoldMessengerKey;
+final RouteObserver<ModalRoute<void>> appRouteObserver =
+    RouteObserver<ModalRoute<void>>();

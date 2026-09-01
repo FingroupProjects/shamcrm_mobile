@@ -294,6 +294,7 @@ class _SupplierReturnDocumentCreateScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -337,6 +338,7 @@ class _SupplierReturnDocumentCreateScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.supplierReturn,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -655,7 +657,9 @@ class _SupplierReturnDocumentCreateScreenState
             'unit_id': unitId, // Может быть null
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         salesFunnelId: 1,
         approve: approve, // Передаем параметр approve
         exchangeRate: _exchangeRateValue,

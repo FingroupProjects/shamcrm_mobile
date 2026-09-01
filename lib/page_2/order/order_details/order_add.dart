@@ -46,6 +46,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_m
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -749,6 +750,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       children: [
         LeadWithManager(
           selectedLead: selectedLead,
+          alwaysRefreshFromServer: true,
           onSelectLead: (LeadData selectedLeadData) {
             if (selectedLead == selectedLeadData.id.toString()) {
               return;
@@ -2090,16 +2092,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      width: 48,
-      height: 48,
-      color: colors.surfaceAccent,
-      child: Center(
-          child: Icon(Icons.image, color: colors.textSecondary, size: 24)),
-    );
-  }
-
   Future<void> _scanBarcodeLegacy() async {
     final barcode = await Navigator.push<String>(
       context,
@@ -3126,29 +3118,18 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           SizedBox(
             width: 70,
             height: 70,
-            child: imagePath != null && imagePath.isNotEmpty && baseUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.network(
-                      imagePath,
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildPlaceholderImage(),
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                colors.buttonPrimaryBg),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                : _buildPlaceholderImage(),
+            child: ProductNetworkImage(
+              imageUrl: imagePath != null &&
+                      imagePath.isNotEmpty &&
+                      baseUrl != null
+                  ? imagePath
+                  : null,
+              width: 70,
+              height: 70,
+              borderRadius: 14,
+              emptyIcon: Icons.image,
+              emptyIconSize: 24,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -3421,7 +3402,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                             'price': item['price'].toString(),
                           })
                       .toList(),
-                  organizationId: widget.organizationId ?? 1,
+                  organizationId:
+                      await _apiService.resolveSelectedOrganizationId(
+                    fallback: widget.organizationId,
+                  ),
                   statusId: selectedStatusId ?? 1,
                   branchId: _selectedBranch?.id,
                   commentToCourier: _commentController.text.isNotEmpty

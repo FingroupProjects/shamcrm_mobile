@@ -2,7 +2,6 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/printing/accounting_print_service.dart';
 import 'package:crm_task_manager/core/printing/print_template_settings.dart';
 import 'package:crm_task_manager/core/printing/print_template_settings_sheet.dart';
-import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/client_sale_bloc.dart';
 import 'package:crm_task_manager/core/printing/accounting_print_service.dart';
 import 'package:crm_task_manager/core/printing/print_template_settings.dart';
@@ -14,6 +13,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/page_2/expense_details_document_model.dart'
     as expDoc;
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/edit_client_sales_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/client_sale_delete_document.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
@@ -905,11 +905,11 @@ class _ClientSalesDocumentDetailsScreenState
                   child: Text(
                     AppLocalizations.of(context)!.translate('empty') ??
                         'Нет товаров',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -978,21 +978,21 @@ class _ClientSalesDocumentDetailsScreenState
                                     AppLocalizations.of(context)!
                                             .translate('unit') ??
                                         'Ед.',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xff6B7280),
+                                      color: colors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     unitShortName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xff1F2937),
+                                      color: colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -1007,21 +1007,21 @@ class _ClientSalesDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('quantity') ??
                                       'Кол-во',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff6B7280),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${good.quantity ?? 0}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1F2937),
+                                    color: colors.textPrimary,
                                   ),
                                 ),
                               ],
@@ -1036,11 +1036,11 @@ class _ClientSalesDocumentDetailsScreenState
                                   AppLocalizations.of(context)!
                                           .translate('price') ??
                                       'Цена',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xff6B7280),
+                                    color: colors.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -1050,11 +1050,11 @@ class _ClientSalesDocumentDetailsScreenState
                                                   good.price ?? '0.00') ??
                                               0.00))
                                       .toStringAsFixed(2)),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xff1F2937),
+                                    color: colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1068,8 +1068,9 @@ class _ClientSalesDocumentDetailsScreenState
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 6),
                         decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
+                          color: colors.fieldBackground,
                           borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: colors.borderSubtle),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1078,21 +1079,21 @@ class _ClientSalesDocumentDetailsScreenState
                               AppLocalizations.of(context)!
                                       .translate('total') ??
                                   'Итого',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xff1F2937),
+                                color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '${parseNumberToString(((good.quantity ?? 0) * (amount ?? 1) * (double.tryParse(good.price ?? '0') ?? 0)).toStringAsFixed(2))} ${currentDocument!.currency?.symbolCode ?? ''}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xff16A34A),
+                                color: colors.success,
                               ),
                             ),
                           ],
@@ -1110,48 +1111,10 @@ class _ClientSalesDocumentDetailsScreenState
   }
 
   Widget _buildImageWidget(expDoc.DocumentGood good) {
-    if (baseUrl == null ||
-        good.good == null ||
-        good.good!.files == null ||
-        good.good!.files!.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-
-    final imageUrl = resolveFileUrl(good.good!.files![0].path, baseUrl);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        width: 100,
-        height: 100,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholderImage();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildPlaceholderImage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
-    final colors = context.appColors;
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.image_not_supported,
-          size: 40,
-          color: colors.iconSecondary,
-        ),
-      ),
+    final files = good.good?.files;
+    return ProductNetworkImage(
+      imageUrl: files != null && files.isNotEmpty ? files[0].path : null,
+      baseUrl: baseUrl,
     );
   }
 

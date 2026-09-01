@@ -1,5 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
@@ -144,34 +144,14 @@ class _ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
-      return _EmptyProductImage();
-    }
-
-    return CachedNetworkImage(
-      imageUrl: url!,
-      fit: BoxFit.cover,
+    return ProductNetworkImage(
+      imageUrl: url,
+      width: double.infinity,
+      height: double.infinity,
+      borderRadius: 0,
+      emptyIcon: Icons.inventory_2_outlined,
+      emptyIconSize: 28,
       memCacheWidth: 320,
-      fadeInDuration: Duration.zero,
-      fadeOutDuration: Duration.zero,
-      placeholder: (_, __) => const _EmptyProductImage(),
-      errorWidget: (_, __, ___) => const _EmptyProductImage(),
-    );
-  }
-}
-
-class _EmptyProductImage extends StatelessWidget {
-  const _EmptyProductImage();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    return ColoredBox(
-      color: colors.surfaceElevated,
-      child: Icon(
-        Icons.inventory_2_outlined,
-        color: colors.textSecondary,
-      ),
     );
   }
 }

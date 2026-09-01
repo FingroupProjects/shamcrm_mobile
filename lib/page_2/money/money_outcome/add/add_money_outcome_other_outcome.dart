@@ -264,9 +264,12 @@ class _AddMoneyOutcomeOtherOutcomeState
             }
           },
           builder: (context, state) {
-            if (state is GetAllOutcomeCategoryInitial ||
-                (state is GetAllOutcomeCategorySuccess &&
-                    outcomeCategoriesList.isEmpty)) {
+            if (state is GetAllOutcomeCategorySuccess) {
+              outcomeCategoriesList =
+                  state.dataOutcomeCategories.result ?? [];
+            }
+
+            if (state is GetAllOutcomeCategoryInitial) {
               context
                   .read<GetAllOutcomeCategoryBloc>()
                   .add(GetAllOutcomeCategoryEv());

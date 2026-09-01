@@ -1095,17 +1095,20 @@ extension _SipCallViewsExtension on _SipScreenState {
     // Временно оставляем только светлую визуальную ветку SIP.
     bool isDark = false,
   }) {
-    final activeBackground = Colors.white;
-    final activeBorder = Colors.white;
-    final activeIconColor = _G.lightText;
+    // Светлая тема: выкл = светлый круг / тёмная иконка,
+    // вкл = тёмный круг / белая иконка (как iOS Phone).
+    // Тёмная: наоборот — белая заливка и тёмная иконка.
+    const lightInk = Color(0xFF0B2F44);
+    final activeBackground = isDark ? Colors.white : lightInk;
+    final activeBorder = isDark ? Colors.white : lightInk;
+    final activeIconColor = isDark ? _G.lightText : Colors.white;
     final inactiveBackground = isDark
         ? Colors.white.withValues(alpha: 0.12)
         : const Color(0xDFFFFFFF);
     final inactiveBorder = isDark
         ? Colors.white.withValues(alpha: 0.42)
         : const Color(0xFFE1EAF6);
-    final inactiveIconColor =
-        isDark ? Colors.white : const Color(0xFF0B2F44);
+    final inactiveIconColor = isDark ? Colors.white : lightInk;
     final labelColor = isDark
         ? Colors.white.withValues(alpha: 0.78)
         : const Color(0xFF123F57);
@@ -1154,7 +1157,9 @@ extension _SipCallViewsExtension on _SipScreenState {
                         boxShadow: active
                             ? [
                                 BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.28),
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.28)
+                                      : lightInk.withValues(alpha: 0.28),
                                   blurRadius: 18,
                                   spreadRadius: 1,
                                 ),

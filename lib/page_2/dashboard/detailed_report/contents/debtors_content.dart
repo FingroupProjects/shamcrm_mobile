@@ -5,7 +5,9 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import '../../../../models/page_2/dashboard/debtors_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+import '../../../../utils/global_fun.dart';
 import '../cards/debtor_card.dart';
+import '../widgets/pinned_report_total.dart';
 
 class DebtorsContent extends StatefulWidget {
   const DebtorsContent({super.key});
@@ -16,8 +18,6 @@ class DebtorsContent extends StatefulWidget {
 
 class _DebtorsContentState extends State<DebtorsContent> {
   final ScrollController _scrollController = ScrollController();
-  bool isSelectionMode = false;
-  Set<int> selectedDebtors = {};
   bool _isLoadingMore = false;
 
   @override
@@ -49,27 +49,6 @@ class _DebtorsContentState extends State<DebtorsContent> {
     }
   }
 
-  void _onDebtorTap(Debtor debtor) {
-    if (isSelectionMode) {
-      setState(() {
-        if (selectedDebtors.contains(debtor.id)) {
-          selectedDebtors.remove(debtor.id);
-        } else {
-          selectedDebtors.add(debtor.id);
-        }
-      });
-    }
-  }
-
-  void _onDebtorLongPress(Debtor debtor) {
-    if (!isSelectionMode) {
-      setState(() {
-        isSelectionMode = true;
-        selectedDebtors.add(debtor.id);
-      });
-    }
-  }
-
   Widget _buildDebtorsList(DebtorsResponse data) {
     final colors = context.appColors;
 
@@ -93,16 +72,34 @@ class _DebtorsContentState extends State<DebtorsContent> {
               }
 
               final debtor = data.result!.debtors[index];
-              return DebtorsCard(
-                debtor: debtor,
-                onClick: _onDebtorTap,
-                onLongPress: _onDebtorLongPress,
-                isSelectionMode: isSelectionMode,
-                isSelected: selectedDebtors.contains(debtor.id),
-              );
+              return DebtorsCard(debtor: debtor);
             },
           )
         : _buildEmptyState();
+  }
+
+  Widget _buildContentWithTotal({
+    required Widget child,
+    required DebtorsResult? result,
+  }) {
+    return Column(
+      children: [
+        Expanded(child: child),
+        PinnedReportTotal(
+          total: parseNumberToString(result?.totalDebt, nullValue: '0'),
+          icon: Icons.account_balance_wallet_outlined,
+          showPrimaryTotal: false,
+          currencyTotals: (result?.totalDebtByCurrency ?? [])
+              .map(
+                (item) => PinnedReportCurrencyTotal(
+                  currency: item.currency,
+                  total: parseNumberToString(item.totalDebt, nullValue: '0'),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -245,10 +242,12 @@ class _DebtorsContentState extends State<DebtorsContent> {
           return _buildErrorState(state.message);
         } else if (state is SalesDashboardDebtorsLoaded) {
           _isLoadingMore = false;
-          if (state.result.result == null) {
-            return _buildEmptyState();
-          }
-          return _buildDebtorsList(state.result);
+          return _buildContentWithTotal(
+            result: state.result.result,
+            child: state.result.result == null
+                ? _buildEmptyState()
+                : _buildDebtorsList(state.result),
+          );
         }
 
         return _buildEmptyState();

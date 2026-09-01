@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -120,16 +121,14 @@ class _VariantDetailsScreenState extends State<VariantDetailsScreen> {
                 onTap: () {
                   _openImageGallery(context, images, index);
                 },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildPlaceholder();
-                    },
-                  ),
+                child: ProductNetworkImage(
+                  imageUrl: imageUrl,
+                  width: double.infinity,
+                  height: 250,
+                  borderRadius: 12,
+                  fit: BoxFit.contain,
+                  emptyIcon: Icons.image,
+                  emptyIconSize: 50,
                 ),
               );
             },

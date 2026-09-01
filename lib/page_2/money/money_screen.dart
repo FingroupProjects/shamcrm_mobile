@@ -90,7 +90,7 @@ class _MoneyScreenState extends State<MoneyScreen> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
       context.read<GetAllCashRegisterBloc>().add(GetAllCashRegisterEv());
       context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
       context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());

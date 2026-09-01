@@ -90,7 +90,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     dateController = TextEditingController(
       text: widget.notice.date != null
           ? DateFormat('dd/MM/yyyy HH:mm')
-              .format(widget.notice.date!.add(Duration(hours: 5)))
+              .format(widget.notice.date!.toLocal())
           : '',
     );
 

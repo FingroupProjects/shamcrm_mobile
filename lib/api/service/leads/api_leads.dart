@@ -1815,6 +1815,10 @@ extension ApiLeadsX on ApiService {
     required String name,
     required String phone,
     required String position,
+    String? email,
+    String? tgId,
+    String? address,
+    int? regionId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/contactPerson');
@@ -1822,12 +1826,25 @@ extension ApiLeadsX on ApiService {
       //debugPrint('ApiService: createContactPerson - Generated path: $path');
     }
 
-    final response = await _postRequest(path, {
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final body = <String, dynamic>{
       'lead_id': leadId,
       'name': name,
       'phone': phone,
       'position': position,
-    });
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (tgId != null && tgId.isNotEmpty) 'tg_id': tgId,
+      if (address != null && address.isNotEmpty) 'address': address,
+      if (regionId != null) 'region_id': regionId,
+      if (organizationId != null && organizationId.isNotEmpty)
+        'organization_id': organizationId,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _postRequest(path, body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'contact_create_successfully'};
@@ -1856,6 +1873,10 @@ extension ApiLeadsX on ApiService {
     required String name,
     required String phone,
     required String position,
+    String? email,
+    String? tgId,
+    String? address,
+    int? regionId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/contactPerson/$contactpersonId');
@@ -1863,12 +1884,25 @@ extension ApiLeadsX on ApiService {
       //debugPrint('ApiService: updateContactPerson - Generated path: $path');
     }
 
-    final response = await _patchRequest(path, {
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+
+    final body = <String, dynamic>{
       'lead_id': leadId,
       'name': name,
       'phone': phone,
       'position': position,
-    });
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (tgId != null && tgId.isNotEmpty) 'tg_id': tgId,
+      if (address != null && address.isNotEmpty) 'address': address,
+      if (regionId != null) 'region_id': regionId,
+      if (organizationId != null && organizationId.isNotEmpty)
+        'organization_id': organizationId,
+      if (salesFunnelId != null && salesFunnelId.isNotEmpty)
+        'sales_funnel_id': salesFunnelId,
+    };
+
+    final response = await _patchRequest(path, body);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return {'success': true, 'message': 'contact_update_successfully'};

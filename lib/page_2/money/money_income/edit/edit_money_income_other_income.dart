@@ -381,9 +381,11 @@ class _EditMoneyIncomeOtherIncomeState
             }
           },
           builder: (context, state) {
-            if (state is GetAllIncomeCategoryInitial ||
-                (state is GetAllIncomeCategorySuccess &&
-                    incomeCategoriesList.isEmpty)) {
+            if (state is GetAllIncomeCategorySuccess) {
+              incomeCategoriesList = state.dataIncomeCategories.result ?? [];
+            }
+
+            if (state is GetAllIncomeCategoryInitial) {
               context
                   .read<GetAllIncomeCategoryBloc>()
                   .add(GetAllIncomeCategoryEv());

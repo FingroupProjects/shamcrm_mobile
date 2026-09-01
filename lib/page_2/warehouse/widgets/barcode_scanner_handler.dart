@@ -96,11 +96,15 @@ Future<BarcodeHandleResult> handleBarcodeForDocument({
   required DocumentBarcodeType docType,
   required void Function(Map<String, dynamic> newItem) onItemAdded,
   required void Function(int variantId, double newQuantity) onQuantityIncreased,
+  int? storageId,
 }) async {
   try {
     final apiService = ApiService();
-    final variantResponse =
-        await apiService.getVariants(search: barcode, perPage: 1);
+    final variantResponse = await apiService.getVariants(
+      search: barcode,
+      perPage: 1,
+      filters: storageId == null ? null : {'storage_id': storageId},
+    );
     final variants = variantResponse.data;
 
     if (variants.isEmpty) {

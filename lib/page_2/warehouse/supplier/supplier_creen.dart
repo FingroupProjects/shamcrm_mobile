@@ -123,7 +123,8 @@ class _SupplierCreenState extends State<SupplierCreen> {
                       ),
                     ).then((wasAdded) {
                       // Перезагружаем список только если поставщик был добавлен
-                      if (wasAdded == true) {
+                      if (wasAdded == true ||
+                          (wasAdded is Map && wasAdded['created'] == true)) {
                         final query = _currentFilters['query'] as String?;
                         _supplierBloc.add(FetchSupplier(query: query));
                       }
@@ -165,7 +166,9 @@ class _SupplierCreenState extends State<SupplierCreen> {
                                     builder: (context) => AddSupplierScreen(),
                                   ),
                                 ).then((wasAdded) {
-                                  if (wasAdded == true) {
+                                  if (wasAdded == true ||
+                                      (wasAdded is Map &&
+                                          wasAdded['created'] == true)) {
                                     final query =
                                         _currentFilters['query'] as String?;
                                     _supplierBloc

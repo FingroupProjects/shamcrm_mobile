@@ -233,6 +233,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -268,6 +269,7 @@ class _EditWriteOffDocumentScreenState extends State<EditWriteOffDocumentScreen>
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.writeOff,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {

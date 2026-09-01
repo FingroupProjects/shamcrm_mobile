@@ -32,6 +32,7 @@ class DebtorsResponse extends Equatable {
 
 class DebtorsResult extends Equatable {
   final num totalDebt;
+  final List<DebtByCurrency> totalDebtByCurrency;
   final List<Debtor> debtors;
   final Period period;
   final num percentageChange;
@@ -40,6 +41,7 @@ class DebtorsResult extends Equatable {
 
   const DebtorsResult({
     required this.totalDebt,
+    required this.totalDebtByCurrency,
     required this.debtors,
     required this.period,
     required this.percentageChange,
@@ -50,6 +52,9 @@ class DebtorsResult extends Equatable {
   factory DebtorsResult.fromJson(Map<String, dynamic> json) {
     return DebtorsResult(
       totalDebt: SafeConverters.toNum(json['total_debt']),
+      totalDebtByCurrency: SafeConverters.toList(json['total_debt_by_currency'])
+          .map((e) => DebtByCurrency.fromJson(SafeConverters.toMap(e)))
+          .toList(),
       debtors: SafeConverters.toList(json['debtors'])
           .map((e) => Debtor.fromJson(SafeConverters.toMap(e)))
           .toList(),
@@ -65,6 +70,8 @@ class DebtorsResult extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'total_debt': totalDebt,
+      'total_debt_by_currency':
+          totalDebtByCurrency.map((e) => e.toJson()).toList(),
       'debtors': debtors.map((e) => e.toJson()).toList(),
       'period': period.toJson(),
       'percentage_change': percentageChange,
@@ -76,12 +83,44 @@ class DebtorsResult extends Equatable {
   @override
   List<Object?> get props => [
         totalDebt,
+        totalDebtByCurrency,
         debtors,
         period,
         percentageChange,
         isPositiveChange,
         pagination,
       ];
+}
+
+class DebtByCurrency extends Equatable {
+  final int? currencyId;
+  final String currency;
+  final num totalDebt;
+
+  const DebtByCurrency({
+    required this.currencyId,
+    required this.currency,
+    required this.totalDebt,
+  });
+
+  factory DebtByCurrency.fromJson(Map<String, dynamic> json) {
+    return DebtByCurrency(
+      currencyId: SafeConverters.toIntOrNull(json['currency_id']),
+      currency: SafeConverters.toSafeString(json['currency']),
+      totalDebt: SafeConverters.toNum(json['total_debt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'currency_id': currencyId,
+      'currency': currency,
+      'total_debt': totalDebt,
+    };
+  }
+
+  @override
+  List<Object?> get props => [currencyId, currency, totalDebt];
 }
 
 class Debtor extends Equatable {

@@ -381,7 +381,9 @@ class _EditMoneyOutcomeFromClientState
                             });
                           }
                         },
-                        showDebt: true, // ← Показываем долг
+                        showDebt: true,
+                        alwaysRefreshFromServer: true,
+                        clearCacheBeforeRefresh: true,
                       ),
                       const SizedBox(height: 16),
                       _buildDateField(localizations),

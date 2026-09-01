@@ -234,6 +234,11 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final fieldFill = colors.fieldBg;
+    final fieldBorder = colors.borderSubtle;
+    final focusedBorder = colors.buttonPrimaryBg.withValues(alpha: 0.6);
+
     if (_isLoading) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,8 +253,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           Container(
             height: 56,
             decoration: BoxDecoration(
-              color: context.appColors.fieldBg,
+              color: fieldFill,
               borderRadius: context.appRadius.input,
+              border: Border.all(color: fieldBorder),
             ),
             child: const Center(
               child: CircularProgressIndicator(),
@@ -284,21 +290,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
             border: OutlineInputBorder(
               borderRadius: context.appRadius.input,
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: fieldBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,
-              borderSide: const BorderSide(
-                color: Colors.transparent,
-                width: 0,
-              ),
+              borderSide: BorderSide(color: fieldBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,
-              borderSide: const BorderSide(
-                color: Colors.transparent,
-                width: 0,
-              ),
+              borderSide: BorderSide(color: focusedBorder, width: 1.2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: context.appRadius.input,

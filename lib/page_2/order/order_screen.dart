@@ -842,7 +842,11 @@ class _OrderScreenState extends State<OrderScreen>
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => OrderAddScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => OrderAddScreen(
+                        organizationId: widget.organizationId,
+                      ),
+                    ),
                   );
 
                   if (result != null &&
@@ -1170,7 +1174,9 @@ class _OrderScreenState extends State<OrderScreen>
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => OrderAddScreen(),
+                                    builder: (context) => OrderAddScreen(
+                                      organizationId: widget.organizationId,
+                                    ),
                                   ),
                                 );
                               }

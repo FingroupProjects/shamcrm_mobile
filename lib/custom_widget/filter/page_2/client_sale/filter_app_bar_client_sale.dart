@@ -100,7 +100,7 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
 
     // Проверяем и загружаем lead
     if (authorState is! GetAllLeadSuccess) {
-      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+      context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
     }
   }
 
@@ -393,8 +393,11 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
               }
             },
             builder: (context, state) {
-              if (state is GetAllSupplierInitial ||
-                  (state is GetAllSupplierSuccess && suppliersList.isEmpty)) {
+              if (state is GetAllSupplierSuccess) {
+                suppliersList = state.dataSuppliers.result ?? [];
+              }
+
+              if (state is GetAllSupplierInitial) {
                 context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
                 return const DropdownLoadingState();
               }
@@ -535,9 +538,11 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
               }
             },
             builder: (context, state) {
-              if (state is GetAllCashRegisterInitial ||
-                  (state is GetAllCashRegisterSuccess &&
-                      cashRegistersList.isEmpty)) {
+              if (state is GetAllCashRegisterSuccess) {
+                cashRegistersList = state.dataCashRegisters.result ?? [];
+              }
+
+              if (state is GetAllCashRegisterInitial) {
                 context
                     .read<GetAllCashRegisterBloc>()
                     .add(GetAllCashRegisterEv());
@@ -683,9 +688,12 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
               }
             },
             builder: (context, state) {
-              if (state is GetAllLeadInitial ||
-                  (state is GetAllLeadSuccess && leadsList.isEmpty)) {
-                context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+              if (state is GetAllLeadSuccess) {
+                leadsList = state.dataLead.result ?? [];
+              }
+
+              if (state is GetAllLeadInitial) {
+                context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
                 return const DropdownLoadingState();
               }
 
@@ -709,7 +717,7 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+                          context.read<GetAllLeadBloc>().add(RefreshAllLeadEv(clearOfflineCache: true));
                         },
                         child: Text(
                           AppLocalizations.of(context)!
@@ -821,8 +829,11 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
               }
             },
             builder: (context, state) {
-              if (state is GetAllAuthorInitial ||
-                  (state is GetAllAuthorSuccess && authorsList.isEmpty)) {
+              if (state is GetAllAuthorSuccess) {
+                authorsList = state.dataAuthor.result ?? [];
+              }
+
+              if (state is GetAllAuthorInitial) {
                 context.read<GetAllAuthorBloc>().add(GetAllAuthorEv());
                 return const DropdownLoadingState();
               }

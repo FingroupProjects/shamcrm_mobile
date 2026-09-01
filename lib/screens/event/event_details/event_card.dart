@@ -27,7 +27,7 @@ class _EventCardState extends State<EventCard> {
     }
     try {
       DateTime dateTime = DateTime.parse(dateString);
-      return DateFormat('dd.MM.yyyy HH:mm').format(dateTime);
+      return DateFormat('dd.MM.yyyy HH:mm').format(dateTime.toLocal());
     } catch (e) {
       return AppLocalizations.of(context)!.translate('Invalid_date_format');
     }

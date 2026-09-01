@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ class RmkPaymentResult {
     required this.paidAmount,
     required this.debtAmount,
     this.leadId,
+    this.comment,
   });
 
   final RmkPaymentMode mode;
@@ -43,6 +45,7 @@ class RmkPaymentResult {
   final double paidAmount;
   final double debtAmount;
   final int? leadId;
+  final String? comment;
 }
 
 class RmkPaymentScreen extends StatefulWidget {
@@ -64,6 +67,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   ];
 
   late final TextEditingController _amountController;
+  late final TextEditingController _commentController;
   late final FocusNode _amountFocusNode;
   RmkPaymentMode _selectedMode = RmkPaymentMode.payment;
   RmkPaymentMethod? _selectedMethod;
@@ -93,6 +97,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     _debtAmountValue = 0;
     _amount = _paidAmountValue;
     _amountController = TextEditingController(text: _formatMoney(widget.total));
+    _commentController = TextEditingController();
     _amountFocusNode = FocusNode();
     _loadCurrency();
   }
@@ -100,6 +105,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _commentController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
   }
@@ -129,9 +135,20 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
 
   void _syncVisibleAmount() {
     if (_selectedMode == RmkPaymentMode.debt) {
-      _setVisibleAmount(_debtAmount);
+      if (_debtAmount <= 0) {
+        _clearVisibleAmount();
+      } else {
+        _setVisibleAmount(_debtAmount);
+      }
     } else {
       _setVisibleAmount(_paidAmount);
+    }
+  }
+
+  void _clearVisibleAmount() {
+    _amount = 0;
+    if (_amountController.text.isNotEmpty) {
+      _amountController.clear();
     }
   }
 
@@ -183,6 +200,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       });
       return;
     }
+    final comment = _commentController.text.trim();
     Navigator.pop(
       context,
       RmkPaymentResult(
@@ -191,6 +209,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         paidAmount: _paidAmount,
         debtAmount: _debtAmount,
         leadId: _selectedLead?.id,
+        comment: comment.isEmpty ? null : comment,
       ),
     );
   }
@@ -245,6 +264,11 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     ),
                     const SizedBox(height: 12),
                     _PaymentSummaryRow(
+                      title: 'Оплачивает:',
+                      value: '${_formatMoney(_paidAmount)} $_currencyTitle',
+                    ),
+                    const SizedBox(height: 12),
+                    _PaymentSummaryRow(
                       title: 'Остаток:',
                       value: '${_formatMoney(_debtAmount)} $_currencyTitle',
                     ),
@@ -255,42 +279,54 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     ),
                     const SizedBox(height: 14),
                     _AmountField(
+                      key: const ValueKey('rmk_payment_amount_field'),
                       controller: _amountController,
                       focusNode: _amountFocusNode,
                       currencyTitle: _currencyTitle,
+                      hintText: _selectedMode == RmkPaymentMode.debt
+                          ? 'Введите долг'
+                          : null,
                       isEnabled: true,
                       onChanged: _onAmountChanged,
                       onTap: _handleAmountTap,
                     ),
-                    if (_requiresLead) ...[
-                      const SizedBox(height: 14),
-                      _RmkFreshLeadSelector(
-                        key: ValueKey(
-                          'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
-                        ),
-                        selectedLead: _selectedLead,
-                        onSelectLead: (lead) {
-                          setState(() {
-                            _selectedLead = lead;
-                            _leadErrorText = null;
-                          });
-                        },
+                    const SizedBox(height: 14),
+                    _RmkFreshLeadSelector(
+                      key: ValueKey(
+                        'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
                       ),
-                      if (_leadErrorText != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          _leadErrorText!,
-                          style: TextStyle(
-                            color: Color(0xffEF4444),
-                            fontFamily: 'Gilroy',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      selectedLead: _selectedLead,
+                      onSelectLead: (lead) {
+                        setState(() {
+                          _selectedLead = lead;
+                          _leadErrorText = null;
+                        });
+                      },
+                    ),
+                    if (_leadErrorText != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _leadErrorText!,
+                        style: TextStyle(
+                          color: Color(0xffEF4444),
+                          fontFamily: 'Gilroy',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
+                      ),
                     ],
                     if (_showsPaymentMethods) ...[
                       const SizedBox(height: 14),
+                      Text(
+                        'Выберите способ оплаты',
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontFamily: 'Gilroy',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           for (final method in RmkPaymentMethod.values) ...[
@@ -309,6 +345,53 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                         ],
                       ),
                     ],
+                    const SizedBox(height: 14),
+                    Text(
+                      'Примечание',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontFamily: 'Gilroy',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _commentController,
+                      minLines: 5,
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textAlignVertical: TextAlignVertical.top,
+                      decoration: InputDecoration(
+                        hintText: 'Примечание',
+                        hintStyle: TextStyle(
+                          color: colors.textSecondary,
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        filled: true,
+                        fillColor: colors.surfacePrimary,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colors.borderSubtle),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colors.borderPrimary),
+                        ),
+                      ),
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -372,7 +455,7 @@ class _RmkFreshLeadSelector extends StatefulWidget {
   });
 
   final LeadData? selectedLead;
-  final ValueChanged<LeadData> onSelectLead;
+  final ValueChanged<LeadData?> onSelectLead;
 
   @override
   State<_RmkFreshLeadSelector> createState() => _RmkFreshLeadSelectorState();
@@ -380,7 +463,9 @@ class _RmkFreshLeadSelector extends StatefulWidget {
 
 class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
   final ApiService _apiService = ApiService();
+  final OverlayPortalController _overlayController = OverlayPortalController();
   List<LeadData> _leads = [];
+  bool _isCreatingLead = false;
 
   @override
   void initState() {
@@ -502,6 +587,94 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
     }
   }
 
+  LeadData? _matchCreatedLead(
+    List<LeadData> items, {
+    required String name,
+    String? phone,
+  }) {
+    final normalizedName = name.trim().toLowerCase();
+    final normalizedPhone = (phone ?? '').replaceAll(RegExp(r'\D'), '');
+    for (final lead in items) {
+      if (lead.name.trim().toLowerCase() == normalizedName) return lead;
+    }
+    if (normalizedPhone.isNotEmpty) {
+      for (final lead in items) {
+        final leadPhone = (lead.phone ?? '').replaceAll(RegExp(r'\D'), '');
+        if (leadPhone.isNotEmpty &&
+            (leadPhone.endsWith(normalizedPhone) ||
+                normalizedPhone.endsWith(leadPhone))) {
+          return lead;
+        }
+      }
+    }
+    return items.isEmpty ? null : items.first;
+  }
+
+  Future<void> _openCreateLead() async {
+    if (_isCreatingLead) return;
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
+    setState(() => _isCreatingLead = true);
+    try {
+      final statuses = await _apiService.getLeadStatuses();
+      if (!mounted || statuses.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Не удалось открыть создание лида')),
+          );
+        }
+        return;
+      }
+      final status = statuses.firstWhere(
+        (item) => !item.isFailure && !item.isSuccess,
+        orElse: () => statuses.first,
+      );
+      final result = await Navigator.of(context).push<Object?>(
+        MaterialPageRoute(
+          builder: (_) => LeadAddScreen(statusId: status.id),
+        ),
+      );
+      if (!mounted || result is! Map) return;
+      final name = (result['name'] ?? '').toString().trim();
+      if (name.isEmpty) return;
+      final phone = result['phone']?.toString();
+      final response = await _apiService.getLeadPage(
+        1,
+        showDebt: true,
+        search: name,
+        bypassCache: true,
+      );
+      final createdLead = _matchCreatedLead(
+        response.result ?? <LeadData>[],
+        name: name,
+        phone: phone,
+      );
+      if (createdLead != null && mounted) {
+        setState(() {
+          _leads = [
+            createdLead,
+            ..._leads.where((lead) => lead.id != createdLead.id),
+          ];
+        });
+        widget.onSelectLead(createdLead);
+      }
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('RMK Lead Selector: create lead error=$error');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось создать лида')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingLead = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -519,32 +692,97 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
           ),
         ),
         const SizedBox(height: 4),
-        CustomDropdown<LeadData>.searchRequestPaginated(
-          key: ValueKey(selectedLead?.id),
-          paginatedRequest: _searchLeads,
-          futureRequestDelay: const Duration(milliseconds: 300),
-          closeDropDownOnClearFilterSearch: true,
-          items: selectedLead != null
-              ? <LeadData>[
-                  selectedLead,
-                  ..._leads.where((lead) => lead.id != selectedLead.id),
-                ]
-              : _leads,
-          searchHintText: 'Поиск',
-          overlayHeight: 400,
-          excludeSelected: false,
-          initialItem: selectedLead,
-          decoration: CustomDropdownDecoration(
-            closedFillColor: colors.surfaceElevated,
-            expandedFillColor: colors.surfacePrimary,
-            closedBorder: Border.all(color: colors.borderSubtle, width: 1),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(color: colors.borderSubtle, width: 1),
-            expandedBorderRadius: BorderRadius.circular(12),
-            searchFieldDecoration: const SearchFieldDecoration(
-              autoFocus: false,
-            ),
-          ),
+        Stack(
+          alignment: Alignment.centerRight,
+          children: [
+            CustomDropdown<LeadData>.searchRequestPaginated(
+              key: ValueKey(selectedLead?.id),
+              overlayController: _overlayController,
+              paginatedRequest: _searchLeads,
+              futureRequestDelay: const Duration(milliseconds: 300),
+              closeDropDownOnClearFilterSearch: true,
+              items: selectedLead != null
+                  ? <LeadData>[
+                      selectedLead,
+                      ..._leads.where((lead) => lead.id != selectedLead.id),
+                    ]
+                  : _leads,
+              searchHintText: 'Поиск',
+              overlayHeight: 400,
+              excludeSelected: false,
+              initialItem: selectedLead,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: colors.surfaceElevated,
+                expandedFillColor: colors.surfacePrimary,
+                closedBorder: Border.all(color: colors.borderSubtle, width: 1),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder:
+                    Border.all(color: colors.borderSubtle, width: 1),
+                expandedBorderRadius: BorderRadius.circular(12),
+                headerStyle: TextStyle(
+                  color: colors.textPrimary,
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                ),
+                hintStyle: TextStyle(
+                  color: colors.textSecondary,
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                ),
+                listItemStyle: TextStyle(
+                  color: colors.textPrimary,
+                  fontFamily: 'Gilroy',
+                  fontSize: 14,
+                ),
+                closedSuffixIcon: selectedLead != null
+                    ? const SizedBox(width: 36, height: 20)
+                    : Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                        color: colors.iconSecondary,
+                      ),
+                listItemDecoration: ListItemDecoration(
+                  selectedColor: colors.surfaceElevated,
+                  highlightColor: colors.surfaceElevated.withValues(alpha: 0.72),
+                  splashColor: colors.overlay.withValues(alpha: 0),
+                ),
+                searchFieldDecoration: SearchFieldDecoration(
+                  autoFocus: false,
+                  fillColor: colors.surfaceElevated,
+                  hintStyle: TextStyle(color: colors.textSecondary),
+                  textStyle: TextStyle(color: colors.textPrimary),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 20,
+                    color: colors.iconSecondary,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.borderSubtle),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                  ),
+                  suffixIcon: (_) => IconButton(
+                    tooltip: 'Создать лида',
+                    onPressed: _isCreatingLead ? null : _openCreateLead,
+                    icon: _isCreatingLead
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.buttonPrimaryBg,
+                            ),
+                          )
+                        : Icon(
+                            Icons.add_rounded,
+                            color: colors.buttonPrimaryBg,
+                          ),
+                  ),
+                ),
+              ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return _buildLeadInfo(item);
           },
@@ -587,6 +825,21 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
             widget.onSelectLead(value);
             FocusScope.of(context).unfocus();
           },
+            ),
+            if (selectedLead != null)
+              Positioned(
+                right: 4,
+                child: IconButton(
+                  tooltip: 'Очистить',
+                  onPressed: () => widget.onSelectLead(null),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: colors.iconSecondary,
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -692,17 +945,20 @@ class _PaymentTabs extends StatelessWidget {
 
 class _AmountField extends StatelessWidget {
   const _AmountField({
+    super.key,
     required this.controller,
     required this.focusNode,
     required this.currencyTitle,
     required this.isEnabled,
     required this.onChanged,
     required this.onTap,
+    this.hintText,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final String currencyTitle;
+  final String? hintText;
   final bool isEnabled;
   final ValueChanged<String> onChanged;
   final VoidCallback onTap;
@@ -735,9 +991,16 @@ class _AmountField extends StatelessWidget {
                 ],
                 textAlign: TextAlign.right,
                 textAlignVertical: TextAlignVertical.center,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    color: colors.textSecondary,
+                    fontFamily: 'Gilroy',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 style: TextStyle(
                   color: colors.textPrimary,

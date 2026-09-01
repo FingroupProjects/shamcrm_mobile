@@ -250,6 +250,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedSenderStorage ?? ''),
       ),
     );
 
@@ -285,6 +286,7 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.movement,
+      storageId: int.tryParse(_selectedSenderStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {

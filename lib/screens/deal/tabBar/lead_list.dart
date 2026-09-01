@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/app/app_keys.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
@@ -8,6 +9,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+enum _LeadRefreshPhase { idle, requested, loading, done }
 
 class LeadRadioGroupWidget extends StatefulWidget {
   final String? selectedLead;
@@ -37,28 +40,39 @@ class LeadRadioGroupWidget extends StatefulWidget {
   State<LeadRadioGroupWidget> createState() => _LeadRadioGroupWidgetState();
 }
 
-class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
+class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
+    with RouteAware {
   final ApiService _apiService = ApiService();
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
   bool _isInitialized = false;
   bool _initialLeadSet = false;
+  int _listVersion = 0;
+  _LeadRefreshPhase _refreshPhase = _LeadRefreshPhase.idle;
 
   bool _isExcluded(int leadId) => widget.excludedLeadIds.contains(leadId);
 
   void _reloadLeads() {
-    if (widget.alwaysRefreshFromServer && mounted) {
-      setState(() {
+    if (!mounted) return;
+    setState(() {
+      if (widget.alwaysRefreshFromServer) {
         leadsList = [];
-        selectedLeadData = null;
         _isInitialized = false;
-        _initialLeadSet = false;
-      });
-    }
+        _refreshPhase = _LeadRefreshPhase.requested;
+        _listVersion++;
+        if (widget.selectedLead == null || widget.selectedLead!.isEmpty) {
+          selectedLeadData = null;
+          _initialLeadSet = true;
+        } else {
+          _initialLeadSet = false;
+        }
+      }
+    });
     context.read<GetAllLeadBloc>().add(
           RefreshAllLeadEv(
             showDebt: widget.showDebt,
-            clearOfflineCache: widget.clearCacheBeforeRefresh,
+            clearOfflineCache:
+                widget.alwaysRefreshFromServer || widget.clearCacheBeforeRefresh,
           ),
         );
   }
@@ -107,6 +121,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
   @override
   void initState() {
     super.initState();
+    if (widget.selectedLead == null || widget.selectedLead!.isEmpty) {
+      _initialLeadSet = true;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -119,6 +136,28 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         }
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    if (widget.alwaysRefreshFromServer) {
+      _reloadLeads();
+    }
   }
 
   @override
@@ -174,6 +213,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
         page,
         showDebt: widget.showDebt,
         search: query,
+        bypassCache: widget.alwaysRefreshFromServer,
       );
       final items = (response.result ?? <LeadData>[])
           .where((lead) => !_isExcluded(lead.id))
@@ -216,23 +256,31 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
             final errorMessage =
                 state is GetAllLeadError ? state.message : null;
 
-            // SUCCESS → fresh data
-            if (state is GetAllLeadSuccess) {
-              leadsList = (state.dataLead.result ?? [])
-                  .where((lead) => !_isExcluded(lead.id))
-                  .toList();
-              _isInitialized = true;
-              _updateSelectedLeadData();
+            if (isLoading || isInitial) {
+              if (_refreshPhase == _LeadRefreshPhase.requested) {
+                _refreshPhase = _LeadRefreshPhase.loading;
+              }
             }
-            // ERROR → stop infinite loading and keep last known data if any
-            else if (state is GetAllLeadError) {
+
+            if (state is GetAllLeadSuccess) {
+              if (_refreshPhase != _LeadRefreshPhase.requested) {
+                leadsList = (state.dataLead.result ?? [])
+                    .where((lead) => !_isExcluded(lead.id))
+                    .toList();
+                _isInitialized = true;
+                _refreshPhase = _LeadRefreshPhase.done;
+                _updateSelectedLeadData();
+              }
+            } else if (state is GetAllLeadError) {
               _isInitialized = true;
+              _refreshPhase = _LeadRefreshPhase.done;
               _updateSelectedLeadData();
             }
 
             final isStillLoading =
-                ((isLoading || isInitial) && !_isInitialized) ||
-                    !_initialLeadSet;
+                _refreshPhase == _LeadRefreshPhase.requested ||
+                    _refreshPhase == _LeadRefreshPhase.loading ||
+                    ((isLoading || isInitial) && !_isInitialized);
 
             final actualInitialItem = isStillLoading
                 ? null
@@ -245,8 +293,9 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CustomDropdown<LeadData>.searchRequestPaginated(
-                  key: ValueKey(selectedLeadData
-                      ?.id), // ← Forces rebuild when pre-selected lead changes
+                  key: ValueKey(
+                    'lead_field_${_listVersion}_${selectedLeadData?.id ?? 'none'}',
+                  ),
                   paginatedRequest: _searchLeads,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,

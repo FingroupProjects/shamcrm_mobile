@@ -2300,6 +2300,7 @@
   "theme_system": "Системная тема",
   "theme_system_description": "Автоматически следовать настройкам устройства",
   "barcode": "Штрихкод",
+  "barcode_hint": "Введите или отсканируйте штрихкод",
   "barcode_not_found": "Товар по штрихкоду не найден",
   "barcode_success_add": "Товар добавлен:",
   "barcode_success_increase": "Количество увеличено:",

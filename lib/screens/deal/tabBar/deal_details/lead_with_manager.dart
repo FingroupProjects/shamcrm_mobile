@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/app/app_keys.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
@@ -12,22 +13,26 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class LeadWithManager extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
+  final bool alwaysRefreshFromServer;
 
   const LeadWithManager({
     super.key,
     required this.onSelectLead,
     this.selectedLead,
+    this.alwaysRefreshFromServer = false,
   });
 
   @override
   State<LeadWithManager> createState() => _LeadWithManagerState();
 }
 
-class _LeadWithManagerState extends State<LeadWithManager> {
+class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
   final ApiService _apiService = ApiService();
   static const int _pageSize = 20;
   List<LeadData> leadsList = [];
   LeadData? selectedLeadData;
+  int _listVersion = 0;
+  bool _ignoreStaleSuccess = false;
 
   bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
 
@@ -74,19 +79,53 @@ class _LeadWithManagerState extends State<LeadWithManager> {
     //print('LeadWithManager: initState started');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final state = context.read<GetAllLeadBloc>().state;
-        //print('LeadWithManager: Initial GetAllLeadBloc state: $state');
-        if (state is GetAllLeadSuccess) {
-          leadsList = state.dataLead.result ?? [];
-          //print('LeadWithManager: Loaded ${leadsList.length} leads');
-          _updateSelectedLeadData();
-        }
-        if (state is! GetAllLeadSuccess) {
-          //print('LeadWithManager: Dispatching GetAllLeadEv');
-          context.read<GetAllLeadBloc>().add(GetAllLeadEv());
-        }
+        _loadLeads(forceRefresh: widget.alwaysRefreshFromServer);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    if (widget.alwaysRefreshFromServer) {
+      _loadLeads(forceRefresh: true);
+    }
+  }
+
+  void _loadLeads({required bool forceRefresh}) {
+    if (forceRefresh) {
+      setState(() {
+        leadsList = [];
+        _ignoreStaleSuccess = true;
+        _listVersion++;
+      });
+      context.read<GetAllLeadBloc>().add(
+            RefreshAllLeadEv(clearOfflineCache: true),
+          );
+      return;
+    }
+    final state = context.read<GetAllLeadBloc>().state;
+    if (state is GetAllLeadSuccess) {
+      leadsList = state.dataLead.result ?? [];
+      _updateSelectedLeadData();
+    }
+    if (state is! GetAllLeadSuccess) {
+      context.read<GetAllLeadBloc>().add(GetAllLeadEv());
+    }
   }
 
   void _updateSelectedLeadData() {
@@ -117,7 +156,11 @@ class _LeadWithManagerState extends State<LeadWithManager> {
     String query,
     int page,
   ) async {
-    final response = await _apiService.getLeadPage(page, search: query);
+    final response = await _apiService.getLeadPage(
+      page,
+      search: query,
+      bypassCache: widget.alwaysRefreshFromServer,
+    );
     final items = response.result ?? <LeadData>[];
     final pagination = response.pagination;
 
@@ -146,19 +189,17 @@ class _LeadWithManagerState extends State<LeadWithManager> {
         BlocBuilder<GetAllLeadBloc, GetAllLeadState>(
           builder: (context, state) {
             //print('LeadWithManager: BlocBuilder state: $state');
-            if (state is GetAllLeadSuccess) {
+            if (state is GetAllLeadLoading) {
+              _ignoreStaleSuccess = false;
+            } else if (state is GetAllLeadSuccess && !_ignoreStaleSuccess) {
               leadsList = state.dataLead.result ?? [];
-              //print('LeadWithManager: Updated leadsList with ${leadsList.length} leads');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _updateSelectedLeadData();
               });
-            } else if (state is GetAllLeadLoading) {
-              //print('LeadWithManager: Leads are loading');
-            } else if (state is GetAllLeadError) {
-              //print('LeadWithManager: Error loading leads: ${state.message}');
             }
 
             return CustomDropdown<LeadData>.searchRequestPaginated(
+              key: ValueKey('lead_manager_$_listVersion'),
               paginatedRequest: _searchLeads,
               futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,

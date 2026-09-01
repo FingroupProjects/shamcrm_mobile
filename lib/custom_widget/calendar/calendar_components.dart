@@ -318,7 +318,7 @@ class EventListForDate extends StatelessWidget {
                                         : event.type == 'my_task'
                                             ? AppLocalizations.of(context)!
                                                 .translate('my_task')
-                                            : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
+                                            : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
                                     style: TextStyle(
                                       color: colors.textSecondary,
                                       fontFamily: 'Gilroy',
@@ -421,7 +421,7 @@ class DayViewEventList extends StatelessWidget {
                                 width: 60,
                                 child: Text(
                                   DateFormat('HH:mm').format(
-                                      event.date.add(const Duration(hours: 5))),
+                                      event.date.toLocal()),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontFamily: 'Gilroy',
@@ -497,7 +497,7 @@ class DayViewEventList extends StatelessWidget {
                                                   ? AppLocalizations.of(
                                                           context)!
                                                       .translate('my_task')
-                                                  : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.add(const Duration(hours: 5)))}',
+                                                  : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
                                           style: TextStyle(
                                             color: colors.textSecondary,
                                             fontFamily: 'Gilroy',

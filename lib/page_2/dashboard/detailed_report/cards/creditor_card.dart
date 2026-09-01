@@ -4,20 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 
+import '../widgets/report_client_contact.dart';
+
 class CreditorCard extends StatelessWidget {
   final Creditor creditor;
-  final Function(Creditor) onClick;
-  final Function(Creditor) onLongPress;
-  final bool isSelectionMode;
-  final bool isSelected;
 
   const CreditorCard({
     Key? key,
     required this.creditor,
-    required this.onClick,
-    required this.onLongPress,
-    required this.isSelectionMode,
-    required this.isSelected,
   }) : super(key: key);
 
   @override
@@ -26,61 +20,42 @@ class CreditorCard extends StatelessWidget {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
-    return GestureDetector(
-      onTap: () => onClick(creditor),
-      onLongPress: () => onLongPress(creditor),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.surfaceElevated.withValues(alpha: 0.98)
-              : colors.surfacePrimary.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? colors.borderPrimary : colors.borderSubtle,
-            width: isSelected ? 1.4 : 1,
-          ),
-          boxShadow: context.appShadows.card,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colors.borderSubtle,
+          width: 1,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${localizations.translate('client')} ${creditor.name}',
-                    style: textStyles.bodyMd.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${localizations.translate('debt_amount')}: ${parseNumberToString(creditor.debtAmount)}',
-                    style: textStyles.bodyMd.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+        boxShadow: context.appShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ReportClientNameText(
+            name: creditor.name,
+            onTap: () => openReportClientCard(
+              context,
+              clientId: creditor.id,
+              clientName: creditor.name,
+              phone: creditor.phone,
             ),
-            if (isSelectionMode) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  isSelected
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: colors.textPrimary,
-                  size: 24,
-                ),
-              ),
-            ],
+          ),
+          if ((creditor.phone ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ReportClientPhoneText(phone: creditor.phone!),
           ],
-        ),
+          const SizedBox(height: 8),
+          Text(
+            '${localizations.translate('debt_amount')}: ${parseNumberToString(creditor.debtAmount)}',
+            style: textStyles.bodyMd.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }

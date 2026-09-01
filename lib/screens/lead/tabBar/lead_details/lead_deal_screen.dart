@@ -51,6 +51,7 @@ class _DealsWidgetState extends State<DealsWidget> {
     final canCreate = await _apiService.hasPermission('deal.create');
     // final canUpdate = await _apiService.hasPermission('deal.update');
     final canDelete = await _apiService.hasPermission('deal.delete');
+    if (!mounted) return;
     setState(() {
       _canCreateDeal = canCreate;
       // _canUpdateDeal = canUpdate;

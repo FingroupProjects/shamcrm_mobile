@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_by_id/goodsById_st
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/variant_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/goods/goods_edit_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -181,6 +182,13 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     imageUrl: imageUrl,
                     width: double.infinity,
                     fit: BoxFit.contain,
+                    progressIndicatorBuilder: (context, url, progress) {
+                      return ProductImageLoadProgress(
+                        progress: progress.progress,
+                        size: 36,
+                        color: context.appColors.buttonPrimaryBg,
+                      );
+                    },
                     errorWidget: (context, error, stackTrace) =>
                         _buildPlaceholder(),
                   ),
@@ -333,7 +341,6 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildDetailsList(Goods goods) {
-    final colors = context.appColors;
     List<String> labels = [];
     if (goods.isPopular)
       labels.add(AppLocalizations.of(context)!.translate('hit'));
@@ -378,17 +385,23 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
           'label': 'Тип товара',
           'value': _productionTypeLabel(goods.productionType),
         },
-      if (goods.discountPrice != null && goods.discountPrice != 0)
-        {
-          'label':
-              AppLocalizations.of(context)!.translate('discount_price_details'),
-          'value': goods.discountPrice.toString()
-        },
-      if (goods.discountPercent != null && goods.discountPercent != 0)
-        {
-          'label': AppLocalizations.of(context)!.translate('discount_percent'),
-          'value': '${goods.discountPercent}%'
-        },
+      // if (goods.discountPrice != null && goods.discountPrice != 0)
+      //   {
+      //     'label':
+      //         AppLocalizations.of(context)!.translate('discount_price_details'),
+      //     'value': goods.discountPrice.toString()
+      //   },
+      // if (goods.discountPercent != null && goods.discountPercent != 0)
+      //   {
+      //     'label': AppLocalizations.of(context)!.translate('discount_percent'),
+      //     'value': '${goods.discountPercent}%'
+      //   },
+      {
+        'label': AppLocalizations.of(context)!.translate('price_details'),
+        'value': (goods.price != null && goods.price!.trim().isNotEmpty)
+            ? goods.price!
+            : (goods.discountPrice?.toString() ?? ''),
+      },
       ...goods.attributes
           .where((attr) =>
               attr.name.isNotEmpty &&
@@ -424,51 +437,51 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
               .toList(),
         ),
         const SizedBox(height: 16),
-        if (goods.discountPrice != null && goods.discountPrice != 0)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildLabel(
-                    AppLocalizations.of(context)!.translate('price_details')),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        goods.discountedPrice != null
-                            ? goods.discountPrice.toString()
-                            : goods.discountPrice.toString(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: goods.discountedPrice != null
-                              ? colors.textMuted
-                              : colors.textPrimary,
-                          decoration: goods.discountedPrice != null
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                        ),
-                      ),
-                      if (goods.discountedPrice != null)
-                        Text(
-                          goods.discountedPrice!.toStringAsFixed(2),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // if (goods.discountPrice != null && goods.discountPrice != 0)
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(vertical: 2),
+        //     child: Row(
+        //       crossAxisAlignment: CrossAxisAlignment.start,
+        //       children: [
+        //         _buildLabel(
+        //             AppLocalizations.of(context)!.translate('price_details')),
+        //         const SizedBox(width: 8),
+        //         Expanded(
+        //           child: Column(
+        //             crossAxisAlignment: CrossAxisAlignment.start,
+        //             children: [
+        //               Text(
+        //                 goods.discountedPrice != null
+        //                     ? goods.discountPrice.toString()
+        //                     : goods.discountPrice.toString(),
+        //                 style: TextStyle(
+        //                   fontSize: 16,
+        //                   fontFamily: 'Gilroy',
+        //                   fontWeight: FontWeight.w500,
+        //                   color: goods.discountedPrice != null
+        //                       ? colors.textMuted
+        //                       : colors.textPrimary,
+        //                   decoration: goods.discountedPrice != null
+        //                       ? TextDecoration.lineThrough
+        //                       : TextDecoration.none,
+        //                 ),
+        //               ),
+        //               if (goods.discountedPrice != null)
+        //                 Text(
+        //                   goods.discountedPrice!.toStringAsFixed(2),
+        //                   style: TextStyle(
+        //                     fontSize: 16,
+        //                     fontFamily: 'Gilroy',
+        //                     fontWeight: FontWeight.w500,
+        //                     color: colors.textPrimary,
+        //                   ),
+        //                 ),
+        //             ],
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
         const SizedBox(height: 16),
         _buildCreateOrderButton(goods),
         if (!_isTojsokhtmontjTenant) _buildGoodsRelationsSection(goods),
@@ -1038,25 +1051,12 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
   }
 
   Widget _buildVariantImage(String? imageUrl) {
-    final colors = context.appColors;
-    if (imageUrl == null) {
-      return Container(
-        color: colors.surfacePrimary,
-        child: Center(
-            child: Icon(Icons.image, size: 50, color: colors.iconPrimary)),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: colors.surfacePrimary,
-          child: Center(
-              child: Icon(Icons.image, size: 50, color: colors.iconPrimary)),
-        ),
-      ),
+    return ProductNetworkImage(
+      imageUrl: imageUrl,
+      width: 120,
+      height: 120,
+      emptyIcon: Icons.image,
+      emptyIconSize: 50,
     );
   }
 
@@ -1261,12 +1261,19 @@ class _GoodsDetailsScreenState extends State<GoodsDetailsScreen> {
                     .translate('goods_description_details'),
                 'value': goods.description ?? ''
               },
-              if (goods.discountPrice != null && goods.discountPrice != 0)
-                {
-                  'label': AppLocalizations.of(context)!
-                      .translate('discount_price_details'),
-                  'value': goods.discountPrice.toString()
-                },
+              // if (goods.discountPrice != null && goods.discountPrice != 0)
+              //   {
+              //     'label': AppLocalizations.of(context)!
+              //         .translate('discount_price_details'),
+              //     'value': goods.discountPrice.toString()
+              //   },
+              {
+                'label':
+                    AppLocalizations.of(context)!.translate('price_details'),
+                'value': (goods.price != null && goods.price!.trim().isNotEmpty)
+                    ? goods.price!
+                    : (goods.discountPrice?.toString() ?? ''),
+              },
               {
                 'label': AppLocalizations.of(context)!
                     .translate('stock_quantity_details'),

@@ -145,6 +145,9 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Only applicable if items are greater than 4 otherwise adjust automatically.
   final double? overlayHeight;
 
+  /// Force the overlay to open above the field instead of below.
+  final bool openUpward;
+
   /// The [listItemBuilder] that will be used to build item on demand.
   final _ListItemBuilder<T>? listItemBuilder;
 
@@ -214,6 +217,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.hintBuilder,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -275,6 +279,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.validateOnChange = true,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -335,6 +340,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.validateOnChange = true,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -383,6 +389,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.validateOnChange = true,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -429,6 +436,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.hideSelectedFieldWhenExpanded = false,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -492,6 +500,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.hideSelectedFieldWhenExpanded = false,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
     this.itemsListPadding,
@@ -552,6 +561,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.validateOnChange = true,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.searchRequestLoadingIndicator,
     this.closedHeaderPadding,
     this.expandedHeaderPadding,
@@ -600,6 +610,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.validateOnChange = true,
     this.maxlines = 1,
     this.overlayHeight,
+    this.openUpward = false,
     this.searchRequestLoadingIndicator,
     this.paginationLoadingIndicator,
     this.closedHeaderPadding,
@@ -792,6 +803,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                   hintBuilder: widget.hintBuilder,
                   decoration: decoration,
                   overlayHeight: widget.overlayHeight,
+                  openUpward: widget.openUpward,
                   excludeSelected: widget.excludeSelected,
                   canCloseOutsideBounds: widget.canCloseOutsideBounds,
                   searchType: widget._searchType,

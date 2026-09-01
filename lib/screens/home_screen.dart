@@ -475,34 +475,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         // Then navigate to specific document screen after a short delay
         // Use pushReplacement to replace current screen instead of pushing
-        Future.delayed(const Duration(milliseconds: 300), () {
+        Future.delayed(const Duration(milliseconds: 300), () async {
+          if (!mounted) return;
+          final organizationId =
+              await ApiService().resolveSelectedOrganizationId();
           if (!mounted) return;
 
           Widget? targetScreen;
           switch (screenIdentifier) {
             case 'client_sale':
-              targetScreen = ClientSaleScreen();
+              targetScreen = ClientSaleScreen(organizationId: organizationId);
               break;
             case 'client_return':
-              targetScreen = ClientReturnScreen();
+              targetScreen = ClientReturnScreen(organizationId: organizationId);
               break;
             case 'income_goods':
-              targetScreen = IncomingScreen();
+              targetScreen = IncomingScreen(organizationId: organizationId);
               break;
             case 'transfer':
-              targetScreen = MovementScreen(organizationId: 1);
+              targetScreen = MovementScreen(organizationId: organizationId);
               break;
             case 'write_off':
-              targetScreen = WriteOffScreen();
+              targetScreen = WriteOffScreen(organizationId: organizationId);
               break;
             case 'supplier_return':
-              targetScreen = SupplierReturnScreen();
+              targetScreen =
+                  SupplierReturnScreen(organizationId: organizationId);
               break;
             case 'money_income':
-              targetScreen = MoneyIncomeScreen();
+              targetScreen = MoneyIncomeScreen(organizationId: organizationId);
               break;
             case 'money_outcome':
-              targetScreen = MoneyOutcomeScreen();
+              targetScreen = MoneyOutcomeScreen(organizationId: organizationId);
               break;
           }
 
@@ -976,8 +980,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     List<String> inactiveIconsGroup1 = [];
     List<String> inactiveIconsGroup2 = [];
 
-    // Дашборд
-    if (hasPermission('section.dashboard')) {
+    // Дашборд — если есть CRM и/или учёт
+    if (hasPermission('section.dashboard') ||
+        hasPermission('accounting_dashboard')) {
       widgetsGroup1.add(
         DashboardScreen(
           key: ValueKey('dashboard_$_dashboardReloadNonce'),

@@ -431,6 +431,7 @@ extension ApiCashX on ApiService {
     final path = await _appendQueryParams('/checking-account');
 
     try {
+      final resolvedOrganizationId = await resolveSelectedOrganizationId();
       final response = await _postRequest(path, {
         'date': date,
         'amount': amount,
@@ -443,6 +444,7 @@ extension ApiCashX on ApiService {
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
         'approved': approve,
+        'organization_id': resolvedOrganizationId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -606,6 +608,7 @@ extension ApiCashX on ApiService {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
     try {
+      final resolvedOrganizationId = await resolveSelectedOrganizationId();
       final response = await _patchRequest(path, {
         'date': date,
         'amount': amount,
@@ -617,6 +620,7 @@ extension ApiCashX on ApiService {
         'comment': comment,
         'cash_register_id': cashRegisterId,
         'supplier_id': supplierId,
+        'organization_id': resolvedOrganizationId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -790,6 +794,7 @@ extension ApiCashX on ApiService {
     final path = await _appendQueryParams('/checking-account');
 
     try {
+      final resolvedOrganizationId = await resolveSelectedOrganizationId();
       final response = await _postRequest(path, {
         'date': date,
         'amount': amount,
@@ -804,6 +809,7 @@ extension ApiCashX on ApiService {
         'employee_id': employeeId,
         'month': month,
         'approved': approve,
+        'organization_id': resolvedOrganizationId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -959,6 +965,7 @@ extension ApiCashX on ApiService {
     final path = await _appendQueryParams('/checking-account/$documentId');
 
     try {
+      final resolvedOrganizationId = await resolveSelectedOrganizationId();
       final response = await _patchRequest(path, {
         'date': date,
         'amount': amount,
@@ -972,6 +979,7 @@ extension ApiCashX on ApiService {
         'supplier_id': supplierId,
         'employee_id': employeeId,
         'month': month,
+        'organization_id': resolvedOrganizationId,
         if (exchangeRate != null) 'exchange_rate': exchangeRate,
       });
       if (response.statusCode == 200 || response.statusCode == 201) {

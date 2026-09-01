@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
@@ -12,8 +11,10 @@ import 'package:crm_task_manager/offline/db/app_database.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_filter_sheet.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_product_card.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_quantity_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_repository.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier/add_supplier_screen.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
@@ -463,7 +464,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
         paidAmount: finish.paidAmount,
         debtAmount: finish.debtAmount,
         documentGoods: goodsPayload,
-        organizationId: 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(),
         salesFunnelId: 1,
         approve: _hasApprovePermission,
       );
@@ -1300,7 +1301,9 @@ class _FastSupplierSelector extends StatefulWidget {
 class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
   static const int _pageSize = 20;
   final ApiService _apiService = ApiService();
+  final OverlayPortalController _overlayController = OverlayPortalController();
   List<Supplier> _loadedSuppliers = [];
+  bool _isCreatingSupplier = false;
 
   Future<CustomDropdownPaginatedResponse<Supplier>> _searchSuppliers(
     String query,
@@ -1322,6 +1325,81 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
     );
   }
 
+  Supplier? _matchCreatedSupplier(
+    List<Supplier> items, {
+    required String name,
+    String? phone,
+  }) {
+    final normalizedName = name.trim().toLowerCase();
+    final normalizedPhone = (phone ?? '').replaceAll(RegExp(r'\D'), '');
+    for (final supplier in items) {
+      if (supplier.name.trim().toLowerCase() == normalizedName) {
+        return supplier;
+      }
+    }
+    if (normalizedPhone.isNotEmpty) {
+      for (final supplier in items) {
+        final supplierPhone =
+            (supplier.phone ?? '').replaceAll(RegExp(r'\D'), '');
+        if (supplierPhone.isNotEmpty &&
+            (supplierPhone.endsWith(normalizedPhone) ||
+                normalizedPhone.endsWith(supplierPhone))) {
+          return supplier;
+        }
+      }
+    }
+    return items.isEmpty ? null : items.first;
+  }
+
+  Future<void> _openCreateSupplier() async {
+    if (_isCreatingSupplier) return;
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
+    setState(() => _isCreatingSupplier = true);
+    try {
+      final result = await Navigator.of(context).push<Object?>(
+        MaterialPageRoute(
+          builder: (_) => const AddSupplierScreen(),
+        ),
+      );
+      if (!mounted || result is! Map || result['created'] != true) return;
+      final name = (result['name'] ?? '').toString().trim();
+      if (name.isEmpty) return;
+      final phone = result['phone']?.toString();
+      final items = await _apiService.getSupplier(
+        search: name,
+        page: 1,
+        perPage: _pageSize,
+      );
+      final createdSupplier = _matchCreatedSupplier(
+        items,
+        name: name,
+        phone: phone,
+      );
+      if (createdSupplier != null && mounted) {
+        setState(() {
+          _loadedSuppliers = [
+            createdSupplier,
+            ..._loadedSuppliers
+                .where((item) => item.id != createdSupplier.id),
+          ];
+        });
+        widget.onChanged(createdSupplier);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось создать поставщика')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingSupplier = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -1341,48 +1419,83 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
           ),
         ),
         const SizedBox(height: 4),
-        CustomDropdown<Supplier>.searchRequestPaginated(
-          key: ValueKey(selected?.id),
-          paginatedRequest: _searchSuppliers,
-          futureRequestDelay: const Duration(milliseconds: 300),
-          closeDropDownOnClearFilterSearch: true,
-          items: selected != null
-              ? <Supplier>[
-                  selected,
-                  ..._loadedSuppliers.where((item) => item.id != selected.id),
-                ]
-              : _loadedSuppliers,
-          searchHintText: 'Поиск',
-          overlayHeight: 400,
-          excludeSelected: false,
-          initialItem: selected,
-          decoration: CustomDropdownDecoration(
-            closedFillColor: colors.surfaceElevated,
-            expandedFillColor: colors.surfacePrimary,
-            closedBorder: Border.all(color: borderColor, width: 1.5),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(color: borderColor, width: 1.5),
-            expandedBorderRadius: BorderRadius.circular(12),
-            searchFieldDecoration: SearchFieldDecoration(
-              autoFocus: false,
-              fillColor: colors.surfaceElevated,
-              hintStyle: TextStyle(color: colors.textSecondary),
-              textStyle: TextStyle(color: colors.textPrimary),
-              prefixIcon: Icon(
-                Icons.search,
-                size: 20,
-                color: colors.iconSecondary,
+        Stack(
+          alignment: Alignment.centerRight,
+          children: [
+            CustomDropdown<Supplier>.searchRequestPaginated(
+              key: ValueKey(selected?.id),
+              overlayController: _overlayController,
+              paginatedRequest: _searchSuppliers,
+              futureRequestDelay: const Duration(milliseconds: 300),
+              closeDropDownOnClearFilterSearch: true,
+              items: selected != null
+                  ? <Supplier>[
+                      selected,
+                      ..._loadedSuppliers
+                          .where((item) => item.id != selected.id),
+                    ]
+                  : _loadedSuppliers,
+              searchHintText: 'Поиск',
+              overlayHeight: 400,
+              excludeSelected: false,
+              initialItem: selected,
+              decoration: CustomDropdownDecoration(
+                closedFillColor: colors.surfaceElevated,
+                expandedFillColor: colors.surfacePrimary,
+                closedBorder: Border.all(color: borderColor, width: 1.5),
+                closedBorderRadius: BorderRadius.circular(12),
+                expandedBorder: Border.all(color: borderColor, width: 1.5),
+                expandedBorderRadius: BorderRadius.circular(12),
+                closedSuffixIcon: selected != null
+                    ? const SizedBox(width: 36, height: 20)
+                    : Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                        color: colors.iconSecondary,
+                      ),
+                listItemDecoration: ListItemDecoration(
+                  selectedColor: colors.surfaceElevated,
+                  highlightColor: colors.surfaceElevated.withValues(alpha: 0.72),
+                  splashColor: colors.overlay.withValues(alpha: 0),
+                ),
+                searchFieldDecoration: SearchFieldDecoration(
+                  autoFocus: false,
+                  fillColor: colors.surfaceElevated,
+                  hintStyle: TextStyle(color: colors.textSecondary),
+                  textStyle: TextStyle(color: colors.textPrimary),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 20,
+                    color: colors.iconSecondary,
+                  ),
+                  suffixIcon: (_) => IconButton(
+                    tooltip: 'Создать поставщика',
+                    onPressed:
+                        _isCreatingSupplier ? null : _openCreateSupplier,
+                    icon: _isCreatingSupplier
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.buttonPrimaryBg,
+                            ),
+                          )
+                        : Icon(
+                            Icons.add_rounded,
+                            color: colors.buttonPrimaryBg,
+                          ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.borderSubtle),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.buttonPrimaryBg),
+                  ),
+                ),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colors.borderSubtle),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colors.buttonPrimaryBg),
-              ),
-            ),
-          ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1447,6 +1560,21 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
             );
           },
           onChanged: widget.onChanged,
+            ),
+            if (selected != null)
+              Positioned(
+                right: 4,
+                child: IconButton(
+                  tooltip: 'Очистить',
+                  onPressed: () => widget.onChanged(null),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: colors.iconSecondary,
+                  ),
+                ),
+              ),
+          ],
         ),
         if (widget.showError)
           Padding(
@@ -1959,30 +2087,14 @@ class _RmkSelectedItemImage extends StatelessWidget {
       child: SizedBox(
         width: 62,
         height: 62,
-        child: url == null || url.isEmpty
-            ? const ColoredBox(
-                color: Color(0xffEEF2F7),
-                child: Icon(
-                  Icons.inventory_2_outlined,
-                  color: Color(0xff99A4BA),
-                ),
-              )
-            : CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                memCacheWidth: 220,
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                placeholder: (_, __) =>
-                    const ColoredBox(color: Color(0xffEEF2F7)),
-                errorWidget: (_, __, ___) => const ColoredBox(
-                  color: Color(0xffEEF2F7),
-                  child: Icon(
-                    Icons.inventory_2_outlined,
-                    color: Color(0xff99A4BA),
-                  ),
-                ),
-              ),
+        child: ProductNetworkImage(
+          imageUrl: url,
+          width: 62,
+          height: 62,
+          borderRadius: 14,
+          emptyIcon: Icons.inventory_2_outlined,
+          emptyIconSize: 28,
+        ),
       ),
     );
   }

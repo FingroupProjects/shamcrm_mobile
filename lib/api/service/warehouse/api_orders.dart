@@ -452,6 +452,8 @@ extension ApiWarehouseOrdersX on ApiService {
         //debugPrint('ApiService: createOrder - Generated path: $path');
       }
 
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
       final uri = Uri.parse('$baseUrl$path');
       if (files != null && files.isNotEmpty) {
         final request = http.MultipartRequest('POST', uri);
@@ -463,7 +465,7 @@ extension ApiWarehouseOrdersX on ApiService {
 
         request.fields['phone'] = phone;
         request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
-        request.fields['organization_id'] = organizationId.toString();
+        request.fields['organization_id'] = resolvedOrganizationId.toString();
         request.fields['status_id'] = statusId.toString();
         request.fields['payment_type'] = 'cash';
         request.fields['sum'] = sum.toString();
@@ -565,7 +567,7 @@ extension ApiWarehouseOrdersX on ApiService {
                   'price': item['price'].toString(),
                 })
             .toList(),
-        'organization_id': organizationId,
+        'organization_id': resolvedOrganizationId,
         'status_id': statusId,
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
@@ -677,6 +679,8 @@ extension ApiWarehouseOrdersX on ApiService {
         //debugPrint('ApiService: updateOrder - Generated path: $path');
       }
 
+      final resolvedOrganizationId =
+          await resolveSelectedOrganizationId(fallback: organizationId);
       final uri = Uri.parse('$baseUrl$path');
       if ((filePaths != null && filePaths.isNotEmpty) ||
           existingFiles != null) {
@@ -689,7 +693,7 @@ extension ApiWarehouseOrdersX on ApiService {
 
         request.fields['phone'] = phone;
         request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
-        request.fields['organization_id'] = organizationId.toString();
+        request.fields['organization_id'] = resolvedOrganizationId.toString();
         request.fields['payment_type'] = 'cash';
         request.fields['sum'] = sum.toString();
         if (commentToCourier != null) {
@@ -798,7 +802,7 @@ extension ApiWarehouseOrdersX on ApiService {
                   'price': item['price'].toString(),
                 })
             .toList(),
-        'organization_id': organizationId.toString(),
+        'organization_id': resolvedOrganizationId.toString(),
         'comment_to_courier': commentToCourier,
         'payment_type': 'cash',
         'manager_id': managerId?.toString(),

@@ -375,6 +375,7 @@ class CreateManufactureDocumentScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedSenderStorage ?? ''),
       ),
     );
 
@@ -406,6 +407,7 @@ class CreateManufactureDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.income,
+      storageId: int.tryParse(_selectedSenderStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -651,7 +653,9 @@ class CreateManufactureDocumentScreenState
                 .toList(),
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         approve: approve,
       ));
     } catch (e) {

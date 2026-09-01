@@ -49,6 +49,14 @@ extension ApiOrganizationX on ApiService {
     }
   }
 
+  /// Текущая выбранная организация как int — для payload документов учёта.
+  Future<int> resolveSelectedOrganizationId({int? fallback}) async {
+    final selected = await getSelectedOrganization();
+    final parsed = int.tryParse(selected ?? '');
+    if (parsed != null) return parsed;
+    return fallback ?? 1;
+  }
+
   Future<void> saveSelectedOrganization(String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedOrganization', organizationId);

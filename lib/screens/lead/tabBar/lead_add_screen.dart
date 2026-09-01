@@ -63,6 +63,15 @@ class LeadAddScreen extends StatefulWidget {
     this.isWarehouseReferenceClient = false,
   });
 
+  static int? statusIdFromPopResult(Object? result) {
+    if (result is int) return result;
+    if (result is Map) {
+      final statusId = result['statusId'];
+      if (statusId is int) return statusId;
+    }
+    return null;
+  }
+
   @override
   State<LeadAddScreen> createState() => _LeadAddScreenState();
 }
@@ -70,6 +79,8 @@ class LeadAddScreen extends StatefulWidget {
 class _LeadAddScreenState extends State<LeadAddScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
+  String? _createdLeadName;
+  String? _createdLeadPhone;
 
   // Контроллеры для стандартных полей
   final TextEditingController titleController = TextEditingController();
@@ -1885,7 +1896,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.pop(context, widget.statusId);
+                      Navigator.pop(context, {
+                        'statusId': widget.statusId,
+                        'name': _createdLeadName,
+                        'phone': _createdLeadPhone,
+                      });
                       context.read<LeadBloc>().add(FetchLeadStatuses());
                     }
                   },
@@ -2134,6 +2149,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
 
       final String name = titleController.text;
       final String phone = selectedDialCode;
+      _createdLeadName = name.trim();
+      _createdLeadPhone = phone.trim();
       final String? instaLogin =
           instaLoginController.text.isEmpty ? null : instaLoginController.text;
       final String? facebookLogin = facebookLoginController.text.isEmpty

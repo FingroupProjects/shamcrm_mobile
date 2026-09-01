@@ -263,6 +263,7 @@ class CreateClientReturnDocumentScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -297,6 +298,7 @@ class CreateClientReturnDocumentScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.clientReturn,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -472,7 +474,7 @@ class CreateClientReturnDocumentScreenState
     return parsedPrice;
   }
 
-  void _createDocument({bool approve = false}) {
+  void _createDocument({bool approve = false}) async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
 
@@ -598,7 +600,9 @@ class CreateClientReturnDocumentScreenState
             if (hasUnits) 'unit_id': item['unit_id'],
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         salesFunnelId: 1,
         approve: approve,
         exchangeRate: _exchangeRateValue,
@@ -731,6 +735,8 @@ class CreateClientReturnDocumentScreenState
               }
             }),
             showDebt: true,
+            alwaysRefreshFromServer: true,
+            clearCacheBeforeRefresh: true,
           ),
           const SizedBox(height: 16),
           StorageWidget(
@@ -778,11 +784,11 @@ class CreateClientReturnDocumentScreenState
                       child: Text(
                         localizations.translate('no_goods_added') ??
                             'Товары не добавлены',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w400,
-                          color: Color(0xff99A4BA),
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
@@ -804,7 +810,7 @@ class CreateClientReturnDocumentScreenState
             color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.10),
+                color: colors.shadow.withValues(alpha: 0.10),
                 spreadRadius: 1,
                 blurRadius: 3,
                 offset: const Offset(0, -1),
@@ -814,7 +820,7 @@ class CreateClientReturnDocumentScreenState
           child: ElevatedButton(
             onPressed: _openVariantSelection,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff4759FF),
+              backgroundColor: colors.buttonPrimaryBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -825,15 +831,15 @@ class CreateClientReturnDocumentScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: Colors.white, size: 20),
+                Icon(Icons.add, color: colors.buttonPrimaryFg, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   localizations.translate('add_good') ?? 'Добавить товар',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.buttonPrimaryFg,
                   ),
                 ),
               ],
@@ -972,16 +978,17 @@ class CreateClientReturnDocumentScreenState
   }
 
   Widget _buildTotalByCurrencyField(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           _totalByCurrencyLabel(localizations),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
             fontFamily: 'Gilroy',
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -989,16 +996,17 @@ class CreateClientReturnDocumentScreenState
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xffF4F7FD),
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.borderSubtle),
           ),
           child: Text(
             parseNumberToString(_totalByCurrency.toStringAsFixed(2)),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -1026,6 +1034,7 @@ class CreateClientReturnDocumentScreenState
 
   Widget _buildSelectedItemCard(
       int index, Map<String, dynamic> item, Animation<double> animation) {
+    final colors = context.appColors;
     final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
     final variantId = item['variantId'] as int;
     final priceController = _priceControllers[variantId];
@@ -1043,12 +1052,12 @@ class CreateClientReturnDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xffF4F7FD)),
+            border: Border.all(color: colors.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: colors.shadow.withValues(alpha: 0.08),
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2),
@@ -1065,11 +1074,11 @@ class CreateClientReturnDocumentScreenState
                     Expanded(
                       child: Text(
                         item['name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
-                          color: Color(0xff1E2E52),
+                          color: colors.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1080,14 +1089,14 @@ class CreateClientReturnDocumentScreenState
                       isCollapsed
                           ? Icons.keyboard_arrow_down
                           : Icons.keyboard_arrow_up,
-                      color: const Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _removeItem(index),
-                      child: const Icon(Icons.close,
-                          color: Color(0xff99A4BA), size: 18),
+                      child: Icon(Icons.close,
+                          color: colors.textSecondary, size: 18),
                     ),
                   ],
                 ),
@@ -1099,17 +1108,17 @@ class CreateClientReturnDocumentScreenState
                   padding: const EdgeInsets.only(top: 4, bottom: 10),
                   child: Text(
                     '${AppLocalizations.of(context)!.translate('total') ?? 'Сумма'} ${(item['total'] ?? 0.0).toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Color(0xff4759FF),
+                      color: colors.buttonPrimaryBg,
                     ),
                   ),
                 ),
               ),
               if (!isCollapsed) ...[
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                Divider(height: 1, color: colors.borderSubtle),
                 const SizedBox(height: 10),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(
@@ -1120,11 +1129,11 @@ class CreateClientReturnDocumentScreenState
                         Text(
                           AppLocalizations.of(context)!.translate('quantity') ??
                               'Кол-во',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w400,
-                            color: Color(0xff99A4BA),
+                            color: colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1141,11 +1150,11 @@ class CreateClientReturnDocumentScreenState
                             QuantityInputFormatter(),
                           ],
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                           hasError: _quantityErrors[variantId] == true,
                           onChanged: (value) =>
@@ -1165,11 +1174,11 @@ class CreateClientReturnDocumentScreenState
                           Text(
                             AppLocalizations.of(context)!.translate('unit') ??
                                 'Ед.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1179,24 +1188,24 @@ class CreateClientReturnDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: colors.borderSubtle),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: item['selectedUnit'],
                                   isDense: true,
                                   isExpanded: true,
-                                  dropdownColor: Colors.white,
-                                  icon: const Icon(Icons.arrow_drop_down,
-                                      size: 16, color: Color(0xff4759FF)),
-                                  style: const TextStyle(
+                                  dropdownColor: colors.surfacePrimary,
+                                  icon: Icon(Icons.arrow_drop_down,
+                                      size: 16, color: colors.buttonPrimaryBg),
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'Gilroy',
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xff1E2E52),
+                                    color: colors.textPrimary,
                                   ),
                                   items: availableUnits.map((unit) {
                                     return DropdownMenuItem<String>(
@@ -1223,19 +1232,19 @@ class CreateClientReturnDocumentScreenState
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4F7FD),
+                                color: colors.surfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
                                 border:
-                                    Border.all(color: const Color(0xFFE5E7EB)),
+                                    Border.all(color: colors.borderSubtle),
                               ),
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 item['selectedUnit'] ?? 'шт',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xff1E2E52),
+                                  color: colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -1251,11 +1260,11 @@ class CreateClientReturnDocumentScreenState
                           Text(
                             AppLocalizations.of(context)!.translate('price') ??
                                 'Цена',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w400,
-                              color: Color(0xff99A4BA),
+                              color: colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1271,11 +1280,11 @@ class CreateClientReturnDocumentScreenState
                             inputFormatters: [
                               PriceInputFormatter(),
                             ],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
-                              color: Color(0xff1E2E52),
+                              color: colors.textPrimary,
                             ),
                             hasError: _priceErrors[variantId] == true,
                             onChanged: (value) =>
@@ -1294,6 +1303,7 @@ class CreateClientReturnDocumentScreenState
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {
+    final colors = context.appColors;
     return Row(
       children: [
         // ✅ НОВОЕ: Показываем кнопку "Провести" только если есть разрешение
@@ -1319,7 +1329,7 @@ class CreateClientReturnDocumentScreenState
                           Icons.check_circle_outline,
                           size: 18,
                           color: _isLoading
-                              ? const Color(0xff99A4BA)
+                              ? colors.textSecondary
                               : const Color(0xff4CAF50),
                         ),
                         const SizedBox(width: 6),
@@ -1331,7 +1341,7 @@ class CreateClientReturnDocumentScreenState
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
                             color: _isLoading
-                                ? const Color(0xff99A4BA)
+                                ? colors.textSecondary
                                 : const Color(0xff4CAF50),
                           ),
                         ),
@@ -1350,35 +1360,36 @@ class CreateClientReturnDocumentScreenState
             child: ElevatedButton(
               onPressed: _isLoading ? null : _saveDocument,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4759FF),
-                disabledBackgroundColor: const Color(0xffE5E7EB),
+                backgroundColor: colors.buttonPrimaryBg,
+                disabledBackgroundColor: colors.borderSubtle,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.buttonPrimaryFg),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.save_outlined,
-                            color: Colors.white, size: 18),
+                        Icon(Icons.save_outlined,
+                            color: colors.buttonPrimaryFg, size: 18),
                         const SizedBox(width: 6),
                         Text(
                           localizations.translate('save') ?? 'Сохранить',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: colors.buttonPrimaryFg,
                           ),
                         ),
                       ],

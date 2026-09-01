@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
@@ -32,6 +31,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
@@ -1085,6 +1085,8 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
               FetchDeliveryAddresses(leadId: lead.id),
             );
           },
+          alwaysRefreshFromServer: true,
+          clearCacheBeforeRefresh: true,
         ),
         const SizedBox(height: 8),
       ],
@@ -2682,24 +2684,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     );
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        color: colors.surfaceAccent,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.image,
-          color: colors.textSecondary,
-          size: 28,
-        ),
-      ),
-    );
-  }
-
   Widget _buildItemsToolbarAction({
     required IconData icon,
     required String label,
@@ -3047,28 +3031,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
           SizedBox(
             width: 70,
             height: 70,
-            child: imagePath != null && imagePath.isNotEmpty && baseUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: CachedNetworkImage(
-                      imageUrl:
-                          imagePath.startsWith('http') ? imagePath : imagePath,
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colors.buttonPrimaryBg,
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) =>
-                          _buildPlaceholderImage(),
-                    ),
-                  )
-                : _buildPlaceholderImage(),
+            child: ProductNetworkImage(
+              imageUrl: imagePath != null &&
+                      imagePath.isNotEmpty &&
+                      baseUrl != null
+                  ? imagePath
+                  : null,
+              width: 70,
+              height: 70,
+              borderRadius: 14,
+              emptyIcon: Icons.image,
+              emptyIconSize: 28,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

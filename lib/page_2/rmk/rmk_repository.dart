@@ -125,6 +125,7 @@ class RmkRepository {
     int? leadId,
     int? currencyId,
     double? exchangeRate,
+    String? comment,
   }) async {
     if (items.isEmpty) {
       return const RmkSaleSubmitResult(sentToServer: false, savedLocal: false);
@@ -145,6 +146,7 @@ class RmkRepository {
       leadId: leadId,
       currencyId: currencyId,
       exchangeRate: exchangeRate,
+      comment: comment,
     );
 
     await _db.into(_db.rmkOutboxSales).insert(
@@ -410,6 +412,7 @@ class RmkRepository {
     int? leadId,
     int? currencyId,
     double? exchangeRate,
+    String? comment,
   }) async {
     final saleItems = await Future.wait(items.map((item) async {
       final total = item.customTotal ?? item.quantity * item.price;
@@ -434,7 +437,7 @@ class RmkRepository {
     final payload = {
       'date': DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(createdAt.toLocal()),
       'storage_id': storageId,
-      'comment': 'RMK',
+      'comment': comment?.trim() ?? '',
       'counterparty_id': leadId ?? 0,
       'lead_id': leadId ?? 0,
       'document_goods': saleItems,
@@ -510,7 +513,7 @@ class RmkRepository {
     }
   }
 
-  Future<Variant?> _findVariantById(int variantId) async {
+  Future<Variant?> _findVariantById(int variantId, {int? storageId}) async {
     var page = 1;
     const maxPagesToCheck = 10;
 
@@ -518,6 +521,7 @@ class RmkRepository {
       final response = await _apiService.getVariants(
         page: page,
         perPage: _syncPageSize,
+        filters: storageId == null ? null : {'storage_id': storageId},
       );
       final variants = response.data;
       if (variants.isEmpty) return null;

@@ -293,6 +293,7 @@ class _IncomingDocumentCreateScreenState
       builder: (context) => VariantSelectionBottomSheet(
         existingItems: _items,
         isService: false,
+        storageId: int.tryParse(_selectedStorage ?? ''),
       ),
     );
 
@@ -333,6 +334,7 @@ class _IncomingDocumentCreateScreenState
       items: _items,
       barcode: barcode,
       docType: DocumentBarcodeType.income,
+      storageId: int.tryParse(_selectedStorage ?? ''),
       onItemAdded: (newItem) =>
           _handleVariantSelection(newItem, isFromBarcode: true),
       onQuantityIncreased: (variantId, newQty) {
@@ -633,7 +635,9 @@ class _IncomingDocumentCreateScreenState
             if (hasUnits) 'unit_id': item['unit_id'],
           };
         }).toList(),
-        organizationId: widget.organizationId ?? 1,
+        organizationId: await _apiService.resolveSelectedOrganizationId(
+          fallback: widget.organizationId,
+        ),
         salesFunnelId: 1,
         approve: approve,
         exchangeRate: _exchangeRateValue,

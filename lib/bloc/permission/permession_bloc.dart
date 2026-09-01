@@ -94,7 +94,8 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
             hasOnlineStoreFeatureAccess && !hasWarehouseAccess;
 
         await WidgetService.syncWidgetVisibilityToAndroid({
-          'dashboard': permissions.contains('section.dashboard'),
+          'dashboard': permissions.contains('section.dashboard') ||
+              permissions.contains('accounting_dashboard'),
           'tasks': permissions.contains('task.read'),
           'leads': permissions.contains('lead.read'),
           'deals': permissions.contains('deal.read'),

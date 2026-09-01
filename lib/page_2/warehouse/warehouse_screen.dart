@@ -366,7 +366,10 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     );
   }
 
-  void _navigateToDocument(WarehouseDocument document) {
+  Future<void> _navigateToDocument(WarehouseDocument document) async {
+    final organizationId = await _apiService.resolveSelectedOrganizationId();
+    if (!mounted) return;
+
     if (document.keyName == 'purchase_goods') {
       Navigator.push(
         context,
@@ -375,12 +378,15 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     } else if (document.keyName == 'income_goods') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => IncomingScreen()),
+        MaterialPageRoute(
+            builder: (context) => IncomingScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'client_sale') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ClientSaleScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                ClientSaleScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'rmk') {
       Navigator.push(
@@ -395,44 +401,55 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
     } else if (document.keyName == 'supplier_return') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => SupplierReturnScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                SupplierReturnScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'client_return') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ClientReturnScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                ClientReturnScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'write_off') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => WriteOffScreen()),
+        MaterialPageRoute(
+            builder: (context) => WriteOffScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'transfer') {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => MovementScreen(organizationId: 1)),
+            builder: (context) => MovementScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'manufacture') {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => ManufactureScreen(organizationId: 1)),
+            builder: (context) =>
+                ManufactureScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'money_income') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MoneyIncomeScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                MoneyIncomeScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'money_outcome') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MoneyOutcomeScreen()),
+        MaterialPageRoute(
+            builder: (context) =>
+                MoneyOutcomeScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'order') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const OrderScreen()),
+        MaterialPageRoute(
+            builder: (context) => OrderScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'references') {
       Navigator.push(

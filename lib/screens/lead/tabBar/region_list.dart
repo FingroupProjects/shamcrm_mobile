@@ -10,11 +10,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class RegionRadioGroupWidget extends StatefulWidget {
   final String? selectedRegion;
   final Function(RegionData) onSelectRegion;
+  final bool openUpward;
 
   const RegionRadioGroupWidget({
     super.key,
     required this.onSelectRegion,
     this.selectedRegion,
+    this.openUpward = false,
   });
 
   @override
@@ -115,7 +117,8 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
                     items: regionsList,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
-                    overlayHeight: 400,
+                    overlayHeight: widget.openUpward ? 280 : 400,
+                    openUpward: widget.openUpward,
                     enabled: true, // Всегда enabled
                     decoration: CustomDropdownDecoration(
                       closedFillColor: fieldFill,

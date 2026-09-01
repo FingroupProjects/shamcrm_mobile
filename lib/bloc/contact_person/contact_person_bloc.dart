@@ -51,6 +51,10 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
           name: event.name,
           phone: event.phone,
           position: event.position,
+          email: event.email,
+          tgId: event.tgId,
+          address: event.address,
+          regionId: event.regionId,
         );
 
         if (result['success']) {
@@ -78,6 +82,10 @@ class ContactPersonBloc extends Bloc<ContactPersonEvent, ContactPersonState> {
           name: event.name,
           phone: event.phone,
           position: event.position,
+          email: event.email,
+          tgId: event.tgId,
+          address: event.address,
+          regionId: event.regionId,
         );
 
         if (result['success']) {

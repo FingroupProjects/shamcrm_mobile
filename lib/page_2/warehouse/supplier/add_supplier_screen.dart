@@ -277,7 +277,11 @@ class _AddSupplierScreenState extends State<AddSupplierScreen> {
                 duration: const Duration(seconds: 3),
               ),
             );
-            Navigator.pop(context, true);
+            Navigator.pop(context, {
+              'created': true,
+              'name': nameController.text.trim(),
+              'phone': phoneController.text.isNotEmpty ? selectedDialCode : null,
+            });
           }
         },
         child: Form(

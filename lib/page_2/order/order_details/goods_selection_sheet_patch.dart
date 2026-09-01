@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order? order;
@@ -930,12 +931,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                           imageUrl:
                               'https://shamcrm.com/storage/${category.image}',
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                          progressIndicatorBuilder: (context, url, progress) =>
+                              ProductImageLoadProgress(
+                            progress: progress.progress,
+                            size: 20,
+                            color: colors.buttonPrimaryBg,
                           ),
                           errorWidget: (context, url, error) => Icon(
                             level > 0
@@ -1303,39 +1303,13 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   }
 
   Widget _buildProductImage(Variant variant, String? imageUrl) {
-    final colors = context.appColors;
-    return Container(
+    return ProductNetworkImage(
+      imageUrl: imageUrl,
       width: 58,
       height: 58,
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: imageUrl != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Icon(
-                  Icons.shopping_cart_outlined,
-                  color: colors.buttonPrimaryBg,
-                  size: 24,
-                ),
-              ),
-            )
-          : Icon(
-              Icons.shopping_cart_outlined,
-              color: colors.buttonPrimaryBg,
-              size: 24,
-            ),
+      borderRadius: 12,
+      emptyIcon: Icons.shopping_cart_outlined,
+      emptyIconSize: 24,
     );
   }
 

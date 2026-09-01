@@ -54,6 +54,9 @@ class _RmkScreenState extends State<RmkScreen> {
   @override
   void initState() {
     super.initState();
+    final imageCache = PaintingBinding.instance.imageCache;
+    imageCache.maximumSize = 80;
+    imageCache.maximumSizeBytes = 48 << 20;
     _scrollController.addListener(_onScroll);
     unawaited(_resetCartSession());
     unawaited(_loadCurrency());
@@ -431,6 +434,7 @@ class _RmkScreenState extends State<RmkScreen> {
         paidAmount: payment.paidAmount,
         debtAmount: payment.debtAmount,
         leadId: payment.leadId,
+        comment: payment.comment,
       );
       if (!mounted) return;
 
@@ -496,148 +500,188 @@ class _RmkScreenState extends State<RmkScreen> {
   Future<void> _openSelectedItemsSheet(List<RmkCartItem> items) async {
     if (items.isEmpty) return;
 
-    final total = items.fold<double>(
-      0,
-      (sum, item) => sum + (item.customTotal ?? item.quantity * item.price),
-    );
-
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        final colors = context.appColors;
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.72,
-          minChildSize: 0.46,
-          maxChildSize: 0.92,
-          builder: (context, controller) {
-            return Container(
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffD7DEE9),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+      builder: (sheetContext) {
+        final colors = sheetContext.appColors;
+        return StreamBuilder<List<RmkCartItem>>(
+          stream: _repository.watchCart(),
+          initialData: items,
+          builder: (context, snapshot) {
+            final cartItems = snapshot.data ?? const <RmkCartItem>[];
+            if (cartItems.isEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (sheetContext.mounted && Navigator.of(sheetContext).canPop()) {
+                  Navigator.of(sheetContext).pop();
+                }
+              });
+            }
+            final total = cartItems.fold<double>(
+              0,
+              (sum, item) =>
+                  sum + (item.customTotal ?? item.quantity * item.price),
+            );
+
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.72,
+              minChildSize: 0.46,
+              maxChildSize: 0.92,
+              builder: (context, controller) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(24)),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Выбранные товары',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontFamily: 'Gilroy',
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: colors.borderSubtle),
-                          ),
-                          child: Text(
-                            '${items.length} шт',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontFamily: 'Gilroy',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return _RmkSelectedCartCard(
-                          item: item,
-                          onTap: () async {
-                            Navigator.pop(context);
-                            final good =
-                                await _repository.getGoodById(item.goodId);
-                            if (!mounted || good == null) return;
-                            await _openQuantityScreen(good);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        width: 44,
+                        height: 4,
                         decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.borderSubtle),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.shadow.withValues(alpha: 0.08),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                          color: const Color(0xffD7DEE9),
+                          borderRadius: BorderRadius.circular(999),
                         ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                         child: Row(
                           children: [
-                            Text(
-                              'Итого',
-                              style: TextStyle(
-                                color: colors.textSecondary,
-                                fontFamily: 'Gilroy',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                'Выбранные товары',
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            const Spacer(),
-                            Text(
-                              _formatMoney(total),
-                              style: TextStyle(
-                                color: colors.textPrimary,
-                                fontFamily: 'Gilroy',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                            if (cartItems.isNotEmpty)
+                              TextButton(
+                                onPressed: () => unawaited(_repository.clearCart()),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: colors.buttonDangerBg,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Очистить',
+                                  style: TextStyle(
+                                    color: colors.buttonDangerBg,
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfacePrimary,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: colors.borderSubtle),
+                              ),
+                              child: Text(
+                                '${cartItems.length} шт',
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: ListView.separated(
+                          controller: controller,
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          itemCount: cartItems.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final item = cartItems[index];
+                            return _RmkSelectedCartCard(
+                              item: item,
+                              onRemove: () =>
+                                  unawaited(_repository.removeCartItem(item.goodId)),
+                              onTap: () async {
+                                Navigator.pop(sheetContext);
+                                final good =
+                                    await _repository.getGoodById(item.goodId);
+                                if (!mounted || good == null) return;
+                                await _openQuantityScreen(good);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.borderSubtle),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.shadow.withValues(alpha: 0.08),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Итого',
+                                  style: TextStyle(
+                                    color: colors.textSecondary,
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _formatMoney(total),
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontFamily: 'Gilroy',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -808,6 +852,7 @@ class _RmkScreenState extends State<RmkScreen> {
                       onRefresh: _handlePullRefresh,
                       child: CustomScrollView(
                         controller: _scrollController,
+                        cacheExtent: 280,
                         physics: const AlwaysScrollableScrollPhysics(),
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
@@ -896,6 +941,7 @@ class _RmkScreenState extends State<RmkScreen> {
                                           );
                                         },
                                         childCount: goods.length,
+                                        addAutomaticKeepAlives: false,
                                       ),
                                     ),
                                   ),
@@ -1319,10 +1365,12 @@ class _RmkSelectedCartCard extends StatelessWidget {
   const _RmkSelectedCartCard({
     required this.item,
     required this.onTap,
+    required this.onRemove,
   });
 
   final RmkCartItem item;
   final VoidCallback onTap;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -1384,6 +1432,23 @@ class _RmkSelectedCartCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  Material(
+                    color: colors.surfaceElevated,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: onRemove,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     'Сумма',
                     style: TextStyle(

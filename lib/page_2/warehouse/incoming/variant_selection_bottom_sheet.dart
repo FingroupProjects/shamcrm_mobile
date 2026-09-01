@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/variant_bottom_sheet_bloc/vari
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,11 +16,13 @@ class VariantSelectionBottomSheet extends StatefulWidget {
   final List<Map<String, dynamic>> existingItems;
   final bool forceReload;
   final bool? isService;
+  final int? storageId;
 
   const VariantSelectionBottomSheet({
     required this.existingItems,
     this.forceReload = true,
     this.isService,
+    this.storageId,
     super.key,
   });
 
@@ -70,8 +73,10 @@ class _VariantSelectionBottomSheetState
     if (mounted) {
       if (_showAllMode) {
         _bloc.add(FetchVariants(
-            forceReload: widget.forceReload,
-            isService: widget.isService)); // ADD isService
+          forceReload: widget.forceReload,
+          isService: widget.isService,
+          storageId: widget.storageId,
+        ));
       } else {
         _bloc.add(FetchCategories(forceReload: widget.forceReload));
       }
@@ -115,7 +120,11 @@ class _VariantSelectionBottomSheetState
     _searchDebounce?.cancel();
     _searchDebounce = Timer(_searchDebounceDelay, () {
       if (mounted) {
-        _bloc.add(SearchAll(query, isService: widget.isService));
+        _bloc.add(SearchAll(
+          query,
+          isService: widget.isService,
+          storageId: widget.storageId,
+        ));
       }
     });
   }
@@ -129,7 +138,10 @@ class _VariantSelectionBottomSheetState
     _saveDisplayMode(_showAllMode);
 
     if (_showAllMode) {
-      _bloc.add(FetchVariants(isService: widget.isService)); // ADD isService
+      _bloc.add(FetchVariants(
+        isService: widget.isService,
+        storageId: widget.storageId,
+      ));
     } else {
       _bloc.add(FetchCategories());
     }
@@ -139,7 +151,8 @@ class _VariantSelectionBottomSheetState
     _bloc.add(FetchVariantsByCategory(
       categoryId: categoryId,
       categoryName: categoryName,
-      isService: widget.isService, // ADD THIS
+      isService: widget.isService,
+      storageId: widget.storageId,
     ));
   }
 
@@ -629,12 +642,11 @@ class _VariantSelectionBottomSheetState
                           imageUrl:
                               'https://shamcrm.com/storage/${category.image}',
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                          progressIndicatorBuilder: (context, url, progress) =>
+                              ProductImageLoadProgress(
+                            progress: progress.progress,
+                            size: 20,
+                            color: colors.buttonPrimaryBg,
                           ),
                           errorWidget: (context, url, error) => Icon(
                             level > 0
@@ -824,12 +836,11 @@ class _VariantSelectionBottomSheetState
                         child: CachedNetworkImage(
                           imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                          progressIndicatorBuilder: (context, url, progress) =>
+                              ProductImageLoadProgress(
+                            progress: progress.progress,
+                            size: 20,
+                            color: colors.buttonPrimaryBg,
                           ),
                           errorWidget: (context, url, error) => Icon(
                             Icons.shopping_cart_outlined,
@@ -892,6 +903,13 @@ class _VariantSelectionBottomSheetState
     );
   }
 
+  String _formatRemainder(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toString();
+  }
+
   Widget _buildRemainderText(Variant variant, AppLocalizations localizations) {
     final colors = context.appColors;
     final remainder = variant.remainder;
@@ -900,7 +918,9 @@ class _VariantSelectionBottomSheetState
     final outOfStockText = localizations.translate('out_of_stock');
 
     return Text(
-      hasStock ? '$quantityText: $remainder' : outOfStockText,
+      hasStock
+          ? '$quantityText: ${_formatRemainder(remainder)}'
+          : outOfStockText,
       style: TextStyle(
         fontSize: 12,
         fontFamily: 'Gilroy',

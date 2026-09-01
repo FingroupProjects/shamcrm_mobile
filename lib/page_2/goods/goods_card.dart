@@ -1,10 +1,10 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/label_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -51,28 +51,6 @@ class GoodsCard extends StatefulWidget {
 }
 
 class _GoodsCardState extends State<GoodsCard> {
-  final ApiService _apiService = ApiService();
-  String? baseUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeBaseUrl();
-  }
-
-  Future<void> _initializeBaseUrl() async {
-    try {
-      final staticBaseUrl = await _apiService.getStaticBaseUrl();
-      setState(() {
-        baseUrl = staticBaseUrl;
-      });
-    } catch (error) {
-      setState(() {
-        baseUrl = 'https://shamcrm.com/storage';
-      });
-    }
-  }
-
   void _navigateToGoodsDetails() {
     Navigator.push(
       context,
@@ -209,57 +187,6 @@ class _GoodsCardState extends State<GoodsCard> {
     );
 
     return mainImage;
-  }
-
-  Widget _buildImageWidget(GoodsFile file) {
-    final colors = context.appColors;
-
-    final imageUrl = baseUrl != null ? '${file.path}' : null;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: imageUrl != null
-          ? Image.network(
-              imageUrl,
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 100,
-                  height: 100,
-                  color: colors.surfacePrimary,
-                  child: Icon(Icons.broken_image,
-                      size: 40, color: colors.iconPrimary),
-                );
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) {
-                  return child;
-                }
-                return Container(
-                  width: 100,
-                  height: 100,
-                  color: colors.surfacePrimary,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: colors.buttonPrimaryBg,
-                    ),
-                  ),
-                );
-              },
-            )
-          : Container(
-              width: 100,
-              height: 100,
-              color: colors.surfacePrimary,
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: colors.buttonPrimaryBg,
-                ),
-              ),
-            ),
-    );
   }
 
   List<Widget> _buildLabels() {
@@ -522,22 +449,8 @@ class _GoodsCardState extends State<GoodsCard> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Container(
-                  width: 100,
-                  height: 100,
-                  child: mainImage != null
-                      ? _buildImageWidget(mainImage)
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: colors.iconPrimary,
-                          ),
-                        ),
+                ProductNetworkImage(
+                  imageUrl: mainImage?.path,
                 ),
               ],
             ),
