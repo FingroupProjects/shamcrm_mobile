@@ -11,12 +11,23 @@ class GetAllSupplierBloc extends Bloc<GetAllSupplierEvent, GetAllSupplierState> 
     on<GetAllSupplierEv>(_getSuppliers);
   }
 
+  String? _loadedOrganizationId;
+
   Future<void> _getSuppliers(GetAllSupplierEv event, Emitter<GetAllSupplierState> emit) async {
+    final apiService = ApiService();
+    final organizationId = await apiService.getSelectedOrganization();
+    if (state is GetAllSupplierSuccess &&
+        _loadedOrganizationId != null &&
+        _loadedOrganizationId == organizationId) {
+      return;
+    }
+
     if (await _checkInternetConnection()) {
       try {
         emit(GetAllSupplierLoading());
 
-        var res = await ApiService().getAllSuppliers();
+        var res = await apiService.getAllSuppliers();
+        _loadedOrganizationId = organizationId;
 
         emit(GetAllSupplierSuccess(dataSuppliers: res));
       } catch (e) {

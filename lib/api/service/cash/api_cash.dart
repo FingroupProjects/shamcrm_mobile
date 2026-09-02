@@ -491,6 +491,7 @@ extension ApiCashX on ApiService {
 
       if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
         path += '&lead_id=${filters['lead_id']}';
+        path += '&client_id=${filters['lead_id']}';
       }
 
       if (filters.containsKey('cash_register_id') &&
@@ -856,6 +857,7 @@ extension ApiCashX on ApiService {
 
       if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
         path += '&lead_id=${filters['lead_id']}';
+        path += '&client_id=${filters['lead_id']}';
       }
 
       if (filters.containsKey('cash_register_id') &&
@@ -1148,6 +1150,7 @@ extension ApiCashX on ApiService {
         if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
           debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
           queryParams['lead_id'] = filters['lead_id'].toString();
+          queryParams['client_id'] = filters['lead_id'].toString();
         }
         if (filters.containsKey('supplier_id') &&
             filters['supplier_id'] != null) {
@@ -1232,6 +1235,7 @@ extension ApiCashX on ApiService {
         if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
           debugPrint("ApiService: filters['lead_id']: ${filters['lead_id']}");
           queryParams['lead_id'] = filters['lead_id'].toString();
+          queryParams['client_id'] = filters['lead_id'].toString();
         }
         if (filters.containsKey('supplier_id') &&
             filters['supplier_id'] != null) {
@@ -1296,7 +1300,9 @@ extension ApiCashX on ApiService {
       queryParams['page'] = (page ?? 1).toString();
       queryParams['per_page'] = (perPage ?? 20).toString();
       queryParams['limit'] = (perPage ?? 20).toString();
-      queryParams['lead_id'] = '';
+      final leadId = filters?['lead_id']?.toString() ?? '';
+      queryParams['lead_id'] = leadId;
+      queryParams['client_id'] = leadId;
       queryParams['supplier_id'] = '';
       queryParams['date_from'] = '';
       queryParams['date_to'] = '';
@@ -1454,6 +1460,10 @@ extension ApiCashX on ApiService {
 
     var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
     var id = filters['lead_id'] ?? filters['supplier_id'];
+    if (filters['lead_id'] != null) {
+      queryParams['lead_id'] = filters['lead_id'].toString();
+      queryParams['client_id'] = filters['lead_id'].toString();
+    }
 
     var queryString = queryParams.entries
         .map((e) =>

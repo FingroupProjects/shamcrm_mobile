@@ -161,6 +161,55 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
+                    headerStyle: TextStyle(
+                      color: colors.textPrimary,
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                    ),
+                    hintStyle: TextStyle(
+                      color: colors.textSecondary,
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                    ),
+                    listItemStyle: TextStyle(
+                      color: colors.textPrimary,
+                      fontFamily: 'Gilroy',
+                      fontSize: 14,
+                    ),
+                    listItemDecoration: ListItemDecoration(
+                      selectedColor: colors.surfaceElevated,
+                      highlightColor:
+                          colors.surfaceElevated.withValues(alpha: 0.72),
+                      splashColor: colors.overlay.withValues(alpha: 0),
+                    ),
+                    searchFieldDecoration: SearchFieldDecoration(
+                      autoFocus: false,
+                      fillColor: colors.surfaceElevated,
+                      hintStyle: TextStyle(color: colors.textSecondary),
+                      textStyle: TextStyle(color: colors.textPrimary),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 20,
+                        color: colors.iconSecondary,
+                      ),
+                      suffixIcon: (onClear) => IconButton(
+                        onPressed: onClear,
+                        icon: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: colors.iconSecondary,
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: colors.borderSubtle),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            BorderSide(color: colors.buttonPrimaryBg),
+                      ),
+                    ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Column(
@@ -260,10 +309,10 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
                           AppLocalizations.of(context)!.translate('no_results'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
-                            color: Color(0xff1E2E52),
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),

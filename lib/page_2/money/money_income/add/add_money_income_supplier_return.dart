@@ -1,4 +1,5 @@
 import '../../../../bloc/page_2_BLOC/money_income/money_income_bloc.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
@@ -10,6 +11,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
+import 'package:crm_task_manager/page_2/money/widgets/supplier_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
@@ -35,6 +37,7 @@ class _AddMoneyIncomeSupplierReturnState
   final TextEditingController _commentController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _exchangeRateController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   SupplierData? _selectedSupplier;
   CashRegisterData? selectedCashRegister;
@@ -95,11 +98,26 @@ class _AddMoneyIncomeSupplierReturnState
   }
 
   void _preloadDataIfNeeded() {
-    // Проверяем и загружаем поставщиков
-    final supplierState = context.read<GetAllSupplierBloc>().state;
-    if (supplierState is! GetAllSupplierSuccess) {
-      context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+    context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+  }
+
+  Future<CustomDropdownPaginatedResponse<SupplierData>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllSuppliers(
+      search: query,
+      page: page,
+      perPage: 20,
+    );
+    final items = response.result ?? <SupplierData>[];
+    if (mounted && page == 1) {
+      suppliersList = items;
     }
+    return CustomDropdownPaginatedResponse<SupplierData>(
+      items: items,
+      hasMore: items.length >= 20,
+    );
   }
 
   void _createDocument({bool approve = false}) {
@@ -317,21 +335,23 @@ class _AddMoneyIncomeSupplierReturnState
               });
             }
 
-            return CustomDropdown<SupplierData>.search(
-              items: suppliersList,
+            return CustomDropdown<SupplierData>.searchRequestPaginated(
+              paginatedRequest: _searchSuppliers,
+              futureRequestDelay: const Duration(milliseconds: 300),
+              closeDropDownOnClearFilterSearch: true,
+              items: _selectedSupplier != null
+                  ? <SupplierData>[
+                      _selectedSupplier!,
+                      ...suppliersList
+                          .where((item) => item.id != _selectedSupplier!.id),
+                    ]
+                  : suppliersList,
               searchHintText:
                   AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
+              overlayHeight: 400,
+              excludeSelected: false,
               enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: colors.surfaceElevated,
-                expandedFillColor: colors.surfaceElevated,
-                closedBorder: Border.all(color: colors.borderSubtle, width: 1),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder:
-                    Border.all(color: colors.borderSubtle, width: 1),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
+              decoration: themedSupplierDropdownDecoration(colors),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.name ?? item.id?.toString() ?? 'Unknown Supplier',

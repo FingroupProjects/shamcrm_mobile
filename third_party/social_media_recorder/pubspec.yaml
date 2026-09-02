@@ -4,7 +4,7 @@ version: 1.2.1
 homepage: https://github.com/Subhi-Khalife/social_media_recorder
 
 environment:
-  sdk: ">=2.12.0 <4.0.0"
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -15,7 +15,12 @@ dependencies:
   animated_text_kit: ^4.2.2
   path_provider: ^2.1.1
   provider: ^6.1.1
-  record: ^5.2.0
+  # v5 pulls record_linux 0.7.2, which does not implement startStream /
+  # hasPermission(request:) from record_platform_interface 1.6.x.
+  record: ^6.2.0
+
+dependency_overrides:
+  record_linux: 1.3.1
 
 dev_dependencies:
   flutter_test:

@@ -50,13 +50,8 @@ class RichTextField extends StatefulWidget {
   State<RichTextField> createState() => _RichTextFieldState();
 }
 
-class _RichTextFieldState extends State<RichTextField>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _heightAnimation;
-  double _currentHeight = 50.0;
+class _RichTextFieldState extends State<RichTextField> {
   final double _minHeight = 50.0;
-  late double _maxHeight;
   final ScrollController _scrollController = ScrollController();
   Timer? _updateTimer;
   Timer? _longPressTimer;
@@ -65,25 +60,12 @@ class _RichTextFieldState extends State<RichTextField>
   void initState() {
     super.initState();
 
-    _maxHeight = (widget.contentPadding?.vertical ?? 24) +
-        (widget.maxVisibleLines * widget.lineHeight);
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-
-    _heightAnimation = Tween<double>(
-      begin: _minHeight,
-      end: _minHeight,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
     widget.controller.addListener(_onTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateHeight();
+      }
+    });
   }
 
   @override
@@ -91,7 +73,6 @@ class _RichTextFieldState extends State<RichTextField>
     _updateTimer?.cancel();
     _longPressTimer?.cancel();
     widget.controller.removeListener(_onTextChanged);
-    _animationController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -125,26 +106,6 @@ class _RichTextFieldState extends State<RichTextField>
     textPainter.layout(maxWidth: availableWidth);
 
     final lineCount = textPainter.computeLineMetrics().length;
-
-    double targetHeight = (widget.contentPadding?.vertical ?? 24) +
-        (lineCount * widget.lineHeight);
-    targetHeight = targetHeight.clamp(_minHeight, _maxHeight);
-
-    if ((_currentHeight - targetHeight).abs() > 2) {
-      setState(() {
-        _heightAnimation = Tween<double>(
-          begin: _currentHeight,
-          end: targetHeight,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-        _currentHeight = targetHeight;
-      });
-      _animationController.forward(from: 0);
-    }
 
     if (lineCount > widget.maxVisibleLines) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -183,7 +144,8 @@ class _RichTextFieldState extends State<RichTextField>
       focusNode: widget.focusNode,
       scrollController: _scrollController,
       onChanged: widget.onChanged,
-      maxLines: null,
+      minLines: 1,
+      maxLines: widget.maxVisibleLines,
       style: widget.style,
       textAlignVertical: TextAlignVertical.center,
       cursorColor: widget.style?.color,
@@ -230,13 +192,8 @@ class _RichTextFieldState extends State<RichTextField>
       child: textField,
     );
 
-    // Wrap in animated height container
-    return AnimatedBuilder(
-      animation: _heightAnimation,
-      builder: (context, child) => SizedBox(
-        height: _heightAnimation.value,
-        child: child,
-      ),
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: _minHeight),
       child: textField,
     );
   }

@@ -78,16 +78,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
               style: labelStyle,
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: colors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError ? colors.error : colors.fieldBorder,
-                ),
-              ),
-              child: BlocBuilder<GetAllClientBloc, GetAllClientState>(
+            BlocBuilder<GetAllClientBloc, GetAllClientState>(
                 builder: (context, state) {
                   if (state is GetAllClientSuccess) {
                     usersList = state.dataUser.result ?? [];
@@ -111,7 +102,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       closedFillColor: colors.fieldBg,
                       expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: colors.fieldBg,
+                        color: field.hasError ? colors.error : colors.fieldBorder,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
@@ -247,7 +238,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     },
                   );
                 },
-              ),
             ),
             if (field.hasError)
               Padding(

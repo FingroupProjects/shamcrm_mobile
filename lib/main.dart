@@ -74,6 +74,3 @@ void main() {
   });
 }
 // The following function is used to clear all application data in case of session validation failure.
-
-
-

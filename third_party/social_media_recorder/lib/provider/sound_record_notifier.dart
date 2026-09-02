@@ -90,6 +90,34 @@ class SoundRecordNotifier extends ChangeNotifier {
   /// async work from a previous tap cannot start/stop the next session.
   int _recordSession = 0;
 
+  bool _disposed = false;
+
+  bool get _isDisposed => _disposed;
+
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    _recordSession++;
+    _timer?.cancel();
+    _timer = null;
+    _timerCounter?.cancel();
+    _timerCounter = null;
+    _amplitudeSub?.cancel();
+    _amplitudeSub = null;
+    _clearAmplitude();
+    try {
+      recordMp3.dispose();
+    } catch (_) {}
+    super.dispose();
+  }
+
   SoundRecordNotifier({
     required this.stopRecording,
     required this.sendRequestFunction,
@@ -118,6 +146,7 @@ class SoundRecordNotifier extends ChangeNotifier {
   }
 
   void _pushAmplitude(double normalized) {
+    if (_isDisposed) return;
     currentAmplitude = normalized;
     amplitudeSamples.add(normalized);
     while (amplitudeSamples.length > maxAmplitudeSamples) {
@@ -138,24 +167,28 @@ class SoundRecordNotifier extends ChangeNotifier {
   }
 
   void _startAmplitudeListening() {
+    if (_isDisposed) return;
     _amplitudeSub?.cancel();
     _amplitudeSub = recordMp3
         .onAmplitudeChanged(const Duration(milliseconds: 50))
         .listen((Amplitude amp) {
-      if (!buttonPressed) return;
+      if (_isDisposed || !buttonPressed) return;
       _pushAmplitude(normalizeDb(amp.current));
     }, onError: (_) {});
   }
 
   /// To increase counter after 1 sencond
   void _mapCounterGenerater() {
+    if (_isDisposed) return;
     _timerCounter = Timer(const Duration(seconds: 1), () {
+      if (_isDisposed) return;
       _increaseCounterWhilePressed();
       if (buttonPressed) _mapCounterGenerater();
     });
   }
 
   finishRecording() {
+    if (_isDisposed) return;
     final time = '$minute:$second';
     if (buttonPressed && (second > 1 || minute > 0) && mPath.isNotEmpty) {
       sendRequestFunction(File.fromUri(Uri(path: mPath)), time);
@@ -168,6 +201,7 @@ class SoundRecordNotifier extends ChangeNotifier {
 
   /// used to reset all value to initial value when end the record
   resetEdgePadding() async {
+    if (_isDisposed) return;
     final session = ++_recordSession;
     if (_initWidth == -33) {
       final ctx = key.currentContext;
@@ -194,22 +228,22 @@ class SoundRecordNotifier extends ChangeNotifier {
     _timerCounter?.cancel();
     _timerCounter = null;
     await _stopAmplitudeListening();
-    if (session != _recordSession) {
+    if (_isDisposed || session != _recordSession) {
       return;
     }
-    final value = await recordMp3.isRecording();
-    if (session != _recordSession) {
-      return;
-    }
-
-    if (value == true) {
-      await recordMp3.stop();
-      if (session != _recordSession) {
+    try {
+      final value = await recordMp3.isRecording();
+      if (_isDisposed || session != _recordSession) {
         return;
       }
-      recordMp3 = AudioRecorder();
-      notifyListeners();
-    }
+      if (value == true) {
+        await recordMp3.stop();
+        if (_isDisposed || session != _recordSession) {
+          return;
+        }
+        recordMp3 = AudioRecorder();
+      }
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -253,6 +287,7 @@ class SoundRecordNotifier extends ChangeNotifier {
   /// or To The X vertical
   /// and update this value in screen
   updateScrollValue(Offset currentValue, BuildContext context) async {
+    if (_isDisposed) return;
     if (buttonPressed == true) {
       final x = currentValue;
 
@@ -288,7 +323,7 @@ class SoundRecordNotifier extends ChangeNotifier {
   }
 
   _increaseCounterWhilePressed() async {
-    if (loopActive) {
+    if (_isDisposed || loopActive) {
       return;
     }
 
@@ -314,12 +349,13 @@ class SoundRecordNotifier extends ChangeNotifier {
 
   /// this function to start record voice
   record(Function()? startRecord) async {
+    if (_isDisposed) return;
     final session = ++_recordSession;
     if (!_isAcceptedPermission) {
       await Permission.microphone.request();
       await Permission.manageExternalStorage.request();
       await Permission.storage.request();
-      if (session != _recordSession) {
+      if (_isDisposed || session != _recordSession) {
         return;
       }
       _isAcceptedPermission = true;
@@ -334,17 +370,17 @@ class SoundRecordNotifier extends ChangeNotifier {
     notifyListeners();
 
     final String recordFilePath = await getFilePath();
-    if (session != _recordSession) {
+    if (_isDisposed || session != _recordSession) {
       return;
     }
     _timer?.cancel();
     _timer = Timer(const Duration(milliseconds: 250), () async {
-      if (session != _recordSession) {
+      if (_isDisposed || session != _recordSession) {
         return;
       }
       try {
         await recordMp3.start(const RecordConfig(), path: recordFilePath);
-        if (session != _recordSession) {
+        if (_isDisposed || session != _recordSession) {
           try {
             await recordMp3.stop();
           } catch (_) {}

@@ -62,6 +62,7 @@ class _InputFieldState extends State<InputField>
   bool _voicePressed = false;
 
   Timer? _selectionDebounce;
+  bool _suppressFormattingPanel = false;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _InputFieldState extends State<InputField>
 
     widget.messageController.addListener(_handleSelectionChange);
     widget.messageController.addListener(_updateTextState);
+    widget.focusNode.addListener(_handleFocusChange);
 
     _htmlContent = widget.messageController.text;
     _hasText = widget.messageController.text.isNotEmpty;
@@ -97,6 +99,7 @@ class _InputFieldState extends State<InputField>
     _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
     widget.messageController.removeListener(_updateTextState);
+    widget.focusNode.removeListener(_handleFocusChange);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -145,6 +148,7 @@ class _InputFieldState extends State<InputField>
 
     setState(() {
       if (text.startsWith('/')) {
+        _closeFormattingPanel();
         _currentQuery = text.substring(1).toLowerCase();
         _showTemplates = true;
         context.read<TemplateBloc>().add(FilterTemplates(_currentQuery));
@@ -157,6 +161,12 @@ class _InputFieldState extends State<InputField>
     });
   }
 
+  void _handleFocusChange() {
+    if (!widget.focusNode.hasFocus) {
+      _closeFormattingPanel();
+    }
+  }
+
   void _handleSelectionChange() {
     final selection = widget.messageController.selection;
 
@@ -165,23 +175,29 @@ class _InputFieldState extends State<InputField>
     if (selection.isValid &&
         selection.start != selection.end &&
         widget.focusNode.hasFocus) {
+      if (_suppressFormattingPanel) {
+        return;
+      }
       _selectionDebounce = Timer(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
-
-          setState(() {
-            _showFormattingPanel = true;
-            _updateFormattingOverlay();
-            _animationController.forward();
-          });
+        if (!mounted || _suppressFormattingPanel || !widget.focusNode.hasFocus) {
+          return;
         }
+        SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+
+        setState(() {
+          _showFormattingPanel = true;
+          _updateFormattingOverlay();
+          _animationController.forward();
+        });
       });
-    } else if (!selection.isValid || selection.start == selection.end) {
+    } else if (_showFormattingPanel &&
+        (!selection.isValid || selection.start == selection.end)) {
       _closeFormattingPanel();
     }
   }
 
   void _showFormattingPanelOnLongPress() {
+    _suppressFormattingPanel = false;
     SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
     _showFormattingPanel = true;
     _updateFormattingOverlay();
@@ -216,12 +232,25 @@ class _InputFieldState extends State<InputField>
     _formattingOverlay = null;
   }
 
-  void _closeFormattingPanel() {
-    setState(() {
+  void _closeFormattingPanel({bool restoreFocus = false}) {
+    _selectionDebounce?.cancel();
+    SystemChannels.textInput.invokeMethod('TextInput.hideToolbar');
+
+    if (_showFormattingPanel || _formattingOverlay != null) {
+      _suppressFormattingPanel = true;
       _showFormattingPanel = false;
-      _animationController.reverse().then((_) => _removeFormattingOverlay());
-    });
-    widget.focusNode.requestFocus();
+      _removeFormattingOverlay();
+      if (mounted) {
+        setState(() {});
+      }
+      Future<void>.delayed(const Duration(milliseconds: 400), () {
+        _suppressFormattingPanel = false;
+      });
+    }
+
+    if (restoreFocus && mounted) {
+      widget.focusNode.requestFocus();
+    }
   }
 
   OverlayEntry _createOverlayEntry() {
@@ -462,7 +491,7 @@ class _InputFieldState extends State<InputField>
       extentOffset: selection.end,
     );
 
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   void _applyLinkFormatting(BuildContext context) async {
@@ -589,7 +618,7 @@ class _InputFieldState extends State<InputField>
       );
     }
 
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   void _selectAll() {
@@ -597,7 +626,7 @@ class _InputFieldState extends State<InputField>
       baseOffset: 0,
       extentOffset: widget.messageController.text.length,
     );
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   void _paste() async {
@@ -620,7 +649,7 @@ class _InputFieldState extends State<InputField>
         offset: selection.start + clipboardData.text!.length,
       );
     }
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   void _copy() async {
@@ -635,7 +664,7 @@ class _InputFieldState extends State<InputField>
 
     await Clipboard.setData(ClipboardData(text: selectedText));
 
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   void _cut() async {
@@ -659,7 +688,7 @@ class _InputFieldState extends State<InputField>
       offset: selection.start,
     );
 
-    _closeFormattingPanel();
+    _closeFormattingPanel(restoreFocus: true);
   }
 
   @override
@@ -886,9 +915,12 @@ class _InputFieldState extends State<InputField>
                   : AnimatedSize(
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOutCubic,
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        height: _voicePressed ? 78 : 56,
+                      alignment: Alignment.bottomCenter,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: _voicePressed ? 78 : 56,
+                          maxHeight: _voicePressed ? 78 : 180,
+                        ),
                         child: Stack(
                           clipBehavior: Clip.none,
                           alignment: Alignment.center,
@@ -900,6 +932,8 @@ class _InputFieldState extends State<InputField>
                                 ignoring: _voicePressed,
                                 child: Container(
                                   clipBehavior: Clip.antiAlias,
+                                  constraints:
+                                      const BoxConstraints(minHeight: 56),
                                   decoration: BoxDecoration(
                                     color:
                                         inputSurface.withValues(alpha: 0.88),
@@ -930,6 +964,7 @@ class _InputFieldState extends State<InputField>
                                             minHeight: 36,
                                           ),
                                           onPressed: () {
+                                            _closeFormattingPanel();
                                             _showTemplatesPanel(context);
                                           },
                                         ),
@@ -970,7 +1005,7 @@ class _InputFieldState extends State<InputField>
                                             horizontal: 12,
                                             vertical: 15,
                                           ),
-                                          maxVisibleLines: 5,
+                                          maxVisibleLines: 6,
                                           lineHeight: 20.0,
                                         ),
                                       ),
@@ -1074,12 +1109,11 @@ class _InputFieldState extends State<InputField>
                   }
                   widget.messageController.clear();
                   _htmlContent = '';
+                  _closeFormattingPanel();
                   setState(() {
                     _showTemplates = false;
-                    _showFormattingPanel = false;
                     _animationController.reverse().then((_) {
                       _removeOverlay();
-                      _removeFormattingOverlay();
                     });
                   });
                 }
@@ -1342,6 +1376,7 @@ class _InputFieldState extends State<InputField>
   }
 
   void _showTemplatesPanel(BuildContext context) {
+    _closeFormattingPanel();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

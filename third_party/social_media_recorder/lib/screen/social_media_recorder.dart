@@ -132,7 +132,7 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
 
   @override
   void dispose() {
-    soundRecordNotifier.resetEdgePadding();
+    soundRecordNotifier.dispose();
     super.dispose();
   }
 
@@ -144,7 +144,10 @@ class _SocialMediaRecorder extends State<SocialMediaRecorder> {
     soundRecordNotifier.sendRequestFunction = widget.sendRequestFunction;
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => soundRecordNotifier),
+        // .value: notifier is owned by this State, not by Provider.
+        // create: would dispose it on unmount while resetEdgePadding()
+        // is still awaiting, which crashed notifyListeners().
+        ChangeNotifierProvider.value(value: soundRecordNotifier),
       ],
       child: Consumer<SoundRecordNotifier>(
         builder: (context, value, _) {

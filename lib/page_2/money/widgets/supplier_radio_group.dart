@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
 import 'package:crm_task_manager/models/common/supplier_list_model.dart';
+import 'package:crm_task_manager/page_2/money/widgets/supplier_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -126,26 +127,7 @@ class _SupplierGroupWidgetState extends State<SupplierGroupWidget> {
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
               enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: colors.surfaceElevated,
-                expandedFillColor: colors.surfaceElevated,
-                closedBorder: Border.all(
-                  color: colors.borderSubtle,
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: colors.borderSubtle,
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
-                listItemDecoration: ListItemDecoration(
-                  splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
-                  highlightColor:
-                      colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                  selectedColor: colors.surfaceElevated,
-                ),
-              ),
+              decoration: themedSupplierDropdownDecoration(colors),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.name,

@@ -1324,7 +1324,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                     },
                   ),
                   _buildProductionTypeSection(),
-                  _buildRelatedGoodsSection(),
                   const SizedBox(height: 8),
                   subCategories.isEmpty
                       ? Center(
@@ -2013,6 +2012,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                             ),
                     ),
                   ),
+                  _buildRelatedGoodsSection(),
                   const SizedBox(height: 8),
                   Row(
                     children: [

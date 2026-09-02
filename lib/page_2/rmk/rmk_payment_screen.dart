@@ -309,7 +309,6 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                           ? 'Введите долг'
                           : null,
                       isEnabled: true,
-                      isOverpaid: _isOverpaid,
                       onChanged: _onAmountChanged,
                       onTap: _handleAmountTap,
                     ),
@@ -318,7 +317,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                       Text(
                         'Сумма превышает итог',
                         style: TextStyle(
-                          color: colors.warning,
+                          color: colors.textSecondary,
                           fontFamily: 'Gilroy',
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -332,7 +331,6 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                           'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
                         ),
                         selectedLead: _selectedLead,
-                        isOptional: !_requiresLead,
                         onSelectLead: (lead) {
                           setState(() {
                             _selectedLead = lead;
@@ -490,12 +488,10 @@ class _RmkFreshLeadSelector extends StatefulWidget {
     super.key,
     required this.onSelectLead,
     this.selectedLead,
-    this.isOptional = false,
   });
 
   final LeadData? selectedLead;
   final ValueChanged<LeadData?> onSelectLead;
-  final bool isOptional;
 
   @override
   State<_RmkFreshLeadSelector> createState() => _RmkFreshLeadSelectorState();
@@ -723,7 +719,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.isOptional ? 'Клиент (необязательно)' : 'Клиент',
+          'Клиент',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -831,9 +827,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
           },
           hintBuilder: (context, hint, enabled) {
             return Text(
-              widget.isOptional
-                  ? 'Клиент не обязателен'
-                  : 'Выберите клиента',
+              'Выберите клиента',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -995,7 +989,6 @@ class _AmountField extends StatelessWidget {
     required this.onChanged,
     required this.onTap,
     this.hintText,
-    this.isOverpaid = false,
   });
 
   final TextEditingController controller;
@@ -1003,7 +996,6 @@ class _AmountField extends StatelessWidget {
   final String currencyTitle;
   final String? hintText;
   final bool isEnabled;
-  final bool isOverpaid;
   final ValueChanged<String> onChanged;
   final VoidCallback onTap;
 
@@ -1015,9 +1007,7 @@ class _AmountField extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isOverpaid ? colors.warning : colors.borderSubtle,
-        ),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         children: [
@@ -1039,6 +1029,11 @@ class _AmountField extends StatelessWidget {
                 textAlignVertical: TextAlignVertical.center,
                 decoration: InputDecoration(
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  filled: false,
+                  isDense: true,
                   contentPadding: EdgeInsets.zero,
                   hintText: hintText,
                   hintStyle: TextStyle(

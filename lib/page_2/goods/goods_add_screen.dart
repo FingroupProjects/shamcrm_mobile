@@ -1029,7 +1029,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                       },
                     ),
                     _buildProductionTypeSection(),
-                    _buildRelatedGoodsSection(),
                     const SizedBox(height: 16),
                     if (selectedCategory != null &&
                         selectedCategory!.attributes.isNotEmpty)
@@ -1685,6 +1684,7 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                               ),
                       ),
                     ),
+                    _buildRelatedGoodsSection(),
                     const SizedBox(height: 8),
                     Row(
                       children: [

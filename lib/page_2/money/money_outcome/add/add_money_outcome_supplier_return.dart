@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_bloc.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_event.dart';
 import 'package:crm_task_manager/bloc/supplier_list/supplier_list_state.dart';
@@ -9,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/dropdown_loading_state.dart';
 import 'package:crm_task_manager/models/money/cash_register_list_model.dart';
 import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:crm_task_manager/page_2/money/widgets/cash_register_radio_group.dart';
+import 'package:crm_task_manager/page_2/money/widgets/supplier_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
@@ -35,6 +37,7 @@ class _AddMoneyOutcomeSupplierReturnState
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _exchangeRateController = TextEditingController();
 
+  final ApiService _apiService = ApiService();
   SupplierData? _selectedSupplier;
   CashRegisterData? selectedCashRegister;
   List<SupplierData> suppliersList = [];
@@ -95,11 +98,26 @@ class _AddMoneyOutcomeSupplierReturnState
   }
 
   void _preloadDataIfNeeded() {
-    // Проверяем и загружаем поставщиков
-    final supplierState = context.read<GetAllSupplierBloc>().state;
-    if (supplierState is! GetAllSupplierSuccess) {
-      context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+    context.read<GetAllSupplierBloc>().add(GetAllSupplierEv());
+  }
+
+  Future<CustomDropdownPaginatedResponse<SupplierData>> _searchSuppliers(
+    String query,
+    int page,
+  ) async {
+    final response = await _apiService.getAllSuppliers(
+      search: query,
+      page: page,
+      perPage: 20,
+    );
+    final items = response.result ?? <SupplierData>[];
+    if (mounted && page == 1) {
+      suppliersList = items;
     }
+    return CustomDropdownPaginatedResponse<SupplierData>(
+      items: items,
+      hasMore: items.length >= 20,
+    );
   }
 
   void _createDocument({bool approve = false}) {
@@ -283,28 +301,6 @@ class _AddMoneyOutcomeSupplierReturnState
               );
             }
 
-            // Если список пуст даже после успешной загрузки, показываем placeholder
-            if (state is GetAllSupplierSuccess && suppliersList.isEmpty) {
-              return Container(
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colors.fieldBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('select_supplier') ??
-                      'Выберите поставщика',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Gilroy',
-                    color: colors.textPrimary,
-                  ),
-                ),
-              );
-            }
-
             if (state is GetAllSupplierSuccess &&
                 suppliersList.length == 1 &&
                 _selectedSupplier == null &&
@@ -324,26 +320,29 @@ class _AddMoneyOutcomeSupplierReturnState
               });
             }
 
-            return CustomDropdown<SupplierData>.search(
-              items: suppliersList,
+            return CustomDropdown<SupplierData>.searchRequestPaginated(
+              paginatedRequest: _searchSuppliers,
+              futureRequestDelay: const Duration(milliseconds: 300),
+              closeDropDownOnClearFilterSearch: true,
+              items: _selectedSupplier != null
+                  ? <SupplierData>[
+                      _selectedSupplier!,
+                      ...suppliersList
+                          .where((item) => item.id != _selectedSupplier!.id),
+                    ]
+                  : suppliersList,
               searchHintText:
                   AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
-              overlayHeight: 300,
+              overlayHeight: 400,
+              excludeSelected: false,
               enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: colors.fieldBg,
-                expandedFillColor: colors.surfacePrimary,
-                closedBorder: Border.all(
-                  color: _isSupplierInvalid ? Colors.red : colors.fieldBg,
-                  width: _isSupplierInvalid ? 2 : 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(color: colors.fieldBg, width: 1),
-                expandedBorderRadius: BorderRadius.circular(12),
+              decoration: themedSupplierDropdownDecoration(
+                colors,
+                isInvalid: _isSupplierInvalid,
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
-                  item.name ?? item.id?.toString() ?? 'Unknown Supplier',
+                  item.name,
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 14,
@@ -373,16 +372,32 @@ class _AddMoneyOutcomeSupplierReturnState
                   color: colors.textPrimary,
                 ),
               ),
+              noResultFoundBuilder: (context, text) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('no_results') ??
+                          'Ничего не найдено',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Gilroy',
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              },
               initialItem: _selectedSupplier != null &&
                       suppliersList.any((s) => s.id == _selectedSupplier!.id)
                   ? suppliersList
                       .firstWhere((s) => s.id == _selectedSupplier!.id)
-                  : null,
+                  : _selectedSupplier,
               onChanged: (value) {
                 if (value != null && mounted) {
                   setState(() {
                     _selectedSupplier = value;
-                    _isSupplierInvalid = false; // Сбрасываем ошибку при выборе
+                    _isSupplierInvalid = false;
                     _exchangeRateErrorText = null;
                     if (!_isExchangeRateRequired) {
                       _exchangeRateController.clear();

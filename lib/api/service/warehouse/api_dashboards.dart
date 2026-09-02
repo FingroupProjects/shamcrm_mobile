@@ -231,11 +231,13 @@ extension ApiWarehouseDashboardsX on ApiService {
     Map<String, dynamic>? filters,
     String? search,
   }) {
+    final leadId = filters?['lead_id']?.toString() ?? '';
     return <String, String>{
       'page': (page ?? 1).toString(),
       'per_page': (perPage ?? 20).toString(),
       'limit': (perPage ?? 20).toString(),
-      'lead_id': filters?['lead_id']?.toString() ?? '',
+      'lead_id': leadId,
+      'client_id': leadId,
       'supplier_id': filters?['supplier_id']?.toString() ?? '',
       'date_from': _formatDetailedReportDate(filters?['date_from']),
       'date_to': _formatDetailedReportDate(filters?['date_to']),

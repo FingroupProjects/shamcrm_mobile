@@ -682,6 +682,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
     if (leadId != null) {
       url += '&lead_id=$leadId';
+      url += '&client_id=$leadId';
     }
     if (cashRegisterId != null) {
       url += '&cash_register_id=$cashRegisterId';
@@ -1820,6 +1821,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
     if (leadId != null) {
       url += '&lead_id=$leadId';
+      url += '&client_id=$leadId';
     }
     if (cashRegisterId != null) {
       url += '&cash_register_id=$cashRegisterId';
