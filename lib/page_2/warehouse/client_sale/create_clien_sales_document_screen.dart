@@ -712,10 +712,11 @@ class CreateClienSalesDocumentScreenState
           appBar: _buildAppBar(localizations, colors),
           body: BlocListener<ClientSaleBloc, ClientSaleState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
-
               if (state is ClientSaleCreateSuccess && mounted) {
+                setState(() => _isLoading = false);
                 Navigator.pop(context, true);
+              } else if (state is ClientSaleCreateError && mounted) {
+                setState(() => _isLoading = false);
               }
             },
             child: Form(

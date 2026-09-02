@@ -19,6 +19,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
   String? _search = '';
   List<ExpenseDocument> _allData = [];
   List<ExpenseDocument> _selectedDocuments = [];
+  bool _isSaving = false;
 
   ClientSaleBloc(this.apiService) : super(ClientSaleInitial()) {
     on<FetchClientSales>(_onFetchData);
@@ -283,9 +284,11 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
   _onCreateClientSalesDocument(
       CreateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+    if (_isSaving) return;
+    _isSaving = true;
     emit(ClientSaleCreateLoading());
     try {
-      final response = await apiService.createClientSaleDocument(
+      await apiService.createClientSaleDocument(
         date: event.date,
         storageId: event.storageId,
         comment: event.comment,
@@ -307,6 +310,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       } else {
         emit(ClientSaleCreateError(friendlyError(e)));
       }
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -356,6 +361,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
   _onUpdateClientSalesDocument(
       UpdateClientSalesDocument event, Emitter<ClientSaleState> emit) async {
+    if (_isSaving) return;
+    _isSaving = true;
     emit(ClientSaleCreateLoading());
     try {
       await apiService.updateClientSaleDocument(
@@ -378,6 +385,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       } else {
         emit(ClientSaleUpdateError(friendlyError(e)));
       }
+    } finally {
+      _isSaving = false;
     }
   }
 }

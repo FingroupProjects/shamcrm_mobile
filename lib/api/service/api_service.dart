@@ -303,6 +303,9 @@ class ApiService extends ApiServiceBase {
 
   static final Map<String, String> _analyticsResponseCache = {};
   static final Map<String, Future<http.Response>> _analyticsInFlight = {};
+  static final Map<String, Future<http.Response>> _mutatingInFlight = {};
+  static final Map<String, _RecentMutation> _recentMutations = {};
+  static const Duration _mutationDedupWindow = Duration(seconds: 5);
 
   static const String _pendingFcmKey = 'pending_fcm_token';
 
@@ -365,6 +368,13 @@ class ApiService extends ApiServiceBase {
       Map<String, dynamic>.from(data),
     );
   }
+}
+
+class _RecentMutation {
+  const _RecentMutation(this.response, this.at);
+
+  final http.Response response;
+  final DateTime at;
 }
 
 class OrderStatusUpdateException implements Exception {

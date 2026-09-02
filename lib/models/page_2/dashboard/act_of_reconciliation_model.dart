@@ -9,13 +9,45 @@ class ActOfReconciliationResponse {
 
   factory ActOfReconciliationResponse.fromJson(Map<String, dynamic> json) {
     return ActOfReconciliationResponse(
-      result: json['result'] != null
-          ? (json['result'] as List)
-          .map((e) => ReconciliationItem.fromJson(e))
-          .toList()
-          : null,
-      errors: json['errors'],
+      result: _parseItems(json['result']),
+      errors: json['errors']?.toString(),
     );
+  }
+
+  static List<ReconciliationItem>? _parseItems(dynamic raw) {
+    if (raw == null) return null;
+
+    final items = _extractItemList(raw);
+    if (items == null) return const [];
+
+    return items
+        .whereType<Map>()
+        .map((item) => ReconciliationItem.fromJson(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList();
+  }
+
+  static List<dynamic>? _extractItemList(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is! Map) return null;
+
+    for (final key in const [
+      'data',
+      'items',
+      'movements',
+      'documents',
+      'result',
+    ]) {
+      final value = raw[key];
+      if (value is List) return value;
+    }
+
+    if (raw.containsKey('id') || raw.containsKey('movement_type')) {
+      return [raw];
+    }
+
+    return const [];
   }
 
   Map<String, dynamic> toJson() {

@@ -727,10 +727,11 @@ class _EditClientSalesDocumentScreenState
           appBar: _buildAppBar(localizations, colors),
           body: BlocListener<ClientSaleBloc, ClientSaleState>(
             listener: (context, state) {
-              setState(() => _isLoading = false);
-
               if (state is ClientSaleUpdateSuccess && mounted) {
+                setState(() => _isLoading = false);
                 Navigator.pop(context, true);
+              } else if (state is ClientSaleUpdateError && mounted) {
+                setState(() => _isLoading = false);
               }
             },
             child: Form(

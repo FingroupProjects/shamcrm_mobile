@@ -77,18 +77,32 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   String _currencyTitle = 'TJS';
   LeadData? _selectedLead;
   String? _leadErrorText;
+  bool _isSubmitting = false;
 
   bool get _showsPaymentMethods => _selectedMode == RmkPaymentMode.payment;
+  bool get _isOverpaid =>
+      _selectedMode == RmkPaymentMode.payment &&
+      _paidAmountValue > widget.total + 0.0001;
   bool get _requiresLead => _debtAmount > 0;
+  bool get _showsClientField =>
+      _requiresLead || _isOverpaid || _selectedLead != null;
 
   bool get _needsPaymentMethod {
     if (_selectedMode == RmkPaymentMode.payment) return true;
     return false;
   }
 
-  double get _paidAmount => _paidAmountValue.clamp(0, widget.total).toDouble();
+  double get _paidAmount {
+    if (_selectedMode == RmkPaymentMode.payment) {
+      return _paidAmountValue.clamp(0, double.infinity).toDouble();
+    }
+    return _paidAmountValue.clamp(0, widget.total).toDouble();
+  }
 
-  double get _debtAmount => _debtAmountValue.clamp(0, widget.total).toDouble();
+  double get _debtAmount {
+    if (_isOverpaid) return 0;
+    return _debtAmountValue.clamp(0, widget.total).toDouble();
+  }
 
   @override
   void initState() {
@@ -153,7 +167,10 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   }
 
   void _setVisibleAmount(double value) {
-    final normalized = value.clamp(0, widget.total).toDouble();
+    final maxValue = _selectedMode == RmkPaymentMode.payment
+        ? double.infinity
+        : widget.total;
+    final normalized = value.clamp(0, maxValue).toDouble();
     _amount = normalized;
     final text = _formatMoney(normalized);
     if (_amountController.text != text) {
@@ -168,7 +185,9 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     final normalized = value.replaceAll(',', '.').trim();
     final parsed = double.tryParse(normalized) ?? 0;
     setState(() {
-      final amount = parsed.clamp(0, widget.total).toDouble();
+      final amount = _selectedMode == RmkPaymentMode.debt
+          ? parsed.clamp(0, widget.total).toDouble()
+          : parsed.clamp(0, double.infinity).toDouble();
       _amount = amount;
       if (_selectedMode == RmkPaymentMode.debt) {
         _debtAmountValue = amount;
@@ -191,6 +210,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   }
 
   void _submit() {
+    if (_isSubmitting) return;
     if (_needsPaymentMethod && _selectedMethod == null) return;
     if (_selectedMode == RmkPaymentMode.payment && _amount <= 0) return;
     if (_selectedMode == RmkPaymentMode.debt && _amount <= 0) return;
@@ -200,6 +220,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       });
       return;
     }
+    _isSubmitting = true;
     final comment = _commentController.text.trim();
     Navigator.pop(
       context,
@@ -218,7 +239,8 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final hasValidAmount = _amount > 0;
-    final canSubmit = hasValidAmount &&
+    final canSubmit = !_isSubmitting &&
+        hasValidAmount &&
         (!_needsPaymentMethod || _selectedMethod != null) &&
         (!_requiresLead || _selectedLead != null);
     return Scaffold(
@@ -287,33 +309,49 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                           ? 'Введите долг'
                           : null,
                       isEnabled: true,
+                      isOverpaid: _isOverpaid,
                       onChanged: _onAmountChanged,
                       onTap: _handleAmountTap,
                     ),
-                    const SizedBox(height: 14),
-                    _RmkFreshLeadSelector(
-                      key: ValueKey(
-                        'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
-                      ),
-                      selectedLead: _selectedLead,
-                      onSelectLead: (lead) {
-                        setState(() {
-                          _selectedLead = lead;
-                          _leadErrorText = null;
-                        });
-                      },
-                    ),
-                    if (_leadErrorText != null) ...[
+                    if (_isOverpaid) ...[
                       const SizedBox(height: 6),
                       Text(
-                        _leadErrorText!,
+                        'Сумма превышает итог',
                         style: TextStyle(
-                          color: Color(0xffEF4444),
+                          color: colors.warning,
                           fontFamily: 'Gilroy',
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
+                    if (_showsClientField) ...[
+                      const SizedBox(height: 14),
+                      _RmkFreshLeadSelector(
+                        key: ValueKey(
+                          'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
+                        ),
+                        selectedLead: _selectedLead,
+                        isOptional: !_requiresLead,
+                        onSelectLead: (lead) {
+                          setState(() {
+                            _selectedLead = lead;
+                            _leadErrorText = null;
+                          });
+                        },
+                      ),
+                      if (_leadErrorText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          _leadErrorText!,
+                          style: TextStyle(
+                            color: Color(0xffEF4444),
+                            fontFamily: 'Gilroy',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ],
                     if (_showsPaymentMethods) ...[
                       const SizedBox(height: 14),
@@ -452,10 +490,12 @@ class _RmkFreshLeadSelector extends StatefulWidget {
     super.key,
     required this.onSelectLead,
     this.selectedLead,
+    this.isOptional = false,
   });
 
   final LeadData? selectedLead;
   final ValueChanged<LeadData?> onSelectLead;
+  final bool isOptional;
 
   @override
   State<_RmkFreshLeadSelector> createState() => _RmkFreshLeadSelectorState();
@@ -683,7 +723,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Клиент',
+          widget.isOptional ? 'Клиент (необязательно)' : 'Клиент',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -791,7 +831,9 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
           },
           hintBuilder: (context, hint, enabled) {
             return Text(
-              'Выберите клиента',
+              widget.isOptional
+                  ? 'Клиент не обязателен'
+                  : 'Выберите клиента',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -953,6 +995,7 @@ class _AmountField extends StatelessWidget {
     required this.onChanged,
     required this.onTap,
     this.hintText,
+    this.isOverpaid = false,
   });
 
   final TextEditingController controller;
@@ -960,6 +1003,7 @@ class _AmountField extends StatelessWidget {
   final String currencyTitle;
   final String? hintText;
   final bool isEnabled;
+  final bool isOverpaid;
   final ValueChanged<String> onChanged;
   final VoidCallback onTap;
 
@@ -971,7 +1015,9 @@ class _AmountField extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.borderSubtle),
+        border: Border.all(
+          color: isOverpaid ? colors.warning : colors.borderSubtle,
+        ),
       ),
       child: Row(
         children: [

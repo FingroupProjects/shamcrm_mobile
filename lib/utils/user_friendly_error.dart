@@ -44,7 +44,29 @@ String friendlyError(Object error,
       .trim();
 
   if (cleaned.isEmpty || _looksTechnical(cleaned)) return fallback;
-  return cleaned;
+  return _localizeServerMessage(cleaned);
+}
+
+String _localizeServerMessage(String message) {
+  final lower = message.toLowerCase().trim();
+
+  if (lower == 'duplicate request' ||
+      lower.contains('duplicate request') ||
+      lower.contains('duplicaterequest') ||
+      lower.contains('duplicate_request')) {
+    return 'Запрос уже отправлен. Не нажимайте повторно.';
+  }
+  if (lower.contains('too many requests') || lower.contains('too many attempt')) {
+    return 'Слишком много запросов. Подождите немного и попробуйте снова.';
+  }
+  if (lower == 'unauthenticated' || lower.contains('unauthenticated')) {
+    return 'Сессия завершилась. Пожалуйста, войдите в приложение снова.';
+  }
+  if (lower == 'validation failed' || lower.contains('the given data was invalid')) {
+    return 'Проверьте введённые данные и попробуйте снова.';
+  }
+
+  return message;
 }
 
 bool _looksTechnical(String value) {

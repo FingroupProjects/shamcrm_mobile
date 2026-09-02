@@ -283,6 +283,74 @@ extension ApiHttpX on ApiService {
     }
   }
 
+  String _mutationKey(
+    String method,
+    String fullUrl,
+    Map<String, dynamic> body,
+  ) {
+    return '$method|$fullUrl|${json.encode(body)}';
+  }
+
+  http.Response? _reuseMutation(String key) {
+    final inFlight = ApiService._mutatingInFlight[key];
+    if (inFlight != null) return null;
+
+    final recent = ApiService._recentMutations[key];
+    if (recent == null) return null;
+    if (DateTime.now().difference(recent.at) > ApiService._mutationDedupWindow) {
+      ApiService._recentMutations.remove(key);
+      return null;
+    }
+    if (recent.response.statusCode < 200 || recent.response.statusCode >= 300) {
+      return null;
+    }
+    debugPrint('ApiService: skip recent duplicate $key');
+    return recent.response;
+  }
+
+  Future<http.Response> _trackMutation(
+    String key,
+    Future<http.Response> request,
+  ) {
+    ApiService._mutatingInFlight[key] = request;
+    return request.then((response) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        ApiService._recentMutations[key] = _RecentMutation(
+          response,
+          DateTime.now(),
+        );
+        if (ApiService._recentMutations.length > 40) {
+          final cutoff =
+              DateTime.now().subtract(ApiService._mutationDedupWindow);
+          ApiService._recentMutations
+              .removeWhere((_, value) => value.at.isBefore(cutoff));
+        }
+      }
+      return response;
+    }).whenComplete(() {
+      ApiService._mutatingInFlight.remove(key);
+    });
+  }
+
+  Future<http.Response> _withMutationDedup(
+    String method,
+    String fullUrl,
+    Map<String, dynamic> body,
+    Future<http.Response> Function() send,
+  ) {
+    final key = _mutationKey(method, fullUrl, body);
+    final reused = _reuseMutation(key);
+    if (reused != null) return Future.value(reused);
+
+    final inFlight = ApiService._mutatingInFlight[key];
+    if (inFlight != null) {
+      debugPrint('ApiService: reuse in-flight $method $fullUrl');
+      return inFlight;
+    }
+
+    return _trackMutation(key, send());
+  }
+
   Future<void> _applySelectedOrganizationToBody(
       Map<String, dynamic> body) async {
     if (!body.containsKey('organization_id')) return;
@@ -336,58 +404,60 @@ extension ApiHttpX on ApiService {
       ));
     }
 
-    final startTime = DateTime.now();
-    try {
-      final response = await http.post(
-        Uri.parse(fullUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'Device': 'mobile'
-        },
-        body: json.encode(body),
-      );
+    return _withMutationDedup('POST', fullUrl, body, () async {
+      final startTime = DateTime.now();
+      try {
+        final response = await http.post(
+          Uri.parse(fullUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+            'Device': 'mobile'
+          },
+          body: json.encode(body),
+        );
 
-      debugPrint(
-          'ApiService: _postRequest response status: ${response.statusCode}');
-      debugPrint('ApiService: _postRequest response body: ${response.body}');
+        debugPrint(
+            'ApiService: _postRequest response status: ${response.statusCode}');
+        debugPrint('ApiService: _postRequest response body: ${response.body}');
 
-      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
-      if (kDebugMode && logId != null) {
-        final duration = DateTime.now().difference(startTime);
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger().updateLog(
-            logId,
-            existingLog.copyWith(
-              statusCode: response.statusCode,
-              responseHeaders: response.headers,
-              responseBody: response.body,
-              duration: duration,
-            ),
-          );
+        // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+        if (kDebugMode && logId != null) {
+          final duration = DateTime.now().difference(startTime);
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger().updateLog(
+              logId,
+              existingLog.copyWith(
+                statusCode: response.statusCode,
+                responseHeaders: response.headers,
+                responseBody: response.body,
+                duration: duration,
+              ),
+            );
+          }
         }
-      }
 
-      return _handleResponse(response);
-    } catch (e) {
-      // HTTP Inspector: Логируем ошибку (только в DEBUG)
-      if (kDebugMode && logId != null) {
-        final duration = DateTime.now().difference(startTime);
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger().updateLog(
-            logId,
-            existingLog.copyWith(
-              error: e.toString(),
-              duration: duration,
-            ),
-          );
+        return _handleResponse(response);
+      } catch (e) {
+        // HTTP Inspector: Логируем ошибку (только в DEBUG)
+        if (kDebugMode && logId != null) {
+          final duration = DateTime.now().difference(startTime);
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger().updateLog(
+              logId,
+              existingLog.copyWith(
+                error: e.toString(),
+                duration: duration,
+              ),
+            );
+          }
         }
+        rethrow;
       }
-      rethrow;
-    }
+    });
   }
 
   Future<http.Response> _analyticsRequest(
@@ -737,45 +807,47 @@ extension ApiHttpX on ApiService {
       ));
     }
 
-    final startTime = DateTime.now();
-    try {
-      final response = await http.patch(
-        Uri.parse(fullUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'Device': 'mobile'
-        },
-        body: json.encode(body),
-      );
+    return _withMutationDedup('PATCH', fullUrl, body, () async {
+      final startTime = DateTime.now();
+      try {
+        final response = await http.patch(
+          Uri.parse(fullUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+            'Device': 'mobile'
+          },
+          body: json.encode(body),
+        );
 
-      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
-      if (kDebugMode && logId != null) {
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger().updateLog(
-            logId,
-            existingLog.copyWith(
-              statusCode: response.statusCode,
-              responseBody: response.body,
-              duration: DateTime.now().difference(startTime),
-            ),
-          );
+        // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+        if (kDebugMode && logId != null) {
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger().updateLog(
+              logId,
+              existingLog.copyWith(
+                statusCode: response.statusCode,
+                responseBody: response.body,
+                duration: DateTime.now().difference(startTime),
+              ),
+            );
+          }
         }
-      }
 
-      return _handleResponse(response);
-    } catch (e) {
-      if (kDebugMode && logId != null) {
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger()
-              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        return _handleResponse(response);
+      } catch (e) {
+        if (kDebugMode && logId != null) {
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger()
+                .updateLog(logId, existingLog.copyWith(error: e.toString()));
+          }
         }
+        rethrow;
       }
-      rethrow;
-    }
+    });
   }
 
   Future<http.Response> _putRequest(
@@ -803,45 +875,47 @@ extension ApiHttpX on ApiService {
       ));
     }
 
-    final startTime = DateTime.now();
-    try {
-      final response = await http.put(
-        Uri.parse(fullUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'Device': 'mobile'
-        },
-        body: json.encode(body),
-      );
+    return _withMutationDedup('PUT', fullUrl, body, () async {
+      final startTime = DateTime.now();
+      try {
+        final response = await http.put(
+          Uri.parse(fullUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+            'Device': 'mobile'
+          },
+          body: json.encode(body),
+        );
 
-      // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
-      if (kDebugMode && logId != null) {
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger().updateLog(
-            logId,
-            existingLog.copyWith(
-              statusCode: response.statusCode,
-              responseBody: response.body,
-              duration: DateTime.now().difference(startTime),
-            ),
-          );
+        // HTTP Inspector: Обновляем лог с ответом (только в DEBUG)
+        if (kDebugMode && logId != null) {
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger().updateLog(
+              logId,
+              existingLog.copyWith(
+                statusCode: response.statusCode,
+                responseBody: response.body,
+                duration: DateTime.now().difference(startTime),
+              ),
+            );
+          }
         }
-      }
 
-      return _handleResponse(response);
-    } catch (e) {
-      if (kDebugMode && logId != null) {
-        final existingLog = HttpLogger().getLogById(logId);
-        if (existingLog != null) {
-          HttpLogger()
-              .updateLog(logId, existingLog.copyWith(error: e.toString()));
+        return _handleResponse(response);
+      } catch (e) {
+        if (kDebugMode && logId != null) {
+          final existingLog = HttpLogger().getLogById(logId);
+          if (existingLog != null) {
+            HttpLogger()
+                .updateLog(logId, existingLog.copyWith(error: e.toString()));
+          }
         }
+        rethrow;
       }
-      rethrow;
-    }
+    });
   }
 
   Future<http.Response> _deleteRequest(String path) async {
