@@ -26,6 +26,8 @@ class Order {
   final DateTime? createdAt;
   final int?
       storageId; // Новое поле для storage_id (пока используется вместо branchId)
+  final String? storageName;
+  final String? authorName;
   final List<CustomFieldValue> customFieldValues;
   final List<DirectoryValue> directoryValues;
   final List<OrderFile> files;
@@ -55,6 +57,8 @@ class Order {
     this.integrationId,
     this.createdAt,
     this.storageId,
+    this.storageName,
+    this.authorName,
     this.customFieldValues = const [],
     this.directoryValues = const [],
     this.files = const [],
@@ -104,6 +108,14 @@ class Order {
             ? ManagerData.fromJson(SafeConverters.toMap(json['manager']))
             : null,
         storageId: SafeConverters.toIntOrNull(json['storage_id']),
+        storageName: _nameFromServer(json['storage']) ??
+            _nameFromServer(json['warehouse']) ??
+            SafeConverters.toStringOrNull(json['storage_name']),
+        authorName: _nameFromServer(json['author']) ??
+            _nameFromServer(json['user']) ??
+            _nameFromServer(json['created_by']) ??
+            _nameFromServer(json['creator']) ??
+            SafeConverters.toStringOrNull(json['author_name']),
         reasonForRefusalId: SafeConverters.toIntOrNull(json['reason_for_refusal_id']),
         reasonForRefusalComment: SafeConverters.toStringOrNull(json['reason_for_refusal']),
         refusalReasonText: _extractRefusalReasonText(json['refusalReason']),
@@ -150,6 +162,8 @@ class Order {
       'payment_type': paymentMethod, // Add to JSON
       'integration_id': integrationId,
       'storage_id': storageId,
+      'storage_name': storageName,
+      'author': authorName,
       'reason_for_refusal_id': reasonForRefusalId,
       'reason_for_refusal': reasonForRefusalComment,
       'refusalReason': refusalReasonText,
@@ -178,6 +192,8 @@ class Order {
     String? paymentStatus,
     int? integrationId,
     int? storageId,
+    String? storageName,
+    String? authorName,
     List<CustomFieldValue>? customFieldValues,
     List<DirectoryValue>? directoryValues,
     List<OrderFile>? files,
@@ -204,6 +220,8 @@ class Order {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       integrationId: integrationId ?? this.integrationId,
       storageId: storageId ?? this.storageId,
+      storageName: storageName ?? this.storageName,
+      authorName: authorName ?? this.authorName,
       reasonForRefusalId: reasonForRefusalId ?? this.reasonForRefusalId,
       reasonForRefusalComment:
           reasonForRefusalComment ?? this.reasonForRefusalComment,
@@ -245,6 +263,24 @@ class OrderFile {
       'size': size,
     };
   }
+}
+
+String? _nameFromServer(dynamic raw) {
+  if (raw == null) return null;
+  if (raw is String) {
+    final value = raw.trim();
+    return value.isEmpty || value == 'null' ? null : value;
+  }
+  if (raw is Map) {
+    final map = SafeConverters.toMap(raw);
+    final name = SafeConverters.toSafeString(map['name']);
+    final lastname = SafeConverters.toSafeString(map['lastname']);
+    final full = [name, lastname].where((part) => part.isNotEmpty).join(' ').trim();
+    if (full.isNotEmpty) return full;
+    return SafeConverters.toStringOrNull(
+        map['full_name'] ?? map['fullname'] ?? map['title'] ?? map['login']);
+  }
+  return null;
 }
 
 String? _extractRefusalReasonText(dynamic raw) {

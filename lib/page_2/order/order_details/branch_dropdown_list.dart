@@ -44,6 +44,25 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
     context.read<BranchBloc>().add(FetchBranches());
   }
 
+  @override
+  void didUpdateWidget(BranchRadioGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedStatus != oldWidget.selectedStatus &&
+        widget.selectedStatus != null &&
+        statusList.isNotEmpty) {
+      try {
+        final match = statusList.firstWhere(
+          (branch) => branch.id.toString() == widget.selectedStatus,
+        );
+        if (selectedStatusData?.id != match.id) {
+          setState(() {
+            selectedStatusData = match;
+          });
+        }
+      } catch (_) {}
+    }
+  }
+
   Future<List<Branch>> _searchBranches(String query) async {
     final branches = await _apiService.getBranches(search: query);
     return branches.where((branch) => branch.isActive == 1).toList();
@@ -71,11 +90,11 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       height: 50,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: colors.surfaceAccent,
+                        color: colors.fieldBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           width: 1,
-                          color: colors.surfaceAccent,
+                          color: colors.fieldBorder,
                         ),
                       ),
                     child:  SizedBox(
@@ -188,11 +207,11 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 12, horizontal: 16),
                         decoration: BoxDecoration(
-                          color: colors.surfaceAccent,
+                          color: colors.fieldBg,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             width: 1,
-                            color: colors.surfaceAccent,
+                            color: colors.fieldBorder,
                           ),
                         ),
                         child: Row(
@@ -218,53 +237,33 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                 );
               }
 
-              // Initialize selected branch only once when data is first loaded
-              if (!_hasInitialized) {
-                debugPrint('Initializing branch selection...');
+              if (!_hasInitialized ||
+                  (selectedStatusData == null && statusList.length == 1)) {
                 _hasInitialized = true;
 
                 if (widget.selectedStatus != null) {
-                  debugPrint(
-                      'Searching for branch with ID: ${widget.selectedStatus}');
-
-                  // Try to find the branch by ID
                   try {
                     selectedStatusData = statusList.firstWhere(
-                      (branch) {
-                        debugPrint(
-                            'Comparing: branch.id=${branch.id} with selectedStatus=${widget.selectedStatus}');
-                        return branch.id.toString() == widget.selectedStatus;
-                      },
+                      (branch) =>
+                          branch.id.toString() == widget.selectedStatus,
                     );
-
-                    debugPrint(
-                        '✅ Found branch: ${selectedStatusData?.id} - ${selectedStatusData?.name}');
-
-                    // Notify parent about the selected branch
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (selectedStatusData != null) {
-                        debugPrint(
-                            'Notifying parent with branch: ${selectedStatusData!.id}');
                         widget.onSelectStatus(selectedStatusData!);
                       }
                     });
                   } catch (e) {
-                    // If branch not found, don't select anything
-                    debugPrint('❌ Branch not found: $e');
                     selectedStatusData = null;
                   }
-                } else if (statusList.length == 1) {
-                  // If only one branch and nothing selected, auto-select it
-                  debugPrint(
-                      'Auto-selecting single branch: ${statusList[0].id} - ${statusList[0].name}');
-                  selectedStatusData = statusList[0];
+                }
 
+                if (selectedStatusData == null && statusList.length == 1) {
+                  selectedStatusData = statusList[0];
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    widget.onSelectStatus(statusList[0]);
+                    if (mounted) {
+                      widget.onSelectStatus(statusList[0]);
+                    }
                   });
-                } else {
-                  debugPrint(
-                      'No selectedStatus provided and multiple branches available');
                 }
               }
 
@@ -280,16 +279,9 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colors.surfaceAccent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: colors.surfaceAccent,
-                      ),
-                    ),
-                    child: CustomDropdown<Branch>.searchRequest(
+                  CustomDropdown<Branch>.searchRequest(
+                      key: ValueKey(
+                          'branch_${selectedStatusData?.id ?? 'none'}'),
                       futureRequest: _searchBranches,
                       futureRequestDelay: const Duration(milliseconds: 350),
                       closeDropDownOnClearFilterSearch: true,
@@ -301,12 +293,12 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         closedFillColor: colors.fieldBg,
                         expandedFillColor: colors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: colors.fieldBg,
+                          color: colors.fieldBorder,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: colors.fieldBg,
+                          color: colors.fieldBorder,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),
@@ -343,7 +335,6 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                         }
                       },
                     ),
-                  ),
                 ],
               );
             }

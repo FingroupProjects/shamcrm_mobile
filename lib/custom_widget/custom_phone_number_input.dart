@@ -87,7 +87,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final maxLength = phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
     final value = widget.controller.text;
 
-    if (value.length > maxLength) {
+    if (maxLength > 0 && value.length > maxLength) {
       widget.controller.text = value.substring(0, maxLength);
       widget.controller.selection =
           TextSelection.fromPosition(TextPosition(offset: maxLength));

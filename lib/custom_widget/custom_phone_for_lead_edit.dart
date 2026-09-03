@@ -36,6 +36,29 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     _initializeCountry();
   }
 
+  @override
+  void didUpdateWidget(covariant CustomPhoneNumberInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedDialCode != oldWidget.selectedDialCode &&
+        widget.selectedDialCode != null &&
+        widget.selectedDialCode!.isNotEmpty) {
+      Country? matched;
+      for (final country in countries) {
+        if ((country.dialCode == widget.selectedDialCode ||
+                widget.selectedDialCode!.startsWith(country.dialCode)) &&
+            (matched == null ||
+                country.dialCode.length > matched.dialCode.length)) {
+          matched = country;
+        }
+      }
+      if (matched != null && matched.dialCode != selectedCountry?.dialCode) {
+        setState(() {
+          selectedCountry = matched;
+        });
+      }
+    }
+  }
+
   Future<void> _initializeCountry() async {
     final prefs = await SharedPreferences.getInstance();
     String? savedDialCode = prefs.getString('default_dial_code');

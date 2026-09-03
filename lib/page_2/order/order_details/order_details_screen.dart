@@ -281,6 +281,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return '$value:';
   }
 
+  void _appendDetailIfMissing({
+    required Set<String> fieldNames,
+    required String label,
+    required String value,
+    bool allowEmpty = false,
+    Set<String> afterLabels = const {},
+  }) {
+    if (!allowEmpty && value.isEmpty) return;
+    final alreadyShown =
+        _fieldConfiguration.any((fc) => fieldNames.contains(fc.fieldName));
+    if (alreadyShown) return;
+    final row = {'label': label, 'value': value};
+    final insertAfter =
+        details.indexWhere((item) => afterLabels.contains(item['label']));
+    if (insertAfter >= 0) {
+      details.insert(insertAfter + 1, row);
+      return;
+    }
+    details.add(row);
+  }
+
   String _getFieldName(FieldConfiguration fc) {
     if (fc.isCustomField || fc.isDirectory) {
       return _withColon(fc.fieldName);
@@ -332,9 +353,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         return _withColon(
             AppLocalizations.of(context)!.translate('order_address_label'));
       case 'branch_id':
-      case 'storage_id':
         return _withColon(
             AppLocalizations.of(context)!.translate('branch_label'));
+      case 'storage_id':
+      case 'storage':
+      case 'warehouse':
+        return _withColon(
+            AppLocalizations.of(context)!.translate('storage_label'));
       case 'comment_to_courier':
       case 'comment':
         return _withColon(
@@ -384,7 +409,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       case 'manager_id':
         return order.manager?.name ?? 'become_manager';
       case 'author' || 'author_id':
-        return order.manager?.name ?? '';
+        return (order.authorName ?? '').trim();
+      case 'storage_id':
+      case 'storage':
+      case 'warehouse':
+        return (order.storageName ?? '').trim();
       case 'phone':
         return order.phone;
       case 'order_date':
@@ -444,7 +473,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         },
         {
           'label': AppLocalizations.of(context)!.translate('author_details'),
-          'value': order.manager?.name ?? ''
+          'value': (order.authorName ?? '').trim()
         },
         {
           'label': AppLocalizations.of(context)!.translate('client_phone'),
@@ -473,6 +502,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               : (order.branchName ??
                   AppLocalizations.of(context)!.translate('')),
         },
+        if ((order.storageName ?? '').trim().isNotEmpty)
+          {
+            'label':
+                AppLocalizations.of(context)!.translate('warehouse_colon'),
+            'value': order.storageName!.trim()
+          },
         {
           'label': AppLocalizations.of(context)!.translate('comment_client'),
           'value': order.commentToCourier ??
@@ -519,6 +554,22 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         'value': fieldValue,
       });
     }
+
+    _appendDetailIfMissing(
+      fieldNames: const {'author', 'author_id'},
+      label: AppLocalizations.of(context)!.translate('author_details'),
+      value: (order.authorName ?? '').trim(),
+      allowEmpty: true,
+      afterLabels: {
+        _withColon(AppLocalizations.of(context)!.translate('manager_label')),
+        AppLocalizations.of(context)!.translate('manager_details'),
+      },
+    );
+    _appendDetailIfMissing(
+      fieldNames: const {'storage_id', 'storage', 'warehouse'},
+      label: AppLocalizations.of(context)!.translate('warehouse_colon'),
+      value: (order.storageName ?? '').trim(),
+    );
 
     final hasCreatedAtField =
         _fieldConfiguration.any((fc) => fc.fieldName == 'created_at');
@@ -726,6 +777,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           OrderGoodsScreen(
             goods: loadedOrder.goods,
             order: loadedOrder,
+            formatPrice: _formatPrice,
           ),
         ],
       ),

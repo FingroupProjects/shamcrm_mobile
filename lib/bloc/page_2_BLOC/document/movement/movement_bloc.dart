@@ -54,8 +54,7 @@ class MovementBloc extends Bloc<MovementEvent, MovementState> {
         page: _currentPage,
         perPage: _perPage,
         query: _search,
-        fromDate: _filters?['fromDate'],
-        toDate: _filters?['toDate'],
+        filters: _filters,
       );
 
       if (isClosed) return;

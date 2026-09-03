@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/field_configuration/field_configuration_st
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_event.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/branch/branch_state.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -52,7 +53,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
@@ -123,7 +124,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool _isTojsokhtmontjTenant = false;
-  bool _isStomatradeTenant = false;
+  int? _editingPriceIndex;
 
   // Режим настроек
   bool isSettingsMode = false;
@@ -238,14 +239,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Future<void> _loadTenantFlags() async {
-    final flags = await Future.wait([
-      _apiService.isTojsokhtmontjTenant(),
-      _apiService.isStomatradeTenant(),
-    ]);
+    final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
     if (!mounted) return;
     setState(() {
-      _isTojsokhtmontjTenant = flags[0];
-      _isStomatradeTenant = flags[1];
+      _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
     });
   }
 
@@ -741,6 +738,78 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     return deduplicateOrderFieldConfigurations(fields);
   }
 
+  void _applyClientPhone(String? rawPhone) {
+    final normalized = (rawPhone ?? '')
+        .replaceAll(RegExp(r'[\s\-()]'), '')
+        .trim();
+    if (normalized.isEmpty || normalized.toLowerCase() == 'null') {
+      return;
+    }
+
+    var toMatch = normalized;
+    if (toMatch.startsWith('00')) {
+      toMatch = '+${toMatch.substring(2)}';
+    } else if (!toMatch.startsWith('+')) {
+      toMatch = '+$toMatch';
+    }
+
+    Country? matched;
+    for (final country in countries) {
+      if (toMatch.startsWith(country.dialCode) &&
+          (matched == null ||
+              country.dialCode.length > matched.dialCode.length)) {
+        matched = country;
+      }
+    }
+
+    final localNumber = matched != null
+        ? toMatch.substring(matched.dialCode.length)
+        : normalized.replaceAll('+', '');
+    if (localNumber.isEmpty) return;
+    final fullNumber =
+        matched != null ? '${matched.dialCode}$localNumber' : localNumber;
+
+    _initialCountry = matched;
+    selectedDialCode = fullNumber;
+    _phoneController.value = TextEditingValue(
+      text: localNumber,
+      selection: TextSelection.collapsed(offset: localNumber.length),
+    );
+    if (mounted) {
+      setState(() {
+        _initialCountry = matched;
+        selectedDialCode = fullNumber;
+      });
+    }
+  }
+
+  Future<void> _fillPhoneFromSelectedLead(LeadData lead) async {
+    var phone = (lead.phone ?? '').trim();
+    if (phone.isEmpty || phone.toLowerCase() == 'null') {
+      try {
+        final details = await _apiService.getLeadById(lead.id);
+        phone = (details.phone ?? '').trim();
+      } catch (_) {
+        return;
+      }
+    }
+    if (!mounted) return;
+    _applyClientPhone(phone);
+  }
+
+  void _tryAutoSelectSingleBranch() {
+    final pickup = AppLocalizations.of(context)!.translate('self_delivery');
+    if (_deliveryMethod != pickup || _selectedBranch != null) return;
+    final state = _branchBloc.state;
+    if (state is! BranchLoaded) return;
+    final active =
+        state.branches.where((branch) => branch.isActive == 1).toList();
+    if (active.length != 1) return;
+    setState(() {
+      _selectedBranch = active.first;
+    });
+  }
+
   Widget _buildLeadField() {
     if (widget.leadId != null || widget.dealId != null) {
       return const SizedBox.shrink();
@@ -752,60 +821,35 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           selectedLead: selectedLead,
           alwaysRefreshFromServer: true,
           onSelectLead: (LeadData selectedLeadData) {
-            if (selectedLead == selectedLeadData.id.toString()) {
-              return;
-            }
+            final isSameClient =
+                selectedLead == selectedLeadData.id.toString();
             setState(() {
               selectedLead = selectedLeadData.id.toString();
 
-              if (selectedLeadData.phone != null &&
-                  selectedLeadData.phone!.isNotEmpty) {
-                String leadPhone = selectedLeadData.phone!;
-                String phoneNumber = '';
-                bool countryFound = false;
-
-                for (var country in countries) {
-                  if (leadPhone.startsWith(country.dialCode)) {
-                    phoneNumber = leadPhone.substring(country.dialCode.length);
-                    selectedDialCode = leadPhone;
-                    _initialCountry = country;
-                    countryFound = true;
-                    break;
+              if (!isSameClient) {
+                if (!isManagerManuallySelected &&
+                    selectedLeadData.managerId != null) {
+                  final managerBlocState =
+                      context.read<GetAllManagerBloc>().state;
+                  if (managerBlocState is GetAllManagerSuccess) {
+                    final managers = managerBlocState.dataManager.result ?? [];
+                    try {
+                      final matchingManager = managers.firstWhere(
+                        (manager) => manager.id == selectedLeadData.managerId,
+                      );
+                      selectedManager = matchingManager.id.toString();
+                      isManagerInvalid = false;
+                    } catch (e) {
+                      selectedManager = null;
+                    }
                   }
                 }
 
-                if (!countryFound) {
-                  phoneNumber = leadPhone;
-                  selectedDialCode = leadPhone;
-                }
-
-                _phoneController.text = phoneNumber;
-              } else {
-                _phoneController.clear();
-                selectedDialCode = '';
+                _selectedDeliveryAddress = null;
+                _pendingManualAddressSelection = null;
               }
-
-              if (!isManagerManuallySelected &&
-                  selectedLeadData.managerId != null) {
-                final managerBlocState =
-                    context.read<GetAllManagerBloc>().state;
-                if (managerBlocState is GetAllManagerSuccess) {
-                  final managers = managerBlocState.dataManager.result ?? [];
-                  try {
-                    final matchingManager = managers.firstWhere(
-                      (manager) => manager.id == selectedLeadData.managerId,
-                    );
-                    selectedManager = matchingManager.id.toString();
-                    isManagerInvalid = false;
-                  } catch (e) {
-                    selectedManager = null;
-                  }
-                }
-              }
-
-              _selectedDeliveryAddress = null;
-              _pendingManualAddressSelection = null;
             });
+            _fillPhoneFromSelectedLead(selectedLeadData);
           },
         ),
         const SizedBox(height: 8),
@@ -888,7 +932,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       case 'branch_id':
       case 'storage_id':
         return BranchRadioGroupWidget(
-          selectedStatus: _selectedBranch?.toString(),
+          selectedStatus: _selectedBranch?.id.toString(),
           onSelectStatus: (Branch selectedStatusData) {
             setState(() {
               _selectedBranch = selectedStatusData;
@@ -924,13 +968,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           selectedDeliveryMethod: _deliveryMethod,
           onSelectDeliveryMethod: (value) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _deliveryMethod = value;
-                  _selectedDeliveryAddress = null;
-                  _deliveryAddressController.clear();
-                });
-              }
+              if (!mounted) return;
+              setState(() {
+                _deliveryMethod = value;
+                _selectedDeliveryAddress = null;
+                _deliveryAddressController.clear();
+              });
+              _tryAutoSelectSingleBranch();
             });
           },
         );
@@ -2302,7 +2346,153 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   void _handlePriceInput(int index, String value) {
     final price = double.tryParse(value.replaceAll(',', '.'));
     if (price == null || index < 0 || index >= _items.length) return;
-    setState(() => _items[index]['price'] = price);
+    final oldPrice = (_items[index]['price'] as num?)?.toDouble() ?? 0;
+    final quantity = (_items[index]['quantity'] as num?)?.toInt() ??
+        int.tryParse('${_items[index]['quantity']}') ??
+        1;
+    setState(() {
+      _items[index]['price'] = price;
+      if (_isTotalEdited && price != oldPrice) {
+        final currentTotal = _getCurrentTotal();
+        final adjustedTotal = currentTotal + ((price - oldPrice) * quantity);
+        _totalController.text = adjustedTotal.toStringAsFixed(0);
+      }
+    });
+  }
+
+  int _caretOffsetFromTap({
+    required String displayedText,
+    required String rawText,
+    required Offset localPosition,
+    required TextStyle style,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: displayedText, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    final tapOffset = painter.getPositionForOffset(localPosition).offset;
+    var rawIndex = 0;
+    for (var i = 0; i < displayedText.length && i < tapOffset; i++) {
+      if (RegExp(r'[0-9.,]').hasMatch(displayedText[i])) {
+        rawIndex++;
+      }
+    }
+    return rawIndex.clamp(0, rawText.length);
+  }
+
+  void _startPriceEditing(int index, [Offset? localPosition]) {
+    if (index < 0 || index >= _items.length) return;
+    final controller = _getPriceController(index);
+    final value =
+        '${_items[index]['price'] ?? 0}'.replaceAll(RegExp(r'\.0$'), '');
+    final textStyle = TextStyle(
+      fontSize: 14,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w600,
+      color: colors.textPrimary,
+    );
+    final formatted = _formatPrice(
+      (_items[index]['price'] as num?)?.toDouble() ??
+          double.tryParse('${_items[index]['price']}') ??
+          0,
+    );
+    final caret = localPosition == null
+        ? value.length
+        : _caretOffsetFromTap(
+            displayedText: formatted,
+            rawText: value,
+            localPosition: localPosition,
+            style: textStyle,
+          );
+    controller.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: caret),
+    );
+    setState(() => _editingPriceIndex = index);
+  }
+
+  void _dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (_editingPriceIndex != null && mounted) {
+      setState(() => _editingPriceIndex = null);
+    }
+  }
+
+  void _unfocusIfOutside(Offset globalPosition) {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null || focus.context == null) {
+      if (_editingPriceIndex != null && mounted) {
+        setState(() => _editingPriceIndex = null);
+      }
+      return;
+    }
+    final renderObject = focus.context!.findRenderObject();
+    if (renderObject is RenderBox) {
+      final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+      if (rect.inflate(20).contains(globalPosition)) return;
+    }
+    _dismissKeyboard();
+  }
+
+  Widget _buildEditablePrice(int index, dynamic price) {
+    final isEditing = _editingPriceIndex == index;
+    final textStyle = TextStyle(
+      fontSize: 14,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w600,
+      color: colors.textPrimary,
+    );
+    final formatted = _formatPrice(
+      (price as num?)?.toDouble() ?? double.tryParse('$price') ?? 0,
+    );
+    final parts = formatted.split(' ');
+    final symbol = parts.length > 1 ? parts.last : '';
+
+    if (isEditing) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IntrinsicWidth(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 12),
+              child: TextField(
+                controller: _getPriceController(index),
+                autofocus: true,
+                showCursor: true,
+                cursorColor: colors.textPrimary,
+                cursorWidth: 1.6,
+                enableInteractiveSelection: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.right,
+                style: textStyle,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
+                decoration: const InputDecoration(
+                  isDense: true,
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (value) => _handlePriceInput(index, value),
+                onEditingComplete: _dismissKeyboard,
+                onSubmitted: (_) => _dismissKeyboard(),
+              ),
+            ),
+          ),
+          if (symbol.isNotEmpty) Text(' $symbol', style: textStyle),
+        ],
+      );
+    }
+
+    return GestureDetector(
+      onTapDown: (details) =>
+          _startPriceEditing(index, details.localPosition),
+      behavior: HitTestBehavior.opaque,
+      child: Text(formatted, style: textStyle),
+    );
   }
 
   void _syncQuantityController(int index) {
@@ -2378,6 +2568,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
     setState(() {
       _items.removeAt(index);
+      if (_editingPriceIndex == index) {
+        _editingPriceIndex = null;
+      } else if (_editingPriceIndex != null && _editingPriceIndex! > index) {
+        _editingPriceIndex = _editingPriceIndex! - 1;
+      }
       if (_isTotalEdited) {
         final currentTotal = _getCurrentTotal();
         final adjustedTotal = currentTotal - removedTotal;
@@ -2496,7 +2691,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         BlocProvider<BranchBloc>.value(value: _branchBloc),
         BlocProvider<DeliveryAddressBloc>.value(value: _deliveryAddressBloc),
       ],
-      child: Scaffold(
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) => _unfocusIfOutside(event.position),
+        child: Scaffold(
         backgroundColor: colors.surfacePrimary,
         appBar: _buildAppBar(),
         body: BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
@@ -2661,6 +2859,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       Expanded(
                         child: SingleChildScrollView(
                           key: const Key('order_add_scroll_view'),
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           child: Column(
@@ -2684,6 +2884,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             );
           },
         ),
+      ),
       ),
     );
   }
@@ -3154,25 +3355,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         label: AppLocalizations.of(context)!
                             .translate('goods_price_details'),
                         value: _formatPrice(item['price']),
-                        valueWidget: _isStomatradeTenant
-                            ? TextField(
-                                controller: _getPriceController(index),
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                        decimal: true),
-                                textAlign: TextAlign.right,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[0-9.,]'))
-                                ],
-                                decoration: const InputDecoration(
-                                    isDense: true,
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero),
-                                onChanged: (value) =>
-                                    _handlePriceInput(index, value),
-                              )
-                            : null,
+                        valueWidget:
+                            _buildEditablePrice(index, item['price']),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -3231,6 +3415,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
+                foregroundColor: colors.textPrimary,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
@@ -3244,7 +3429,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
-                  color: colors.textInverse.withValues(alpha: 0.86),
+                  color: colors.textPrimary,
                 ),
               ),
             ),

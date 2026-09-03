@@ -28,6 +28,14 @@ class _OverlayBuilderState extends State<_OverlayBuilder> {
         widget.overlayPortalController ?? OverlayPortalController();
   }
 
+  @override
+  void dispose() {
+    if (overlayController.isShowing) {
+      overlayController.hide();
+    }
+    super.dispose();
+  }
+
   void showOverlay() {
     overlayController.show();
 

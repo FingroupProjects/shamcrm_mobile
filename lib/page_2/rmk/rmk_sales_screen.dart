@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_document_model.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/clien_sales_document_detail.dart';
@@ -180,6 +181,7 @@ class _RmkSalesScreenState extends State<RmkSalesScreen> {
           showFilterOrderIcon: false,
           showFilterIncomeIcon: false,
           showFilterIncomingIcon: true,
+          warehouseFilterType: WarehouseDocumentFilterType.clientSale,
           onIncomingResetFilters: _onResetFilters,
           onFilterIncomingSelected: _onFilterSelected,
           onChangedSearchInput: _onSearch,

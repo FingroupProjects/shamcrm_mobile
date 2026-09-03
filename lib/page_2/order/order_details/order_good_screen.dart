@@ -9,9 +9,11 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 class OrderGoodsScreen extends StatefulWidget {
   final List<Good> goods;
   final Order order;
+  final String Function(double? price) formatPrice;
 
   const OrderGoodsScreen({
     required this.order,
+    required this.formatPrice,
     Key? key,
     required this.goods,
   }) : super(key: key);
@@ -72,7 +74,6 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
   }
 
   Widget _buildGoodsItem(Good good) {
-    final colors = context.appColors;
     return GestureDetector(
       onTap: () {
         _navigateToGoodsDetails(good);
@@ -96,28 +97,14 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.translate('counts'),
-                            style:  TextStyle(
-                              fontSize: 16,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${good.quantity}',
-                            style:  TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ],
+                      _buildInfoRow(
+                        AppLocalizations.of(context)!.translate('counts'),
+                        '${good.quantity}',
+                      ),
+                      const SizedBox(height: 2),
+                      _buildInfoRow(
+                        AppLocalizations.of(context)!.translate('price'),
+                        widget.formatPrice(good.price),
                       ),
                     ],
                   ),
@@ -129,6 +116,36 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    final colors = context.appColors;
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

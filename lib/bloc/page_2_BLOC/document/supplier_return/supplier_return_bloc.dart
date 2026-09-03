@@ -74,9 +74,8 @@ class SupplierReturnBloc
       final response = await apiService.getSupplierReturnDocuments(
         page: _currentPage,
         perPage: _perPage,
-        query: _filters['query'],
-        fromDate: _filters['fromDate'],
-        toDate: _filters['toDate'],
+        query: _filters['query']?.toString(),
+        filters: _filters,
       );
 
       final newData = response.data ?? [];

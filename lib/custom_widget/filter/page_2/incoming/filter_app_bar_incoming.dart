@@ -1,9 +1,12 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,7 +34,11 @@ class IncomingFilterScreen extends StatefulWidget {
   final String? initialAuthor;
   final String? initialLead;
   final String? initialCashRegister;
+  final String? initialStorage;
+  final String? initialSenderStorage;
+  final String? initialRecipientStorage;
   final bool? initialIsDeleted;
+  final WarehouseDocumentFilterType filterType;
 
   const IncomingFilterScreen({
     super.key,
@@ -44,7 +51,11 @@ class IncomingFilterScreen extends StatefulWidget {
     this.initialAuthor,
     this.initialLead,
     this.initialCashRegister,
+    this.initialStorage,
+    this.initialSenderStorage,
+    this.initialRecipientStorage,
     this.initialIsDeleted,
+    this.filterType = WarehouseDocumentFilterType.incoming,
   });
 
   @override
@@ -62,12 +73,19 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
   LeadData? _selectedLead;
   String? _selectedStatus;
   bool? _isDeleted;
+  WareHouse? _selectedStorage;
+  WareHouse? _selectedSenderStorage;
+  WareHouse? _selectedRecipientStorage;
 
   // Списки данных
   List<SupplierData> suppliersList = [];
   List<CashRegisterData> cashRegistersList = [];
   List<AuthorData> authorsList = [];
   List<LeadData> leadsList = [];
+  List<WareHouse> storagesList = [];
+  final ApiService _apiService = ApiService();
+
+  String _pref(String key) => '${widget.filterType.prefsPrefix}$key';
 
   @override
   void initState() {
@@ -127,6 +145,7 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       _isDeleted = widget.initialIsDeleted;
 
       _updateDateControllers();
+      await _loadWarehouses();
       await _loadFilterState();
     } catch (e) {
       debugPrint('Error in initializeData: $e');
@@ -149,8 +168,8 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
-          final fromDateMillis = prefs.getInt('incoming_new_from_date');
-          final toDateMillis = prefs.getInt('incoming_new_to_date');
+          final fromDateMillis = prefs.getInt(_pref('from_date'));
+          final toDateMillis = prefs.getInt(_pref('to_date'));
           if (fromDateMillis != null) {
             _fromDate = DateTime.fromMillisecondsSinceEpoch(fromDateMillis);
           }
@@ -158,38 +177,38 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
             _toDate = DateTime.fromMillisecondsSinceEpoch(toDateMillis);
           }
 
-          final supplierName = prefs.getString('incoming_new_supplier');
-          final supplierId = prefs.getInt('incoming_new_supplier_id');
+          final supplierName = prefs.getString(_pref('supplier'));
+          final supplierId = prefs.getInt(_pref('supplier_id'));
           if (supplierName != null && supplierId != null) {
             _selectedSupplier =
                 SupplierData(id: supplierId, name: supplierName);
           }
 
-          final cashRegisterName =
-              prefs.getString('incoming_new_cash_register');
-          final cashRegisterId = prefs.getInt('incoming_new_cash_register_id');
+          final cashRegisterName = prefs.getString(_pref('cash_register'));
+          final cashRegisterId = prefs.getInt(_pref('cash_register_id'));
           if (cashRegisterName != null && cashRegisterId != null) {
             _selectedCashRegister =
                 CashRegisterData(id: cashRegisterId, name: cashRegisterName);
           }
 
-          final leadName = prefs.getString('incoming_new_lead');
-          final leadId = prefs.getInt('incoming_new_lead_id');
+          final leadName = prefs.getString(_pref('lead'));
+          final leadId = prefs.getInt(_pref('lead_id'));
           if (leadName != null && leadId != null) {
             _selectedLead = LeadData(id: leadId, name: leadName);
           }
 
-          final authorName = prefs.getString('incoming_new_author');
-          final authorId = prefs.getInt('incoming_new_author_id');
+          final authorName = prefs.getString(_pref('author'));
+          final authorId = prefs.getInt(_pref('author_id'));
           if (authorName != null && authorId != null) {
             selectedAuthor =
                 AuthorData(id: authorId, name: authorName, lastname: '');
           }
 
-          _selectedStatus = prefs.getString('money_incoming_new_status') ??
-              widget.initialStatus;
-          _isDeleted = prefs.getBool('incoming_new_is_deleted') ??
-              widget.initialIsDeleted;
+          _selectedStatus =
+              prefs.getString(_pref('status')) ?? widget.initialStatus;
+          _isDeleted =
+              prefs.getBool(_pref('is_deleted')) ?? widget.initialIsDeleted;
+          _restoreSelectedStorages(prefs);
 
           _updateDateControllers();
         });
@@ -199,68 +218,141 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
     }
   }
 
+  Future<void> _loadWarehouses() async {
+    try {
+      final storages = await _apiService.getWareHouses();
+      if (!mounted) return;
+      setState(() {
+        storagesList = storages;
+        _selectedStorage = _storageById(
+          widget.initialStorage,
+          _selectedStorage,
+        );
+        _selectedSenderStorage = _storageById(
+          widget.initialSenderStorage,
+          _selectedSenderStorage,
+        );
+        _selectedRecipientStorage = _storageById(
+          widget.initialRecipientStorage,
+          _selectedRecipientStorage,
+        );
+      });
+    } catch (e) {
+      debugPrint('Error loading warehouses: $e');
+    }
+  }
+
+  WareHouse? _storageById(String? rawId, WareHouse? current) {
+    final id = int.tryParse(rawId ?? '') ?? current?.id;
+    if (id == null) return current;
+    for (final storage in storagesList) {
+      if (storage.id == id) return storage;
+    }
+    return current;
+  }
+
+  void _restoreSelectedStorages(SharedPreferences prefs) {
+    _selectedStorage = _storageById(
+      prefs.getInt(_pref('storage_id'))?.toString() ?? widget.initialStorage,
+      _selectedStorage,
+    );
+    _selectedSenderStorage = _storageById(
+      prefs.getInt(_pref('sender_storage_id'))?.toString() ??
+          widget.initialSenderStorage,
+      _selectedSenderStorage,
+    );
+    _selectedRecipientStorage = _storageById(
+      prefs.getInt(_pref('recipient_storage_id'))?.toString() ??
+          widget.initialRecipientStorage,
+      _selectedRecipientStorage,
+    );
+  }
+
+  Future<void> _saveNamedItem({
+    required SharedPreferences prefs,
+    required String nameKey,
+    required String idKey,
+    required String? name,
+    required int? id,
+  }) async {
+    if (name != null && id != null) {
+      await prefs.setString(_pref(nameKey), name);
+      await prefs.setInt(_pref(idKey), id);
+    } else {
+      await prefs.remove(_pref(nameKey));
+      await prefs.remove(_pref(idKey));
+    }
+  }
+
   Future<void> _saveFilterState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
       if (_fromDate != null) {
-        await prefs.setInt(
-            'incoming_new_from_date', _fromDate!.millisecondsSinceEpoch);
+        await prefs.setInt(_pref('from_date'), _fromDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('incoming_new_from_date');
+        await prefs.remove(_pref('from_date'));
       }
 
       if (_toDate != null) {
-        await prefs.setInt(
-            'incoming_new_to_date', _toDate!.millisecondsSinceEpoch);
+        await prefs.setInt(_pref('to_date'), _toDate!.millisecondsSinceEpoch);
       } else {
-        await prefs.remove('incoming_new_to_date');
+        await prefs.remove(_pref('to_date'));
       }
 
-      if (_selectedSupplier != null) {
-        await prefs.setString('incoming_new_supplier', _selectedSupplier!.name);
-        await prefs.setInt('incoming_new_supplier_id', _selectedSupplier!.id);
-      } else {
-        await prefs.remove('incoming_new_supplier');
-        await prefs.remove('incoming_new_supplier_id');
-      }
-
-      if (_selectedCashRegister != null) {
-        await prefs.setString(
-            'incoming_new_cash_register', _selectedCashRegister!.name);
-        await prefs.setInt(
-            'incoming_new_cash_register_id', _selectedCashRegister!.id);
-      } else {
-        await prefs.remove('incoming_new_cash_register');
-        await prefs.remove('incoming_new_cash_register_id');
-      }
-
-      if (_selectedLead != null) {
-        await prefs.setString('incoming_new_lead', _selectedLead!.name);
-        await prefs.setInt('incoming_new_lead_id', _selectedLead!.id);
-      } else {
-        await prefs.remove('incoming_new_lead');
-        await prefs.remove('incoming_new_lead_id');
-      }
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'supplier',
+        idKey: 'supplier_id',
+        name: _selectedSupplier?.name,
+        id: _selectedSupplier?.id,
+      );
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'lead',
+        idKey: 'lead_id',
+        name: _selectedLead?.name,
+        id: _selectedLead?.id,
+      );
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'author',
+        idKey: 'author_id',
+        name: selectedAuthor?.name,
+        id: selectedAuthor?.id,
+      );
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'storage',
+        idKey: 'storage_id',
+        name: _selectedStorage?.name,
+        id: _selectedStorage?.id,
+      );
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'sender_storage',
+        idKey: 'sender_storage_id',
+        name: _selectedSenderStorage?.name,
+        id: _selectedSenderStorage?.id,
+      );
+      await _saveNamedItem(
+        prefs: prefs,
+        nameKey: 'recipient_storage',
+        idKey: 'recipient_storage_id',
+        name: _selectedRecipientStorage?.name,
+        id: _selectedRecipientStorage?.id,
+      );
 
       if (_selectedStatus != null) {
-        await prefs.setString('money_incoming_new_status', _selectedStatus!);
+        await prefs.setString(_pref('status'), _selectedStatus!);
       } else {
-        await prefs.remove('money_incoming_new_status');
-      }
-
-      if (selectedAuthor != null) {
-        await prefs.setString('incoming_new_author', selectedAuthor!.name);
-        await prefs.setInt('incoming_new_author_id', selectedAuthor!.id);
-      } else {
-        await prefs.remove('incoming_new_author');
-        await prefs.remove('incoming_new_author_id');
+        await prefs.remove(_pref('status'));
       }
 
       if (_isDeleted != null) {
-        await prefs.setBool('incoming_new_is_deleted', _isDeleted!);
+        await prefs.setBool(_pref('is_deleted'), _isDeleted!);
       } else {
-        await prefs.remove('incoming_new_is_deleted');
+        await prefs.remove(_pref('is_deleted'));
       }
     } catch (e) {
       debugPrint('Error saving filter state: $e');
@@ -280,6 +372,9 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
         _selectedStatus = null;
         selectedAuthor = null;
         _isDeleted = null;
+        _selectedStorage = null;
+        _selectedSenderStorage = null;
+        _selectedRecipientStorage = null;
       });
     }
     widget.onResetFilters?.call();
@@ -292,11 +387,13 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
     return _fromDate != null ||
         _toDate != null ||
         _selectedSupplier != null ||
-        _selectedCashRegister != null ||
         _selectedLead != null ||
         _selectedStatus != null ||
         selectedAuthor != null ||
-        _isDeleted != null;
+        _isDeleted != null ||
+        _selectedStorage != null ||
+        _selectedSenderStorage != null ||
+        _selectedRecipientStorage != null;
   }
 
   Widget _buildFilterCard(
@@ -350,19 +447,25 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
             DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
       }
 
-      final filters = {
+      final type = widget.filterType;
+      final filters = <String, dynamic>{
         'date_from': _fromDate,
         'date_to': _toDate,
-        'supplier_id': _selectedSupplier?.id.toString(),
-        'storage_id': _selectedCashRegister?.id.toString(),
-        'lead_id': _selectedLead?.id.toString(),
         'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
         'deleted': _isDeleted == null
             ? null
             : _isDeleted == true
                 ? '1'
-                : '0'
+                : '0',
+        if (type.showSupplier) 'supplier_id': _selectedSupplier?.id.toString(),
+        if (type.showClient) 'lead_id': _selectedLead?.id.toString(),
+        if (type.showWarehouse) 'storage_id': _selectedStorage?.id.toString(),
+        if (type.showSenderRecipient) ...{
+          'sender_storage_id': _selectedSenderStorage?.id.toString(),
+          'storage_id': _selectedSenderStorage?.id.toString(),
+          'recipient_storage_id': _selectedRecipientStorage?.id.toString(),
+        },
       };
 
       widget.onSelectedDataFilter?.call(filters);
@@ -454,6 +557,7 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
               }
 
               return CustomDropdown<SupplierData>.search(
+                key: const ValueKey('incoming_filter_supplier'),
                 items: suppliersList,
                 searchHintText:
                     AppLocalizations.of(context)!.translate('search'),
@@ -730,6 +834,7 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
               }
 
               return CustomDropdown<LeadData>.search(
+                key: const ValueKey('incoming_filter_lead'),
                 items: leadsList,
                 searchHintText:
                     AppLocalizations.of(context)!.translate('search'),
@@ -776,6 +881,92 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
               );
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWarehouseWidget({
+    required String dropdownKey,
+    required String title,
+    required String hint,
+    required WareHouse? selectedValue,
+    required ValueChanged<WareHouse> onChanged,
+  }) {
+    return _buildFilterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: context.appTextStyles.bodyLg.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          storagesList.isEmpty
+              ? Container(
+                  key: ValueKey('${dropdownKey}_placeholder'),
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: context.appColors.fieldBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    hint,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                )
+              : CustomDropdown<WareHouse>.search(
+                  key: ValueKey(dropdownKey),
+                  items: storagesList,
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
+                  overlayHeight: 300,
+                  enabled: true,
+                  decoration: _buildDropdownDecoration(),
+                  listItemBuilder: (context, item, isSelected, onItemSelect) {
+                    return Text(
+                      item.name,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  },
+                  headerBuilder: (context, selectedItem, enabled) {
+                    return Text(
+                      selectedItem.name,
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: context.appColors.textPrimary,
+                      ),
+                    );
+                  },
+                  hintBuilder: (context, hintText, enabled) => Text(
+                    hint,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                  initialItem: selectedValue != null &&
+                          storagesList.any((item) => item.id == selectedValue.id)
+                      ? storagesList
+                          .firstWhere((item) => item.id == selectedValue.id)
+                      : null,
+                  onChanged: (value) {
+                    if (value != null && mounted) {
+                      onChanged(value);
+                      FocusScope.of(context).unfocus();
+                    }
+                  },
+                ),
         ],
       ),
     );
@@ -851,6 +1042,7 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
               }
 
               return CustomDropdown<AuthorData>.search(
+                key: const ValueKey('incoming_filter_author'),
                 items: authorsList,
                 searchHintText:
                     AppLocalizations.of(context)!.translate('search'),
@@ -1004,21 +1196,9 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Supplier Widget
-                    _buildSupplierWidget(),
-                    const SizedBox(height: 8),
-
-                    // Cash Register Widget
-                    _buildCashRegisterWidget(),
-                    const SizedBox(height: 8),
-
-                    // Cash Register Widget
-                    _buildLeadWidget(),
-                    const SizedBox(height: 8),
-
-                    // Status Dropdown with localization
                     _buildFilterCard(
                       child: _StatusMethodDropdown(
+                          key: const ValueKey('incoming_filter_status'),
                           title:
                               AppLocalizations.of(context)!.translate('status'),
                           statusMethodsList: [
@@ -1046,14 +1226,11 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                               : null),
                     ),
                     const SizedBox(height: 8),
-
-                    // Author Dropdown
                     _buildAuthorWidget(),
                     const SizedBox(height: 8),
-
-                    // Boolean Deleted Status Dropdown
                     _buildFilterCard(
                       child: _StatusMethodDropdown(
+                          key: const ValueKey('incoming_filter_deleted'),
                           title: AppLocalizations.of(context)!
                               .translate('status_delete'),
                           statusMethodsList: [
@@ -1078,7 +1255,62 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                             }
                           }),
                     ),
-                    const SizedBox(height: 96),
+                    const SizedBox(height: 8),
+                    if (widget.filterType.showWarehouse) ...[
+                      _buildWarehouseWidget(
+                        dropdownKey: 'incoming_filter_storage',
+                        title: AppLocalizations.of(context)!
+                            .translate('warehouse'),
+                        hint: AppLocalizations.of(context)!
+                            .translate('select_warehouse'),
+                        selectedValue: _selectedStorage,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedStorage = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (widget.filterType.showSenderRecipient) ...[
+                      _buildWarehouseWidget(
+                        dropdownKey: 'incoming_filter_sender_storage',
+                        title: AppLocalizations.of(context)!
+                            .translate('sender_storage'),
+                        hint: AppLocalizations.of(context)!
+                            .translate('select_sender_storage'),
+                        selectedValue: _selectedSenderStorage,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSenderStorage = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildWarehouseWidget(
+                        dropdownKey: 'incoming_filter_recipient_storage',
+                        title: AppLocalizations.of(context)!
+                            .translate('recipient_storage'),
+                        hint: AppLocalizations.of(context)!
+                            .translate('select_recipient_storage'),
+                        selectedValue: _selectedRecipientStorage,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedRecipientStorage = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (widget.filterType.showClient) ...[
+                      _buildLeadWidget(),
+                      const SizedBox(height: 8),
+                    ],
+                    if (widget.filterType.showSupplier) ...[
+                      _buildSupplierWidget(),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 88),
                   ],
                 ),
               ),
@@ -1104,6 +1336,7 @@ class _StatusMethodDropdown extends StatefulWidget {
   final String title;
 
   const _StatusMethodDropdown({
+    super.key,
     required this.onSelectstatusMethod,
     this.selectedstatusMethod,
     required this.statusMethodsList,
@@ -1145,6 +1378,7 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
         ),
         const SizedBox(height: 4),
         CustomDropdown<String>(
+          key: ValueKey('incoming_filter_status_dropdown_${widget.title}'),
           items: widget.statusMethodsList,
           overlayHeight: 150,
           enabled: true,

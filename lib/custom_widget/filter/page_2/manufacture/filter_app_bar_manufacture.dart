@@ -236,6 +236,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
   }
 
   Widget _buildStorageDropdown({
+    required String dropdownKey,
     required String title,
     required String hint,
     required WareHouse? selectedValue,
@@ -262,6 +263,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                   ),
                 )
               : CustomDropdown<WareHouse>.search(
+                  key: ValueKey(dropdownKey),
                   items: _storages,
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search') ??
@@ -380,6 +382,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
           }
 
           return CustomDropdown<AuthorData>.search(
+            key: const ValueKey('manufacture_filter_author'),
             items: authors,
             searchHintText: localizations.translate('search') ?? 'Поиск',
             overlayHeight: 300,
@@ -542,37 +545,10 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildStorageDropdown(
-                      title: localizations
-                          .translate('manufacture_writeoff_storage'),
-                      hint: localizations.translate(
-                              'select_manufacture_writeoff_storage') ??
-                          'Выберите склад списания',
-                      selectedValue: _selectedSenderStorage,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedSenderStorage = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _buildStorageDropdown(
-                      title:
-                          localizations.translate('manufacture_income_storage'),
-                      hint: localizations
-                              .translate('select_manufacture_income_storage') ??
-                          'Выберите склад прихода',
-                      selectedValue: _selectedRecipientStorage,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedRecipientStorage = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
                     _buildSectionCard(
                       title: localizations.translate('status'),
                       child: _StatusMethodDropdown(
+                        key: const ValueKey('manufacture_filter_status'),
                         title: localizations.translate('status'),
                         statusMethodsList: [
                           localizations.translate('approved'),
@@ -602,6 +578,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                       title:
                           localizations.translate('status_delete') ?? 'Удален',
                       child: _StatusMethodDropdown(
+                        key: const ValueKey('manufacture_filter_deleted'),
                         title: localizations.translate('status_delete') ??
                             'Удален',
                         statusMethodsList: [
@@ -623,6 +600,36 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                         },
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    _buildStorageDropdown(
+                      dropdownKey: 'manufacture_filter_writeoff_storage',
+                      title: localizations
+                          .translate('manufacture_writeoff_storage'),
+                      hint: localizations.translate(
+                              'select_manufacture_writeoff_storage') ??
+                          'Выберите склад списания',
+                      selectedValue: _selectedSenderStorage,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSenderStorage = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _buildStorageDropdown(
+                      dropdownKey: 'manufacture_filter_income_storage',
+                      title:
+                          localizations.translate('manufacture_income_storage'),
+                      hint: localizations
+                              .translate('select_manufacture_income_storage') ??
+                          'Выберите склад прихода',
+                      selectedValue: _selectedRecipientStorage,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedRecipientStorage = value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 96),
                   ],
                 ),
@@ -642,6 +649,7 @@ class _StatusMethodDropdown extends StatefulWidget {
   final String title;
 
   const _StatusMethodDropdown({
+    super.key,
     required this.onSelectstatusMethod,
     this.selectedstatusMethod,
     required this.statusMethodsList,
@@ -676,6 +684,7 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
       children: [
         const SizedBox(height: 4),
         CustomDropdown<String>(
+          key: ValueKey('manufacture_filter_status_dropdown_${widget.title}'),
           items: widget.statusMethodsList,
           overlayHeight: 150,
           enabled: true,

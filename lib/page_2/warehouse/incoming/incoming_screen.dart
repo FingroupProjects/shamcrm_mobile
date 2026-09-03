@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_blo
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -280,6 +281,7 @@ class _IncomingScreenState extends State<IncomingScreen> {
                     showFilterOrderIcon: false,
                     showFilterIncomeIcon: false,
                     showFilterIncomingIcon: true,
+                    warehouseFilterType: WarehouseDocumentFilterType.incoming,
                     onFilterIncomingSelected: _onFilterSelected,
                     onIncomingResetFilters: _onResetFilters,
                     onChangedSearchInput: _onSearch,

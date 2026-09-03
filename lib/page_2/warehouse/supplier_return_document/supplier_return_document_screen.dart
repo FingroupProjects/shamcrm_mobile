@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/suppl
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/supplier_return/supplier_return_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
@@ -98,6 +99,38 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
         filters: _currentFilters,
       ));
     }
+  }
+
+  void _onFilterSelected(Map<String, dynamic> filters) {
+    final query = _currentFilters['query'];
+    setState(() {
+      _currentFilters = Map.from(filters);
+      if (query != null) {
+        _currentFilters['query'] = query;
+      }
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+    });
+    _supplierReturnBloc.add(FetchSupplierReturn(
+      forceRefresh: true,
+      filters: _currentFilters,
+    ));
+  }
+
+  void _onResetFilters() {
+    final query = _currentFilters['query'];
+    setState(() {
+      _currentFilters = {};
+      if (query != null) {
+        _currentFilters['query'] = query;
+      }
+      _hasReachedMax = false;
+      _isLoadingMore = false;
+    });
+    _supplierReturnBloc.add(FetchSupplierReturn(
+      forceRefresh: true,
+      filters: _currentFilters,
+    ));
   }
 
   void _onSearch(String query) {
@@ -246,6 +279,11 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                     showSearchIcon: true,
                     showFilterIcon: false,
                     showFilterOrderIcon: false,
+                    showFilterIncomingIcon: true,
+                    warehouseFilterType:
+                        WarehouseDocumentFilterType.supplierReturn,
+                    onFilterIncomingSelected: _onFilterSelected,
+                    onIncomingResetFilters: _onResetFilters,
                     onChangedSearchInput: _onSearch,
                     textEditingController: _searchController,
                     focusNode: _focusNode,
@@ -261,7 +299,7 @@ class _SupplierReturnScreenState extends State<SupplierReturnScreen> {
                     },
                     onClickProfileAvatar: () {},
                     clearButtonClickFiltr: (bool p1) {},
-                    currentFilters: {},
+                    currentFilters: _currentFilters,
                   ),
           ),
           body: BlocListener<SupplierReturnBloc, SupplierReturnState>(

@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/write_off/write_off_b
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_card.dart';
@@ -310,6 +311,7 @@ class _WriteOffScreenState extends State<WriteOffScreen> {
                     showFilterOrderIcon: false,
                     showFilterIncomeIcon: false,
                     showFilterIncomingIcon: true,
+                    warehouseFilterType: WarehouseDocumentFilterType.writeOff,
                     onChangedSearchInput: _onSearch,
                     onFilterIncomingSelected: _onFilterSelected,
                     onIncomingResetFilters: _onResetFilters,

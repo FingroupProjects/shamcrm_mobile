@@ -156,6 +156,13 @@ class _WriteOffDocumentDetailsScreenState
             : '',
       },
       {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': [
+          document.author?.name,
+          document.author?.lastname,
+        ].where((part) => (part ?? '').trim().isNotEmpty).join(' ').trim(),
+      },
+      {
         'label':
             '${AppLocalizations.of(context)!.translate('storage') ?? 'Склад'}:',
         'value': document.storage?.name ?? '',

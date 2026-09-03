@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_sale/bloc/clie
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
+import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/create_clien_sales_document_screen.dart';
@@ -293,6 +294,7 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                     showFilterOrderIcon: false,
                     showFilterIncomeIcon: false,
                     showFilterIncomingIcon: true,
+                    warehouseFilterType: WarehouseDocumentFilterType.clientSale,
                     onIncomingResetFilters: _onResetFilters,
                     onFilterIncomingSelected: _onFilterSelected,
                     onChangedSearchInput: _onSearch,

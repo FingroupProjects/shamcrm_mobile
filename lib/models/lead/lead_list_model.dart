@@ -24,12 +24,38 @@ class LeadData {
         name: json['name'] is String ? json['name'] : 'Без имени',
         managerId: json['manager'] != null ? json['manager']['id'] : null,
         debt: json['debt'], // ← Парсим долг из JSON
-        phone: json['phone']?.toString(), // ← Парсим телефон из JSON
+        phone: _phoneFromJson(json),
         currencyId: json['currency_id'],
         currency: json['currency'] != null
             ? LeadListCurrency.fromJson(json['currency'])
             : null,
       );
+
+  static String? _phoneFromJson(Map<String, dynamic> json) {
+    final candidates = <dynamic>[
+      json['phone'],
+      json['telephone'],
+      json['mobile'],
+      json['phone_number'],
+      json['wa_phone'],
+    ];
+    final contact = json['contact'];
+    if (contact is Map) {
+      candidates.addAll([
+        contact['phone'],
+        contact['telephone'],
+        contact['mobile'],
+      ]);
+    }
+    for (final raw in candidates) {
+      if (raw == null) continue;
+      final phone = raw.toString().trim();
+      if (phone.isNotEmpty && phone.toLowerCase() != 'null') {
+        return phone;
+      }
+    }
+    return null;
+  }
 
   Map<String, dynamic> toJson() => {
         "id": id,

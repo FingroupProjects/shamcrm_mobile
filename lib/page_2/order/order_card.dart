@@ -32,137 +32,6 @@ class OrderCard extends StatefulWidget {
   _OrderCardState createState() => _OrderCardState();
 }
 
-class PaymentTypeStyle {
-  final Widget content;
-  final Color backgroundColor;
-  final bool isImage;
-
-  PaymentTypeStyle({
-    required this.content,
-    required this.backgroundColor,
-    this.isImage = false,
-  });
-}
-
-PaymentTypeStyle getPaymentTypeStyle(String? paymentType, BuildContext context) {
-  final colors = context.appColors;
-  switch (paymentType?.toLowerCase()) {
-    case 'cash':
-      return PaymentTypeStyle(
-        content: Text(
-          'Наличными',
-          style: TextStyle(
-            fontSize: 11,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: colors.textInverse,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: const Color.fromARGB(255, 23, 178, 36),
-        isImage: false,
-      );
-    case 'alif':
-      return PaymentTypeStyle(
-        content: Transform.translate(
-          offset: const Offset(0.0, 0),
-          child: Transform.scale(
-            scaleY: 1.1,
-            scaleX: 1.1,
-            child: Image.asset(
-              'assets/icons/alif.png',
-              width: 55,
-              height: 26,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Text(
-                'ALIF',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: colors.textInverse,
-                ),
-              ),
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        isImage: true,
-      );
-    case 'click':
-      return PaymentTypeStyle(
-        content: Transform.translate(
-          offset: const Offset(0.0, 0),
-          child: Transform.scale(
-            scaleY: 1.1,
-            scaleX: 1.1,
-            child: Image.asset(
-              'assets/icons/click3.png',
-              width: 55,
-              height: 26,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Text(
-                'CLICK',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: colors.textInverse,
-                ),
-              ),
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        isImage: true,
-      );
-    case 'payme':
-      return PaymentTypeStyle(
-        content: Transform.translate(
-          offset: const Offset(0.0, 0),
-          child: Transform.scale(
-            scaleY: 1.1,
-            scaleX: 1.1,
-            child: Image.asset(
-              'assets/icons/payme.png',
-              width: 55,
-              height: 26,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Text(
-                'PAYME',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w500,
-                  color: colors.textInverse,
-                ),
-              ),
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        isImage: true,
-      );
-    default:
-      return PaymentTypeStyle(
-        content: Text(
-          'Неизвестно',
-          style: TextStyle(
-            fontSize: 11,
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            color: colors.textSecondary,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: colors.surfaceElevated,
-        isImage: false,
-      );
-  }
-}
-
 class _OrderCardState extends State<OrderCard> {
   late String dropdownValue;
   late int statusId;
@@ -472,66 +341,31 @@ class _OrderCardState extends State<OrderCard> {
             ),
             SizedBox(height: hasLongContent ? 20 : 16),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
-                  Flexible(
-                    flex: 1,
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.42,
-                      ),
-                      child: IntrinsicWidth(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: getPaymentTypeStyle(
-                                    widget.order.paymentMethod, context)
-                                .backgroundColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: getPaymentTypeStyle(
-                                  widget.order.paymentMethod, context)
-                              .content,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
-                Flexible(
-                  flex: 1,
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.42,
-                    ),
-                    child: IntrinsicWidth(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          widget.order.manager?.name ?? 'Система',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: secondaryText,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.42,
                 ),
-              ],
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  widget.order.manager?.name ?? 'Система',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w500,
+                    color: secondaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
             SizedBox(height: hasLongContent ? 20 : 16),
 

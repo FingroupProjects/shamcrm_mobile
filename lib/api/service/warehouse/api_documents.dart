@@ -1,5 +1,47 @@
 part of '../api_service.dart';
 
+String _appendWarehouseDocumentFilters(
+  String path,
+  Map<String, dynamic>? filters,
+) {
+  if (filters == null) return path;
+
+  String? isoDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value.toIso8601String();
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  void add(String key, dynamic value) {
+    if (value == null) return;
+    final text = value.toString().trim();
+    if (text.isEmpty) return;
+    path += '&$key=${Uri.encodeQueryComponent(text)}';
+  }
+
+  final dateFrom = isoDate(filters['date_from'] ?? filters['fromDate']);
+  final dateTo = isoDate(filters['date_to'] ?? filters['toDate']);
+  if (dateFrom != null) {
+    add('date_from', dateFrom);
+    add('from', dateFrom);
+  }
+  if (dateTo != null) {
+    add('date_to', dateTo);
+    add('to', dateTo);
+  }
+  add('deleted', filters['deleted']);
+  add('author_id', filters['author_id']);
+  add('approved', filters['approved']);
+  add('storage_id', filters['storage_id']);
+  add('supplier_id', filters['supplier_id']);
+  add('lead_id', filters['lead_id']);
+  add('client_id', filters['lead_id']);
+  add('sender_storage_id', filters['sender_storage_id']);
+  add('recipient_storage_id', filters['recipient_storage_id']);
+  return path;
+}
+
 extension ApiWarehouseDocumentsX on ApiService {
   Future<Map<String, dynamic>> getIncomingCalls({
     required int page,
@@ -116,30 +158,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
 
     debugPrint("Фильтры для прихода товаров: $filters");
-
-    if (filters != null) {
-      if (filters.containsKey('date_from') && filters['date_from'] != null) {
-        final dateFrom = filters['date_from'] as DateTime;
-        path += '&date_from=${dateFrom.toIso8601String()}';
-      }
-
-      if (filters.containsKey('date_to') && filters['date_to'] != null) {
-        final dateTo = filters['date_to'] as DateTime;
-        path += '&date_to=${dateTo.toIso8601String()}';
-      }
-
-      if (filters.containsKey('deleted') && filters['deleted'] != null) {
-        path += '&deleted=${filters['deleted']}';
-      }
-
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('approved') && filters['approved'] != null) {
-        path += '&approved=${filters['approved']}';
-      }
-    }
+    path = _appendWarehouseDocumentFilters(path, filters);
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
@@ -1433,6 +1452,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     int page = 1,
     int perPage = 20,
     String? query,
+    Map<String, dynamic>? filters,
     DateTime? fromDate,
     DateTime? toDate,
     int? approved, // Для будущего фильтра по статусу
@@ -1442,15 +1462,12 @@ extension ApiWarehouseDocumentsX on ApiService {
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
     }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
-    }
+    url = _appendWarehouseDocumentFilters(url, {
+      ...?filters,
+      if (fromDate != null) 'date_from': fromDate,
+      if (toDate != null) 'date_to': toDate,
+      if (approved != null) 'approved': approved,
+    });
 
     final path = await _appendQueryParams(url);
 
@@ -2251,30 +2268,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
 
     debugPrint("Фильтры для списания товаров: $filters");
-
-    if (filters != null) {
-      if (filters.containsKey('date_from') && filters['date_from'] != null) {
-        final dateFrom = filters['date_from'] as DateTime;
-        path += '&date_from=${dateFrom.toIso8601String()}';
-      }
-
-      if (filters.containsKey('date_to') && filters['date_to'] != null) {
-        final dateTo = filters['date_to'] as DateTime;
-        path += '&date_to=${dateTo.toIso8601String()}';
-      }
-
-      if (filters.containsKey('deleted') && filters['deleted'] != null) {
-        path += '&deleted=${filters['deleted']}';
-      }
-
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('approved') && filters['approved'] != null) {
-        path += '&approved=${filters['approved']}';
-      }
-    }
+    path = _appendWarehouseDocumentFilters(path, filters);
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
@@ -2659,6 +2653,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     int page = 1,
     int perPage = 20,
     String? query,
+    Map<String, dynamic>? filters,
     DateTime? fromDate,
     DateTime? toDate,
     int? approved, // Для будущего фильтра по статусу
@@ -2669,15 +2664,12 @@ extension ApiWarehouseDocumentsX on ApiService {
     if (query != null && query.isNotEmpty) {
       url += '&search=$query';
     }
-    if (fromDate != null) {
-      url += '&from=${fromDate.toIso8601String()}';
-    }
-    if (toDate != null) {
-      url += '&to=${toDate.toIso8601String()}';
-    }
-    if (approved != null) {
-      url += '&approved=$approved';
-    }
+    url = _appendWarehouseDocumentFilters(url, {
+      ...?filters,
+      if (fromDate != null) 'date_from': fromDate,
+      if (toDate != null) 'date_to': toDate,
+      if (approved != null) 'approved': approved,
+    });
 
     final path = await _appendQueryParams(url);
     if (kDebugMode) {

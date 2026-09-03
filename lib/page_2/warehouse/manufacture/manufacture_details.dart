@@ -166,6 +166,13 @@ class _ManufactureDocumentDetailsScreenState
             : '',
       },
       {
+        'label': AppLocalizations.of(context)!.translate('author_details'),
+        'value': [
+          document.author?.name,
+          document.author?.lastname,
+        ].where((part) => (part ?? '').trim().isNotEmpty).join(' ').trim(),
+      },
+      {
         'label':
             '${AppLocalizations.of(context)!.translate('manufacture_writeoff_storage') ?? 'Склад списания'}:',
         'value':

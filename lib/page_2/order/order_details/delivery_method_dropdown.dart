@@ -70,12 +70,12 @@ class _DeliveryMethodDropdownState extends State<DeliveryMethodDropdown> {
             closedFillColor: colors.fieldBg,
             expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: colors.fieldBg,
+              color: colors.fieldBorder,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: colors.fieldBg,
+              color: colors.fieldBorder,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),

@@ -447,7 +447,7 @@ extension ApiWarehouseOrdersX on ApiService {
       if (token == null) throw Exception('Токен не найден');
 
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
-      final path = await _appendQueryParams('/order/store/from-online-shop');
+      final path = await _appendQueryParams('/order');
       if (kDebugMode) {
         //debugPrint('ApiService: createOrder - Generated path: $path');
       }

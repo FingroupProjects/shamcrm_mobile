@@ -24,6 +24,7 @@ import 'filter/page_2/incoming/filter_app_bar_incoming.dart';
 import 'filter/page_2/client_sale/filter_app_bar_client_sale.dart';
 import 'filter/page_2/client_return/filter_app_bar_client_return.dart';
 import 'filter/page_2/manufacture/filter_app_bar_manufacture.dart';
+import 'filter/page_2/warehouse_document_filter_type.dart';
 
 class CustomAppBarPage2 extends StatefulWidget {
   String title;
@@ -64,6 +65,7 @@ class CustomAppBarPage2 extends StatefulWidget {
       onClientReturnResetFilters; // new filter for documents -> client return screen
 
   final Map<String, dynamic> currentFilters;
+  final WarehouseDocumentFilterType warehouseFilterType;
   final List<String>? initialLabels;
   final bool isTojsokhtmontjTenant;
 
@@ -97,6 +99,7 @@ class CustomAppBarPage2 extends StatefulWidget {
     this.onClientSaleResetFilters,
     this.onClientReturnResetFilters,
     required this.currentFilters,
+    this.warehouseFilterType = WarehouseDocumentFilterType.incoming,
     this.initialLabels,
     this.isTojsokhtmontjTenant = false,
   });
@@ -1086,14 +1089,39 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     DateTime? initialToDate = widget.currentFilters['date_to'];
     String? initialStatus;
     String? initialAuthor;
+    String? initialSupplier;
+    String? initialLead;
+    String? initialStorage;
+    String? initialSenderStorage;
+    String? initialRecipientStorage;
     bool? initialIsDeleted;
 
-    if (widget.currentFilters.containsKey('status')) {
-      initialStatus = widget.currentFilters['status'].toString();
+    if (widget.currentFilters.containsKey('status') ||
+        widget.currentFilters.containsKey('approved')) {
+      initialStatus = (widget.currentFilters['approved'] ??
+              widget.currentFilters['status'])
+          ?.toString();
     }
 
     if (widget.currentFilters.containsKey('author_id')) {
       initialAuthor = widget.currentFilters['author_id'].toString();
+    }
+    if (widget.currentFilters.containsKey('supplier_id')) {
+      initialSupplier = widget.currentFilters['supplier_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('lead_id')) {
+      initialLead = widget.currentFilters['lead_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('storage_id')) {
+      initialStorage = widget.currentFilters['storage_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('sender_storage_id')) {
+      initialSenderStorage =
+          widget.currentFilters['sender_storage_id']?.toString();
+    }
+    if (widget.currentFilters.containsKey('recipient_storage_id')) {
+      initialRecipientStorage =
+          widget.currentFilters['recipient_storage_id']?.toString();
     }
 
     if (widget.currentFilters.containsKey('deleted')) {
@@ -1107,15 +1135,18 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       context,
       MaterialPageRoute(
         builder: (context) => IncomingFilterScreen(
+          filterType: widget.warehouseFilterType,
+          initialSupplier: initialSupplier,
+          initialLead: initialLead,
+          initialStorage: initialStorage,
+          initialSenderStorage: initialSenderStorage,
+          initialRecipientStorage: initialRecipientStorage,
           onSelectedDataFilter: (filters) {
             if (kDebugMode) {
               //print('CustomAppBarPage2: Получены фильтры из IncomingFilterScreen: $filters');
             }
             setState(() {
-              _isIncomingFiltering = filters.isNotEmpty ||
-                  filters['date_from'] != null ||
-                  filters['date_to'] != null ||
-                  filters['author_id'] != null;
+              _isIncomingFiltering = filters.values.any((value) => value != null);
             });
             debugPrint("_isIncomingFiltering: $_isIncomingFiltering");
             debugPrint("filters: $filters");
