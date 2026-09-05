@@ -4480,6 +4480,9 @@ class MessageItemWidget extends StatelessWidget {
 
   bool get _canEditOwnTextMessages {
     if (_isLead24hRestricted) return false;
+    if (endPointInTab == 'corporate' || endPointInTab == 'task') {
+      return true;
+    }
     return _isTelegramSourceForEdit;
   }
 

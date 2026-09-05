@@ -14,11 +14,13 @@ class AccountingPrintService {
     required exp_doc.ExpenseDocumentDetail document,
     required String title,
     PrintTemplateSettings settings = const PrintTemplateSettings(),
+    bool realizationLayout = false,
   }) async {
     final bytes = await buildExpenseDocumentPdf(
       document: document,
       title: title,
       settings: settings,
+      realizationLayout: realizationLayout,
     );
 
     final docNumber =
@@ -33,6 +35,7 @@ class AccountingPrintService {
     required exp_doc.ExpenseDocumentDetail document,
     required String title,
     PrintTemplateSettings settings = const PrintTemplateSettings(),
+    bool realizationLayout = false,
   }) async {
     final regularFont = pw.Font.ttf(
       await rootBundle.load('assets/fonts/Gilroy-Regular.ttf'),
@@ -48,18 +51,168 @@ class AccountingPrintService {
     final receipt = settings.paperSize == 'receipt58' ||
         settings.paperSize == 'receipt80' ||
         settings.paperSize == 'custom';
-    final margin = receipt ? 8.0 : (compact ? 18.0 : 28.0);
-    final spacing = compact ? 10.0 : 18.0;
+    final margin = receipt
+        ? 8.0
+        : (realizationLayout ? 20.0 : (compact ? 18.0 : 28.0));
+    final spacing = realizationLayout ? 8.0 : (compact ? 10.0 : 18.0);
     final pageFormat = _pageFormat(settings);
+
+    final displayTitle = realizationLayout
+        ? _realizationTitle(title, document, settings)
+        : (settings.customTitle.trim().isEmpty
+            ? title
+            : settings.customTitle.trim());
+    final theme = pw.ThemeData.withFont(
+      base: regularFont,
+      bold: boldFont,
+    );
+
+    if (realizationLayout) {
+      _addRealizationPages(
+        pdf: pdf,
+        pageFormat: pageFormat,
+        margin: margin,
+        theme: theme,
+        settings: settings,
+        copies: () => _documentCopyChildren(
+          title: displayTitle,
+          document: document,
+          goods: goods,
+          currency: currency,
+          settings: settings,
+          spacing: spacing,
+          realizationLayout: true,
+        ),
+        copyColumn: () => _documentCopyColumn(
+          title: displayTitle,
+          document: document,
+          goods: goods,
+          currency: currency,
+          settings: settings,
+          spacing: spacing,
+        ),
+        twoCopiesFit: _twoRealizationCopiesFit(
+          document: document,
+          goods: goods,
+          settings: settings,
+          pageFormat: pageFormat,
+          margin: margin,
+        ),
+      );
+    } else {
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.all(margin),
+          theme: theme,
+          footer: (context) => pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  settings.footerText.trim(),
+                  style: pw.TextStyle(
+                    fontSize: _font(settings, 9),
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ),
+              pw.Text(
+                '${context.pageNumber}/${context.pagesCount}',
+                style: pw.TextStyle(
+                  fontSize: _font(settings, 9),
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ],
+          ),
+          build: (context) => [
+            _header(displayTitle, document, settings, realizationLayout: false),
+            pw.SizedBox(height: spacing),
+            if (_hasDetails(settings, document)) ...[
+              _detailsBlock(document, settings, realizationLayout: false),
+              pw.SizedBox(height: spacing),
+            ],
+            _goodsTable(goods, currency, settings, realizationLayout: false),
+            if (settings.showTotalQuantity || settings.showSums) ...[
+              pw.SizedBox(height: 16),
+              _totalsBlock(document, currency, settings),
+            ],
+            if (settings.showComment &&
+                (document.comment ?? '').trim().isNotEmpty) ...[
+              pw.SizedBox(height: 14),
+              _commentBlock(document.comment!.trim()),
+            ],
+            if (settings.showSignatures) ...[
+              pw.SizedBox(height: 34),
+              _signatures(realizationLayout: false),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return pdf.save();
+  }
+
+  static void _addRealizationPages({
+    required pw.Document pdf,
+    required PdfPageFormat pageFormat,
+    required double margin,
+    required pw.ThemeData theme,
+    required PrintTemplateSettings settings,
+    required List<pw.Widget> Function() copies,
+    required pw.Widget Function() copyColumn,
+    required bool twoCopiesFit,
+  }) {
+    if (twoCopiesFit) {
+      final contentWidth = pageFormat.width - margin * 2;
+      pw.Widget boundedCopy() => pw.SizedBox(
+            width: contentWidth,
+            child: copyColumn(),
+          );
+      pdf.addPage(
+        pw.Page(
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.all(margin),
+          theme: theme,
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              boundedCopy(),
+              pw.SizedBox(height: 10),
+              _cutSeparator(),
+              pw.SizedBox(height: 36),
+              pw.Expanded(
+                child: pw.FittedBox(
+                  fit: pw.BoxFit.scaleDown,
+                  alignment: pw.Alignment.topCenter,
+                  child: boundedCopy(),
+                ),
+              ),
+              if (settings.footerText.trim().isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(top: 6),
+                  child: pw.Text(
+                    settings.footerText.trim(),
+                    style: pw.TextStyle(
+                      fontSize: _font(settings, 9),
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: pageFormat,
         margin: pw.EdgeInsets.all(margin),
-        theme: pw.ThemeData.withFont(
-          base: regularFont,
-          bold: boldFont,
-        ),
+        theme: theme,
         footer: (context) => pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
@@ -82,41 +235,107 @@ class AccountingPrintService {
           ],
         ),
         build: (context) => [
-          _header(title, document, settings),
-          pw.SizedBox(height: spacing),
-          if (_hasDetails(settings, document)) ...[
-            _detailsBlock(document, settings),
-            pw.SizedBox(height: spacing),
-          ],
-          _goodsTable(goods, currency, settings),
-          if (settings.showTotalQuantity || settings.showSums) ...[
-            pw.SizedBox(height: 16),
-            _totalsBlock(document, currency, settings),
-          ],
-          if (settings.showComment &&
-              (document.comment ?? '').trim().isNotEmpty) ...[
-            pw.SizedBox(height: 14),
-            _commentBlock(document.comment!.trim()),
-          ],
-          if (settings.showSignatures) ...[
-            pw.SizedBox(height: 34),
-            _signatures(),
-          ],
+          ...copies(),
+          pw.SizedBox(height: 18),
+          _cutSeparator(),
+          pw.SizedBox(height: 28),
+          ...copies(),
         ],
       ),
     );
+  }
 
-    return pdf.save();
+  static bool _twoRealizationCopiesFit({
+    required exp_doc.ExpenseDocumentDetail document,
+    required List<exp_doc.DocumentGood> goods,
+    required PrintTemplateSettings settings,
+    required PdfPageFormat pageFormat,
+    required double margin,
+  }) {
+    final hasComment = settings.showComment &&
+        (document.comment ?? '').trim().isNotEmpty;
+    var copyHeight = 86.0;
+    if (_hasDetails(settings, document)) copyHeight += 62;
+    copyHeight += 24 + goods.length * 20;
+    if (settings.showTotalQuantity || settings.showSums) copyHeight += 52;
+    if (hasComment) copyHeight += 42;
+    if (settings.showSignatures) copyHeight += 40;
+    copyHeight += 24;
+
+    final usableHeight = pageFormat.height - margin * 2 - 16;
+    return copyHeight <= usableHeight * 0.48;
+  }
+
+  static pw.Widget _documentCopyColumn({
+    required String title,
+    required exp_doc.ExpenseDocumentDetail document,
+    required List<exp_doc.DocumentGood> goods,
+    required String currency,
+    required PrintTemplateSettings settings,
+    required double spacing,
+  }) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: _documentCopyChildren(
+        title: title,
+        document: document,
+        goods: goods,
+        currency: currency,
+        settings: settings,
+        spacing: spacing,
+        realizationLayout: true,
+      ),
+    );
+  }
+
+  static List<pw.Widget> _documentCopyChildren({
+    required String title,
+    required exp_doc.ExpenseDocumentDetail document,
+    required List<exp_doc.DocumentGood> goods,
+    required String currency,
+    required PrintTemplateSettings settings,
+    required double spacing,
+    required bool realizationLayout,
+  }) {
+    return [
+      _header(title, document, settings, realizationLayout: realizationLayout),
+      pw.SizedBox(height: spacing),
+      if (_hasDetails(settings, document)) ...[
+        _detailsBlock(
+          document,
+          settings,
+          realizationLayout: realizationLayout,
+        ),
+        pw.SizedBox(height: spacing),
+      ],
+      _goodsTable(
+        goods,
+        currency,
+        settings,
+        realizationLayout: realizationLayout,
+      ),
+      if (settings.showTotalQuantity || settings.showSums) ...[
+        pw.SizedBox(height: 12),
+        _totalsBlock(document, currency, settings),
+      ],
+      if (settings.showComment &&
+          (document.comment ?? '').trim().isNotEmpty) ...[
+        pw.SizedBox(height: 10),
+        _commentBlock(document.comment!.trim()),
+      ],
+      if (settings.showSignatures) ...[
+        pw.SizedBox(height: realizationLayout ? 14 : 20),
+        _signatures(realizationLayout: realizationLayout),
+      ],
+    ];
   }
 
   static pw.Widget _header(
     String title,
     exp_doc.ExpenseDocumentDetail document,
-    PrintTemplateSettings settings,
-  ) {
-    final effectiveTitle = settings.customTitle.trim().isEmpty
-        ? title
-        : settings.customTitle.trim();
+    PrintTemplateSettings settings, {
+    required bool realizationLayout,
+  }) {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -128,7 +347,7 @@ class AccountingPrintService {
               pw.Text(
                 'shamCRM',
                 style: pw.TextStyle(
-                  fontSize: _font(settings, 18),
+                  fontSize: _font(settings, realizationLayout ? 13 : 18),
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColor.fromHex('#1E2E52'),
                 ),
@@ -145,9 +364,9 @@ class AccountingPrintService {
               ],
               pw.SizedBox(height: 6),
               pw.Text(
-                effectiveTitle,
+                title,
                 style: pw.TextStyle(
-                  fontSize: _font(settings, 22),
+                  fontSize: _font(settings, realizationLayout ? 15 : 22),
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
@@ -155,7 +374,10 @@ class AccountingPrintService {
           ),
         ),
         pw.Container(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: pw.EdgeInsets.symmetric(
+            horizontal: realizationLayout ? 10 : 12,
+            vertical: realizationLayout ? 8 : 10,
+          ),
           decoration: pw.BoxDecoration(
             border: pw.Border.all(color: PdfColors.grey400),
             borderRadius: pw.BorderRadius.circular(6),
@@ -163,13 +385,20 @@ class AccountingPrintService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _smallMeta(
-                  'Документ', '№${document.docNumber ?? document.id ?? ''}'),
-              pw.SizedBox(height: 4),
+              if (!realizationLayout) ...[
+                _smallMeta(
+                  'Документ',
+                  '№${document.docNumber ?? document.id ?? ''}',
+                ),
+                pw.SizedBox(height: 4),
+              ],
               _smallMeta('Дата', _formatDate(document.date)),
               if (settings.showStatus) ...[
-                pw.SizedBox(height: 4),
-                _statusChip(document.statusText),
+                pw.SizedBox(height: realizationLayout ? 6 : 4),
+                if (realizationLayout)
+                  _statusRow(document.statusText)
+                else
+                  _statusChip(document.statusText),
               ],
             ],
           ),
@@ -180,65 +409,91 @@ class AccountingPrintService {
 
   static pw.Widget _detailsBlock(
     exp_doc.ExpenseDocumentDetail document,
-    PrintTemplateSettings settings,
-  ) {
+    PrintTemplateSettings settings, {
+    required bool realizationLayout,
+  }) {
     final rows = <MapEntry<String, String>>[
-      if (settings.showClient) MapEntry('Клиент', document.model?.name ?? ''),
+      if (settings.showClient)
+        MapEntry(
+          realizationLayout ? 'Клиент РМК' : 'Клиент',
+          document.model?.name ?? '',
+        ),
+      if (realizationLayout && settings.showAuthor)
+        MapEntry('Автор', _personName(document.author)),
+      if (settings.showStorage) MapEntry('Склад', document.storage?.name ?? ''),
       if (settings.showClientPhone)
         MapEntry('Телефон клиента', document.model?.phone ?? ''),
       if (settings.showClientInn)
         MapEntry('ИНН клиента', document.model?.inn?.toString() ?? ''),
-      if (settings.showStorage) MapEntry('Склад', document.storage?.name ?? ''),
       if (settings.showCurrency)
         MapEntry('Валюта',
             document.currency?.name ?? document.currency?.symbolCode ?? ''),
-      if (settings.showAuthor) MapEntry('Автор', _personName(document.author)),
+      if (!realizationLayout && settings.showAuthor)
+        MapEntry('Автор', _personName(document.author)),
     ].where((row) => row.value.trim().isNotEmpty).toList();
 
+    pw.Widget rowText(MapEntry<String, String> row) {
+      return pw.RichText(
+        text: pw.TextSpan(
+          children: [
+            pw.TextSpan(
+              text: '${row.key}: ',
+              style: pw.TextStyle(
+                fontSize: _font(settings, 10),
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.grey700,
+              ),
+            ),
+            pw.TextSpan(
+              text: row.value,
+              style: pw.TextStyle(fontSize: _font(settings, 10)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return pw.Container(
-      padding: pw.EdgeInsets.all(settings.layout == 'compact' ? 8 : 12),
+      width: double.infinity,
+      padding: pw.EdgeInsets.all(
+        realizationLayout || settings.layout == 'compact' ? 8 : 12,
+      ),
       decoration: pw.BoxDecoration(
         color: PdfColor.fromHex('#F8FAFC'),
         borderRadius: pw.BorderRadius.circular(8),
         border: pw.Border.all(color: PdfColor.fromHex('#E5E7EB')),
       ),
-      child: pw.Wrap(
-        runSpacing: 8,
-        spacing: 12,
-        children: rows
-            .map(
-              (row) => pw.SizedBox(
-                width: 245,
-                child: pw.RichText(
-                  text: pw.TextSpan(
-                    children: [
-                      pw.TextSpan(
-                        text: '${row.key}: ',
-                        style: pw.TextStyle(
-                          fontSize: _font(settings, 10),
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.grey700,
-                        ),
-                      ),
-                      pw.TextSpan(
-                        text: row.value,
-                        style: pw.TextStyle(fontSize: _font(settings, 10)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+      child: realizationLayout
+          ? pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < rows.length; i++) ...[
+                  if (i > 0) pw.SizedBox(height: 4),
+                  rowText(rows[i]),
+                ],
+              ],
             )
-            .toList(),
-      ),
+          : pw.Wrap(
+              runSpacing: 8,
+              spacing: 12,
+              children: rows
+                  .map(
+                    (row) => pw.SizedBox(
+                      width: 245,
+                      child: rowText(row),
+                    ),
+                  )
+                  .toList(),
+            ),
     );
   }
 
   static pw.Widget _goodsTable(
     List<exp_doc.DocumentGood> goods,
     String currency,
-    PrintTemplateSettings settings,
-  ) {
+    PrintTemplateSettings settings, {
+    required bool realizationLayout,
+  }) {
     if (goods.isEmpty) {
       return pw.Container(
         width: double.infinity,
@@ -254,7 +509,7 @@ class AccountingPrintService {
     final headers = <String>[
       '№',
       _fallback(settings.goodsColumnTitle, 'Товар'),
-      'Ед.',
+      realizationLayout ? 'Ед.изм' : 'Ед.',
       _fallback(settings.quantityColumnTitle, 'Кол-во'),
     ];
     final receipt = settings.paperSize == 'receipt58' ||
@@ -263,7 +518,11 @@ class AccountingPrintService {
     final columnWidths = <int, pw.TableColumnWidth>{
       0: pw.FixedColumnWidth(receipt ? 14 : 24),
       1: const pw.FlexColumnWidth(3),
-      2: pw.FixedColumnWidth(receipt ? 22 : 48),
+      2: pw.FixedColumnWidth(
+        receipt
+            ? (realizationLayout ? 32 : 22)
+            : (realizationLayout ? 56 : 48),
+      ),
       3: pw.FixedColumnWidth(receipt ? 26 : 48),
     };
 
@@ -286,8 +545,8 @@ class AccountingPrintService {
       ),
       cellStyle: pw.TextStyle(fontSize: _font(settings, 9)),
       cellPadding: pw.EdgeInsets.symmetric(
-        horizontal: settings.layout == 'compact' ? 4 : 6,
-        vertical: settings.layout == 'compact' ? 5 : 7,
+        horizontal: realizationLayout || settings.layout == 'compact' ? 4 : 6,
+        vertical: realizationLayout || settings.layout == 'compact' ? 4 : 7,
       ),
       columnWidths: columnWidths,
       headers: headers,
@@ -363,14 +622,42 @@ class AccountingPrintService {
     );
   }
 
-  static pw.Widget _signatures() {
+  static pw.Widget _signatures({required bool realizationLayout}) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        _signatureLine('Отпустил'),
-        _signatureLine('Получил'),
+        _signatureLine(realizationLayout ? 'Сдал' : 'Отпустил'),
+        _signatureLine(realizationLayout ? 'Принял' : 'Получил'),
       ],
     );
+  }
+
+  static pw.Widget _cutSeparator() {
+    return pw.Row(
+      children: List.generate(
+        47,
+        (index) => pw.Expanded(
+          child: pw.Container(
+            height: 1,
+            color: index.isEven ? PdfColors.grey500 : PdfColors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _realizationTitle(
+    String title,
+    exp_doc.ExpenseDocumentDetail document,
+    PrintTemplateSettings settings,
+  ) {
+    final baseTitle = settings.customTitle.trim().isEmpty
+        ? title
+        : settings.customTitle.trim();
+    final number = (document.docNumber ?? document.id ?? '').toString().trim();
+    if (number.isEmpty) return baseTitle;
+    final normalized = number.startsWith('№') ? number : '№$number';
+    return '$baseTitle: $normalized';
   }
 
   static pw.Widget _smallMeta(String label, String value) {
@@ -388,6 +675,23 @@ class AccountingPrintService {
           pw.TextSpan(text: value, style: const pw.TextStyle(fontSize: 9)),
         ],
       ),
+    );
+  }
+
+  static pw.Widget _statusRow(String status) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        pw.Text(
+          'Статус: ',
+          style: pw.TextStyle(
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey700,
+          ),
+        ),
+        _statusChip(status),
+      ],
     );
   }
 

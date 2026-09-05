@@ -473,8 +473,9 @@ class _ClientSalesDocumentDetailsScreenState
       final settings = await PrintTemplateSettings.load(_printTemplateKey);
       await AccountingPrintService.printExpenseDocument(
         document: currentDocument!,
-        title: widget.isRmk ? 'Продажа РМК' : 'Продажа клиенту',
+        title: widget.isRmk ? 'Продажа РМК' : 'Реализация',
         settings: settings,
+        realizationLayout: !widget.isRmk,
       );
     } catch (e) {
       _showSnackBar('Ошибка при подготовке печати: $e', false);
@@ -502,7 +503,7 @@ class _ClientSalesDocumentDetailsScreenState
         return PrintTemplateSettingsSheet(
           templateKey: _printTemplateKey,
           initialSettings: settings,
-          defaultTitle: widget.isRmk ? 'Продажа РМК' : 'Продажа клиенту',
+          defaultTitle: widget.isRmk ? 'Продажа РМК' : 'Реализация',
           onSaved: (message) {
             if (mounted) {
               _showSnackBar(message, true);
