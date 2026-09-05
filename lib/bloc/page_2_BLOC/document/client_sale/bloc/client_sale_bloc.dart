@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/document_date_period.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:crm_task_manager/models/page_2/expense_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -20,6 +21,8 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
   List<ExpenseDocument> _allData = [];
   List<ExpenseDocument> _selectedDocuments = [];
   bool _isSaving = false;
+  double? _totalSum;
+  DocumentDatePeriod _datePeriod = DocumentDatePeriod.today;
 
   ClientSaleBloc(this.apiService) : super(ClientSaleInitial()) {
     on<FetchClientSales>(_onFetchData);
@@ -59,7 +62,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       add(FetchClientSales(forceRefresh: true));
     }
 
-    emit(ClientSaleLoaded(data: _allData));
+    emit(_buildLoadedState(data: _allData));
   }
 
   Future<void> _onMassDisapproveClientSaleDocuments(
@@ -84,7 +87,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       add(FetchClientSales(forceRefresh: true));
     }
 
-    emit(ClientSaleLoaded(data: _allData));
+    emit(_buildLoadedState(data: _allData));
   }
 
   Future<void> _onMassDeleteClientSaleDocuments(
@@ -111,7 +114,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       add(FetchClientSales(forceRefresh: true));
     }
 
-    emit(ClientSaleLoaded(
+    emit(_buildLoadedState(
         data: List.from(_allData),
         selectedData: List.from(_selectedDocuments)));
   }
@@ -138,7 +141,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       add(FetchClientSales(forceRefresh: true));
     }
 
-    emit(ClientSaleLoaded(data: _allData));
+    emit(_buildLoadedState(data: _allData));
   }
 
   Future<void> _onSelectDocument(
@@ -156,7 +159,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
           .where((doc) => _selectedDocuments.contains(doc))
           .toList();
 
-      emit(ClientSaleLoaded(
+      emit(_buildLoadedState(
         data: currentState.data,
         pagination: currentState.pagination,
         hasReachedMax: currentState.hasReachedMax,
@@ -171,7 +174,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
 
     if (state is ClientSaleLoaded) {
       final currentState = state as ClientSaleLoaded;
-      emit(ClientSaleLoaded(
+      emit(_buildLoadedState(
         data: currentState.data,
         pagination: currentState.pagination,
         hasReachedMax: currentState.hasReachedMax,
@@ -219,35 +222,68 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       return;
     }
 
+    final dateFilter = _resolveDateFilter();
+    _datePeriod = dateFilter.period;
+    final approved = _filters?['approved'] != null
+        ? int.tryParse(_filters!['approved'].toString())
+        : null;
+    final deleted = _filters?['deleted'] != null
+        ? int.tryParse(_filters!['deleted'].toString())
+        : null;
+    final leadId = _filters?['lead_id'] != null
+        ? int.tryParse(_filters!['lead_id'].toString())
+        : null;
+    final cashRegisterId = _filters?['cash_register_id'] != null
+        ? int.tryParse(_filters!['cash_register_id'].toString())
+        : null;
+    final supplierId = _filters?['supplier_id'] != null
+        ? int.tryParse(_filters!['supplier_id'].toString())
+        : null;
+    final authorId = _filters?['author_id'] != null
+        ? int.tryParse(_filters!['author_id'].toString())
+        : null;
+    final storageId = _filters?['storage_id'] != null
+        ? int.tryParse(_filters!['storage_id'].toString())
+        : null;
+
     try {
-      final response = await apiService.getClientSales(
+      final listFuture = apiService.getClientSales(
         page: _currentPage,
         perPage: _perPage,
         query: _search,
-        dateFrom: _filters?['date_from'],
-        dateTo: _filters?['date_to'],
-        approved: _filters?['approved'] != null
-            ? int.tryParse(_filters!['approved'].toString())
-            : null,
-        deleted: _filters?['deleted'] != null
-            ? int.tryParse(_filters!['deleted'].toString())
-            : null,
-        leadId: _filters?['lead_id'] != null
-            ? int.tryParse(_filters!['lead_id'].toString())
-            : null,
-        cashRegisterId: _filters?['cash_register_id'] != null
-            ? int.tryParse(_filters!['cash_register_id'].toString())
-            : null,
-        supplierId: _filters?['supplier_id'] != null
-            ? int.tryParse(_filters!['supplier_id'].toString())
-            : null,
-        authorId: _filters?['author_id'] != null
-            ? int.tryParse(_filters!['author_id'].toString())
-            : null,
-        storageId: _filters?['storage_id'] != null
-            ? int.tryParse(_filters!['storage_id'].toString())
-            : null,
+        dateFrom: dateFilter.listFrom,
+        dateTo: dateFilter.listTo,
+        approved: approved,
+        deleted: deleted,
+        leadId: leadId,
+        cashRegisterId: cashRegisterId,
+        supplierId: supplierId,
+        authorId: authorId,
+        storageId: storageId,
       );
+      final sumFuture = event.forceRefresh
+          ? apiService.getClientSalesSum(
+              query: _search,
+              dateFrom: dateFilter.sumFrom,
+              dateTo: dateFilter.sumTo,
+              approved: approved,
+              deleted: deleted,
+              leadId: leadId,
+              cashRegisterId: cashRegisterId,
+              supplierId: supplierId,
+              authorId: authorId,
+              storageId: storageId,
+            )
+          : null;
+
+      final response = await listFuture;
+      if (sumFuture != null) {
+        try {
+          _totalSum = await sumFuture;
+        } catch (_) {
+          _totalSum ??= 0;
+        }
+      }
 
       final newData = response.data ?? [];
 
@@ -267,7 +303,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
       final selectedDocuments =
           _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
 
-      emit(ClientSaleLoaded(
+      emit(_buildLoadedState(
         data: List.from(_allData),
         pagination: response.pagination,
         hasReachedMax: hasReachedMax,
@@ -280,6 +316,74 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
         emit(ClientSaleError(friendlyError(e)));
       }
     }
+  }
+
+  ({
+    DateTime? listFrom,
+    DateTime? listTo,
+    DateTime sumFrom,
+    DateTime sumTo,
+    DocumentDatePeriod period,
+  }) _resolveDateFilter() {
+    final rawFrom = _filters?['date_from'];
+    final rawTo = _filters?['date_to'];
+    final from = rawFrom is DateTime ? rawFrom : null;
+    final to = rawTo is DateTime ? rawTo : null;
+    final todayRange = DocumentDatePeriodX.rangeFor(DocumentDatePeriod.today);
+
+    if (from == null && to == null) {
+      return (
+        listFrom: null,
+        listTo: null,
+        sumFrom: todayRange.start,
+        sumTo: todayRange.end,
+        period: DocumentDatePeriod.today,
+      );
+    }
+
+    late final DateTime dateFrom;
+    late final DateTime dateTo;
+
+    if (from != null && to == null) {
+      dateFrom = DocumentDatePeriodX.startOfDay(from);
+      dateTo = DocumentDatePeriodX.endOfDay(from);
+    } else if (from == null && to != null) {
+      dateFrom = DocumentDatePeriodX.startOfDay(to);
+      dateTo = DocumentDatePeriodX.endOfDay(to);
+    } else {
+      dateFrom = DocumentDatePeriodX.startOfDay(from!);
+      dateTo = DocumentDatePeriodX.endOfDay(to!);
+    }
+
+    final period = DocumentDatePeriodX.tryParse(
+          _filters?['date_period']?.toString(),
+        ) ??
+        DocumentDatePeriodX.detect(dateFrom, dateTo);
+
+    return (
+      listFrom: dateFrom,
+      listTo: dateTo,
+      sumFrom: dateFrom,
+      sumTo: dateTo,
+      period: period,
+    );
+  }
+
+  ClientSaleLoaded _buildLoadedState({
+    required List<ExpenseDocument> data,
+    Pagination? pagination,
+    bool? hasReachedMax,
+    List<ExpenseDocument>? selectedData,
+  }) {
+    final current = state is ClientSaleLoaded ? state as ClientSaleLoaded : null;
+    return ClientSaleLoaded(
+      data: data,
+      pagination: pagination ?? current?.pagination,
+      hasReachedMax: hasReachedMax ?? current?.hasReachedMax ?? false,
+      selectedData: selectedData ?? current?.selectedData ?? _selectedDocuments,
+      totalSum: _totalSum,
+      datePeriod: _datePeriod,
+    );
   }
 
   _onCreateClientSalesDocument(
@@ -349,7 +453,7 @@ class ClientSaleBloc extends Bloc<ClientSaleEvent, ClientSaleState> {
     }
 
     if (_allData.isNotEmpty) {
-      emit(ClientSaleLoaded(
+      emit(_buildLoadedState(
         data: List.from(_allData),
         selectedData: List.from(_selectedDocuments),
         hasReachedMax: state is ClientSaleLoaded

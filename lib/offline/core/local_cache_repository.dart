@@ -96,4 +96,28 @@ class LocalCacheRepository {
           ..where((tbl) => tbl.module.equals(module)))
         .go();
   }
+
+  Future<List<({String cacheKey, LocalCacheEntry entry})>> readAllByModule(
+    String module,
+  ) async {
+    final rows = await (_database.select(_database.cachedRecords)
+          ..where(
+            (tbl) => tbl.module.equals(module) & tbl.isDeleted.equals(false),
+          ))
+        .get();
+
+    return rows
+        .map(
+          (row) => (
+            cacheKey: row.cacheKey,
+            entry: LocalCacheEntry(
+              payload: row.payload,
+              entityVersion: row.entityVersion,
+              deltaToken: row.deltaToken,
+              lastSyncedAt: row.lastSyncedAt,
+            ),
+          ),
+        )
+        .toList(growable: false);
+  }
 }

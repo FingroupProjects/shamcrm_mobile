@@ -7,7 +7,9 @@ import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_
 import 'package:crm_task_manager/custom_widget/app_bar_selection_mode.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_card.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/create_clien_sales_document_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/pinned_client_sale_total.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/document_date_period.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -686,19 +688,40 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
 
                 final List<ExpenseDocument> currentData =
                     state is ClientSaleLoaded ? state.data : [];
+                final ClientSaleLoaded? loadedState =
+                    state is ClientSaleLoaded ? state : null;
 
                 if (currentData.isEmpty && state is ClientSaleLoaded) {
-                  return _isSearching
-                      ? HelpfulEmptyState.search(localizations!)
-                      : HelpfulEmptyState.section(
-                          l10n: localizations!,
-                          icon: Icons.point_of_sale_rounded,
-                          titleKey: 'empty_client_sale_title',
-                          subtitleKey: 'empty_client_sale_subtitle',
-                        );
+                  return Column(
+                    children: [
+                      PinnedClientSaleTotal(
+                        period: loadedState?.datePeriod ??
+                            DocumentDatePeriod.today,
+                        total: loadedState?.totalSum,
+                      ),
+                      Expanded(
+                        child: _isSearching
+                            ? HelpfulEmptyState.search(localizations!)
+                            : HelpfulEmptyState.section(
+                                l10n: localizations!,
+                                icon: Icons.point_of_sale_rounded,
+                                titleKey: 'empty_client_sale_title',
+                                subtitleKey: 'empty_client_sale_subtitle',
+                              ),
+                      ),
+                    ],
+                  );
                 }
 
-                return RefreshIndicator(
+                return Column(
+                  children: [
+                    PinnedClientSaleTotal(
+                      period:
+                          loadedState?.datePeriod ?? DocumentDatePeriod.today,
+                      total: loadedState?.totalSum,
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
                   color: const Color(0xff1E2E52),
                   backgroundColor: Colors.white,
                   onRefresh: _onRefresh,
@@ -918,6 +941,9 @@ class _ClientSaleScreenState extends State<ClientSaleScreen> {
                             );
                     },
                   ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

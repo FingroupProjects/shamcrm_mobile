@@ -9,11 +9,12 @@ class MainFieldDropdownWidget extends StatefulWidget {
   final int directoryId;
   final String directoryName;
   final MainField? selectedField;
-  final Function(MainField) onSelectField;
+  final Function(List<MainField>) onSelectField;
   final TextEditingController controller;
-  final Function(int) onSelectEntryId;
+  final Function(List<int>) onSelectEntryId;
   final VoidCallback? onRemove;
   final int? initialEntryId;
+  final List<int> initialEntryIds;
 
   const MainFieldDropdownWidget({
     super.key,
@@ -25,6 +26,7 @@ class MainFieldDropdownWidget extends StatefulWidget {
     required this.onSelectEntryId,
     this.onRemove,
     this.initialEntryId,
+    this.initialEntryIds = const [],
   });
 
   @override
@@ -34,13 +36,25 @@ class MainFieldDropdownWidget extends StatefulWidget {
 
 class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
   List<MainField> mainFieldsList = [];
-  MainField? selectedFieldData;
+  List<MainField> selectedFields = [];
   String? errorMessage;
   bool isLoading = true;
+  bool allSelected = false;
 
   bool _isMissingResourceError(Object error) {
     final message = error.toString().replaceFirst('Exception:', '').trim();
     return message == 'Ресурс не найден';
+  }
+
+  List<int> get _initialIds {
+    final ids = <int>{...widget.initialEntryIds};
+    if (widget.initialEntryId != null) {
+      ids.add(widget.initialEntryId!);
+    }
+    if (widget.selectedField != null) {
+      ids.add(widget.selectedField!.id);
+    }
+    return ids.toList();
   }
 
   @override
@@ -52,47 +66,65 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
   Future<void> _fetchMainFields() async {
     try {
       final mainFields = await ApiService().getMainFields(widget.directoryId);
+      if (!mounted) return;
       setState(() {
         mainFieldsList = mainFields.result ?? [];
         isLoading = false;
-        if (widget.initialEntryId != null && mainFieldsList.isNotEmpty) {
-          try {
-            selectedFieldData = mainFieldsList.firstWhere(
-              (field) => field.id == widget.initialEntryId,
-              orElse: () => MainField(id: -1, value: widget.controller.text),
-            );
-            if (selectedFieldData!.id != -1) {
-              widget.controller.text = selectedFieldData!.value;
-              widget.onSelectEntryId(selectedFieldData!.id);
-            } else {
-              selectedFieldData = null;
-            }
-          } catch (e) {
-            selectedFieldData = null;
-          }
-        } else if (widget.selectedField != null && mainFieldsList.isNotEmpty) {
-          try {
-            selectedFieldData = mainFieldsList.firstWhere(
-              (field) => field.id == widget.selectedField!.id,
-            );
-            widget.controller.text = selectedFieldData!.value;
-            widget.onSelectEntryId(selectedFieldData!.id);
-          } catch (e) {
-            selectedFieldData = null;
-          }
-        } else {
-          if (widget.controller.text.isNotEmpty) {}
-        }
+        _applyInitialSelection();
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         errorMessage = _isMissingResourceError(e) ? null : e.toString();
         mainFieldsList = [];
-        selectedFieldData = null;
+        selectedFields = [];
         isLoading = false;
       });
     }
+  }
+
+  void _applyInitialSelection() {
+    final initialIds = _initialIds.toSet();
+    if (initialIds.isEmpty && widget.controller.text.isNotEmpty) {
+      final labels = widget.controller.text
+          .split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toSet();
+      selectedFields = mainFieldsList
+          .where((field) => labels.contains(field.value))
+          .toList();
+    } else {
+      selectedFields = mainFieldsList
+          .where((field) => initialIds.contains(field.id))
+          .toList();
+    }
+    allSelected =
+        mainFieldsList.isNotEmpty && selectedFields.length == mainFieldsList.length;
+    if (selectedFields.isNotEmpty) {
+      widget.controller.text =
+          selectedFields.map((field) => field.value).join(', ');
+      widget.onSelectEntryId(selectedFields.map((field) => field.id).toList());
+    }
+  }
+
+  void _emitSelection(List<MainField> values) {
+    setState(() {
+      selectedFields = List<MainField>.from(values);
+      allSelected = mainFieldsList.isNotEmpty &&
+          selectedFields.length == mainFieldsList.length;
+    });
+    widget.controller.text =
+        selectedFields.map((field) => field.value).join(', ');
+    widget.onSelectField(selectedFields);
+    widget.onSelectEntryId(selectedFields.map((field) => field.id).toList());
+  }
+
+  void _toggleSelectAll() {
+    if (mainFieldsList.isEmpty || isLoading || errorMessage != null) return;
+    _emitSelection(
+      allSelected ? <MainField>[] : List<MainField>.from(mainFieldsList),
+    );
   }
 
   @override
@@ -114,61 +146,56 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
     return Row(
       children: [
         Expanded(
-          child: FormField<MainField>(
-            // validator: (value) {
-            //   if (selectedFieldData == null && widget.controller.text.isEmpty) {
-            //     print('Валидация не пройдена: selectedFieldData is null и контроллер пуст');
-            //     return AppLocalizations.of(context)!.translate('field_required');
-            //   }
-            //   return null;
-            // },
-            builder: (FormFieldState<MainField> field) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.directoryName,
-                    style: fieldTextStyle.copyWith(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                      fontFamily: 'Gilroy',
-                      color: primaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: fieldFill,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: errorMessage != null
-                        ? Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              errorMessage!,
-                              style: TextStyle(color: colors.error),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.directoryName,
+                style: fieldTextStyle.copyWith(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 16,
+                  fontFamily: 'Gilroy',
+                  color: primaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: fieldFill,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: errorMessage != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          errorMessage!,
+                          style: TextStyle(color: colors.error),
+                        ),
+                      )
+                    : isLoading
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
                             ),
                           )
-                        : CustomDropdown<MainField>.search(
+                        : CustomDropdown<MainField>.multiSelectSearch(
                             closeDropDownOnClearFilterSearch: true,
                             items: mainFieldsList,
+                            initialItems: selectedFields,
                             searchHintText: AppLocalizations.of(context)!
                                 .translate('search'),
                             overlayHeight: 400,
                             decoration: CustomDropdownDecoration(
                               closedFillColor: fieldFill,
                               expandedFillColor: dropdownFill,
-                              closedBorder: Border.all(
-                                color:
-                                    field.hasError ? colors.error : fieldBorder,
-                                width: 1,
-                              ),
+                              closedBorder: Border.all(color: fieldBorder),
                               closedBorderRadius: BorderRadius.circular(12),
-                              expandedBorder: Border.all(
-                                color:
-                                    field.hasError ? colors.error : fieldBorder,
-                                width: 1,
-                              ),
+                              expandedBorder: Border.all(color: fieldBorder),
                               expandedBorderRadius: BorderRadius.circular(12),
                               closedSuffixIcon: Icon(
                                 Icons.keyboard_arrow_down_rounded,
@@ -230,32 +257,55 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                             ),
                             listItemBuilder:
                                 (context, item, isSelected, onItemSelect) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                child: Text(
-                                  item.value,
-                                  style: fieldTextStyle.copyWith(
-                                    color: primaryText,
-                                  ),
-                                ),
+                              if (mainFieldsList.isNotEmpty &&
+                                  mainFieldsList.first.id == item.id) {
+                                return Column(
+                                  children: [
+                                    _buildSelectAllTile(fieldTextStyle),
+                                    Divider(
+                                      height: 20,
+                                      color: fieldBorder,
+                                    ),
+                                    _buildListItem(
+                                      item,
+                                      isSelected,
+                                      onItemSelect,
+                                      fieldTextStyle,
+                                      primaryText,
+                                    ),
+                                  ],
+                                );
+                              }
+                              return _buildListItem(
+                                item,
+                                isSelected,
+                                onItemSelect,
+                                fieldTextStyle,
+                                primaryText,
                               );
                             },
-                            headerBuilder: (BuildContext context,
-                                MainField? selectedItem, bool isFocused) {
+                            headerListBuilder: (context, selected, enabled) {
+                              if (selectedFields.isEmpty) {
+                                return Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('select_field'),
+                                  style: fieldTextStyle.copyWith(
+                                    color: hintTextColor,
+                                  ),
+                                );
+                              }
                               return Text(
-                                selectedItem?.value ??
-                                    (widget.controller.text.isNotEmpty
-                                        ? widget.controller.text
-                                        : AppLocalizations.of(context)!
-                                            .translate('select_field')),
+                                selectedFields
+                                    .map((field) => field.value)
+                                    .join(', '),
                                 style: fieldTextStyle.copyWith(
                                   color: primaryText,
                                 ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               );
                             },
-                            hintBuilder:
-                                (context, String hint, bool isFocused) {
+                            hintBuilder: (context, hint, isFocused) {
                               return Text(
                                 AppLocalizations.of(context)!
                                     .translate('select_field'),
@@ -265,40 +315,12 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
                                 ),
                               );
                             },
-                            excludeSelected: false,
-                            initialItem: selectedFieldData,
-                            onChanged: (MainField? selectedField) {
-                              if (selectedField != null) {
-                                widget.onSelectField(selectedField);
-                                widget.onSelectEntryId(selectedField.id);
-                                widget.controller.text = selectedField.value;
-                                setState(() {
-                                  selectedFieldData = selectedField;
-                                });
-                                field.didChange(selectedField);
-                                FocusScope.of(context).unfocus();
-                              }
-                            },
+                            onListChanged: _emitSelection,
                           ),
-                  ),
-                  if (field.hasError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, left: 0),
-                      child: Text(
-                        field.errorText!,
-                        style: TextStyle(
-                          color: colors.error,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
+              ),
+            ],
           ),
         ),
-        // const SizedBox(height: 8),
         if (widget.onRemove != null)
           IconButton(
             icon: Icon(
@@ -308,6 +330,94 @@ class _MainFieldDropdownWidgetState extends State<MainFieldDropdownWidget> {
             onPressed: widget.onRemove,
           ),
       ],
+    );
+  }
+
+  Widget _buildSelectAllTile(TextStyle fieldTextStyle) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: GestureDetector(
+        onTap: _toggleSelectAll,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.appColors.textPrimary,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: allSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
+              ),
+              child: allSelected
+                  ? Icon(
+                      Icons.check,
+                      color: context.appColors.textInverse,
+                      size: 14,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!.translate('select_all'),
+                style: fieldTextStyle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(
+    MainField item,
+    bool isSelected,
+    VoidCallback onItemSelect,
+    TextStyle fieldTextStyle,
+    Color primaryText,
+  ) {
+    return GestureDetector(
+      onTap: onItemSelect,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.appColors.textPrimary,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected
+                    ? context.appColors.buttonPrimaryBg
+                    : Colors.transparent,
+              ),
+              child: isSelected
+                  ? Icon(
+                      Icons.check,
+                      color: context.appColors.textInverse,
+                      size: 14,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.value,
+                style: fieldTextStyle.copyWith(color: primaryText),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -631,23 +631,19 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
     }
 
     if (fc.isDirectory && fc.directoryId != null) {
+      final values = <String>[];
       for (var dirValue in deal.directoryValues) {
-        if (dirValue.entry.directory.name == fc.fieldName) {
-          debugPrint(
-              "Matching directory field found: ${dirValue.entry.directory.name} with values: ${dirValue.entry.values}");
-          List<String> values = [];
-
-          final value = dirValue.entry.values.entries.first.value;
+        if (dirValue.entry.directory.name == fc.fieldName ||
+            dirValue.entry.directory.id == fc.directoryId) {
+          final value = dirValue.entry.values.entries.isNotEmpty
+              ? dirValue.entry.values.entries.first.value
+              : null;
           if (value != null && value.toString().isNotEmpty) {
             values.add(value.toString());
           }
-
-          if (values.isNotEmpty) {
-            return values.join(', ');
-          }
         }
       }
-      return '';
+      return values.join(', ');
     }
 
     switch (fc.fieldName) {

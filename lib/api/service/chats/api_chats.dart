@@ -597,6 +597,24 @@ extension ApiChatsX on ApiService {
     }
   }
 
+  /// Marks the chat as read on the server while the user is inside it.
+  /// Endpoint: POST /api/v2/chat/{chatId}/heartbeat
+  Future<void> sendChatHeartbeat(int chatId) async {
+    final path = await _appendQueryParams('/v2/chat/$chatId/heartbeat');
+    if (kDebugMode) {
+      debugPrint('ApiService: sendChatHeartbeat - path: $path');
+    }
+
+    final response = await _postRequest(path, {});
+    if (response.statusCode != 200 &&
+        response.statusCode != 201 &&
+        response.statusCode != 204) {
+      throw Exception(
+        'Ошибка heartbeat ${response.statusCode}: ${response.body}',
+      );
+    }
+  }
+
   Future<void> sendMessage(int chatId, String message,
       {String? replyMessageId, String? responseType}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id

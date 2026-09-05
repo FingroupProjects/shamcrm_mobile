@@ -13,6 +13,7 @@ class ChatsGetId {
   final String channelName;
   final String? referralBody;
   final ChatAdvertising? advertising;
+  final int unreadCount;
 
   ChatsGetId({
     required this.id,
@@ -25,6 +26,7 @@ class ChatsGetId {
     required this.channelName,
     this.referralBody,
     this.advertising,
+    this.unreadCount = 0,
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
@@ -145,6 +147,7 @@ class ChatsGetId {
       advertising: SafeConverters.toMapOrNull(data['advertising']) != null
           ? ChatAdvertising.fromJson(SafeConverters.toMap(data['advertising']))
           : null,
+      unreadCount: SafeConverters.toInt(data['unread_count']),
     );
   }
 }

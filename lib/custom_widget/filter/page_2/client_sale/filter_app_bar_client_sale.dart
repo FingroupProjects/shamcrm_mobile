@@ -1122,9 +1122,9 @@ class _ClientSaleFilterScreenState extends State<ClientSaleFilterScreen> {
                             selectedstatusMethod: _isDeleted != null
                                 ? (_isDeleted == true
                                     ? AppLocalizations.of(context)!
-                                        .translate('status_deleted')
+                                        .translate('deleted')
                                     : AppLocalizations.of(context)!
-                                        .translate('status_not_deleted'))
+                                        .translate('not_deleted'))
                                 : null,
                             onSelectstatusMethod: (String value) {
                               if (mounted) {

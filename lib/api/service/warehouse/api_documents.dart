@@ -42,6 +42,33 @@ String _appendWarehouseDocumentFilters(
   return path;
 }
 
+double _parseClientSalesSum(dynamic decoded) {
+  if (decoded is num) return decoded.toDouble();
+  if (decoded is String) return SafeConverters.toDouble(decoded);
+
+  if (decoded is Map) {
+    final result = decoded['result'] ??
+        decoded['data'] ??
+        decoded['sum'] ??
+        decoded['total'] ??
+        decoded['total_sum'];
+
+    if (result is Map) {
+      return SafeConverters.toDouble(
+        result['sum'] ??
+            result['total'] ??
+            result['total_sum'] ??
+            result['result'] ??
+            result['data'],
+      );
+    }
+
+    return SafeConverters.toDouble(result);
+  }
+
+  return 0;
+}
+
 extension ApiWarehouseDocumentsX on ApiService {
   Future<Map<String, dynamic>> getIncomingCalls({
     required int page,
@@ -726,6 +753,73 @@ extension ApiWarehouseDocumentsX on ApiService {
       if (response.statusCode == 200) {
         final rawData = json.decode(response.body)['result']; // Как в JSON
         return expense.ExpenseResponse.fromJson(rawData);
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<double> getClientSalesSum({
+    String? query,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    int? approved,
+    int? deleted,
+    int? leadId,
+    int? cashRegisterId,
+    int? supplierId,
+    int? authorId,
+    int? storageId,
+  }) async {
+    String url = '/expense-documents/get-sum';
+    final params = <String>[];
+    if (query != null && query.isNotEmpty) {
+      params.add('search=$query');
+    }
+    if (dateFrom != null) {
+      params.add('date_from=${dateFrom.toIso8601String()}');
+    }
+    if (dateTo != null) {
+      params.add('date_to=${dateTo.toIso8601String()}');
+    }
+    if (approved != null) {
+      params.add('approved=$approved');
+    }
+    if (deleted != null) {
+      params.add('deleted=$deleted');
+    }
+    if (leadId != null) {
+      params.add('lead_id=$leadId');
+      params.add('client_id=$leadId');
+    }
+    if (cashRegisterId != null) {
+      params.add('cash_register_id=$cashRegisterId');
+    }
+    if (supplierId != null) {
+      params.add('supplier_id=$supplierId');
+    }
+    if (authorId != null) {
+      params.add('author_id=$authorId');
+    }
+    if (storageId != null) {
+      params.add('storage_id=$storageId');
+    }
+    if (params.isNotEmpty) {
+      url += '?${params.join('&')}';
+    }
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      debugPrint('ApiService: getClientSalesSum - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200) {
+        return _parseClientSalesSum(json.decode(response.body));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);

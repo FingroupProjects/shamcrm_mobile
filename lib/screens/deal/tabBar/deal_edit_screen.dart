@@ -245,17 +245,28 @@ class _DealEditScreenState extends State<DealEditScreen> {
       }
 
       // TODO check dir values initialization
-      for (var dirValue in uniqueDirectoryValues) {
+      final groupedDirectoryValues = <int, List<dynamic>>{};
+      for (final dirValue in uniqueDirectoryValues) {
+        groupedDirectoryValues
+            .putIfAbsent(dirValue.entry.directory.id, () => [])
+            .add(dirValue);
+      }
+      groupedDirectoryValues.forEach((directoryId, values) {
+        final first = values.first;
+        final ids = values.map((value) => value.entry.id as int).toList();
+        final texts = values
+            .map((value) => value.entry.values['value']?.toString() ?? '')
+            .where((item) => item.isNotEmpty)
+            .join(', ');
         customFields.add(CustomField(
-          fieldName: dirValue.entry.directory.name,
-          controller:
-              TextEditingController(text: dirValue.entry.values['value'] ?? ''),
+          fieldName: first.entry.directory.name,
+          controller: TextEditingController(text: texts),
           isDirectoryField: true,
-          directoryId: dirValue.entry.directory.id,
-          entryId: dirValue.entry.id,
+          directoryId: directoryId,
+          entryIds: ids,
           uniqueId: Uuid().v4(),
         ));
-      }
+      });
     }
   }
 
@@ -744,25 +755,28 @@ class _DealEditScreenState extends State<DealEditScreen> {
                 id: directoryField.entryId!,
                 value: directoryField.controller.text)
             : null,
-        onSelectField: (MainField selectedField) {
+        onSelectField: (List<MainField> selectedFields) {
           setState(() {
             final idx = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (idx != -1) {
               customFields[idx] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
+                entryIds: selectedFields.map((e) => e.id).toList(),
+                                                        controller: TextEditingController(
+                                                          text: selectedFields.map((e) => e.value).join(', '),
+                                                        ),
               );
             }
           });
         },
         controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
+        initialEntryIds: directoryField.selectedEntryIds,
+        onSelectEntryId: (List<int> entryIds) {
           setState(() {
             final idx = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (idx != -1) {
-              customFields[idx] = directoryField.copyWith(entryId: entryId);
+              customFields[idx] = directoryField.copyWith(entryIds: entryIds);
             }
           });
         },
@@ -1866,30 +1880,26 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                                                     .controller
                                                                     .text)
                                                             : null,
-                                                    onSelectField:
-                                                        (MainField
-                                                            selectedField) {
+                                                    onSelectField: (List<MainField> selectedFields) {
                                                       setState(() {
                                                         customFields[index] =
                                                             field.copyWith(
-                                                          entryId:
-                                                              selectedField.id,
+                                                          entryIds: selectedFields.map((e) => e.id).toList(),
                                                           controller:
                                                               TextEditingController(
-                                                                  text:
-                                                                      selectedField
-                                                                          .value),
+                                                                  text: selectedFields
+                                                                      .map((e) => e.value)
+                                                                      .join(', ')),
                                                         );
                                                       });
                                                     },
                                                     controller: field.controller,
-                                                    onSelectEntryId:
-                                                        (int entryId) {
+                                                    initialEntryIds: field.selectedEntryIds,
+                                                    onSelectEntryId: (List<int> entryIds) {
                                                       setState(() {
                                                         customFields[index] =
                                                             field.copyWith(
-                                                                entryId:
-                                                                    entryId);
+                                                                entryIds: entryIds);
                                                       });
                                                     },
                                                     initialEntryId:
@@ -2044,11 +2054,9 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                             for (var field in customFields) {
                                               if (field.isDirectoryField &&
                                                   field.directoryId != null) {
-                                                directoryValues.add({
-                                                  'entry_id': field.entryId,
-                                                  'directory_id':
-                                                      field.directoryId,
-                                                });
+                                                directoryValues.addAll(
+                                                  field.toDirectoryPayloads(),
+                                                );
                                               } else {
                                                 final fieldName =
                                                     field.fieldName;
@@ -2207,38 +2215,76 @@ class CustomField {
   final String fieldName;
   final TextEditingController controller;
   final bool isDirectoryField;
+  final bool isCustomField;
   final int? directoryId;
   final int? entryId;
+  final List<int> entryIds;
   final String uniqueId;
-  final String? type; // Добавлено поле type
+  final String? type;
 
   CustomField({
     required this.fieldName,
     TextEditingController? controller,
     this.isDirectoryField = false,
+    this.isCustomField = false,
     this.directoryId,
     this.entryId,
+    List<int>? entryIds,
     required this.uniqueId,
     this.type,
-  }) : controller = controller ?? TextEditingController();
+  })  : entryIds = List<int>.from(
+          entryIds ?? (entryId != null ? <int>[entryId] : const <int>[]),
+        ),
+        controller = controller ?? TextEditingController();
+
+  List<int> get selectedEntryIds {
+    if (entryIds.isNotEmpty) return entryIds;
+    if (entryId != null) return <int>[entryId!];
+    return const <int>[];
+  }
+
+  List<Map<String, int>> toDirectoryPayloads() {
+    if (!isDirectoryField || directoryId == null) return const [];
+    return selectedEntryIds
+        .map((id) => <String, int>{
+              'directory_id': directoryId!,
+              'entry_id': id,
+            })
+        .toList();
+  }
 
   CustomField copyWith({
     String? fieldName,
     TextEditingController? controller,
     bool? isDirectoryField,
+    bool? isCustomField,
     int? directoryId,
     int? entryId,
+    List<int>? entryIds,
     String? uniqueId,
     String? type,
   }) {
+    final nextEntryIds = entryIds ??
+        (entryId != null ? <int>[entryId] : this.entryIds);
     return CustomField(
       fieldName: fieldName ?? this.fieldName,
       controller: controller ?? this.controller,
       isDirectoryField: isDirectoryField ?? this.isDirectoryField,
+      isCustomField: isCustomField ?? this.isCustomField,
       directoryId: directoryId ?? this.directoryId,
-      entryId: entryId ?? this.entryId,
+      entryId: nextEntryIds.isNotEmpty ? nextEntryIds.first : null,
+      entryIds: nextEntryIds,
       uniqueId: uniqueId ?? this.uniqueId,
       type: type ?? this.type,
+    );
+  }
+
+  CustomField withDirectorySelection(List<MainField> selected) {
+    return copyWith(
+      entryIds: selected.map((field) => field.id).toList(),
+      controller: TextEditingController(
+        text: selected.map((field) => field.value).join(', '),
+      ),
     );
   }
 }

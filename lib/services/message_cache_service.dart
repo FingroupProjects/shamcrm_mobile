@@ -81,6 +81,24 @@ class MessageCacheService {
     _memoryCacheTime.remove(chatId);
   }
 
+  Future<void> markChatMessagesRead(int chatId) async {
+    try {
+      List<Message>? messages = _memoryCache[chatId];
+      messages ??= await getCachedMessages(chatId);
+      if (messages == null || messages.isEmpty) {
+        return;
+      }
+
+      final updated = messages
+          .map((message) =>
+              message.isRead ? message : message.copyWith(isRead: true))
+          .toList(growable: false);
+      await cacheMessages(chatId, updated);
+    } catch (e) {
+      debugPrint('MessageCache: mark read error for chat=$chatId: $e');
+    }
+  }
+
   DateTime? getLastUpdateTime(int chatId) {
     return _memoryCacheTime[chatId];
   }

@@ -16,6 +16,7 @@ import 'package:crm_task_manager/bloc/cubit/listen_sender_file_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_text_cubit.dart';
 import 'package:crm_task_manager/bloc/cubit/listen_sender_voice_cubit.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter_svg/svg.dart';
@@ -60,6 +61,7 @@ class _InputFieldState extends State<InputField>
   bool _wasKeyboardVisible = false;
   bool _hasText = false;
   bool _voicePressed = false;
+  int? _editingPrefillId;
 
   Timer? _selectionDebounce;
   bool _suppressFormattingPanel = false;
@@ -691,6 +693,28 @@ class _InputFieldState extends State<InputField>
     _closeFormattingPanel(restoreFocus: true);
   }
 
+  void _prefillEditingMessage(Message? editingMessage) {
+    final editingId = editingMessage?.id;
+    if (editingId == null) {
+      _editingPrefillId = null;
+      return;
+    }
+    if (_editingPrefillId == editingId) return;
+    _editingPrefillId = editingId;
+    final text = editingMessage!.text;
+    widget.messageController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _htmlContent = text;
+  }
+
+  void _clearEditingDraft() {
+    _editingPrefillId = null;
+    widget.messageController.clear();
+    _htmlContent = '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final appearance = ChatAppearanceScope.of(context);
@@ -709,10 +733,7 @@ class _InputFieldState extends State<InputField>
 
     final String? replyMsgId = replyingToMessage?.id.toString();
 
-    if (editingMessage != null && widget.messageController.text.isEmpty) {
-      widget.messageController.text = editingMessage.text;
-      _htmlContent = editingMessage.text;
-    }
+    _prefillEditingMessage(editingMessage);
 
     final textStyles = context.appTextStyles;
     final inputSurface = appearance.inputSurfaceColor(context);
@@ -892,8 +913,7 @@ class _InputFieldState extends State<InputField>
                       constraints: const BoxConstraints(),
                       onPressed: () {
                         messagingCubit.clearEditingMessage();
-                        widget.messageController.clear();
-                        _htmlContent = '';
+                        _clearEditingDraft();
                       },
                     ),
                   ],
@@ -1107,8 +1127,7 @@ class _InputFieldState extends State<InputField>
                     widget.onSend(_getHtmlContent(), replyMsgId);
                     messagingCubit.clearReplyMessage();
                   }
-                  widget.messageController.clear();
-                  _htmlContent = '';
+                  _clearEditingDraft();
                   _closeFormattingPanel();
                   setState(() {
                     _showTemplates = false;

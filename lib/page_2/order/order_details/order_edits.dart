@@ -628,20 +628,33 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       ));
     }
 
+    final groupedDirectoryValues = <int, List<dynamic>>{};
     for (final dirValue in order.directoryValues) {
+      groupedDirectoryValues
+          .putIfAbsent(dirValue.entry.directory.id, () => [])
+          .add(dirValue);
+    }
+    groupedDirectoryValues.forEach((directoryId, values) {
+      final first = values.first;
+      final ids = values.map((value) => value.entry.id as int).toList();
+      final texts = values
+          .map((value) {
+            final entries = value.entry.values.entries;
+            return entries.isNotEmpty
+                ? entries.first.value?.toString() ?? ''
+                : '';
+          })
+          .where((item) => item.isNotEmpty)
+          .join(', ');
       customFields.add(CustomField(
-        fieldName: dirValue.entry.directory.name,
-        controller: TextEditingController(
-          text: dirValue.entry.values.entries.isNotEmpty
-              ? dirValue.entry.values.entries.first.value?.toString() ?? ''
-              : '',
-        ),
+        fieldName: first.entry.directory.name,
+        controller: TextEditingController(text: texts),
         isDirectoryField: true,
-        directoryId: dirValue.entry.directory.id,
-        entryId: dirValue.entry.id,
+        directoryId: directoryId,
+        entryIds: ids,
         uniqueId: Uuid().v4(),
       ));
-    }
+    });
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -1443,26 +1456,29 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
         selectedField: null,
-        onSelectField: (MainField selectedField) {
+        onSelectField: (List<MainField> selectedFields) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
+                entryIds: selectedFields.map((e) => e.id).toList(),
+                                                        controller: TextEditingController(
+                                                          text: selectedFields.map((e) => e.value).join(', '),
+                                                        ),
               );
             }
           });
         },
         controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
+        initialEntryIds: directoryField.selectedEntryIds,
+        onSelectEntryId: (List<int> entryIds) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: entryId,
+                entryIds: entryIds,
               );
             }
           });
@@ -3456,12 +3472,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                     fieldType ??= 'string';
 
                     if (field.isDirectoryField && field.directoryId != null) {
-                      if (field.entryId != null) {
-                        directoryValues.add({
-                          'directory_id': field.directoryId!,
-                          'entry_id': field.entryId!,
-                        });
-                      }
+                      directoryValues.addAll(field.toDirectoryPayloads());
                       continue;
                     }
 

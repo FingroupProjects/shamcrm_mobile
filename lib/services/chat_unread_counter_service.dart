@@ -5,6 +5,8 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/utils/active_chat_tracker.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 @immutable
@@ -56,6 +58,30 @@ class ChatUnreadCounts {
       isInitialized: isInitialized ?? this.isInitialized,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is ChatUnreadCounts &&
+        other.total == total &&
+        other.lead == lead &&
+        other.task == task &&
+        other.support == support &&
+        other.isLoading == isLoading &&
+        other.isInitialized == isInitialized;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        total,
+        lead,
+        task,
+        support,
+        isLoading,
+        isInitialized,
+      );
 }
 
 class ChatUnreadCounterService {
@@ -77,6 +103,7 @@ class ChatUnreadCounterService {
   bool _isConnecting = false;
   bool _isRefreshing = false;
   String? _currentUserUniqueId;
+  static const String _countsCacheKey = 'chat_unread_counts_v1';
 
   Future<void> initialize() async {
     debugPrint(
@@ -93,6 +120,7 @@ class ChatUnreadCounterService {
     _isConnecting = true;
 
     try {
+      await _restoreCachedCounts();
       await refreshCounts();
       unawaited(_initializeSocket());
     } catch (e) {
@@ -140,22 +168,26 @@ class ChatUnreadCounterService {
         'ChatUnreadCounterService.refreshCounts: loaded total=$total, lead=$lead, task=$task, support=$support',
       );
 
-      counts.value = ChatUnreadCounts(
-        total: total,
-        lead: lead,
-        task: task,
-        support: support,
-        isLoading: false,
-        isInitialized: true,
+      _setCounts(
+        ChatUnreadCounts(
+          total: total,
+          lead: lead,
+          task: task,
+          support: support,
+          isLoading: false,
+          isInitialized: true,
+        ),
       );
       debugPrint(
         'ChatUnreadCounterService.refreshCounts: notifier updated total=${counts.value.total}, lead=${counts.value.lead}, task=${counts.value.task}, support=${counts.value.support}, initialized=${counts.value.isInitialized}',
       );
     } catch (e) {
       debugPrint('ChatUnreadCounterService.refreshCounts error: $e');
-      counts.value = counts.value.copyWith(
-        isLoading: false,
-        isInitialized: true,
+      _setCounts(
+        counts.value.copyWith(
+          isLoading: false,
+          isInitialized: true,
+        ),
       );
     } finally {
       _isRefreshing = false;
@@ -196,12 +228,14 @@ class ChatUnreadCounterService {
         break;
     }
 
-    counts.value = current.copyWith(
-      total: (current.total - unreadCount).clamp(0, current.total),
-      lead: nextLead,
-      task: nextTask,
-      support: nextSupport,
-      isInitialized: true,
+    _setCounts(
+      current.copyWith(
+        total: (current.total - unreadCount).clamp(0, current.total),
+        lead: nextLead,
+        task: nextTask,
+        support: nextSupport,
+        isInitialized: true,
+      ),
     );
   }
 
@@ -304,7 +338,11 @@ class ChatUnreadCounterService {
       }
 
       final uniqueId = chat['unique_id']?.toString();
-      if (_activeChatTracker.isChatActive(uniqueId)) {
+      final rawChatId = chat['id'];
+      final chatId = rawChatId is int
+          ? rawChatId
+          : int.tryParse(rawChatId?.toString() ?? '');
+      if (_activeChatTracker.isChatActive(uniqueId, chatId: chatId)) {
         return;
       }
 
@@ -344,16 +382,98 @@ class ChatUnreadCounterService {
           break;
       }
 
-      counts.value = current.copyWith(
-        total: current.total + 1,
-        lead: nextLead,
-        task: nextTask,
-        support: nextSupport,
-        isInitialized: true,
+      _setCounts(
+        current.copyWith(
+          total: current.total + 1,
+          lead: nextLead,
+          task: nextTask,
+          support: nextSupport,
+          isInitialized: true,
+        ),
       );
     } catch (e) {
       debugPrint('ChatUnreadCounterService._handleSocketPayload error: $e');
     }
+  }
+
+  void _setCounts(ChatUnreadCounts next) {
+    if (counts.value == next) {
+      return;
+    }
+
+    void apply() {
+      if (counts.value == next) {
+        return;
+      }
+      counts.value = next;
+      unawaited(_persistCounts(next));
+    }
+
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => apply());
+      return;
+    }
+
+    apply();
+  }
+
+  Future<void> _restoreCachedCounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_countsCacheKey);
+      if (raw == null || raw.isEmpty) {
+        return;
+      }
+
+      final decoded = json.decode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return;
+      }
+
+      _setCounts(
+        ChatUnreadCounts(
+          total: _asInt(decoded['total']),
+          lead: _asInt(decoded['lead']),
+          task: _asInt(decoded['task']),
+          support: _asInt(decoded['support']),
+          isInitialized: true,
+        ),
+      );
+    } catch (e) {
+      debugPrint('ChatUnreadCounterService._restoreCachedCounts error: $e');
+    }
+  }
+
+  Future<void> _persistCounts(ChatUnreadCounts value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _countsCacheKey,
+        json.encode({
+          'total': value.total,
+          'lead': value.lead,
+          'task': value.task,
+          'support': value.support,
+        }),
+      );
+    } catch (e) {
+      debugPrint('ChatUnreadCounterService._persistCounts error: $e');
+    }
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
   }
 
   String _buildFingerprint(Map chat, dynamic lastMessage) {
@@ -392,5 +512,6 @@ class ChatUnreadCounterService {
     _isInitialized = false;
     _isConnecting = false;
     _isRefreshing = false;
+    counts.value = const ChatUnreadCounts();
   }
 }

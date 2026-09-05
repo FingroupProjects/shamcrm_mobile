@@ -112,6 +112,9 @@ class SipService extends ChangeNotifier
   bool get isSipScreenVisible => _sipScreenVisibilityCount > 0;
   bool _sipScreenOpenClaimed = false;
   bool get isSipScreenOpenClaimed => _sipScreenOpenClaimed;
+  bool _callUiMinimizedByUser = false;
+  bool get isCallUiMinimizedByUser =>
+      _callUiMinimizedByUser && _isActiveUiCallStatus(_state.callStatus);
   bool _forcePinPrompt = false;
   bool get isPinPromptForced => _forcePinPrompt;
   bool _shouldStayConnected = false;
@@ -577,9 +580,14 @@ class SipService extends ChangeNotifier
     }
   }
 
+  void setCallUiMinimizedByUser(bool minimized) {
+    _callUiMinimizedByUser = minimized;
+  }
+
   void setSipScreenVisible(bool visible) {
     final wasVisible = isSipScreenVisible;
     if (visible) {
+      _callUiMinimizedByUser = false;
       _sipScreenVisibilityCount += 1;
       _sipScreenOpenClaimed = true;
     } else if (_sipScreenVisibilityCount > 0) {

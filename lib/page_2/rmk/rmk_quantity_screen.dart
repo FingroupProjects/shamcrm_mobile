@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/offline/db/app_database.dart';
@@ -33,6 +34,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   bool _isSaving = false;
   bool _isProgrammaticEdit = false;
   String _currencyTitle = 'TJS';
+  bool _isFuzaylovazamTenant = false;
 
   double get _quantity => double.tryParse(_quantityController.text) ?? 0;
 
@@ -79,8 +81,10 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 
   Future<void> _loadCurrency() async {
     final currency = await LocalizationService.getCurrency();
+    final isFuzaylovazam = await ApiService().isFuzaylovazamTenant();
     if (!mounted) return;
     setState(() {
+      _isFuzaylovazamTenant = isFuzaylovazam;
       _currencyTitle = currency?.symbolCode?.trim().isNotEmpty == true
           ? currency!.symbolCode!.trim()
           : (currency?.name?.trim().isNotEmpty == true
@@ -289,7 +293,8 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
               _ProductHeader(
                 good: _good,
                 unitLabel: RmkRepository.unitLabelForGood(_good),
-                currencyTitle: _currencyTitle,
+                currencyTitle:
+                    _isFuzaylovazamTenant ? r'$' : _currencyTitle,
               ),
               _TotalRow(
                 total: _total,

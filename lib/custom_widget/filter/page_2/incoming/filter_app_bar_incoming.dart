@@ -6,6 +6,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/utils/document_date_period.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -409,6 +410,44 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
     );
   }
 
+  Widget _buildDatePeriodChips() {
+    final selected = DocumentDatePeriodX.detect(_fromDate, _toDate);
+    final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final periods = DocumentDatePeriodX.selectable;
+
+    return _buildFilterCard(
+      padding: const EdgeInsets.all(6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.fieldBg,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            for (var i = 0; i < periods.length; i++)
+              Expanded(
+                child: _DatePeriodCell(
+                  label: localizations.translate(periods[i].chipLocalizationKey),
+                  selected: selected == periods[i],
+                  showDivider: i > 0,
+                  onTap: () {
+                    final range = DocumentDatePeriodX.rangeFor(periods[i]);
+                    setState(() {
+                      _fromDate = range.start;
+                      _toDate = range.end;
+                      _updateDateControllers();
+                    });
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   ButtonStyle _buildActionButtonStyle() {
     return TextButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -451,6 +490,8 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
       final filters = <String, dynamic>{
         'date_from': _fromDate,
         'date_to': _toDate,
+        if (_fromDate != null && _toDate != null)
+          'date_period': DocumentDatePeriodX.detect(_fromDate, _toDate).name,
         'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
         'deleted': _isDeleted == null
@@ -1144,6 +1185,11 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    if (widget.filterType ==
+                        WarehouseDocumentFilterType.clientSale) ...[
+                      _buildDatePeriodChips(),
+                      const SizedBox(height: 8),
+                    ],
                     // From Date
                     _buildFilterCard(
                       child: DateFieldWithFromTo(
@@ -1241,9 +1287,9 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
                           selectedstatusMethod: _isDeleted != null
                               ? (_isDeleted == true
                                   ? AppLocalizations.of(context)!
-                                      .translate('status_deleted')
+                                      .translate('deleted')
                                   : AppLocalizations.of(context)!
-                                      .translate('status_not_deleted'))
+                                      .translate('not_deleted'))
                               : null,
                           onSelectstatusMethod: (String value) {
                             if (mounted) {
@@ -1326,6 +1372,57 @@ class _IncomingFilterScreenState extends State<IncomingFilterScreen> {
     _fromDateController.dispose();
     _toDateController.dispose();
     super.dispose();
+  }
+}
+
+class _DatePeriodCell extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool showDivider;
+  final VoidCallback onTap;
+
+  const _DatePeriodCell({
+    required this.label,
+    required this.selected,
+    required this.showDivider,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Material(
+      color: selected ? colors.buttonPrimaryBg : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 36,
+          decoration: BoxDecoration(
+            border: showDivider
+                ? Border(
+                    left: BorderSide(
+                      color: colors.borderSubtle.withValues(alpha: 0.7),
+                      width: 0.6,
+                    ),
+                  )
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: context.appTextStyles.bodySm.copyWith(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+              color: selected ? Colors.white : colors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1430,7 +1527,10 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
               ),
             );
           },
-          initialItem: selectedstatusMethod,
+          initialItem: selectedstatusMethod != null &&
+                  widget.statusMethodsList.contains(selectedstatusMethod)
+              ? selectedstatusMethod
+              : null,
           onChanged: (value) {
             if (value != null && mounted) {
               widget.onSelectstatusMethod(value);

@@ -75,6 +75,7 @@ class _ChatsScreenState extends State<ChatsScreen>
   final Map<int, LayerLink> _tabBadgeLinks = <int, LayerLink>{};
   final Map<int, OverlayPortalController> _tabBadgeControllers =
       <int, OverlayPortalController>{};
+  final Set<int> _pendingBadgeSyncIndexes = <int>{};
   List<TargetFocus> targets = [];
   bool _isTutorialShown = false;
   bool _isTaskScreenTutorialCompleted = false;
@@ -1377,11 +1378,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       index,
       OverlayPortalController.new,
     );
-    if (unreadCount > 0 && !badgeController.isShowing) {
-      badgeController.show();
-    } else if (unreadCount == 0 && badgeController.isShowing) {
-      badgeController.hide();
-    }
+    _scheduleTabBadgeVisibility(index, unreadType);
     final tabButton = GestureDetector(
       onTap: () {
         // //print(
@@ -1480,6 +1477,33 @@ class _ChatsScreenState extends State<ChatsScreen>
       },
       child: tabButton,
     );
+  }
+
+  void _scheduleTabBadgeVisibility(int index, String unreadType) {
+    if (!_pendingBadgeSyncIndexes.add(index)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingBadgeSyncIndexes.remove(index);
+      if (!mounted) {
+        return;
+      }
+
+      final badgeController = _tabBadgeControllers[index];
+      if (badgeController == null) {
+        return;
+      }
+
+      final unreadCount = ChatUnreadCounterService.instance.counts.value
+          .countForEndpoint(unreadType);
+      final shouldShow = unreadCount > 0;
+      if (shouldShow && !badgeController.isShowing) {
+        badgeController.show();
+      } else if (!shouldShow && badgeController.isShowing) {
+        badgeController.hide();
+      }
+    });
   }
 
   String _chatEndpointForTabIndex(int index) {

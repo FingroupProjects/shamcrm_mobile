@@ -56,6 +56,7 @@ import 'package:crm_task_manager/api/service/chats/message_reaction_api_service.
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
+import 'package:crm_task_manager/services/chat_heartbeat_service.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/chat_file_send_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
@@ -1067,6 +1068,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       unreadCount: widget.chatItem.unreadCount,
       type: widget.endPointInTab,
     );
+    ChatHeartbeatService.instance.start(widget.chatId);
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -1082,7 +1084,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     // Это нужно, чтобы при обновлении через сокет не инкрементировать счетчик
     // для сообщений, которые пользователь читает в реальном времени
     // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки чата
-    _chatTracker.setActiveChat(widget.chatUniqueId);
+    _chatTracker.setActiveChat(widget.chatUniqueId, chatId: widget.chatId);
+    _chatsBloc?.add(ResetUnreadCount(widget.chatId));
+    unawaited(_cacheService.markChatMessagesRead(widget.chatId));
 
     context.read<ListenSenderFileCubit>().updateValue(false);
     context.read<ListenSenderVoiceCubit>().updateValue(false);
@@ -1436,6 +1440,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           debugPrint(
               '=================-=== ⚠️ ChatSmsScreen: Integration error (non-critical): $e');
         });
+      } else {
+        _syncOpenedChatReadState().catchError((e) {
+          debugPrint(
+              '=================-=== ⚠️ ChatSmsScreen: Read-state sync error (non-critical): $e');
+        });
       }
 
       debugPrint(
@@ -1632,6 +1641,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
   }
 
+  Future<void> _syncOpenedChatReadState() async {
+    final chatData = await widget.apiService.getChatById(widget.chatId);
+    _applyOpenedChatReadState(chatData);
+  }
+
+  void _applyOpenedChatReadState(ChatsGetId chatData) {
+    if (chatData.uniqueId != null && chatData.uniqueId!.isNotEmpty) {
+      _chatTracker.setActiveChat(chatData.uniqueId, chatId: widget.chatId);
+    }
+    if (chatData.unreadCount > 0 && widget.chatItem.unreadCount <= 0) {
+      ChatUnreadCounterService.instance.markChatOpened(
+        unreadCount: chatData.unreadCount,
+        type: widget.endPointInTab,
+      );
+    }
+    _chatsBloc?.add(ResetUnreadCount(widget.chatId));
+  }
+
   Future<void> _fetchIntegration() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -1641,6 +1668,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
       final chatData = await widget.apiService.getChatById(widget.chatId);
       debugPrint('=================-=== ChatSmsScreen: Chat data received');
+      _applyOpenedChatReadState(chatData);
 
       setState(() {
         referralBody = chatData.referralBody;
@@ -4289,10 +4317,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     // Это нужно сделать ДО пометки сообщений как прочитанных,
     // чтобы обновления через сокет не инкрементировали счетчик
     // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки чата
-    _chatTracker.clearActiveChat(widget.chatUniqueId);
+    _chatTracker.clearActiveChat(widget.chatUniqueId, widget.chatId);
+    ChatHeartbeatService.instance.stop(widget.chatId);
 
     // ✅ ШАГ 2: Закрываем сокет-соединение для текущего чата
-    apiService.closeChatSocket(widget.chatId);
+    unawaited(_closeLegacyChatCache());
 
     // ✅ ШАГ 3: Закрываем WebSocket соединение, если оно открыто
     if (_webSocket != null && _webSocket!.readyState != WebSocket.closed) {
@@ -4336,6 +4365,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         '=================-=== ✅ ChatSmsScreen.dispose COMPLETED for chat ${widget.chatId}');
 
     super.dispose();
+  }
+
+  Future<void> _closeLegacyChatCache() async {
+    try {
+      await apiService.closeChatSocket(widget.chatId);
+    } catch (e) {
+      debugPrint(
+          'ChatSmsScreen: legacy clearCache ignored for chat ${widget.chatId}: $e');
+    }
   }
 
   // ✅ НОВЫЙ МЕТОД: Помечает сообщения как прочитанные при выходе из чата и обновляет список чатов

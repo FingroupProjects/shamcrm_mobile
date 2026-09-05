@@ -258,25 +258,33 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
       ));
     }
 
-    for (int i = 0; i < widget.directoryValues.length; i++) {
-      var dirValue = widget.directoryValues[i];
-      if (dirValue.entry != null) {
-        customFields.add(CustomField(
-          fieldName: dirValue.entry!.directory.name,
-          controller: TextEditingController(
-              text: dirValue.entry!.values.isNotEmpty
-                  ? dirValue.entry!.values.first.value
-                  : ''),
-          isDirectoryField: true,
-          directoryId: dirValue.entry!.directory.id,
-          entryId: dirValue.entry!.id,
-          uniqueId: '${Uuid().v4()}_init_dir_$i',
-        ));
-      } else {
-        debugPrint(
-            'DirectoryValue with id ${dirValue.id} has null entry, skipping...');
-      }
+    final groupedDirectoryValues = <int, List<DirectoryValue>>{};
+    for (final dirValue in widget.directoryValues) {
+      final entry = dirValue.entry;
+      if (entry == null) continue;
+      groupedDirectoryValues
+          .putIfAbsent(entry.directory.id, () => <DirectoryValue>[])
+          .add(dirValue);
     }
+    groupedDirectoryValues.forEach((directoryId, values) {
+      final first = values.first.entry!;
+      final ids = values.map((value) => value.entry!.id).toList();
+      final texts = values
+          .map((value) => value.entry!.values
+              .map((item) => item.value)
+              .where((item) => item.isNotEmpty)
+              .join(', '))
+          .where((item) => item.isNotEmpty)
+          .join(', ');
+      customFields.add(CustomField(
+        fieldName: first.directory.name,
+        controller: TextEditingController(text: texts),
+        isDirectoryField: true,
+        directoryId: directoryId,
+        entryIds: ids,
+        uniqueId: '${Uuid().v4()}_init_dir_$directoryId',
+      ));
+    });
 
     if (widget.existedFiles != null) {
       files = widget.existedFiles!.map((file) {
@@ -897,26 +905,29 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 id: directoryField.entryId!,
                 value: directoryField.controller.text)
             : null,
-        onSelectField: (MainField selectedField) {
+        onSelectField: (List<MainField> selectedFields) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
+                entryIds: selectedFields.map((e) => e.id).toList(),
+                                                        controller: TextEditingController(
+                                                          text: selectedFields.map((e) => e.value).join(', '),
+                                                        ),
               );
             }
           });
         },
         controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
+        initialEntryIds: directoryField.selectedEntryIds,
+        onSelectEntryId: (List<int> entryIds) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: entryId,
+                entryIds: entryIds,
               );
             }
           });
@@ -1533,7 +1544,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                 controller: TextEditingController(text: controllerText),
                 isDirectoryField: true,
                 directoryId: link.directory.id,
-                entryId: entryId,
+                entryIds: entryId != null ? <int>[entryId] : const <int>[],
                 uniqueId:
                     '${Uuid().v4()}_api_dir_${DateTime.now().millisecondsSinceEpoch}',
               ));
@@ -2143,32 +2154,31 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                                               .controller.text,
                                                         )
                                                       : null,
-                                                  onSelectField: (MainField
-                                                      selectedField) {
+                                                  onSelectField: (List<MainField> selectedFields) {
                                                     setState(() {
                                                       final idx = customFields
                                                           .indexOf(field);
                                                       customFields[idx] =
                                                           field.copyWith(
-                                                        entryId:
-                                                            selectedField.id,
+                                                        entryIds: selectedFields.map((e) => e.id).toList(),
                                                         controller:
                                                             TextEditingController(
-                                                          text: selectedField
-                                                              .value,
+                                                          text: selectedFields
+                                                              .map((e) => e.value)
+                                                              .join(', '),
                                                         ),
                                                       );
                                                     });
                                                   },
                                                   controller: field.controller,
-                                                  onSelectEntryId:
-                                                      (int entryId) {
+                                                    initialEntryIds: field.selectedEntryIds,
+                                                  onSelectEntryId: (List<int> entryIds) {
                                                     setState(() {
                                                       final idx = customFields
                                                           .indexOf(field);
                                                       customFields[idx] =
                                                           field.copyWith(
-                                                        entryId: entryId,
+                                                        entryIds: entryIds,
                                                       );
                                                     });
                                                   },
@@ -2405,13 +2415,9 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                                 }
                                               }
                                               if (field.isDirectoryField &&
-                                                  field.directoryId != null &&
-                                                  field.entryId != null) {
-                                                directoryValues.add({
-                                                  'directory_id':
-                                                      field.directoryId!,
-                                                  'entry_id': field.entryId!,
-                                                });
+            field.directoryId != null &&
+            field.selectedEntryIds.isNotEmpty) {
+          directoryValues.addAll(field.toDirectoryPayloads());
                                               } else if (fieldName.isNotEmpty &&
                                                   fieldValue.isNotEmpty) {
                                                 customFieldList.add({

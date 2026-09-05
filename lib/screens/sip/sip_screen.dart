@@ -234,6 +234,13 @@ class _SipScreenState extends State<SipScreen>
     if (_backNavigationInProgress || !mounted) return;
     _backNavigationInProgress = true;
     try {
+      final isActiveCall = _isActiveCallState(_sipService.state.callStatus) ||
+          _leadAutoCallPending;
+      if (isActiveCall) {
+        await _minimizeActiveCallAndReturnToCrm();
+        return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final requiresPin = prefs.getBool(_sipPinRequiredAfterCallKey) ?? false;
       final isColdCallRoute =
@@ -247,15 +254,35 @@ class _SipScreenState extends State<SipScreen>
       }
 
       if (!mounted) return;
-      setState(() => _allowRoutePop = true);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.of(context).maybePop();
-        }
-      });
+      _popSipScreenRoute();
     } finally {
       _backNavigationInProgress = false;
     }
+  }
+
+  Future<void> _minimizeActiveCallAndReturnToCrm() async {
+    _sipService.setCallUiMinimizedByUser(true);
+    if (!mounted) return;
+
+    final route = ModalRoute.of(context);
+    final isRootCallRoute = route == null ||
+        route.isFirst ||
+        route.settings.name == '/sip_call_only';
+    if (isRootCallRoute) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      return;
+    }
+
+    _popSipScreenRoute();
+  }
+
+  void _popSipScreenRoute() {
+    setState(() => _allowRoutePop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).maybePop();
+      }
+    });
   }
 
   bool get _hasContactsTab => true;

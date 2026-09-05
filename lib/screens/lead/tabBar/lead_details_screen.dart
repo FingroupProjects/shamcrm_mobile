@@ -883,22 +883,18 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     }
 
     if (fc.isDirectory && fc.directoryId != null) {
+      final values = <String>[];
       for (var dirValue in lead.directoryValues) {
         if (dirValue.entry != null &&
             dirValue.entry!.directory.id == fc.directoryId) {
-          List<String> values = [];
           for (var fieldValue in dirValue.entry!.values) {
             if (fieldValue.value.isNotEmpty) {
               values.add(fieldValue.value);
             }
           }
-
-          if (values.isNotEmpty) {
-            return values.join(', ');
-          }
         }
       }
-      return '';
+      return values.join(', ');
     }
 
     switch (fc.fieldName) {

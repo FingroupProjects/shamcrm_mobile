@@ -388,17 +388,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
 
     if (fc.isDirectory && fc.directoryId != null) {
+      final values = <String>[];
       for (var dirValue in order.directoryValues) {
-        if (dirValue.entry.directory.name == fc.fieldName) {
+        if (dirValue.entry.directory.name == fc.fieldName ||
+            dirValue.entry.directory.id == fc.directoryId) {
           final value = dirValue.entry.values.entries.isNotEmpty
               ? dirValue.entry.values.entries.first.value
               : null;
           if (value != null && value.toString().isNotEmpty) {
-            return value.toString();
+            values.add(value.toString());
           }
         }
       }
-      return '';
+      return values.join(', ');
     }
 
     switch (fc.fieldName) {

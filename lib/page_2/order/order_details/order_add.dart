@@ -1165,26 +1165,29 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
         selectedField: null,
-        onSelectField: (MainField selectedField) {
+        onSelectField: (List<MainField> selectedFields) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
+                entryIds: selectedFields.map((e) => e.id).toList(),
+                                                        controller: TextEditingController(
+                                                          text: selectedFields.map((e) => e.value).join(', '),
+                                                        ),
               );
             }
           });
         },
         controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
+        initialEntryIds: directoryField.selectedEntryIds,
+        onSelectEntryId: (List<int> entryIds) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: entryId,
+                entryIds: entryIds,
               );
             }
           });
@@ -3548,12 +3551,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   fieldType ??= 'string';
 
                   if (field.isDirectoryField && field.directoryId != null) {
-                    if (field.entryId != null) {
-                      directoryValues.add({
-                        'directory_id': field.directoryId!,
-                        'entry_id': field.entryId!,
-                      });
-                    }
+                    directoryValues.addAll(field.toDirectoryPayloads());
                     continue;
                   }
 

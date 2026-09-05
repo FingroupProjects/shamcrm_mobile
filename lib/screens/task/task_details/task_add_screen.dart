@@ -409,25 +409,28 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         directoryId: directoryField.directoryId!,
         directoryName: directoryField.fieldName,
         selectedField: null,
-        onSelectField: (MainField selectedField) {
+        onSelectField: (List<MainField> selectedFields) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
               customFields[index] = directoryField.copyWith(
-                entryId: selectedField.id,
-                controller: TextEditingController(text: selectedField.value),
+                entryIds: selectedFields.map((e) => e.id).toList(),
+                                                        controller: TextEditingController(
+                                                          text: selectedFields.map((e) => e.value).join(', '),
+                                                        ),
               );
             }
           });
         },
         controller: directoryField.controller,
-        onSelectEntryId: (int entryId) {
+        initialEntryIds: directoryField.selectedEntryIds,
+        onSelectEntryId: (List<int> entryIds) {
           setState(() {
             final index = customFields
                 .indexWhere((f) => f.directoryId == config.directoryId);
             if (index != -1) {
-              customFields[index] = directoryField.copyWith(entryId: entryId);
+              customFields[index] = directoryField.copyWith(entryIds: entryIds);
             }
           });
         },
@@ -1450,32 +1453,30 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                                     directoryName:
                                                         field.fieldName,
                                                     selectedField: null,
-                                                    onSelectField:
-                                                        (MainField sf) {
+                                                    onSelectField: (List<MainField> selectedFields) {
                                                       setState(() {
                                                         final idx = customFields
                                                             .indexOf(field);
                                                         customFields[idx] =
                                                             field.copyWith(
-                                                          entryId: sf.id,
+                                                          entryIds: selectedFields.map((e) => e.id).toList(),
                                                           controller:
                                                               TextEditingController(
-                                                                  text:
-                                                                      sf.value),
+                                                                  text: selectedFields
+                                                                      .map((e) => e.value)
+                                                                      .join(', ')),
                                                         );
                                                       });
                                                     },
                                                     controller:
                                                         field.controller,
-                                                    onSelectEntryId:
-                                                        (int entryId) {
+                                                    onSelectEntryId: (List<int> entryIds) {
                                                       setState(() {
                                                         final idx = customFields
                                                             .indexOf(field);
                                                         customFields[idx] =
                                                             field.copyWith(
-                                                                entryId:
-                                                                    entryId);
+                                                                entryIds: entryIds);
                                                       });
                                                     },
                                                   )
@@ -1902,12 +1903,9 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       }
 
       if (field.isDirectoryField &&
-          field.directoryId != null &&
-          field.entryId != null) {
-        directoryValues.add({
-          'directory_id': field.directoryId!,
-          'entry_id': field.entryId!,
-        });
+            field.directoryId != null &&
+            field.selectedEntryIds.isNotEmpty) {
+          directoryValues.addAll(field.toDirectoryPayloads());
       } else if (fieldName.isNotEmpty && fieldValue.isNotEmpty) {
         customFieldMap.add({
           'key': fieldName,

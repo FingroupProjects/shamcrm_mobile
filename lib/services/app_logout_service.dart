@@ -12,7 +12,9 @@ import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_cache.dart';
 import 'package:crm_task_manager/screens/sip/sip_service.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
+import 'package:crm_task_manager/services/chat_heartbeat_service.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/dashboard_prefetch_service.dart';
 import 'package:crm_task_manager/services/message_cache_service.dart';
 import 'package:flutter/foundation.dart';
@@ -69,6 +71,8 @@ class AppLogoutService {
     }
 
     try {
+      ChatHeartbeatService.instance.stop();
+      await ChatUnreadCounterService.instance.dispose();
       await apiService.logout();
       await apiService.reset();
       await authService.clearAllAuthData();

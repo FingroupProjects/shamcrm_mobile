@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/common/pagination_dto.dart';
@@ -30,11 +32,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   final Set<int> _prefetchedPages = {};
   final Set<int> _loadingPages = {}; // Страницы, которые сейчас загружаются
 
-  // ✅ ИСПРАВЛЕНО: Отслеживание времени обнуления счетчика для каждого чата
-  // Используется как дополнительная защита после выхода из чата (cooldown 2 секунды)
-  // Ключ: chatUniqueId (String), Значение: timestamp когда счетчик был обнулен
-  // ✅ ИСПРАВЛЕНО: Используем uniqueId вместо id для привязки
-  final Map<String, DateTime> _resetUnreadCountTimestamps = {};
+  // Shared across every ChatsBloc instance (lead/task/corporate + app-level),
+  // so opening a chat from any section keeps related unread badges in sync.
+  static final Map<String, DateTime> _resetUnreadCountTimestamps = {};
   static const Duration _resetCooldownDuration =
       Duration(seconds: 2); // 2 секунды для скрытия счетчика
 
@@ -140,7 +140,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     );
 
     if (cached != null) {
-      final sortedCached = _sortChatsIfNeeded(cached.data, event.endPoint);
+      final sortedCached = _applyLocalUnreadOverrides(
+        _sortChatsIfNeeded(cached.data, event.endPoint),
+      );
       chatsPagination = PaginationDTO(
         data: sortedCached,
         count: cached.count,
@@ -168,24 +170,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         debugPrint(
             '=================-=== ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
 
-        final sortedChats = _sortChatsIfNeeded(pagination.data, event.endPoint);
-
-        // ✅ ИСПРАВЛЕНО: Если счетчик был недавно обнулен (в течение 2 секунд), обнуляем его снова
-        // Это гарантирует, что счетчик остается скрытым в течение 2 секунд после выхода из чата
-        final now = DateTime.now();
-        final updatedChats = sortedChats.map((chat) {
-          // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки, fallback на id если uniqueId null
-          final chatKey = chat.uniqueId ?? chat.id.toString();
-          final resetTimestamp = _resetUnreadCountTimestamps[chatKey];
-          if (resetTimestamp != null &&
-              now.difference(resetTimestamp) < _resetCooldownDuration) {
-            // Счетчик был недавно обнулен - обнуляем его снова, даже если сервер прислал значение > 0
-            debugPrint(
-                '=================-=== ChatsBloc: Chat ${chat.uniqueId ?? chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
-            return chat.copyWith(unreadCount: 0);
-          }
-          return chat;
-        }).toList();
+        final updatedChats = _applyLocalUnreadOverrides(
+          _sortChatsIfNeeded(pagination.data, event.endPoint),
+        );
 
         chatsPagination = PaginationDTO(
           data: updatedChats,
@@ -235,7 +222,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           );
     if (!hasLiveData) {
       if (cached != null) {
-        final sortedCached = _sortChatsIfNeeded(cached.data, endPoint);
+        final sortedCached = _applyLocalUnreadOverrides(
+          _sortChatsIfNeeded(cached.data, endPoint),
+        );
         emit(ChatsLoaded(PaginationDTO(
           data: sortedCached,
           count: cached.count,
@@ -259,23 +248,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           filters: _currentFilters,
         );
 
-        final sortedChats = _sortChatsIfNeeded(chatsPagination!.data, endPoint);
-
-        // ✅ ИСПРАВЛЕНО: Если счетчик был недавно обнулен (в течение 2 секунд), обнуляем его снова
-        final now = DateTime.now();
-        final updatedChats = sortedChats.map((chat) {
-          // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки, fallback на id если uniqueId null
-          final chatKey = chat.uniqueId ?? chat.id.toString();
-          final resetTimestamp = _resetUnreadCountTimestamps[chatKey];
-          if (resetTimestamp != null &&
-              now.difference(resetTimestamp) < _resetCooldownDuration) {
-            // Счетчик был недавно обнулен - обнуляем его снова
-            debugPrint(
-                '=================-=== ChatsBloc: Chat ${chat.uniqueId ?? chat.id} was recently reset, keeping unreadCount at 0 for 2s cooldown');
-            return chat.copyWith(unreadCount: 0);
-          }
-          return chat;
-        }).toList();
+        final updatedChats = _applyLocalUnreadOverrides(
+          _sortChatsIfNeeded(chatsPagination!.data, endPoint),
+        );
 
         chatsPagination = PaginationDTO(
           data: updatedChats,
@@ -444,8 +419,10 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         // Это ключевое решение - если чат открыт, пользователь читает сообщения в реальном времени
         // и не нужно инкрементировать счетчик для них
         // ✅ ИСПРАВЛЕНО: Используем uniqueId для проверки активного чата
-        final bool isChatCurrentlyOpen =
-            _chatTracker.isChatActive(event.chat.uniqueId);
+        final bool isChatCurrentlyOpen = _chatTracker.isChatActive(
+          event.chat.uniqueId,
+          chatId: event.chat.id,
+        );
         debugPrint(
             '=================-=== ChatsBloc: Chat ${event.chat.uniqueId ?? event.chat.id} currently open: $isChatCurrentlyOpen');
 
@@ -670,11 +647,46 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     emit(ChatsInitial());
   }
 
+  List<Chats> _applyLocalUnreadOverrides(List<Chats> chats) {
+    final now = DateTime.now();
+    return chats.map((chat) {
+      if (_shouldKeepUnreadZero(chat, now)) {
+        if (chat.unreadCount == 0) {
+          return chat;
+        }
+        debugPrint(
+            '=================-=== ChatsBloc: Keeping unreadCount at 0 for chat ${chat.uniqueId ?? chat.id}');
+        return chat.copyWith(unreadCount: 0);
+      }
+      return chat;
+    }).toList();
+  }
+
+  bool _shouldKeepUnreadZero(Chats chat, DateTime now) {
+    if (_chatTracker.isChatActive(chat.uniqueId, chatId: chat.id)) {
+      return true;
+    }
+
+    final chatKey = chat.uniqueId ?? chat.id.toString();
+    final resetTimestamp = _resetUnreadCountTimestamps[chatKey];
+    if (resetTimestamp != null &&
+        now.difference(resetTimestamp) < _resetCooldownDuration) {
+      return true;
+    }
+
+    final idKey = chat.id.toString();
+    final idTimestamp = _resetUnreadCountTimestamps[idKey];
+    return idTimestamp != null &&
+        now.difference(idTimestamp) < _resetCooldownDuration;
+  }
+
   // 🔹 ИСПРАВЛЕННЫЙ МЕТОД - Сброс счётчика непрочитанных
   Future<void> _resetUnreadCount(
       ResetUnreadCount event, Emitter<ChatsState> emit) async {
     debugPrint(
         '=================-=== ChatsBloc._resetUnreadCount: Resetting unreadCount for chat ID: ${event.chatId}');
+
+    _resetUnreadCountTimestamps[event.chatId.toString()] = DateTime.now();
 
     if (state is ChatsLoaded) {
       final currentState = state as ChatsLoaded;
@@ -718,5 +730,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       debugPrint(
           '=================-=== ChatsBloc._resetUnreadCount: State is not ChatsLoaded, cannot reset unreadCount');
     }
+
+    unawaited(_offlineRepository.zeroUnreadCount(event.chatId));
   }
 }

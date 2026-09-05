@@ -168,6 +168,66 @@ class ChatOfflineRepository {
     return cached;
   }
 
+  Future<void> zeroUnreadCount(int chatId) async {
+    final cacheRepository = _cacheRepository;
+    if (cacheRepository == null || chatId <= 0) {
+      return;
+    }
+
+    try {
+      final entries =
+          await cacheRepository.readAllByModule(OfflineModule.chatList.value);
+      for (final record in entries) {
+        final decoded = jsonDecode(record.entry.payload);
+        if (decoded is! Map<String, dynamic>) {
+          continue;
+        }
+
+        final data = (decoded['data'] as List<dynamic>? ?? <dynamic>[])
+            .whereType<Map>()
+            .map((chat) => Map<String, dynamic>.from(chat))
+            .toList();
+
+        var changed = false;
+        for (var i = 0; i < data.length; i++) {
+          final cachedId = data[i]['id'];
+          final parsedId = cachedId is int
+              ? cachedId
+              : int.tryParse(cachedId?.toString() ?? '');
+          if (parsedId != chatId) {
+            continue;
+          }
+          final unread = data[i]['unreadCount'];
+          final unreadValue = unread is int
+              ? unread
+              : int.tryParse(unread?.toString() ?? '') ?? 0;
+          if (unreadValue == 0) {
+            continue;
+          }
+          data[i]['unreadCount'] = 0;
+          changed = true;
+        }
+
+        if (!changed) {
+          continue;
+        }
+
+        await cacheRepository.write(
+          module: OfflineModule.chatList.value,
+          cacheKey: record.cacheKey,
+          payload: {
+            'data': data,
+            'pagination': decoded['pagination'],
+          },
+          lastSyncedAt: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      debugPrint(
+          'ChatOfflineRepository.zeroUnreadCount: failed for chat $chatId: $e');
+    }
+  }
+
   Map<String, dynamic> _serialize(PaginationDTO<Chats> pagination) {
     return {
       'data': pagination.data.map(_chatToCacheJson).toList(),

@@ -16,16 +16,21 @@ final class ClientSaleLoaded extends ClientSaleState {
   final Pagination? pagination;
   final bool hasReachedMax;
   final List<ExpenseDocument>? selectedData;
+  final double? totalSum;
+  final DocumentDatePeriod datePeriod;
 
   const ClientSaleLoaded({
     required this.data,
     this.pagination,
     this.hasReachedMax = false,
     this.selectedData = const [],
+    this.totalSum,
+    this.datePeriod = DocumentDatePeriod.today,
   });
 
   @override
-  List<Object> get props => [data, hasReachedMax, selectedData ?? []];
+  List<Object> get props =>
+      [data, hasReachedMax, selectedData ?? [], totalSum ?? -1, datePeriod];
 }
 
 final class ClientSaleError extends ClientSaleState {

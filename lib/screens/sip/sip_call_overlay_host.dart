@@ -249,6 +249,20 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
       return;
     }
     _lastHandledCallUiRequestSerial = serial;
+    if (_sipService.isCallUiMinimizedByUser &&
+        state.callStatus != SipCallUiStatus.incoming) {
+      unawaited(_sipService.recordUiDiagnostic(
+        'CALL_UI_SKIPPED_USER_MINIMIZED',
+        <String, Object?>{
+          'serial': serial,
+          'call_state': state.callStatus.name,
+        },
+      ));
+      return;
+    }
+    if (state.callStatus == SipCallUiStatus.incoming) {
+      _sipService.setCallUiMinimizedByUser(false);
+    }
     if (_fullCallUiOpenInProgress ||
         _sipService.isSipScreenVisible ||
         _sipService.isSipScreenOpenClaimed) {
