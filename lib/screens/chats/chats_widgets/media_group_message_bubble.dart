@@ -838,8 +838,18 @@ class _GroupImageLoader extends StatefulWidget {
 }
 
 class _GroupImageLoaderState extends State<_GroupImageLoader> {
-  late final Future<File?> _cachedFileFuture =
+  late Future<File?> _cachedFileFuture =
       ChatMediaPersistentCache.instance.getImageFile(widget.url);
+  int _retryToken = 0;
+
+  void _retry() {
+    setState(() {
+      _retryToken++;
+      CachedNetworkImage.evictFromCache(widget.url);
+      _cachedFileFuture =
+          ChatMediaPersistentCache.instance.getImageFile(widget.url);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -848,6 +858,7 @@ class _GroupImageLoaderState extends State<_GroupImageLoader> {
       children: [
         const _ImageWavePlaceholder(),
         FutureBuilder<File?>(
+          key: ValueKey('${widget.url}-$_retryToken'),
           future: _cachedFileFuture,
           builder: (context, snapshot) {
             final file = snapshot.data;
@@ -880,7 +891,10 @@ class _GroupImageLoaderState extends State<_GroupImageLoader> {
                 debugPrint(
                   'MediaGroupMessageBubble image error for ${widget.url}: $error',
                 );
-                return const _ImageWavePlaceholder();
+                return GestureDetector(
+                  onTap: _retry,
+                  child: const _ImageWavePlaceholder(),
+                );
               },
             );
           },

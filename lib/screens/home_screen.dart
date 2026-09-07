@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
+import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
@@ -187,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     debugPrint('HomeScreen: App lifecycle changed to $state');
 
     if (state == AppLifecycleState.resumed) {
+      LoggedDioClient.resetIfIdle();
       // ✅ Когда приложение возобновляется, проверяем pending navigation
       // и убеждаемся, что callback установлен
       if (mounted) {

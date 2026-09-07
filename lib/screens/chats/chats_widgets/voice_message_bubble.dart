@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:voice_message_package/voice_message_package.dart';
@@ -32,38 +36,102 @@ class VoiceMessageWidget extends StatefulWidget {
 
 class VoiceMessageWidgetState extends State<VoiceMessageWidget>
     with AutomaticKeepAliveClientMixin {
-  late VoiceController _audioController;
+  VoiceController? _audioController;
+  bool _isLoading = true;
+  bool _hasError = false;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
-    // Формируем источник аудио в зависимости от filePath
-    final String audioSource = _getAudioSource();
-
-    _audioController = VoiceController(
-      audioSrc: audioSource,
-      onComplete: () {
-        // Действия при завершении воспроизведения
-      },
-      onPause: () {
-        // Действия при паузе
-      },
-      onPlaying: () {
-        // Действия при воспроизведении
-      },
-      onError: (err) {
-        // Обработка ошибок воспроизведения
-        debugPrint(
-            'Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
-      },
-      maxDuration: widget.message.duration.inSeconds > 0
-          ? widget.message.duration
-          : const Duration(seconds: 5),
-      isFile: false, // Ссылка, а не локальный файл
-    );
+    _prepareAudio();
   }
 
-  // Метод для определения источника аудио
+  @override
+  void didUpdateWidget(covariant VoiceMessageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.filePath == widget.message.filePath &&
+        oldWidget.baseUrl == widget.baseUrl) {
+      return;
+    }
+    _prepareAudio();
+  }
+
+  Future<void> _prepareAudio() async {
+    final generation = ++_loadGeneration;
+    _audioController?.dispose();
+    _audioController = null;
+    _isLoading = true;
+    _hasError = false;
+    if (mounted && generation > 1) {
+      setState(() {});
+    }
+
+    try {
+      final source = _getAudioSource();
+      if (source.isEmpty) {
+        if (!mounted || generation != _loadGeneration) return;
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+        return;
+      }
+
+      final localPath = await _resolveLocalPath(source);
+      if (!mounted || generation != _loadGeneration) return;
+
+      if (localPath == null || localPath.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+        return;
+      }
+
+      _audioController = VoiceController(
+        audioSrc: localPath,
+        onComplete: () {},
+        onPause: () {},
+        onPlaying: () {},
+        onError: (err) {
+          debugPrint(
+              'Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
+          if (!mounted || generation != _loadGeneration) return;
+          setState(() {
+            _hasError = true;
+          });
+        },
+        maxDuration: widget.message.duration.inSeconds > 0
+            ? widget.message.duration
+            : const Duration(seconds: 5),
+        isFile: true,
+      );
+
+      setState(() {
+        _isLoading = false;
+        _hasError = false;
+      });
+    } catch (error) {
+      debugPrint('VoiceMessageWidget prepare error: $error');
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<String?> _resolveLocalPath(String source) async {
+    if (source.startsWith('/') || source.startsWith('file:')) {
+      final file = File(source.replaceFirst('file://', ''));
+      return await file.exists() ? file.path : null;
+    }
+
+    final file = await ChatMediaPersistentCache.instance.getAnyFile(source);
+    return file?.path;
+  }
+
   String _getAudioSource() {
     final filePath = widget.message.filePath ?? '';
     final url = resolveFileUrl(filePath, widget.baseUrl.replaceAll('/api', ''));
@@ -94,10 +162,6 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
             : CrossAxisAlignment.start,
         children: [
           SizedBox(height: 4),
-          // ✅ Логика отображения имени отправителя:
-          // - В лид-чатах: показываем имя для ОБЕИХ сторон (несколько менеджеров могут отвечать)
-          // - В корпоративных группах: показываем имя только для собеседника
-          // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
           if (widget.isLeadChat ||
               widget.isGroupChat == true ||
               !widget.message.isMyMessage)
@@ -111,20 +175,28 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
                 ),
               ),
             ),
-          VoiceMessageView(
-            innerPadding: 8,
-            backgroundColor: bubbleColor,
-            activeSliderColor: widget.message.isMyMessage
-                ? foreground.withValues(alpha: 0.78)
-                : appearance.accentColor(context),
-            circlesColor: widget.message.isMyMessage
-                ? foreground.withValues(alpha: 0.18)
-                : appearance.accentColor(context).withValues(alpha: 0.28),
-            controller: _audioController,
-            counterTextStyle: TextStyle(
-              color: foreground,
+          if (_audioController != null && !_isLoading && !_hasError)
+            VoiceMessageView(
+              innerPadding: 8,
+              backgroundColor: bubbleColor,
+              activeSliderColor: widget.message.isMyMessage
+                  ? foreground.withValues(alpha: 0.78)
+                  : appearance.accentColor(context),
+              circlesColor: widget.message.isMyMessage
+                  ? foreground.withValues(alpha: 0.18)
+                  : appearance.accentColor(context).withValues(alpha: 0.28),
+              controller: _audioController!,
+              counterTextStyle: TextStyle(
+                color: foreground,
+              ),
+            )
+          else
+            _VoiceStatusBubble(
+              color: bubbleColor,
+              foreground: foreground,
+              isLoading: _isLoading,
+              onRetry: _prepareAudio,
             ),
-          ),
           if (widget.reactions.isNotEmpty)
             Transform.translate(
               offset: const Offset(0, -4),
@@ -177,10 +249,66 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
 
   @override
   void dispose() {
-    _audioController.dispose();
+    _audioController?.dispose();
     super.dispose();
   }
 
   @override
   bool get wantKeepAlive => true;
+}
+
+class _VoiceStatusBubble extends StatelessWidget {
+  final Color color;
+  final Color foreground;
+  final bool isLoading;
+  final VoidCallback onRetry;
+
+  const _VoiceStatusBubble({
+    required this.color,
+    required this.foreground,
+    required this.isLoading,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: isLoading ? null : onRetry,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isLoading)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: foreground,
+                  ),
+                )
+              else
+                Icon(Icons.refresh_rounded, color: foreground, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                isLoading
+                    ? (localizations?.translate('loading') ?? '...')
+                    : (localizations?.translate('retry') ?? 'Retry'),
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

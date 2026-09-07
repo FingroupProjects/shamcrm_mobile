@@ -1,16 +1,146 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
 import 'http_log_model.dart';
 import 'http_logger.dart';
 
+bool isTransientDioError(DioException error) {
+  switch (error.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.connectionError:
+      return true;
+    case DioExceptionType.unknown:
+      final cause = error.error;
+      if (cause is SocketException || cause is HttpException) {
+        return true;
+      }
+      final message = '${error.message} ${cause ?? ''}'.toLowerCase();
+      return message.contains('connection') ||
+          message.contains('broken pipe') ||
+          message.contains('reset') ||
+          message.contains('closed') ||
+          message.contains('timed out');
+    default:
+      return false;
+  }
+}
+
 class LoggedDioClient {
   LoggedDioClient._();
 
-  static Dio create() {
-    final dio = Dio();
+  static Dio? _shared;
+  static DateTime? _lastUsedAt;
+
+  static Dio create({
+    Duration connectTimeout = const Duration(seconds: 20),
+    Duration receiveTimeout = const Duration(minutes: 2),
+    Duration sendTimeout = const Duration(minutes: 2),
+    bool enableRetry = false,
+  }) {
+    return _build(
+      connectTimeout: connectTimeout,
+      receiveTimeout: receiveTimeout,
+      sendTimeout: sendTimeout,
+      enableRetry: enableRetry,
+    );
+  }
+
+  static Dio shared() {
+    _shared ??= _build(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 25),
+      sendTimeout: const Duration(seconds: 25),
+      enableRetry: true,
+    );
+    _lastUsedAt = DateTime.now();
+    return _shared!;
+  }
+
+  static Future<void> reset() async {
+    final current = _shared;
+    _shared = null;
+    _lastUsedAt = null;
+    if (current == null) return;
+    try {
+      current.close(force: true);
+    } catch (error) {
+      debugPrint('LoggedDioClient reset error: $error');
+    }
+  }
+
+  static Future<void> resetIfIdle({
+    Duration idleFor = const Duration(seconds: 30),
+  }) async {
+    final lastUsedAt = _lastUsedAt;
+    if (lastUsedAt == null) return;
+    if (DateTime.now().difference(lastUsedAt) < idleFor) return;
+    await reset();
+  }
+
+  static Dio _build({
+    required Duration connectTimeout,
+    required Duration receiveTimeout,
+    required Duration sendTimeout,
+    required bool enableRetry,
+  }) {
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: connectTimeout,
+        receiveTimeout: receiveTimeout,
+        sendTimeout: sendTimeout,
+        followRedirects: true,
+        validateStatus: (status) => status != null && status >= 200 && status < 300,
+      ),
+    );
+
+    dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.idleTimeout = const Duration(seconds: 8);
+        client.connectionTimeout = connectTimeout;
+        client.maxConnectionsPerHost = 6;
+        return client;
+      },
+    );
+
+    if (enableRetry) {
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onError: (error, handler) async {
+            final request = error.requestOptions;
+            final retryCount = (request.extra['retry_count'] as int?) ?? 0;
+            final method = request.method.toUpperCase();
+            final canRetry = (method == 'GET' || method == 'HEAD') &&
+                retryCount < 1 &&
+                isTransientDioError(error);
+
+            if (!canRetry) {
+              handler.next(error);
+              return;
+            }
+
+            request.extra['retry_count'] = retryCount + 1;
+            await Future<void>.delayed(const Duration(milliseconds: 250));
+            try {
+              final response = await dio.fetch(request);
+              handler.resolve(response);
+            } catch (retryError) {
+              if (retryError is DioException) {
+                handler.next(retryError);
+              } else {
+                handler.next(error);
+              }
+            }
+          },
+        ),
+      );
+    }
 
     if (!kDebugMode) {
       return dio;

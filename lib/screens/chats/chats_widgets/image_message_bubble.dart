@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
@@ -296,32 +298,59 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
   bool _loadCompletionScheduled = false;
   bool _errorUpdateScheduled = false;
   int _requestGeneration = 0;
+  Timer? _loadWatchdog;
 
   @override
   void initState() {
     super.initState();
-    _cachedFileFuture =
-        ChatMediaPersistentCache.instance.getImageFile(widget.url);
+    _startLoad();
   }
 
   @override
   void didUpdateWidget(covariant _ShimmerImageLoader oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url == widget.url) return;
+    _startLoad();
+  }
 
+  @override
+  void dispose() {
+    _loadWatchdog?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startLoad({bool forceRefresh = false}) async {
     _loaded = false;
     _error = false;
     _minDisplayElapsed = false;
-    _loadStart = null;
+    _loadStart = DateTime.now();
     _loadCompletionScheduled = false;
     _errorUpdateScheduled = false;
     _requestGeneration++;
+    final generation = _requestGeneration;
+    _loadWatchdog?.cancel();
+    _loadWatchdog = Timer(const Duration(seconds: 25), () {
+      if (!mounted || _loaded || _error) return;
+      _onError();
+    });
+    if (forceRefresh && mounted) {
+      setState(() {});
+    }
+    if (forceRefresh) {
+      await CachedNetworkImage.evictFromCache(widget.url);
+      await LoggedDioClient.reset();
+    }
+    if (!mounted || generation != _requestGeneration) return;
     _cachedFileFuture =
         ChatMediaPersistentCache.instance.getImageFile(widget.url);
+    if (forceRefresh) {
+      setState(() {});
+    }
   }
 
   void _onLoaded() {
     if (!mounted || _loaded || _loadCompletionScheduled) return;
+    _loadWatchdog?.cancel();
     _loadCompletionScheduled = true;
     final generation = _requestGeneration;
     _loadStart ??= DateTime.now();
@@ -341,6 +370,7 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
 
   void _onError() {
     if (!mounted || _error || _errorUpdateScheduled) return;
+    _loadWatchdog?.cancel();
     _errorUpdateScheduled = true;
     final generation = _requestGeneration;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -432,17 +462,9 @@ class _ShimmerImageLoaderState extends State<_ShimmerImageLoader> {
             _ImageErrorFallback(
               width: widget.width,
               height: widget.height,
-              onRetry: () => setState(() {
-                _error = false;
-                _loaded = false;
-                _minDisplayElapsed = false;
-                _loadStart = null;
-                _loadCompletionScheduled = false;
-                _errorUpdateScheduled = false;
-                _requestGeneration++;
-                _cachedFileFuture =
-                    ChatMediaPersistentCache.instance.getImageFile(widget.url);
-              }),
+              onRetry: () {
+                _startLoad(forceRefresh: true);
+              },
             ),
         ],
       ),
@@ -566,7 +588,7 @@ class _ImageErrorFallback extends StatelessWidget {
                   color: context.appColors.textSecondary, size: 26),
               const SizedBox(height: 6),
               Text(
-                AppLocalizations.of(context)!.translate('loading'),
+                AppLocalizations.of(context)!.translate('retry'),
                 style: TextStyle(
                     color: context.appColors.textSecondary, fontSize: 12),
               ),
