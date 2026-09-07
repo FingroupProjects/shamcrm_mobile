@@ -29,6 +29,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corpor
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/telegram_chat_app_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
+import 'package:crm_task_manager/services/chat_voice_player_service.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -1069,6 +1070,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       type: widget.endPointInTab,
     );
     ChatHeartbeatService.instance.start(widget.chatId);
+    ChatVoicePlayerService.instance.setForegroundChatId(widget.chatId);
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -2709,6 +2711,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                               message: effectiveMessage,
                               mediaGroupMessages: mediaGroupMessages,
                               chatId: widget.chatId,
+                              chatItem: widget.chatItem,
+                              chatUniqueId: widget.chatUniqueId,
                               endPointInTab: widget.endPointInTab,
                               isInstagramCommentChannel:
                                   _isInstagramCommentChannel,
@@ -4319,6 +4323,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки чата
     _chatTracker.clearActiveChat(widget.chatUniqueId, widget.chatId);
     ChatHeartbeatService.instance.stop(widget.chatId);
+    if (ChatVoicePlayerService.instance.foregroundChatId == widget.chatId) {
+      ChatVoicePlayerService.instance.setForegroundChatId(null);
+    }
 
     // ✅ ШАГ 2: Закрываем сокет-соединение для текущего чата
     unawaited(_closeLegacyChatCache());
@@ -4434,6 +4441,8 @@ class MessageItemWidget extends StatelessWidget {
   final Message message;
   final List<Message> mediaGroupMessages;
   final int chatId;
+  final ChatItem chatItem;
+  final String? chatUniqueId;
   final String endPointInTab;
   final ApiServiceDownload apiServiceDownload;
   final String baseUrl;
@@ -4463,6 +4472,8 @@ class MessageItemWidget extends StatelessWidget {
     this.mediaGroupMessages = const [],
     required this.endPointInTab,
     required this.chatId,
+    required this.chatItem,
+    this.chatUniqueId,
     required this.apiServiceDownload,
     required this.baseUrl,
     this.isInstagramCommentChannel = false,
@@ -4735,6 +4746,12 @@ class MessageItemWidget extends StatelessWidget {
         content = VoiceMessageWidget(
           message: message,
           baseUrl: baseUrl,
+          chatId: chatId,
+          chatItem: chatItem,
+          endPointInTab: endPointInTab,
+          canSendMessage: canSendMessageInChat,
+          chatUniqueId: chatUniqueId,
+          channelName: chatChannelName,
           isLeadChat: isLeadChat,
           isGroupChat: isGroupChat,
           reactions: _shouldShowMessageReactions ? message.reactions : const [],

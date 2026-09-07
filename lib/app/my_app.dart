@@ -14,6 +14,7 @@ import 'package:crm_task_manager/screens/auth/login_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_screen.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_voice_mini_player_host.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
@@ -196,7 +197,9 @@ class _MyAppState extends State<MyApp> {
                     assetPath: themeController.backgroundAssetPath,
                   ),
                   NativeInternetAwareWrapper(
-                    child: child ?? const SizedBox.shrink(),
+                    child: ChatVoiceMiniPlayerHost(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                   const InAppUpdateCornerIndicator(),
                   if (kDebugMode) const HttpInspectorFab(),

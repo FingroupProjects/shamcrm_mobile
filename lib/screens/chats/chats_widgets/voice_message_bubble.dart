@@ -1,12 +1,14 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
+import 'package:crm_task_manager/services/chat_voice_player_service.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
-import 'package:voice_message_package/voice_message_package.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
@@ -15,6 +17,12 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_ch
 class VoiceMessageWidget extends StatefulWidget {
   final Message message;
   final String baseUrl;
+  final int chatId;
+  final ChatItem chatItem;
+  final String endPointInTab;
+  final bool canSendMessage;
+  final String? chatUniqueId;
+  final String? channelName;
   final bool isLeadChat;
   final bool? isGroupChat;
   final List<MessageReaction> reactions;
@@ -24,6 +32,12 @@ class VoiceMessageWidget extends StatefulWidget {
     super.key,
     required this.message,
     required this.baseUrl,
+    required this.chatId,
+    required this.chatItem,
+    required this.endPointInTab,
+    this.canSendMessage = true,
+    this.chatUniqueId,
+    this.channelName,
     this.isLeadChat = false,
     this.isGroupChat,
     this.reactions = const [],
@@ -34,92 +48,40 @@ class VoiceMessageWidget extends StatefulWidget {
   VoiceMessageWidgetState createState() => VoiceMessageWidgetState();
 }
 
-class VoiceMessageWidgetState extends State<VoiceMessageWidget>
-    with AutomaticKeepAliveClientMixin {
-  VoiceController? _audioController;
-  bool _isLoading = true;
+class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
+  final ChatVoicePlayerService _player = ChatVoicePlayerService.instance;
+  String? _localPath;
+  bool _isLoading = false;
   bool _hasError = false;
   int _loadGeneration = 0;
+
+  String get _filePath => widget.message.filePath ?? '';
+
+  bool get _isCurrent => _player.isCurrent(
+        chatId: widget.chatId,
+        messageId: widget.message.id,
+        filePath: _filePath,
+      );
 
   @override
   void initState() {
     super.initState();
-    _prepareAudio();
+    _player.addListener(_onPlayerChanged);
   }
 
   @override
-  void didUpdateWidget(covariant VoiceMessageWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.message.filePath == widget.message.filePath &&
-        oldWidget.baseUrl == widget.baseUrl) {
-      return;
-    }
-    _prepareAudio();
+  void dispose() {
+    _player.removeListener(_onPlayerChanged);
+    super.dispose();
   }
 
-  Future<void> _prepareAudio() async {
-    final generation = ++_loadGeneration;
-    _audioController?.dispose();
-    _audioController = null;
-    _isLoading = true;
-    _hasError = false;
-    if (mounted && generation > 1) {
-      setState(() {});
-    }
+  void _onPlayerChanged() {
+    if (mounted) setState(() {});
+  }
 
-    try {
-      final source = _getAudioSource();
-      if (source.isEmpty) {
-        if (!mounted || generation != _loadGeneration) return;
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-        });
-        return;
-      }
-
-      final localPath = await _resolveLocalPath(source);
-      if (!mounted || generation != _loadGeneration) return;
-
-      if (localPath == null || localPath.isEmpty) {
-        setState(() {
-          _isLoading = false;
-          _hasError = true;
-        });
-        return;
-      }
-
-      _audioController = VoiceController(
-        audioSrc: localPath,
-        onComplete: () {},
-        onPause: () {},
-        onPlaying: () {},
-        onError: (err) {
-          debugPrint(
-              'Ошибка воспроизведения аудио: $err, filePath: ${widget.message.filePath}');
-          if (!mounted || generation != _loadGeneration) return;
-          setState(() {
-            _hasError = true;
-          });
-        },
-        maxDuration: widget.message.duration.inSeconds > 0
-            ? widget.message.duration
-            : const Duration(seconds: 5),
-        isFile: true,
-      );
-
-      setState(() {
-        _isLoading = false;
-        _hasError = false;
-      });
-    } catch (error) {
-      debugPrint('VoiceMessageWidget prepare error: $error');
-      if (!mounted || generation != _loadGeneration) return;
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-    }
+  String _getAudioSource() {
+    final url = resolveFileUrl(_filePath, widget.baseUrl.replaceAll('/api', ''));
+    return url.isNotEmpty ? url : _filePath;
   }
 
   Future<String?> _resolveLocalPath(String source) async {
@@ -132,15 +94,69 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
     return file?.path;
   }
 
-  String _getAudioSource() {
-    final filePath = widget.message.filePath ?? '';
-    final url = resolveFileUrl(filePath, widget.baseUrl.replaceAll('/api', ''));
-    return url.isNotEmpty ? url : filePath;
+  Future<void> _togglePlayback() async {
+    if (_isCurrent && _player.isPlaying) {
+      await _player.pause();
+      return;
+    }
+    if (_isCurrent) {
+      await _player.resume();
+      return;
+    }
+
+    final generation = ++_loadGeneration;
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final source = _getAudioSource();
+      final localPath = _localPath ?? await _resolveLocalPath(source);
+      if (!mounted || generation != _loadGeneration) return;
+
+      if (localPath == null || localPath.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+        return;
+      }
+
+      _localPath = localPath;
+      setState(() {
+        _isLoading = false;
+        _hasError = false;
+      });
+
+      await _player.play(
+        ChatVoiceTrack(
+          messageId: widget.message.id,
+          chatId: widget.chatId,
+          filePath: _filePath,
+          localPath: localPath,
+          senderName: widget.message.senderName,
+          sentAtLabel: formatChatVoiceSentAt(widget.message.createMessateTime),
+          duration: widget.message.duration,
+          chatItem: widget.chatItem,
+          endPointInTab: widget.endPointInTab,
+          canSendMessage: widget.canSendMessage,
+          chatUniqueId: widget.chatUniqueId,
+          channelName: widget.channelName,
+        ),
+      );
+    } catch (error) {
+      debugPrint('VoiceMessageWidget play error: $error');
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final appearance = ChatAppearanceScope.of(context);
     final bubbleColor = widget.message.isMyMessage
         ? appearance.senderBubbleColor(context)
@@ -148,6 +164,10 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
     final foreground = widget.message.isMyMessage
         ? appearance.outgoingForeground(context)
         : appearance.incomingForeground(context);
+    final progress = _isCurrent ? _player.progress : 0.0;
+    final displayDuration = _isCurrent && _player.isPlaying
+        ? _player.duration - _player.position
+        : (_isCurrent ? _player.duration : widget.message.duration);
 
     return Container(
       margin: EdgeInsets.only(
@@ -161,7 +181,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           if (widget.isLeadChat ||
               widget.isGroupChat == true ||
               !widget.message.isMyMessage)
@@ -175,28 +195,73 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
                 ),
               ),
             ),
-          if (_audioController != null && !_isLoading && !_hasError)
-            VoiceMessageView(
-              innerPadding: 8,
-              backgroundColor: bubbleColor,
-              activeSliderColor: widget.message.isMyMessage
-                  ? foreground.withValues(alpha: 0.78)
-                  : appearance.accentColor(context),
-              circlesColor: widget.message.isMyMessage
-                  ? foreground.withValues(alpha: 0.18)
-                  : appearance.accentColor(context).withValues(alpha: 0.28),
-              controller: _audioController!,
-              counterTextStyle: TextStyle(
-                color: foreground,
+          Material(
+            color: bubbleColor,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: _isLoading ? null : _togglePlayback,
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _VoicePlayButton(
+                      isLoading: _isLoading,
+                      isPlaying: _isCurrent && _player.isPlaying,
+                      hasError: _hasError,
+                      color: foreground,
+                    ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 118,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _VoiceWaveform(
+                            progress: progress,
+                            color: foreground,
+                            seed: widget.message.id,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _hasError
+                                ? (AppLocalizations.of(context)
+                                        ?.translate('retry') ??
+                                    'Retry')
+                                : formatVoiceClock(
+                                    displayDuration > Duration.zero
+                                        ? displayDuration
+                                        : widget.message.duration,
+                                  ),
+                            style: TextStyle(
+                              color: foreground.withValues(alpha: 0.86),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isCurrent) ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: _player.cycleSpeed,
+                        child: Text(
+                          formatVoiceSpeedLabel(_player.speed),
+                          style: TextStyle(
+                            color: foreground,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            )
-          else
-            _VoiceStatusBubble(
-              color: bubbleColor,
-              foreground: foreground,
-              isLoading: _isLoading,
-              onRetry: _prepareAudio,
             ),
+          ),
           if (widget.reactions.isNotEmpty)
             Transform.translate(
               offset: const Offset(0, -4),
@@ -213,7 +278,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
                 ),
               ),
             ),
-          SizedBox(height: 2),
+          const SizedBox(height: 2),
           Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -231,7 +296,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
               const SizedBox(width: 3),
               if (widget.message.isMyMessage)
                 Icon(
-                  widget.message.isRead ? Icons.done_all : Icons.done_all,
+                  Icons.done_all,
                   size: 18,
                   color: widget.message.isRead
                       ? foreground
@@ -246,68 +311,91 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget>
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _audioController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  bool get wantKeepAlive => true;
 }
 
-class _VoiceStatusBubble extends StatelessWidget {
-  final Color color;
-  final Color foreground;
+class _VoicePlayButton extends StatelessWidget {
   final bool isLoading;
-  final VoidCallback onRetry;
+  final bool isPlaying;
+  final bool hasError;
+  final Color color;
 
-  const _VoiceStatusBubble({
-    required this.color,
-    required this.foreground,
+  const _VoicePlayButton({
     required this.isLoading,
-    required this.onRetry,
+    required this.isPlaying,
+    required this.hasError,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: isLoading ? null : onRetry,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isLoading)
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: foreground,
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: isLoading
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: color,
+                ),
+              )
+            : Icon(
+                hasError
+                    ? Icons.refresh_rounded
+                    : (isPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded),
+                color: color,
+                size: 22,
+              ),
+      ),
+    );
+  }
+}
+
+class _VoiceWaveform extends StatelessWidget {
+  final double progress;
+  final Color color;
+  final int seed;
+
+  const _VoiceWaveform({
+    required this.progress,
+    required this.color,
+    required this.seed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final random = math.Random(seed);
+    return SizedBox(
+      height: 22,
+      child: Row(
+        children: List.generate(18, (index) {
+          final height = 6 + random.nextDouble() * 16;
+          final reached = progress >= (index + 1) / 18;
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1),
+              child: Align(
+                alignment: Alignment.center,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: reached ? 0.95 : 0.35),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                )
-              else
-                Icon(Icons.refresh_rounded, color: foreground, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                isLoading
-                    ? (localizations?.translate('loading') ?? '...')
-                    : (localizations?.translate('retry') ?? 'Retry'),
-                style: TextStyle(
-                  color: foreground,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
