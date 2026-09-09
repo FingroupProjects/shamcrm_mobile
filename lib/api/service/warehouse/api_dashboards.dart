@@ -116,12 +116,12 @@ extension ApiWarehouseDashboardsX on ApiService {
     try {
       final response = await _getRequest(path);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final rawData = json.decode(response.body);
+        final rawData = SafeConverters.toMap(json.decode(response.body));
         debugPrint("Полученные данные по отчёту товаров: $rawData");
 
-        // Extract the 'result' object from the response
-        final resultData = rawData['result'] as Map<String, dynamic>;
-        return ResultDashboardGoodsReport.fromJson(resultData);
+        return ResultDashboardGoodsReport.fromJson(
+          SafeConverters.toMap(rawData['result']),
+        );
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -273,7 +273,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return DashboardTopPart.fromJson(data);
+      return DashboardTopPart.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -309,7 +309,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final expenseDashboard = ExpenseDashboard.fromJson(data);
+          final expenseDashboard = ExpenseDashboard.fromJson(SafeConverters.toMap(data));
           // Create AllExpensesData for this period
           allExpensesData.add(AllExpensesData(
             period: period,
@@ -347,7 +347,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final expenseDashboard = ExpenseDashboard.fromJson(data);
+        final expenseDashboard = ExpenseDashboard.fromJson(SafeConverters.toMap(data));
 
         return AllExpensesData(
           period: period,
@@ -416,7 +416,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final salesResponse = SalesResponse.fromJson(data);
+        final salesResponse = SalesResponse.fromJson(SafeConverters.toMap(data));
 
         return AllSalesDynamicsData(
           period: period,
@@ -454,7 +454,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final netProfitDashboard = NetProfitDashboard.fromJson(data);
+          final netProfitDashboard = NetProfitDashboard.fromJson(SafeConverters.toMap(data));
           allNetProfitData.add(AllNetProfitData(
             period: period,
             data: netProfitDashboard,
@@ -490,7 +490,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final netProfitDashboard = NetProfitDashboard.fromJson(data);
+        final netProfitDashboard = NetProfitDashboard.fromJson(SafeConverters.toMap(data));
 
         return AllNetProfitData(
           period: period,
@@ -533,7 +533,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+          final orderDashboardResponse = OrderDashboardResponse.fromJson(SafeConverters.toMap(data));
           // Create AllOrdersData for this period
           allOrdersData.add(AllOrdersData(
             period: period,
@@ -572,7 +572,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final orderDashboardResponse = OrderDashboardResponse.fromJson(data);
+        final orderDashboardResponse = OrderDashboardResponse.fromJson(SafeConverters.toMap(data));
 
         return AllOrdersData(
           period: period,
@@ -614,7 +614,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+          final profitabilityResponse = ProfitabilityDashboard.fromJson(SafeConverters.toMap(data));
           // Create AllProfitabilityData for this period
           allProfitabilityData.add(AllProfitabilityData(
             period: period,
@@ -652,7 +652,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final profitabilityResponse = ProfitabilityDashboard.fromJson(data);
+        final profitabilityResponse = ProfitabilityDashboard.fromJson(SafeConverters.toMap(data));
 
         return AllProfitabilityData(
           period: period,
@@ -697,7 +697,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final topSellingResponse = TopSellingGoodsResponse.fromJson(data);
+          final topSellingResponse = TopSellingGoodsResponse.fromJson(SafeConverters.toMap(data));
 
           // Create AllTopSellingData for this period
           allTopSellingData.add(AllTopSellingData(
@@ -853,7 +853,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return SalesResponse.fromJson(data);
+      return SalesResponse.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -908,7 +908,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return NetProfitResponse.fromJson(data);
+      return NetProfitResponse.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -963,7 +963,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return ProfitabilityResponse.fromJson(data);
+      return ProfitabilityResponse.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -1024,7 +1024,7 @@ extension ApiWarehouseDashboardsX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return DashboardExpenseResponse.fromJson(data);
+      return DashboardExpenseResponse.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -1103,13 +1103,13 @@ extension ApiWarehouseDashboardsX on ApiService {
         debugPrint(
             'ApiService: Полученные данные истории движения товара $goodId: $data');
       }
-      final resultList = data['result'] as List?;
-      if (resultList == null) {
-        return [];
-      }
-      return resultList
-          .map((item) => DashboardGoodsMovementHistory.fromJson(item))
-          .toList();
+      final resultList = SafeConverters.toList(
+        SafeConverters.toMap(data)['result'],
+      );
+      return SafeConverters.toModelList(
+        resultList,
+        DashboardGoodsMovementHistory.fromJson,
+      );
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -1143,20 +1143,20 @@ extension ApiWarehouseDashboardsX on ApiService {
           debugPrint('ApiService: Received data: $data');
         }
 
-        // Parse response
-        final resultObj = data['result'] as Map<String, dynamic>?;
+        final resultObj = SafeConverters.toMapOrNull(
+          SafeConverters.toMap(data)['result'],
+        );
 
         if (resultObj != null) {
-          // Parse data list
-          final dataList = resultObj['data'] as List? ?? [];
-          final goodsList = dataList
-              .map((good) => dgrmodel.GoodDashboardWarehouse.fromJson(good))
-              .toList();
+          final goodsList = SafeConverters.toModelList(
+            resultObj['data'],
+            dgrmodel.GoodDashboardWarehouse.fromJson,
+          );
 
-          // Parse pagination
           if (resultObj['pagination'] != null) {
             final pagination = dgrmodel.Pagination.fromJson(
-                resultObj['pagination'] as Map<String, dynamic>);
+              SafeConverters.toMap(resultObj['pagination']),
+            );
 
             if (kDebugMode) {
               debugPrint(

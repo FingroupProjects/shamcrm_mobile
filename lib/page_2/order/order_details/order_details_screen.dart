@@ -175,45 +175,27 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
-  // Метод форматирования цены
-  String _formatPrice(double? price) {
-    if (price == null || price <= 0) {
-      return _isTojsokhtmontjTenant ? '0' : '0 UZS';
-    }
-    if (_isTojsokhtmontjTenant) {
-      return NumberFormat('#,##0', 'ru_RU').format(price);
-    }
-    String symbol = 'UZS'; // По умолчанию сум
-
-    if (kDebugMode) {
-      //print('OrderDetailsScreen: _formatPrice вызван с currency_id: $currencyId');
-    }
-
+  String _currencySymbol() {
     switch (currencyId) {
       case 1:
-        symbol = '\$';
-        break;
+        return '\$';
       case 2:
-        symbol = '€';
-        break;
+        return '€';
       case 3:
-        symbol = 'UZS';
-        break;
+        return 'UZS';
       case 4:
-        symbol = 'TJS';
-        break;
+        return 'TJS';
       default:
-        symbol = '\$';
-        if (kDebugMode) {
-          //print('OrderDetailsScreen: Используется валюта по умолчанию (UZS) для currency_id: $currencyId');
-        }
+        return '\$';
     }
+  }
 
-    if (kDebugMode) {
-      //print('OrderDetailsScreen: Выбранный символ валюты: $symbol для цены: $price');
+  String _formatPrice(double? price) {
+    final amount = price ?? 0;
+    if (_isTojsokhtmontjTenant) {
+      return NumberFormat('#,##0', 'ru_RU').format(amount);
     }
-
-    return '${NumberFormat('#,##0', 'ru_RU').format(price)} $symbol';
+    return '${NumberFormat('#,##0', 'ru_RU').format(amount)} ${_currencySymbol()}';
   }
 
   Future<void> _checkPermissions() async {

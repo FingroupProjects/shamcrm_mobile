@@ -3446,7 +3446,7 @@ extension ApiWarehouseDocumentsX on ApiService {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
+        final data = SafeConverters.toMap(json.decode(response.body));
         return ManufactureReportResponse.fromJson(data);
       }
 
@@ -3486,7 +3486,7 @@ extension ApiWarehouseDocumentsX on ApiService {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
+        final data = SafeConverters.toMap(json.decode(response.body));
         return ManufactureMaterialsReportResponse.fromJson(data);
       }
 

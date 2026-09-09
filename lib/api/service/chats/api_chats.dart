@@ -1,6 +1,15 @@
 part of '../api_service.dart';
 
 extension ApiChatsX on ApiService {
+  int? _corporateInactivityDays(Map<String, dynamic> filters) {
+    final raw = filters['daysWithoutActivity'] ?? filters['inactivity_days'];
+    final parsed = raw is int ? raw : int.tryParse(raw?.toString() ?? '');
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  }
+
   String? _extractResponseMessage(String body) {
     try {
       final decoded = json.decode(body);
@@ -232,6 +241,17 @@ extension ApiChatsX on ApiService {
         }
         if (filters['unread_only'] == true) {
           path += '&unread_only=1';
+        }
+      } else if (endPoint == 'corporate') {
+        if (filters['hasNoReplies'] == true) {
+          path += '&hasNoReplies=1';
+        }
+        if (filters['hasUnreadMessages'] == true) {
+          path += '&hasUnreadMessages=1';
+        }
+        final inactivityDays = _corporateInactivityDays(filters);
+        if (inactivityDays != null) {
+          path += '&inactivity_days=$inactivityDays';
         }
       }
     }

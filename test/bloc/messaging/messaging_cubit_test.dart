@@ -267,6 +267,35 @@ void main() {
     expect(state.searchQuery, 'needle');
   });
 
+  test('applyEditedMessageFromSocket updates text and marks changed', () {
+    final cubit = MessagingCubit(_FakeApiService(const {}));
+    cubit.showCachedMessages([_message(7, 'old text')]);
+
+    cubit.applyEditedMessageFromSocket(
+      messageId: 7,
+      text: 'new text',
+    );
+
+    final state = cubit.state as MessagesCollectionState;
+    final updated = state.messages.single;
+    expect(updated.text, 'new text');
+    expect(updated.isChanged, isTrue);
+  });
+
+  test('applyEditedMessageFromSocket ignores unknown message id', () {
+    final cubit = MessagingCubit(_FakeApiService(const {}));
+    cubit.showCachedMessages([_message(7, 'old text')]);
+
+    cubit.applyEditedMessageFromSocket(
+      messageId: 99,
+      text: 'new text',
+    );
+
+    final state = cubit.state as MessagesCollectionState;
+    expect(state.messages.single.text, 'old text');
+    expect(state.messages.single.isChanged, isFalse);
+  });
+
   test('loadOlderPage dedupes by message id', () async {
     final cubit = MessagingCubit(
       _FakeApiService({

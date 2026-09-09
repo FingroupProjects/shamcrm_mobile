@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class ActOfReconciliationResponse {
   final List<ReconciliationItem>? result;
   final String? errors;
@@ -7,10 +9,11 @@ class ActOfReconciliationResponse {
     this.errors,
   });
 
-  factory ActOfReconciliationResponse.fromJson(Map<String, dynamic> json) {
+  factory ActOfReconciliationResponse.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ActOfReconciliationResponse(
-      result: _parseItems(json['result']),
-      errors: json['errors']?.toString(),
+      result: _parseItems(map['result']),
+      errors: SafeConverters.toStringOrNull(map['errors']),
     );
   }
 
@@ -20,18 +23,19 @@ class ActOfReconciliationResponse {
     final items = _extractItemList(raw);
     if (items == null) return const [];
 
-    return items
-        .whereType<Map>()
-        .map((item) => ReconciliationItem.fromJson(
-              Map<String, dynamic>.from(item),
-            ))
-        .toList();
+    return SafeConverters.toModelList(items, ReconciliationItem.fromJson);
   }
 
   static List<dynamic>? _extractItemList(dynamic raw) {
     if (raw is List) return raw;
+    if (raw is String) {
+      final decodedList = SafeConverters.toList(raw);
+      if (decodedList.isNotEmpty) return decodedList;
+      return null;
+    }
     if (raw is! Map) return null;
 
+    final map = SafeConverters.toMap(raw);
     for (final key in const [
       'data',
       'items',
@@ -39,12 +43,16 @@ class ActOfReconciliationResponse {
       'documents',
       'result',
     ]) {
-      final value = raw[key];
+      final value = map[key];
       if (value is List) return value;
+      final asList = SafeConverters.toList(value);
+      if (asList.isNotEmpty) return asList;
     }
 
-    if (raw.containsKey('id') || raw.containsKey('movement_type')) {
-      return [raw];
+    if (map.containsKey('id') ||
+        map.containsKey('movement_type') ||
+        map.containsKey('operation_type')) {
+      return [map];
     }
 
     return const [];
@@ -91,30 +99,38 @@ class ReconciliationItem {
     this.model,
   });
 
-  factory ReconciliationItem.fromJson(Map<String, dynamic> json) {
+  factory ReconciliationItem.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ReconciliationItem(
-      id: json['id'],
-      movementType: json['movement_type'],
-      saleSum: json['sale_sum']?.toString(),
-      sum: json['sum']?.toString(),
-      date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      modelType: json['model_type'],
-      modelId: json['model_id'],
-      organizationId: json['organization_id']?.toString(),
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
-          : null,
-      counterpartyType: json['counterparty_type'],
-      counterpartyId: json['counterparty_id'],
-      counterparty: json['counterparty'] != null
-          ? Counterparty.fromJson(json['counterparty'])
-          : null,
-      model:
-      json['model'] != null ? ModelData.fromJson(json['model']) : null,
+      id: SafeConverters.toIntOrNull(map['id']),
+      movementType: SafeConverters.toStringOrNull(map['movement_type']) ??
+          SafeConverters.toStringOrNull(map['operation_type']) ??
+          SafeConverters.toStringOrNull(map['document_type']),
+      saleSum: SafeConverters.toStringOrNull(map['sale_sum']),
+      sum: SafeConverters.toStringOrNull(map['sum']),
+      date: SafeConverters.toDateTimeOrNull(map['date']),
+      modelType: SafeConverters.toStringOrNull(map['model_type']),
+      modelId: SafeConverters.toIntOrNull(map['model_id']),
+      organizationId: SafeConverters.toStringOrNull(map['organization_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(map['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(map['updated_at']),
+      counterpartyType: SafeConverters.toStringOrNull(map['counterparty_type']),
+      counterpartyId: SafeConverters.toIntOrNull(map['counterparty_id']),
+      counterparty: _parseCounterparty(map['counterparty']),
+      model: SafeConverters.toModelOrNull(map['model'], ModelData.fromJson),
     );
+  }
+
+  static Counterparty? _parseCounterparty(dynamic raw) {
+    final fromMap = SafeConverters.toModelOrNull(raw, Counterparty.fromJson);
+    if (fromMap != null) return fromMap;
+    if (raw is String && raw.trim().isNotEmpty) {
+      return Counterparty(name: raw.trim());
+    }
+    if (raw is num) {
+      return Counterparty(id: raw.toInt(), name: raw.toString());
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -160,17 +176,18 @@ class Counterparty {
     this.organizationId,
   });
 
-  factory Counterparty.fromJson(Map<String, dynamic> json) {
+  factory Counterparty.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return Counterparty(
-      id: json['id'],
-      name: json['name'],
-      phone: json['phone'],
-      email: json['email'],
-      tgNick: json['tg_nick'],
-      waPhone: json['wa_phone'],
-      leadStatusId: json['lead_status_id'],
-      managerId: json['manager_id'],
-      organizationId: json['organization_id'],
+      id: SafeConverters.toIntOrNull(map['id']),
+      name: SafeConverters.toStringOrNull(map['name']),
+      phone: SafeConverters.toStringOrNull(map['phone']),
+      email: SafeConverters.toStringOrNull(map['email']),
+      tgNick: SafeConverters.toStringOrNull(map['tg_nick']),
+      waPhone: SafeConverters.toStringOrNull(map['wa_phone']),
+      leadStatusId: SafeConverters.toIntOrNull(map['lead_status_id']),
+      managerId: SafeConverters.toIntOrNull(map['manager_id']),
+      organizationId: SafeConverters.toIntOrNull(map['organization_id']),
     );
   }
 
@@ -212,21 +229,19 @@ class ModelData {
     this.updatedAt,
   });
 
-  factory ModelData.fromJson(Map<String, dynamic> json) {
+  factory ModelData.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ModelData(
-      id: json['id'],
-      counterpartyType: json['counterparty_type'],
-      counterpartyId: json['counterparty_id'],
-      ourDuty: json['our_duty']?.toString(),
-      debtToUs: json['debt_to_us']?.toString(),
-      counterpartySettlementId: json['counterparty_settlement_id'],
-      organizationId: json['organization_id'],
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'])
-          : null,
+      id: SafeConverters.toIntOrNull(map['id']),
+      counterpartyType: SafeConverters.toStringOrNull(map['counterparty_type']),
+      counterpartyId: SafeConverters.toIntOrNull(map['counterparty_id']),
+      ourDuty: SafeConverters.toStringOrNull(map['our_duty']),
+      debtToUs: SafeConverters.toStringOrNull(map['debt_to_us']),
+      counterpartySettlementId:
+          SafeConverters.toIntOrNull(map['counterparty_settlement_id']),
+      organizationId: SafeConverters.toIntOrNull(map['organization_id']),
+      createdAt: SafeConverters.toDateTimeOrNull(map['created_at']),
+      updatedAt: SafeConverters.toDateTimeOrNull(map['updated_at']),
     );
   }
 

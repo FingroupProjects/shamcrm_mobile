@@ -20,6 +20,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chatById_task_scree
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/image_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/media_group_message_bubble.dart';
@@ -66,11 +67,13 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dar
 import 'package:crm_task_manager/screens/chats/chats_widgets/file_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/message_bubble.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/chat/edited_message_socket_payload.dart';
 import 'package:crm_task_manager/services/chat_media_download_manager.dart';
 import 'package:crm_task_manager/widgets/full_video_screen_viewer.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_haptic_wrapper.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/premium_context_menu.dart';
+import 'package:crm_task_manager/screens/chats/delete_message.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -103,7 +106,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
-  final TextEditingController _messageController = TextEditingController();
+  final ChatComposerController _messageController = ChatComposerController();
   final TextEditingController _searchController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FocusNode _focusNode = FocusNode();
@@ -798,6 +801,96 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     return updated;
   }
 
+  static const List<String> _messageEditedEventAliases = [
+    'chat.messageEdited',
+    '.chat.messageEdited',
+    'chat.message_edited',
+    '.chat.message_edited',
+    'MessageEdited',
+    '.MessageEdited',
+  ];
+
+  void _bindMessageEditedAliasesToChannel({
+    required dynamic channel,
+    required String channelName,
+    required String logPrefix,
+  }) {
+    for (final eventName in _messageEditedEventAliases) {
+      channel.bind(eventName).listen((event) async {
+        await _processMessageEditedSocketEvent(
+          eventName: eventName,
+          channel: channelName,
+          payload: event.data,
+          logPrefix: logPrefix,
+        );
+      });
+    }
+  }
+
+  Future<void> _processMessageEditedSocketEvent({
+    required String eventName,
+    required String channel,
+    required String payload,
+    required String logPrefix,
+  }) async {
+    debugPrint('✏️ [SOCKET] $logPrefix $eventName RECEIVED');
+    _logSocketEventToInspector(
+      eventName: eventName,
+      channel: channel,
+      payload: payload,
+    );
+
+    try {
+      if (payload.trim().isEmpty) {
+        debugPrint('⚠️ [SOCKET] $logPrefix $eventName: empty payload');
+        return;
+      }
+
+      final decoded = json.decode(payload);
+      if (decoded is! Map) {
+        debugPrint('⚠️ [SOCKET] $logPrefix $eventName: payload is not a map');
+        return;
+      }
+
+      _handleMessageEditedEvent(Map<String, dynamic>.from(decoded));
+    } catch (e) {
+      debugPrint('❌ [SOCKET] $logPrefix $eventName parse error: $e');
+      _logSocketEventToInspector(
+        eventName: '$eventName.error',
+        channel: channel,
+        payload: payload,
+        error: e.toString(),
+      );
+    }
+  }
+
+  void _handleMessageEditedEvent(Map<String, dynamic> payload) {
+    final parsed = EditedMessageSocketPayload.tryParse(payload);
+    if (parsed == null) {
+      debugPrint('⚠️ [SOCKET] chat.messageEdited: payload not recognized');
+      return;
+    }
+
+    if (parsed.chatId != null && parsed.chatId != widget.chatId) {
+      debugPrint(
+          '⚠️ [SOCKET] chat.messageEdited: different chat ${parsed.chatId}, ignoring');
+      return;
+    }
+
+    if (!mounted) return;
+    final cubit = context.read<MessagingCubit>();
+    if (!_canMutateMessagingCubit(cubit)) return;
+
+    debugPrint(
+        '✅ [SOCKET] chat.messageEdited APPLY: messageId=${parsed.messageId}');
+    cubit.applyEditedMessageFromSocket(
+      messageId: parsed.messageId,
+      text: parsed.text,
+      isChanged: parsed.isChanged,
+    );
+    unawaited(_persistCurrentChatMessages());
+  }
+
   void _handleMessageReactedEvent(Map<String, dynamic> payload) {
     payload = _coerceReactionPayload(payload);
     final messageId = _parseMessageIdFromReactionEvent(payload);
@@ -1070,7 +1163,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       type: widget.endPointInTab,
     );
     ChatHeartbeatService.instance.start(widget.chatId);
-    ChatVoicePlayerService.instance.setForegroundChatId(widget.chatId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ChatVoicePlayerService.instance.setForegroundChatId(widget.chatId);
+    });
     if (widget.initialChannelName != null &&
         widget.initialChannelName!.isNotEmpty) {
       channelName = widget.initialChannelName;
@@ -3381,12 +3477,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             Message.extractLocationCoordinatesFromText(text ?? '');
         final resolvedLatitude = latitude ?? inferredLocation?['latitude'];
         final resolvedLongitude = longitude ?? inferredLocation?['longitude'];
-        final resolvedType = Message.resolveIncomingType(
+        var resolvedType = Message.resolveIncomingType(
           type,
           text ?? '',
           latitude: resolvedLatitude,
           longitude: resolvedLongitude,
+          filePath: messageData['file_path']?.toString(),
         );
+        if (messageData['voice_duration'] != null &&
+            resolvedType != 'location') {
+          resolvedType = 'voice';
+        }
 
         final msg = Message(
           id: messageId ?? -1,
@@ -3460,6 +3561,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     });
     debugPrint(
         '=================-=== ✅✅✅ CHAT_SMS: chat.message listener registered');
+
+    _bindMessageEditedAliasesToChannel(
+      channel: myPresenceChannel,
+      channelName: channelName,
+      logPrefix: '[CHAT PRESENCE]',
+    );
+    debugPrint(
+        '=================-=== ✅✅✅ CHAT_SMS: chat.messageEdited listeners registered');
 
     const reactionEventAliases = [
       'chat.messageReacted',
@@ -3683,6 +3792,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           );
         }
       });
+      _bindMessageEditedAliasesToChannel(
+        channel: userPresenceChannel,
+        channelName: userChannelName,
+        logPrefix: '[USER PRESENCE]',
+      );
       _bindReactionAliasesToChannel(
         channel: userPresenceChannel,
         channelName: userChannelName,
@@ -4698,6 +4812,27 @@ class MessageItemWidget extends StatelessWidget {
         break;
       case 'file':
       case 'document':
+        if (Message.looksLikeVoice(message.filePath) ||
+            Message.looksLikeVoice(message.text)) {
+          content = VoiceMessageWidget(
+            message: message,
+            baseUrl: baseUrl,
+            chatId: chatId,
+            chatItem: chatItem,
+            endPointInTab: endPointInTab,
+            canSendMessage: canSendMessageInChat,
+            chatUniqueId: chatUniqueId,
+            channelName: chatChannelName,
+            isLeadChat: isLeadChat,
+            isGroupChat: isGroupChat,
+            reactions:
+                _shouldShowMessageReactions ? message.reactions : const [],
+            onReactionTap: _shouldShowMessageReactions
+                ? (emoji) => onReactionToggle?.call(message, emoji)
+                : null,
+          );
+          break;
+        }
         content = FileMessageBubble(
           time: time(message.createMessateTime),
           isSender: message.isMyMessage,
@@ -4743,6 +4878,9 @@ class MessageItemWidget extends StatelessWidget {
         );
         break;
       case 'voice':
+      case 'audio':
+      case 'ptt':
+      case 'voice_message':
         content = VoiceMessageWidget(
           message: message,
           baseUrl: baseUrl,
@@ -5195,30 +5333,39 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   void _deleteMessage(BuildContext context) {
-    if (message.isMyMessage) {
-      context.read<DeleteMessageBloc>().add(DeleteMessage(message.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: context.appColors.textInverse,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: context.appColors.success,
-          elevation: 3,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+    if (!message.isMyMessage) return;
+
+    if (endPointInTab == 'corporate') {
+      showDeleteDialog(context, () => _confirmDeleteMessage(context));
+      return;
     }
+
+    _confirmDeleteMessage(context);
+  }
+
+  void _confirmDeleteMessage(BuildContext context) {
+    context.read<DeleteMessageBloc>().add(DeleteMessage(message.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('sms_deletes_successfully'),
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: context.appColors.textInverse,
+          ),
+        ),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: context.appColors.success,
+        elevation: 3,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 }

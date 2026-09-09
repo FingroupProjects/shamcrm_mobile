@@ -48,7 +48,9 @@ class _RmkScreenState extends State<RmkScreen> {
   bool _isLoadingStorages = false;
   bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
+  bool _isSearchRequesting = false;
   bool _isCartReady = false;
+  int _searchRequestId = 0;
   String _currencyTitle = 'TJS';
 
   @override
@@ -133,7 +135,7 @@ class _RmkScreenState extends State<RmkScreen> {
       });
 
       if (selectedStorage != null) {
-        await _runSync(resetCatalogCache: true);
+        unawaited(_runSync(resetCatalogCache: true));
       }
     } catch (error) {
       if (!mounted) return;
@@ -248,16 +250,41 @@ class _RmkScreenState extends State<RmkScreen> {
 
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 120), () {
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
       if (!mounted) return;
       setState(() => _query = value);
+      unawaited(_searchGoodsOnServer(value));
     });
+  }
+
+  Future<void> _searchGoodsOnServer(String value) async {
+    final query = value.trim();
+    final storageId = _selectedStorage?.id;
+    if (query.isEmpty || storageId == null) {
+      _searchRequestId += 1;
+      if (mounted) {
+        setState(() => _isSearchRequesting = false);
+      }
+      return;
+    }
+
+    final requestId = ++_searchRequestId;
+    setState(() => _isSearchRequesting = true);
+    try {
+      await _repository.searchAndCacheGoods(query, storageId);
+    } finally {
+      if (mounted && requestId == _searchRequestId) {
+        setState(() => _isSearchRequesting = false);
+      }
+    }
   }
 
   void _toggleSearch() {
     _searchDebounce?.cancel();
+    _searchRequestId += 1;
     setState(() {
       _isSearching = !_isSearching;
+      _isSearchRequesting = false;
       if (!_isSearching) {
         _searchController.clear();
         _query = '';
@@ -434,6 +461,8 @@ class _RmkScreenState extends State<RmkScreen> {
         paidAmount: payment.paidAmount,
         debtAmount: payment.debtAmount,
         leadId: payment.leadId,
+        currencyId: payment.currencyId,
+        exchangeRate: payment.exchangeRate,
         comment: payment.comment,
       );
       if (!mounted) return;
@@ -444,6 +473,13 @@ class _RmkScreenState extends State<RmkScreen> {
             ? 'Продажа успешно создана'
             : (result.error ?? 'Ошибка при создании продажи'),
         isSuccess: result.sentToServer,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showCustomSnackBar(
+        context: context,
+        message: error.toString(),
+        isSuccess: false,
       );
     } finally {
       if (mounted) {
@@ -860,7 +896,8 @@ class _RmkScreenState extends State<RmkScreen> {
                           StreamBuilder<List<RmkGood>>(
                             stream: _repository.watchGoods(
                               query: _query,
-                              categoryIds: _categoryId == null
+                              categoryIds: _query.trim().isNotEmpty ||
+                                      _categoryId == null
                                   ? null
                                   : RmkRepository
                                       .categoryIdsIncludingDescendants(
@@ -871,7 +908,12 @@ class _RmkScreenState extends State<RmkScreen> {
                             builder: (context, goodsSnapshot) {
                               final goods =
                                   goodsSnapshot.data ?? const <RmkGood>[];
-                              if (_isCatalogLoading && goods.isEmpty) {
+                              final hasSearchQuery = _query.trim().isNotEmpty;
+                              final showFullScreenLoader = goods.isEmpty &&
+                                  (hasSearchQuery
+                                      ? _isSearchRequesting
+                                      : _isCatalogLoading);
+                              if (showFullScreenLoader) {
                                 return const SliverFillRemaining(
                                   hasScrollBody: false,
                                   child: _rmkLoading,
@@ -945,7 +987,7 @@ class _RmkScreenState extends State<RmkScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (_isSyncing)
+                                  if (_isSyncing && !hasSearchQuery)
                                     const SliverToBoxAdapter(
                                       child: Padding(
                                         padding: EdgeInsets.fromLTRB(

@@ -1,3 +1,5 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
+
 class DashboardGoodsMovementHistory {
   final String goodName;
   final int quantity;
@@ -21,29 +23,41 @@ class DashboardGoodsMovementHistory {
     this.documentType,
   });
 
-  factory DashboardGoodsMovementHistory.fromJson(Map<String, dynamic> json) {
+  factory DashboardGoodsMovementHistory.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
+    final counterpartyRaw = map['counterparty'];
+    String? counterpartyName;
+    if (counterpartyRaw is Map) {
+      final counterpartyMap = SafeConverters.toMap(counterpartyRaw);
+      counterpartyName = SafeConverters.toStringOrNull(
+        counterpartyMap['name'] ?? counterpartyMap['title'],
+      );
+    } else {
+      counterpartyName = SafeConverters.toStringOrNull(counterpartyRaw);
+    }
+
     return DashboardGoodsMovementHistory(
-      goodName: json['good_name'] ?? '',
-      quantity: json['quantity'] ?? 0,
-      price: json['price'] ?? '0.00',
-      storage: json['storage'] ?? '',
-      date: DateTime.parse(json['date']),
-      counterparty: json['counterparty'],
-      counterpartyType: json['counterparty_type'],
-      movementType: json['movement_type'] ?? '',
-      documentType: json['document_type'],
+      goodName: SafeConverters.toSafeString(map['good_name']),
+      quantity: SafeConverters.toInt(map['quantity']),
+      price: SafeConverters.toSafeString(map['price'], defaultValue: '0.00'),
+      storage: SafeConverters.toSafeString(map['storage']),
+      date: SafeConverters.toDateTime(map['date']),
+      counterparty: counterpartyName,
+      counterpartyType: SafeConverters.toStringOrNull(map['counterparty_type']),
+      movementType: SafeConverters.toSafeString(map['movement_type']),
+      documentType: SafeConverters.toStringOrNull(map['document_type']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'good_name': goodName,
-    'quantity': quantity,
-    'price': price,
-    'storage': storage,
-    'date': date.toIso8601String(),
-    'counterparty': counterparty,
-    'counterparty_type': counterpartyType,
-    'movement_type': movementType,
-    'document_type': documentType,
-  };
+        'good_name': goodName,
+        'quantity': quantity,
+        'price': price,
+        'storage': storage,
+        'date': date.toIso8601String(),
+        'counterparty': counterparty,
+        'counterparty_type': counterpartyType,
+        'movement_type': movementType,
+        'document_type': documentType,
+      };
 }

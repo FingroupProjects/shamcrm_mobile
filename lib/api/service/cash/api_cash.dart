@@ -1189,7 +1189,7 @@ extension ApiCashX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return DebtorsResponse.fromJson(data);
+        return DebtorsResponse.fromJson(SafeConverters.toMap(data));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -1274,7 +1274,7 @@ extension ApiCashX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return CreditorsResponse.fromJson(data);
+        return CreditorsResponse.fromJson(SafeConverters.toMap(data));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -1336,8 +1336,8 @@ extension ApiCashX on ApiService {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        return SalaryReportResponse.fromJson(data);
+        final data = json.decode(response.body);
+        return SalaryReportResponse.fromJson(SafeConverters.toMap(data));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -1413,7 +1413,7 @@ extension ApiCashX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return CashBalanceResponse.fromJson(data);
+      return CashBalanceResponse.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(
@@ -1481,7 +1481,7 @@ extension ApiCashX on ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
-        return ActOfReconciliationResponse.fromJson(data);
+        return ActOfReconciliationResponse.fromJson(SafeConverters.toMap(data));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(

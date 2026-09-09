@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Safe type conversion for API JSON payloads.
 /// Prevents TypeError crashes when server types differ from Dart models
 /// (e.g. int vs String, null vs non-null, double vs int).
@@ -214,6 +216,17 @@ class SafeConverters {
     if (value is Map) {
       return value.map((key, val) => MapEntry(key.toString(), val));
     }
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return null;
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          return toMapOrNull(jsonDecode(trimmed));
+        } catch (_) {
+          return null;
+        }
+      }
+    }
     return null;
   }
 
@@ -225,6 +238,45 @@ class SafeConverters {
   /// Convert dynamic to [List]<[dynamic]> or empty list.
   static List<dynamic> toList(dynamic value) {
     if (value is List) return value;
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          if (decoded is List) return decoded;
+        } catch (_) {
+          return const [];
+        }
+      }
+    }
     return const [];
+  }
+
+  /// Parse a nested model. Returns null if [value] is not a map
+  /// (string / int / list / null) or if [fromJson] throws.
+  static T? toModelOrNull<T>(
+    dynamic value,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final map = toMapOrNull(value);
+    if (map == null) return null;
+    try {
+      return fromJson(map);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Parse a list of models, skipping items that are not maps.
+  static List<T> toModelList<T>(
+    dynamic value,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final result = <T>[];
+    for (final item in toList(value)) {
+      final model = toModelOrNull(item, fromJson);
+      if (model != null) result.add(model);
+    }
+    return result;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:equatable/equatable.dart';
 
 class SalaryReportResponse extends Equatable {
@@ -9,17 +10,14 @@ class SalaryReportResponse extends Equatable {
     this.errors,
   });
 
-  factory SalaryReportResponse.fromJson(Map<String, dynamic> json) {
-    final rawResult = json['result'];
-
+  factory SalaryReportResponse.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return SalaryReportResponse(
-      result: rawResult is List
-          ? rawResult
-              .whereType<Map<String, dynamic>>()
-              .map(SalaryEmployeeReport.fromJson)
-              .toList()
-          : const [],
-      errors: json['errors']?.toString(),
+      result: SafeConverters.toModelList(
+        map['result'],
+        SalaryEmployeeReport.fromJson,
+      ),
+      errors: SafeConverters.toStringOrNull(map['errors']),
     );
   }
 
@@ -39,17 +37,13 @@ class SalaryEmployeeReport extends Equatable {
   });
 
   factory SalaryEmployeeReport.fromJson(Map<String, dynamic> json) {
-    final rawMonths = json['months'];
-
     return SalaryEmployeeReport(
-      employeeId: _parseInt(json['employee_id']),
-      employeeName: json['employee_name']?.toString() ?? '',
-      months: rawMonths is List
-          ? rawMonths
-              .whereType<Map<String, dynamic>>()
-              .map(SalaryMonthReport.fromJson)
-              .toList()
-          : const [],
+      employeeId: SafeConverters.toInt(json['employee_id']),
+      employeeName: SafeConverters.toSafeString(json['employee_name']),
+      months: SafeConverters.toModelList(
+        json['months'],
+        SalaryMonthReport.fromJson,
+      ),
     );
   }
 
@@ -72,10 +66,10 @@ class SalaryMonthReport extends Equatable {
 
   factory SalaryMonthReport.fromJson(Map<String, dynamic> json) {
     return SalaryMonthReport(
-      month: json['month']?.toString() ?? '',
-      accrued: _parseDouble(json['accrued']),
-      paid: _parseDouble(json['paid']),
-      remaining: _parseDouble(json['remaining']),
+      month: SafeConverters.toSafeString(json['month']),
+      accrued: SafeConverters.toDouble(json['accrued']),
+      paid: SafeConverters.toDouble(json['paid']),
+      remaining: SafeConverters.toDouble(json['remaining']),
     );
   }
 
@@ -83,25 +77,3 @@ class SalaryMonthReport extends Equatable {
   List<Object?> get props => [month, accrued, paid, remaining];
 }
 
-int _parseInt(dynamic value) {
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return int.tryParse(value?.toString() ?? '') ?? 0;
-}
-
-double _parseDouble(dynamic value) {
-  if (value is double) {
-    return value;
-  }
-  if (value is int) {
-    return value.toDouble();
-  }
-  if (value is num) {
-    return value.toDouble();
-  }
-  return double.tryParse(value?.toString() ?? '') ?? 0;
-}

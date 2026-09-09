@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -37,6 +38,8 @@ class RmkPaymentResult {
     required this.paidAmount,
     required this.debtAmount,
     this.leadId,
+    this.currencyId,
+    this.exchangeRate,
     this.comment,
   });
 
@@ -45,6 +48,8 @@ class RmkPaymentResult {
   final double paidAmount;
   final double debtAmount;
   final int? leadId;
+  final int? currencyId;
+  final double? exchangeRate;
   final String? comment;
 }
 
@@ -68,6 +73,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
 
   late final TextEditingController _amountController;
   late final TextEditingController _commentController;
+  late final TextEditingController _exchangeRateController;
   late final FocusNode _amountFocusNode;
   RmkPaymentMode _selectedMode = RmkPaymentMode.payment;
   RmkPaymentMethod? _selectedMethod;
@@ -75,8 +81,10 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   double _paidAmountValue = 0;
   double _debtAmountValue = 0;
   String _currencyTitle = 'TJS';
+  int? _organizationCurrencyId;
   LeadData? _selectedLead;
   String? _leadErrorText;
+  String? _exchangeRateErrorText;
   bool _isSubmitting = false;
 
   bool get _showsPaymentMethods => _selectedMode == RmkPaymentMode.payment;
@@ -84,12 +92,49 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       _selectedMode == RmkPaymentMode.payment &&
       _paidAmountValue > widget.total + 0.0001;
   bool get _requiresLead => _debtAmount > 0;
-  bool get _showsClientField =>
-      _requiresLead || _isOverpaid || _selectedLead != null;
+  bool get _showsClientField => _requiresLead || _isOverpaid;
 
   bool get _needsPaymentMethod {
     if (_selectedMode == RmkPaymentMode.payment) return true;
     return false;
+  }
+
+  int? get _selectedLeadCurrencyId =>
+      _selectedLead?.currency?.id ?? _selectedLead?.currencyId;
+
+  String get _selectedLeadCurrencyLabel {
+    final symbol = _selectedLead?.currency?.symbolCode?.trim();
+    if (symbol != null && symbol.isNotEmpty) return symbol;
+    final name = _selectedLead?.currency?.name?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return '';
+  }
+
+  bool get _isExchangeRateRequired {
+    if (_organizationCurrencyId == null || _selectedLeadCurrencyId == null) {
+      return false;
+    }
+    return _organizationCurrencyId != _selectedLeadCurrencyId;
+  }
+
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
+
+  double get _totalByCurrency {
+    final rate = _exchangeRateValue ?? 0;
+    return widget.total * rate;
+  }
+
+  String get _totalByCurrencyLabel {
+    final currencyLabel = _selectedLeadCurrencyLabel;
+    if (currencyLabel.isEmpty) return 'Итого в валюте';
+    return 'Итого в валюте: $currencyLabel';
+  }
+
+  bool get _hasValidExchangeRate {
+    if (!_isExchangeRateRequired) return true;
+    final rate = _exchangeRateValue;
+    return rate != null && rate > 0;
   }
 
   double get _paidAmount {
@@ -112,6 +157,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     _amount = _paidAmountValue;
     _amountController = TextEditingController(text: _formatMoney(widget.total));
     _commentController = TextEditingController();
+    _exchangeRateController = TextEditingController();
     _amountFocusNode = FocusNode();
     _loadCurrency();
   }
@@ -120,20 +166,45 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
   void dispose() {
     _amountController.dispose();
     _commentController.dispose();
+    _exchangeRateController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _loadCurrency() async {
     final currency = await LocalizationService.getCurrency();
+    final currencyId =
+        currency?.id ?? await LocalizationService.getCurrencyId();
     if (!mounted) return;
     setState(() {
+      _organizationCurrencyId = currencyId;
       _currencyTitle = currency?.symbolCode?.trim().isNotEmpty == true
           ? currency!.symbolCode!.trim()
           : (currency?.name?.trim().isNotEmpty == true
               ? currency!.name!.trim()
               : _currencyTitle);
     });
+  }
+
+  void _onSelectLead(LeadData? lead) {
+    setState(() {
+      _selectedLead = lead;
+      _leadErrorText = null;
+      _exchangeRateErrorText = null;
+      if (!_isExchangeRateRequired) {
+        _exchangeRateController.clear();
+      }
+    });
+  }
+
+  void _clearClientIfNotNeeded() {
+    if (_showsClientField) return;
+    _selectedLead = null;
+    _leadErrorText = null;
+    _exchangeRateErrorText = null;
+    if (_exchangeRateController.text.isNotEmpty) {
+      _exchangeRateController.clear();
+    }
   }
 
   void _selectMode(RmkPaymentMode mode) {
@@ -144,6 +215,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         _leadErrorText = null;
       }
       _syncVisibleAmount();
+      _clearClientIfNotNeeded();
     });
   }
 
@@ -201,6 +273,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       if (!_requiresLead) {
         _leadErrorText = null;
       }
+      _clearClientIfNotNeeded();
     });
   }
 
@@ -220,6 +293,12 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
       });
       return;
     }
+    if (_isExchangeRateRequired && !_hasValidExchangeRate) {
+      setState(() {
+        _exchangeRateErrorText = 'Заполните курс валюты';
+      });
+      return;
+    }
     _isSubmitting = true;
     final comment = _commentController.text.trim();
     Navigator.pop(
@@ -230,6 +309,9 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
         paidAmount: _paidAmount,
         debtAmount: _debtAmount,
         leadId: _selectedLead?.id,
+        currencyId:
+            _isExchangeRateRequired ? _selectedLeadCurrencyId : null,
+        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
         comment: comment.isEmpty ? null : comment,
       ),
     );
@@ -242,7 +324,8 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
     final canSubmit = !_isSubmitting &&
         hasValidAmount &&
         (!_needsPaymentMethod || _selectedMethod != null) &&
-        (!_requiresLead || _selectedLead != null);
+        (!_requiresLead || _selectedLead != null) &&
+        _hasValidExchangeRate;
     return Scaffold(
       backgroundColor: colors.surfacePrimary,
       appBar: AppBar(
@@ -327,16 +410,8 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                     if (_showsClientField) ...[
                       const SizedBox(height: 14),
                       _RmkFreshLeadSelector(
-                        key: ValueKey(
-                          'rmk_fresh_lead_${_selectedLead?.id ?? 0}',
-                        ),
                         selectedLead: _selectedLead,
-                        onSelectLead: (lead) {
-                          setState(() {
-                            _selectedLead = lead;
-                            _leadErrorText = null;
-                          });
-                        },
+                        onSelectLead: _onSelectLead,
                       ),
                       if (_leadErrorText != null) ...[
                         const SizedBox(height: 6),
@@ -350,6 +425,18 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                           ),
                         ),
                       ],
+                    ],
+                    if (_isExchangeRateRequired) ...[
+                      const SizedBox(height: 14),
+                      _ExchangeRateField(
+                        controller: _exchangeRateController,
+                        errorText: _exchangeRateErrorText,
+                        onChanged: (_) {
+                          setState(() {
+                            _exchangeRateErrorText = null;
+                          });
+                        },
+                      ),
                     ],
                     if (_showsPaymentMethods) ...[
                       const SizedBox(height: 14),
@@ -428,6 +515,13 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    if (_isExchangeRateRequired) ...[
+                      const SizedBox(height: 14),
+                      _TotalByCurrencyField(
+                        label: _totalByCurrencyLabel,
+                        value: _formatMoney(_totalByCurrency),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -504,8 +598,25 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
   bool _isCreatingLead = false;
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
+    super.dispose();
+  }
+
+  void _hideOverlay() {
+    if (_overlayController.isShowing) {
+      _overlayController.hide();
+    }
+  }
+
+  void _notifyLeadSelected(LeadData? lead) {
+    _hideOverlay();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onSelectLead(lead);
+    });
   }
 
   @override
@@ -648,7 +759,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
 
   Future<void> _openCreateLead() async {
     if (_isCreatingLead) return;
-    if (_overlayController.isShowing) {
+    if (_overlayController.isShowing) { 
       _overlayController.hide();
     }
     setState(() => _isCreatingLead = true);
@@ -693,7 +804,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
             ..._leads.where((lead) => lead.id != createdLead.id),
           ];
         });
-        widget.onSelectLead(createdLead);
+        _notifyLeadSelected(createdLead);
       }
     } catch (error) {
       if (kDebugMode) {
@@ -732,7 +843,6 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
           alignment: Alignment.centerRight,
           children: [
             CustomDropdown<LeadData>.searchRequestPaginated(
-              key: ValueKey(selectedLead?.id),
               overlayController: _overlayController,
               paginatedRequest: _searchLeads,
               futureRequestDelay: const Duration(milliseconds: 300),
@@ -858,7 +968,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
                 'RMK Lead Selector: selected lead id=${value.id}, name=${value.name}, debt=${value.debt}',
               );
             }
-            widget.onSelectLead(value);
+            _notifyLeadSelected(value);
             FocusScope.of(context).unfocus();
           },
             ),
@@ -867,7 +977,7 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
                 right: 4,
                 child: IconButton(
                   tooltip: 'Очистить',
-                  onPressed: () => widget.onSelectLead(null),
+                  onPressed: () => _notifyLeadSelected(null),
                   icon: Icon(
                     Icons.close_rounded,
                     size: 20,
@@ -975,6 +1085,140 @@ class _PaymentTabs extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ExchangeRateField extends StatelessWidget {
+  const _ExchangeRateField({
+    required this.controller,
+    required this.onChanged,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final hasError = errorText != null && errorText!.isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Курс валюты',
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontFamily: 'Gilroy',
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            PriceInputFormatter(),
+          ],
+          decoration: InputDecoration(
+            hintText: 'Введите значение',
+            hintStyle: TextStyle(
+              color: colors.textSecondary,
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+            filled: true,
+            fillColor: colors.surfacePrimary,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xffEF4444) : colors.borderSubtle,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xffEF4444) : colors.borderPrimary,
+              ),
+            ),
+          ),
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Text(
+            errorText!,
+            style: const TextStyle(
+              color: Color(0xffEF4444),
+              fontFamily: 'Gilroy',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TotalByCurrencyField extends StatelessWidget {
+  const _TotalByCurrencyField({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontFamily: 'Gilroy',
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.borderSubtle),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

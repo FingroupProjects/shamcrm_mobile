@@ -23,10 +23,12 @@ class RmkRepository {
   final ApiService _apiService;
 
   static const int _syncPageSize = 15;
+  static const int _searchMaxPages = 20;
   static const String _syncModule = 'rmk';
   static const String _goodsFullSyncScope = 'goods_full_sync';
   static const String _syncCompleteVersion = 'complete_v1';
   Future<void>? _syncChain;
+  int _activeSearchCount = 0;
 
   Stream<List<RmkGood>> watchGoods({
     String query = '',
@@ -134,20 +136,29 @@ class RmkRepository {
     final now = DateTime.now();
     final saleId = const Uuid().v4();
     final idempotencyKey = const Uuid().v4();
-    final payload = await _buildSalePayload(
-      createdAt: now,
-      items: items,
-      storageId: storageId,
-      paymentMode: paymentMode,
-      paymentMethod: paymentMethod,
-      paidAmount: paidAmount,
-      debtAmount: debtAmount,
-      cashRegisterId: cashRegisterId,
-      leadId: leadId,
-      currencyId: currencyId,
-      exchangeRate: exchangeRate,
-      comment: comment,
-    );
+    final Map<String, dynamic> payload;
+    try {
+      payload = await _buildSalePayload(
+        createdAt: now,
+        items: items,
+        storageId: storageId,
+        paymentMode: paymentMode,
+        paymentMethod: paymentMethod,
+        paidAmount: paidAmount,
+        debtAmount: debtAmount,
+        cashRegisterId: cashRegisterId,
+        leadId: leadId,
+        currencyId: currencyId,
+        exchangeRate: exchangeRate,
+        comment: comment,
+      );
+    } on RmkSaleValidationException catch (error) {
+      return RmkSaleSubmitResult(
+        sentToServer: false,
+        savedLocal: false,
+        error: error.message,
+      );
+    }
 
     await _db.into(_db.rmkOutboxSales).insert(
           RmkOutboxSalesCompanion.insert(
@@ -322,21 +333,34 @@ class RmkRepository {
     final normalizedQuery = query.trim();
     if (normalizedQuery.isEmpty) return false;
 
+    _activeSearchCount += 1;
+    var savedAny = false;
     try {
-      final response = await _apiService.getVariants(
-        page: 1,
-        perPage: _syncPageSize,
-        search: normalizedQuery,
-        filters: {'storage_id': storageId},
-      );
-      final variants = response.data;
-      if (variants.isNotEmpty) {
-        await _saveGoods(variants, page: 1);
-        return true;
+      var page = 1;
+      while (page <= _searchMaxPages) {
+        final response = await _apiService.getVariants(
+          page: page,
+          perPage: _syncPageSize,
+          search: normalizedQuery,
+          filters: {'storage_id': storageId},
+        );
+        final variants = response.data;
+        if (variants.isEmpty) break;
+
+        await _saveGoods(variants, page: page);
+        savedAny = true;
+
+        if (page >= response.pagination.totalPages ||
+            variants.length < _syncPageSize) {
+          break;
+        }
+        page += 1;
       }
-      return false;
+      return savedAny;
     } catch (_) {
-      return false;
+      return savedAny;
+    } finally {
+      _activeSearchCount = (_activeSearchCount - 1).clamp(0, 1 << 30);
     }
   }
 
@@ -461,13 +485,14 @@ class RmkRepository {
     final unitId = await _unitIdForGood(item.goodId);
     if (unitId != null && unitId > 0) return unitId;
 
-    await _refreshGoodUnitInfo(item.goodId);
-    final refreshedUnitId = await _unitIdForGood(item.goodId);
+    final refreshedUnitId = await _refreshGoodUnitInfo(item.goodId);
     if (refreshedUnitId != null && refreshedUnitId > 0) {
       return refreshedUnitId;
     }
 
-    throw Exception('У товара "${item.name}" не найдена единица измерения');
+    throw RmkSaleValidationException(
+      'У товара "${item.name}" нет единицы измерения',
+    );
   }
 
   Future<int> requiredUnitIdForCartItem(RmkCartItem item) {
@@ -492,12 +517,13 @@ class RmkRepository {
     return null;
   }
 
-  Future<void> _refreshGoodUnitInfo(int goodId) async {
+  Future<int?> _refreshGoodUnitInfo(int goodId) async {
     try {
       final goods = await _apiService.getGoodsById(goodId, isFromOrder: true);
       if (goods.isNotEmpty) {
         await _saveGoodsFromLookup(goods);
-        return;
+        final unitId = _resolveGoodUnitId(goods.first);
+        if (unitId != null && unitId > 0) return unitId;
       }
     } catch (error) {
       debugPrint('RMK good unit refresh failed for $goodId: $error');
@@ -507,10 +533,13 @@ class RmkRepository {
       final variant = await _findVariantById(goodId);
       if (variant != null) {
         await _saveGoods([variant], page: 1);
+        return _resolveUnitId(variant);
       }
     } catch (error) {
       debugPrint('RMK variant fallback refresh failed for $goodId: $error');
     }
+
+    return null;
   }
 
   Future<Variant?> _findVariantById(int variantId, {int? storageId}) async {
@@ -763,6 +792,10 @@ class RmkRepository {
   }) async {
     var page = 1;
     const maxPagesPerSync = 300;
+    final shouldResetCache = resetCache && _activeSearchCount == 0;
+    if (shouldResetCache) {
+      await _resetGoodsCache();
+    }
     final shouldLoadAllPages = resetCache ||
         !await _isGoodsFullSyncComplete() ||
         await _hasCachedGoodsWithoutUnitInfo();
@@ -778,11 +811,7 @@ class RmkRepository {
       if (variants.isEmpty) break;
 
       final hasNewGoods = await _hasNewGoods(variants);
-      await _saveGoods(
-        variants,
-        page: page,
-        resetCacheBeforeSave: resetCache && page == 1,
-      );
+      await _saveGoods(variants, page: page);
 
       if (page >= response.pagination.totalPages ||
           variants.length < _syncPageSize) {
@@ -1114,4 +1143,13 @@ class RmkSaleSubmitResult {
   final bool sentToServer;
   final bool savedLocal;
   final String? error;
+}
+
+class RmkSaleValidationException implements Exception {
+  const RmkSaleValidationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

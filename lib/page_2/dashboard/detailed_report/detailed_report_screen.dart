@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_event.dart';
@@ -296,7 +297,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   Future<void> _loadManufactureSettings() async {
     try {
       final settings = await _apiService.getSettings(null);
-      final result = settings['result'] as Map<String, dynamic>?;
+      final result = SafeConverters.toMapOrNull(settings['result']);
       final hasManufacture =
           result?['has_manufacture'] == true || result?['has_manufacture'] == 1;
 

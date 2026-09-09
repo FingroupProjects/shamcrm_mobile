@@ -38,10 +38,10 @@ class ProfitabilityResult {
   factory ProfitabilityResult.fromJson(Map<String, dynamic> json) {
     return ProfitabilityResult(
       year: SafeConverters.toInt(json['year']),
-      months: SafeConverters.toList(json['months'])
-          .whereType<Map<String, dynamic>>()
-          .map((month) => MonthData.fromJson(month))
-          .toList(),
+      months: SafeConverters.toModelList(
+        json['months'],
+        MonthData.fromJson,
+      ),
     );
   }
 

@@ -19,6 +19,7 @@ import 'package:crm_task_manager/page_2/warehouse/movement/movement_screen.dart'
 import 'package:crm_task_manager/page_2/warehouse/references_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/supplier_return_document/supplier_return_document_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/pricing/pricing_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasMoneyIncome = false;
   bool _hasMoneyOutcome = false;
   bool _hasOrder = false; // Новое право для заказов
+  bool _hasPricing = false;
   bool _showReferences = false;
 
   @override
@@ -105,6 +107,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMoneyOutcome =
           await _apiService.hasPermission('checking_account_rko.read');
       _hasOrder = await _apiService.hasPermission('order.read');
+      _hasPricing = await _apiService.hasPermission('pricing.read') ||
+          await _apiService.hasPermission('price_type.read');
 
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');
@@ -156,6 +160,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMoneyIncome = false;
       _hasMoneyOutcome = false;
       _hasOrder = false;
+      _hasPricing = false;
       _showReferences = false;
     }
 
@@ -321,6 +326,14 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         ),
       );
     }
+    if (_hasPricing) {
+      allDocuments.add(WarehouseDocument(
+        keyName: 'pricing',
+        title: 'Цены',
+        icon: Icons.price_change_outlined,
+        color: docColor,
+      ));
+    }
     //
     // if (_showReferences) {
     //   allDocuments.add(
@@ -379,7 +392,8 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => IncomingScreen(organizationId: organizationId)),
+            builder: (context) =>
+                IncomingScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'client_sale') {
       Navigator.push(
@@ -416,13 +430,15 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => WriteOffScreen(organizationId: organizationId)),
+            builder: (context) =>
+                WriteOffScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'transfer') {
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => MovementScreen(organizationId: organizationId)),
+            builder: (context) =>
+                MovementScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'manufacture') {
       Navigator.push(
@@ -451,6 +467,9 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         MaterialPageRoute(
             builder: (context) => OrderScreen(organizationId: organizationId)),
       );
+    } else if (document.keyName == 'pricing') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (context) => const PricingScreen()));
     } else if (document.keyName == 'references') {
       Navigator.push(
         context,

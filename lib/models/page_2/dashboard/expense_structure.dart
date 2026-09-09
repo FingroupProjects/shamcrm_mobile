@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 // Enum for period types
 enum ExpensePeriodEnum {
@@ -30,10 +30,11 @@ class ExpenseDashboard {
     this.errors,
   });
 
-  factory ExpenseDashboard.fromJson(Map<String, dynamic> json) {
+  factory ExpenseDashboard.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ExpenseDashboard(
-      result: ExpenseResult.fromJson(json['result']),
-      errors: json['errors'],
+      result: ExpenseResult.fromJson(SafeConverters.toMap(map['result'])),
+      errors: map['errors'],
     );
   }
 
@@ -58,16 +59,19 @@ class ExpenseResult {
     required this.period,
   });
 
-  factory ExpenseResult.fromJson(Map<String, dynamic> json) {
+  factory ExpenseResult.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ExpenseResult(
-      totalExpenses: json['total_expenses'],
-      expenseStructure: (json['expense_structure'] as List)
-          .map((e) => ExpenseItem.fromJson(e))
-          .toList(),
-      topExpenses: (json['top_expenses'] as List)
-          .map((e) => ExpenseItem.fromJson(e))
-          .toList(),
-      period: ExpensePeriod.fromJson(json['period']),
+      totalExpenses: SafeConverters.toNum(map['total_expenses']),
+      expenseStructure: SafeConverters.toModelList(
+        map['expense_structure'],
+        ExpenseItem.fromJson,
+      ),
+      topExpenses: SafeConverters.toModelList(
+        map['top_expenses'],
+        ExpenseItem.fromJson,
+      ),
+      period: ExpensePeriod.fromJson(SafeConverters.toMap(map['period'])),
     );
   }
 
@@ -96,13 +100,14 @@ class ExpenseItem {
     required this.percentage,
   });
 
-  factory ExpenseItem.fromJson(Map<String, dynamic> json) {
+  factory ExpenseItem.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ExpenseItem(
-      articleName: json['article_name'],
-      articleType: json['article_type'],
-      sum: json['sum'],
-      formattedSum: json['formatted_sum'],
-      percentage: json['percentage'],
+      articleName: SafeConverters.toSafeString(map['article_name']),
+      articleType: SafeConverters.toSafeString(map['article_type']),
+      sum: SafeConverters.toNum(map['sum']),
+      formattedSum: SafeConverters.toSafeString(map['formatted_sum']),
+      percentage: SafeConverters.toNum(map['percentage']),
     );
   }
 
@@ -126,10 +131,11 @@ class ExpensePeriod {
     required this.to,
   });
 
-  factory ExpensePeriod.fromJson(Map<String, dynamic> json) {
+  factory ExpensePeriod.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ExpensePeriod(
-      from: json['from'],
-      to: json['to'],
+      from: SafeConverters.toSafeString(map['from']),
+      to: SafeConverters.toSafeString(map['to']),
     );
   }
 

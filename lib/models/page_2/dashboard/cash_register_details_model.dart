@@ -18,10 +18,10 @@ class CashRegisterDetailsResponse {
               SafeConverters.toMap(json['cash_register']),
             )
           : null,
-      checkingAccounts: SafeConverters.toList(json['checking_accounts'])
-          .whereType<Map<String, dynamic>>()
-          .map(CashRegisterHistoryItem.fromJson)
-          .toList(),
+      checkingAccounts: SafeConverters.toModelList(
+        json['checking_accounts'],
+        CashRegisterHistoryItem.fromJson,
+      ),
       meta: SafeConverters.toMapOrNull(json['meta']) != null
           ? CashRegisterDetailsMeta.fromJson(SafeConverters.toMap(json['meta']))
           : null,

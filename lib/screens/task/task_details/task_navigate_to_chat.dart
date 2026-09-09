@@ -68,11 +68,22 @@ class _TaskNavigateToChatDialogState extends State<TaskNavigateToChat> {
                 buttonColor: Color(0xff1E2E52),
                 textColor: Colors.white,
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('go_to_chat'),
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('go_to_chat'),
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

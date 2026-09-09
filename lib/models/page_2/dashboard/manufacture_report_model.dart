@@ -14,10 +14,10 @@ class ManufactureReportResponse extends Equatable {
     final result = SafeConverters.toMapOrNull(json['result']) ?? json;
 
     return ManufactureReportResponse(
-      data: SafeConverters.toList(result['data'])
-          .whereType<Map<String, dynamic>>()
-          .map(ManufactureGoodsReportItem.fromJson)
-          .toList(),
+      data: SafeConverters.toModelList(
+        result['data'],
+        ManufactureGoodsReportItem.fromJson,
+      ),
       pagination: ManufactureReportPagination.fromJson(
         SafeConverters.toMap(result['pagination']),
       ),
@@ -98,10 +98,10 @@ class ManufactureMaterialsReportResponse extends Equatable {
     final result = SafeConverters.toMapOrNull(json['result']) ?? json;
 
     return ManufactureMaterialsReportResponse(
-      data: SafeConverters.toList(result['data'])
-          .whereType<Map<String, dynamic>>()
-          .map(ManufactureMaterialsReportItem.fromJson)
-          .toList(),
+      data: SafeConverters.toModelList(
+        result['data'],
+        ManufactureMaterialsReportItem.fromJson,
+      ),
       pagination: ManufactureReportPagination.fromJson(
         SafeConverters.toMap(result['pagination']),
       ),

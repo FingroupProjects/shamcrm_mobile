@@ -612,12 +612,39 @@ class Message {
     if (normalizedType == 'location') return 'location';
     if (latitude != null && longitude != null) return 'location';
     if (extractLocationCoordinatesFromText(text) != null) return 'location';
+    if (normalizedType == 'voice' ||
+        normalizedType == 'audio' ||
+        normalizedType == 'ptt' ||
+        normalizedType == 'voice_message') {
+      return 'voice';
+    }
+    if (looksLikeVoice(filePath) || looksLikeVoice(text)) {
+      return 'voice';
+    }
     if (normalizedType == 'file' || normalizedType == 'document') {
       final candidate = (filePath?.isNotEmpty == true) ? filePath! : text;
       if (_looksLikeImage(candidate)) return 'image';
       if (_looksLikeVideo(candidate)) return 'video';
     }
     return normalizedType;
+  }
+
+  static bool looksLikeVoice(String? value) {
+    if (value == null || value.isEmpty) return false;
+    final path = (Uri.tryParse(value)?.path.isNotEmpty == true
+            ? Uri.parse(value).path
+            : value)
+        .toLowerCase();
+    return path.endsWith('.ogg') ||
+        path.endsWith('.opus') ||
+        path.endsWith('.oga') ||
+        path.endsWith('.m4a') ||
+        path.endsWith('.aac') ||
+        path.endsWith('.amr') ||
+        path.endsWith('.mp3') ||
+        path.endsWith('.wav') ||
+        path.contains('/voice') ||
+        path.contains('/audio');
   }
 
   static bool _looksLikeImage(String value) {
@@ -667,13 +694,16 @@ class Message {
     latitude ??= inferredLocation?['latitude'];
     longitude ??= inferredLocation?['longitude'];
     final filePath = json['file_path']?.toString();
-    final resolvedType = resolveIncomingType(
+    var resolvedType = resolveIncomingType(
       json['type']?.toString(),
       text,
       latitude: latitude,
       longitude: longitude,
       filePath: filePath,
     );
+    if (json['voice_duration'] != null && resolvedType != 'location') {
+      resolvedType = 'voice';
+    }
 
     ReadStatus? readStatus;
     try {

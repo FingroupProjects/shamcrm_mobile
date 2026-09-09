@@ -4,6 +4,7 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
 import 'package:crm_task_manager/core/theme/components/rich_text_field.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/tamplate_chat.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/templates_panel.dart';
@@ -58,6 +59,7 @@ class _InputFieldState extends State<InputField>
   late Animation<double> _fadeAnimation;
 
   String _htmlContent = '';
+  String _lastPlainText = '';
   bool _wasKeyboardVisible = false;
   bool _hasText = false;
   bool _voicePressed = false;
@@ -86,7 +88,13 @@ class _InputFieldState extends State<InputField>
     widget.messageController.addListener(_updateTextState);
     widget.focusNode.addListener(_handleFocusChange);
 
-    _htmlContent = widget.messageController.text;
+    _htmlContent = _composerController?.htmlContent ??
+        widget.messageController.text;
+    if (_htmlContent.isEmpty) {
+      _htmlContent = widget.messageController.text;
+    }
+    _lastPlainText = widget.messageController.text;
+    _syncHtmlToController(_htmlContent);
     _hasText = widget.messageController.text.isNotEmpty;
 
     WidgetsBinding.instance.addObserver(this);
@@ -141,12 +149,41 @@ class _InputFieldState extends State<InputField>
     }
   }
 
+  ChatComposerController? get _composerController {
+    final controller = widget.messageController;
+    return controller is ChatComposerController ? controller : null;
+  }
+
+  void _syncHtmlToController(String html) {
+    _htmlContent = html;
+    _composerController?.htmlContent = html;
+  }
+
   String _getHtmlContent() {
     return _htmlContent;
   }
 
+  ChatFormatFlags _selectionFlags() {
+    final selection = widget.messageController.selection;
+    if (!selection.isValid || selection.start == selection.end) {
+      return const ChatFormatFlags();
+    }
+    return ChatHtmlFormatter.flagsInRange(
+      _htmlContent,
+      selection.start,
+      selection.end,
+    );
+  }
+
   void _handleTextChange(String text) {
-    _htmlContent = text;
+    _syncHtmlToController(
+      ChatHtmlFormatter.syncPlainChange(
+        html: _htmlContent,
+        oldPlain: _lastPlainText,
+        newPlain: text,
+      ),
+    );
+    _lastPlainText = text;
 
     setState(() {
       if (text.startsWith('/')) {
@@ -281,8 +318,9 @@ class _InputFieldState extends State<InputField>
                   query: _currentQuery,
                   onTemplateSelected: (templateText) {
                     final plainText = stripHtmlTags(templateText).trim();
+                    _lastPlainText = plainText;
+                    _syncHtmlToController(plainText);
                     widget.messageController.text = plainText;
-                    _htmlContent = plainText;
                     setState(() {
                       _showTemplates = false;
                       _animationController
@@ -309,6 +347,7 @@ class _InputFieldState extends State<InputField>
     final hasSelection = selection.isValid && selection.start != selection.end;
     final localizations = AppLocalizations.of(context);
 
+    final flags = _selectionFlags();
     final buttons = [
       _buildFormattingButton(
         icon: Icons.copy_rounded,
@@ -337,26 +376,30 @@ class _InputFieldState extends State<InputField>
       _buildFormattingButton(
         icon: Icons.format_bold_rounded,
         label: localizations?.translate('bold') ?? 'Жирный',
-        onTap: () => _applyFormatting('bold'),
+        onTap: () => _applyFormatting(ChatTextFormat.bold),
         isEnabled: hasSelection,
+        isActive: flags.bold,
       ),
       _buildFormattingButton(
         icon: Icons.format_italic_rounded,
         label: localizations?.translate('italic') ?? 'Курсив',
-        onTap: () => _applyFormatting('italic'),
+        onTap: () => _applyFormatting(ChatTextFormat.italic),
         isEnabled: hasSelection,
+        isActive: flags.italic,
       ),
       _buildFormattingButton(
         icon: Icons.link_rounded,
         label: localizations?.translate('link') ?? 'Ссылка',
         onTap: () => _applyLinkFormatting(context),
         isEnabled: hasSelection,
+        isActive: flags.link,
       ),
       _buildFormattingButton(
         icon: Icons.strikethrough_s_rounded,
         label: localizations?.translate('strikethrough') ?? 'Зачеркнутый',
-        onTap: () => _applyFormatting('strikethrough'),
+        onTap: () => _applyFormatting(ChatTextFormat.strikethrough),
         isEnabled: hasSelection,
+        isActive: flags.strikethrough,
       ),
     ];
 
@@ -401,6 +444,7 @@ class _InputFieldState extends State<InputField>
     required String label,
     required VoidCallback onTap,
     bool isEnabled = true,
+    bool isActive = false,
   }) {
     return Material(
       color: context.appColors.overlay.withValues(alpha: 0.0),
@@ -421,17 +465,22 @@ class _InputFieldState extends State<InputField>
               Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isEnabled
-                      ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.1)
-                      : context.appColors.backgroundSecondary,
+                  color: !isEnabled
+                      ? context.appColors.backgroundSecondary
+                      : isActive
+                          ? context.appColors.buttonPrimaryBg
+                          : context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: isEnabled
-                      ? context.appColors.buttonPrimaryBg
-                      : context.appColors.iconSecondary,
+                  color: !isEnabled
+                      ? context.appColors.iconSecondary
+                      : isActive
+                          ? context.appColors.buttonPrimaryFg
+                          : context.appColors.buttonPrimaryBg,
                 ),
               ),
               SizedBox(height: 4),
@@ -452,48 +501,27 @@ class _InputFieldState extends State<InputField>
     );
   }
 
-  void _applyFormatting(String type) {
+  void _applyFormatting(ChatTextFormat type) {
     final selection = widget.messageController.selection;
     if (!selection.isValid || selection.start == selection.end) {
       _closeFormattingPanel();
       return;
     }
 
-    final text = widget.messageController.text;
-    final selectedText = text.substring(selection.start, selection.end);
-
-    String tagStart, tagEnd;
-    switch (type) {
-      case 'bold':
-        tagStart = '<strong>';
-        tagEnd = '</strong>';
-        break;
-      case 'italic':
-        tagStart = '<em>';
-        tagEnd = '</em>';
-        break;
-      case 'strikethrough':
-        tagStart = '<s>';
-        tagEnd = '</s>';
-        break;
-      default:
-        _closeFormattingPanel();
-        return;
-    }
-
-    _htmlContent = _htmlContent.replaceRange(
-      selection.start,
-      selection.end,
-      '$tagStart$selectedText$tagEnd',
+    _syncHtmlToController(
+      ChatHtmlFormatter.toggleFormat(
+        html: _htmlContent,
+        start: selection.start,
+        end: selection.end,
+        format: type,
+      ),
     );
-
-    widget.messageController.text = text;
     widget.messageController.selection = TextSelection(
       baseOffset: selection.start,
       extentOffset: selection.end,
     );
-
-    _closeFormattingPanel(restoreFocus: true);
+    widget.focusNode.requestFocus();
+    _updateFormattingOverlay();
   }
 
   void _applyLinkFormatting(BuildContext context) async {
@@ -503,8 +531,6 @@ class _InputFieldState extends State<InputField>
       return;
     }
 
-    final text = widget.messageController.text;
-    final selectedText = text.substring(selection.start, selection.end);
     final localizations = AppLocalizations.of(context);
 
     final urlController = TextEditingController();
@@ -608,16 +634,22 @@ class _InputFieldState extends State<InputField>
     );
 
     if (url != null && url!.isNotEmpty) {
-      _htmlContent = _htmlContent.replaceRange(
-        selection.start,
-        selection.end,
-        '<a href="$url" target="_blank">$selectedText</a>',
+      _syncHtmlToController(
+        ChatHtmlFormatter.applyLink(
+          html: _htmlContent,
+          start: selection.start,
+          end: selection.end,
+          url: url!,
+        ),
       );
 
       widget.messageController.selection = TextSelection(
         baseOffset: selection.start,
         extentOffset: selection.end,
       );
+      widget.focusNode.requestFocus();
+      _updateFormattingOverlay();
+      return;
     }
 
     _closeFormattingPanel(restoreFocus: true);
@@ -641,14 +673,20 @@ class _InputFieldState extends State<InputField>
         selection.end,
         clipboardData.text!,
       );
-      widget.messageController.text = newText;
-      _htmlContent = _htmlContent.replaceRange(
-        selection.start,
-        selection.end,
-        clipboardData.text!,
+      _lastPlainText = newText;
+      _syncHtmlToController(
+        ChatHtmlFormatter.replacePlainRange(
+          html: _htmlContent,
+          start: selection.start,
+          end: selection.end,
+          replacement: clipboardData.text!,
+        ),
       );
-      widget.messageController.selection = TextSelection.collapsed(
-        offset: selection.start + clipboardData.text!.length,
+      widget.messageController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset: selection.start + clipboardData.text!.length,
+        ),
       );
     }
     _closeFormattingPanel(restoreFocus: true);
@@ -682,37 +720,44 @@ class _InputFieldState extends State<InputField>
     await Clipboard.setData(ClipboardData(text: selectedText));
 
     final newText = text.replaceRange(selection.start, selection.end, '');
-    _htmlContent =
-        _htmlContent.replaceRange(selection.start, selection.end, '');
+    _lastPlainText = newText;
+    _syncHtmlToController(
+      ChatHtmlFormatter.replacePlainRange(
+        html: _htmlContent,
+        start: selection.start,
+        end: selection.end,
+        replacement: '',
+      ),
+    );
 
-    widget.messageController.text = newText;
-    widget.messageController.selection = TextSelection.collapsed(
-      offset: selection.start,
+    widget.messageController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: selection.start),
     );
 
     _closeFormattingPanel(restoreFocus: true);
   }
 
-  void _prefillEditingMessage(Message? editingMessage) {
-    final editingId = editingMessage?.id;
-    if (editingId == null) {
-      _editingPrefillId = null;
-      return;
-    }
-    if (_editingPrefillId == editingId) return;
-    _editingPrefillId = editingId;
-    final text = editingMessage!.text;
+  void _prefillEditingMessage(Message editingMessage) {
+    final html = editingMessage.text;
+    final plainText = stripHtmlTags(html);
+    _editingPrefillId = editingMessage.id;
+    _lastPlainText = plainText;
+    _syncHtmlToController(html);
     widget.messageController.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
+      text: plainText,
+      selection: TextSelection.collapsed(offset: plainText.length),
     );
-    _htmlContent = text;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _clearEditingDraft() {
     _editingPrefillId = null;
+    _lastPlainText = '';
+    _syncHtmlToController('');
     widget.messageController.clear();
-    _htmlContent = '';
   }
 
   @override
@@ -733,7 +778,18 @@ class _InputFieldState extends State<InputField>
 
     final String? replyMsgId = replyingToMessage?.id.toString();
 
-    _prefillEditingMessage(editingMessage);
+    if (editingMessage == null) {
+      _editingPrefillId = null;
+    } else if (_editingPrefillId != editingMessage.id) {
+      final messageToPrefill = editingMessage;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final current = context.read<MessagingCubit>().state;
+        if (current is! EditingMessageState) return;
+        if (current.editingMessage.id != messageToPrefill.id) return;
+        _prefillEditingMessage(current.editingMessage);
+      });
+    }
 
     final textStyles = context.appTextStyles;
     final inputSurface = appearance.inputSurfaceColor(context);
@@ -1123,6 +1179,7 @@ class _InputFieldState extends State<InputField>
                 if (widget.messageController.text.isNotEmpty) {
                   if (editingMessage != null) {
                     messagingCubit.editMessage(_getHtmlContent());
+                    messagingCubit.clearEditingMessage();
                   } else {
                     widget.onSend(_getHtmlContent(), replyMsgId);
                     messagingCubit.clearReplyMessage();
@@ -1408,8 +1465,9 @@ class _InputFieldState extends State<InputField>
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final plainText = stripHtmlTags(selectedText).trim();
+            _lastPlainText = plainText;
+            _syncHtmlToController(plainText);
             widget.messageController.text = plainText;
-            _htmlContent = plainText;
 
             widget.focusNode.requestFocus();
 

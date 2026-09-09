@@ -33,6 +33,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   late RmkGood _good;
   bool _isSaving = false;
   bool _isProgrammaticEdit = false;
+  bool _totalClearedByUser = false;
   String _currencyTitle = 'TJS';
   bool _isFuzaylovazamTenant = false;
 
@@ -126,20 +127,26 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       final controller = _currentController;
       if (key == '⌫') {
         _deleteAtCursor(controller);
-        return;
-      }
-      if (key == 'C') {
+      } else if (key == 'C') {
         _setText(controller, '');
-        return;
+      } else {
+        _insertAtCursor(controller, key);
       }
-      _insertAtCursor(controller, key);
+      _syncTotalClearedFlag();
     });
   }
 
   void _clearCurrentField() {
     setState(() {
       _setText(_currentController, '');
+      _syncTotalClearedFlag();
     });
+  }
+
+  void _syncTotalClearedFlag() {
+    if (_activeField == _EditField.total) {
+      _totalClearedByUser = _totalController.text.isEmpty;
+    }
   }
 
   TextEditingController get _currentController {
@@ -231,7 +238,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
         _quantityFocusNode.requestFocus();
         return;
       case _EditField.total:
-        if (_totalController.text.isEmpty) {
+        if (_totalController.text.isEmpty && !_totalClearedByUser) {
           _setText(_totalController, _formatInput(_calculatedTotal));
         }
         _totalFocusNode.requestFocus();
@@ -242,7 +249,10 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   void _handleFieldChanged(_EditField field) {
     if (_isProgrammaticEdit) return;
     if (field == _EditField.quantity) {
+      _totalClearedByUser = false;
       _totalController.clear();
+    } else if (field == _EditField.total) {
+      _totalClearedByUser = _totalController.text.isEmpty;
     }
     setState(() {
       _activeField = field;
@@ -300,6 +310,7 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 total: _total,
                 currencyTitle: _currencyTitle,
                 selected: _activeField == _EditField.total,
+                keepEmpty: _totalClearedByUser && _totalController.text.isEmpty,
                 controller: _totalController,
                 focusNode: _totalFocusNode,
                 onTap: () => _selectField(_EditField.total),
@@ -500,6 +511,7 @@ class _TotalRow extends StatelessWidget {
     required this.total,
     required this.currencyTitle,
     required this.selected,
+    required this.keepEmpty,
     required this.controller,
     required this.focusNode,
     required this.onTap,
@@ -509,6 +521,7 @@ class _TotalRow extends StatelessWidget {
   final double total;
   final String currencyTitle;
   final bool selected;
+  final bool keepEmpty;
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onTap;
@@ -551,14 +564,16 @@ class _TotalRow extends StatelessWidget {
                         controller: controller,
                         focusNode: focusNode,
                         selected: true,
-                        hint: _formatMoney(total),
+                        hint: keepEmpty ? '' : _formatMoney(total),
                         suffix: currencyTitle,
                         textAlign: TextAlign.right,
                         onTap: onTap,
                         onChanged: onChanged,
                       )
                     : Text(
-                        '${_formatMoney(total)} $currencyTitle',
+                        keepEmpty
+                            ? ''
+                            : '${_formatMoney(total)} $currencyTitle',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
@@ -760,10 +775,10 @@ class _NumberField extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
         hintStyle: TextStyle(
-          color: colors.textPrimary,
+          color: colors.textSecondary,
           fontSize: 16,
           fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

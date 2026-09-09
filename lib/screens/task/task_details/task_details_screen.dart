@@ -1060,73 +1060,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                       ],
                                     ),
                                     const SizedBox(height: 14),
-                                    Row(
-                                      children: [
-                                        if (task.chat != null)
-                                          Expanded(
-                                            key: keyTaskNavigateChat,
-                                            flex:
-                                                task.isFinished == 1 ? 100 : 55,
-                                            child: TaskNavigateToChat(
-                                              chatId: task.chat!.id,
-                                              taskName: widget.taskName,
-                                              canSendMessage:
-                                                  task.chat!.canSendMessage,
-                                            ),
-                                          ),
-                                        if (task.isFinished == 0) ...[
-                                          if (task.chat != null)
-                                            const SizedBox(
-                                                width: 8, height: 56),
-                                          Expanded(
-                                            key: keyTaskForReview,
-                                            flex: task.chat != null ? 45 : 100,
-                                            child: SizedBox(
-                                              height: 48,
-                                              child: ElevatedButton.icon(
-                                                onPressed: () =>
-                                                    _showFinishTaskDialog(task),
-                                                style: ElevatedButton.styleFrom(
-                                                  elevation: 0,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 14,
-                                                    vertical: 12,
-                                                  ),
-                                                  backgroundColor:
-                                                      _screenAccent(context),
-                                                  foregroundColor: context
-                                                      .appColors
-                                                      .buttonPrimaryFg,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            16),
-                                                  ),
-                                                ),
-                                                icon: Icon(
-                                                  Icons.check_circle_rounded,
-                                                  size: 18,
-                                                  color: context.appColors
-                                                      .buttonPrimaryFg,
-                                                ),
-                                                label: Text(
-                                                  AppLocalizations.of(context)!
-                                                      .translate('for_review'),
-                                                  style: TextStyle(
-                                                    color: context.appColors
-                                                        .buttonPrimaryFg,
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w700,
-                                                    fontFamily: 'Gilroy',
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                                    _buildExecutionActions(task),
                                   ],
                                 ),
                               ),
@@ -1176,6 +1110,101 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           ),
         ),
       ),
+      ),
+    );
+  }
+
+  Widget _buildExecutionActions(TaskById task) {
+    final hasChat = task.chat != null;
+    final showReview = task.isFinished == 0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackVertically =
+            hasChat && showReview && constraints.maxWidth < 420;
+        final chatButton = hasChat
+            ? KeyedSubtree(
+                key: keyTaskNavigateChat,
+                child: TaskNavigateToChat(
+                  chatId: task.chat!.id,
+                  taskName: widget.taskName,
+                  canSendMessage: task.chat!.canSendMessage,
+                ),
+              )
+            : null;
+        final reviewButton = showReview
+            ? KeyedSubtree(
+                key: keyTaskForReview,
+                child: _buildForReviewButton(task),
+              )
+            : null;
+
+        if (stackVertically) {
+          return Column(
+            children: [
+              if (chatButton != null) chatButton,
+              if (chatButton != null && reviewButton != null)
+                const SizedBox(height: 8),
+              if (reviewButton != null) reviewButton,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            if (chatButton != null) Expanded(child: chatButton),
+            if (chatButton != null && reviewButton != null)
+              const SizedBox(width: 8),
+            if (reviewButton != null) Expanded(child: reviewButton),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildForReviewButton(TaskById task) {
+    final colors = context.appColors;
+    return SizedBox(
+      height: 48,
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () => _showFinishTaskDialog(task),
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          backgroundColor: _screenAccent(context),
+          foregroundColor: colors.buttonPrimaryFg,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              size: 18,
+              color: colors.buttonPrimaryFg,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  AppLocalizations.of(context)!.translate('for_review'),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: colors.buttonPrimaryFg,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

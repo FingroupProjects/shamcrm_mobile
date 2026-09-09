@@ -1559,7 +1559,7 @@ extension ApiWarehouseCatalogX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return IlliquidGoodsResponse.fromJson(data);
+        return IlliquidGoodsResponse.fromJson(SafeConverters.toMap(data));
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(
@@ -1589,7 +1589,7 @@ extension ApiWarehouseCatalogX on ApiService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final topSellingResponse = TopSellingGoodsResponse.fromJson(data);
+        final topSellingResponse = TopSellingGoodsResponse.fromJson(SafeConverters.toMap(data));
 
         return AllTopSellingData(
           period: period,

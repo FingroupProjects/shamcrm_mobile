@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -107,16 +108,16 @@ class ChatVoicePlayerService extends ChangeNotifier {
         unawaited(stop());
         return;
       }
-      notifyListeners();
+      _notifyListenersSafely();
     });
     _positionSub = _player.positionStream.listen((position) {
       _position = position;
-      notifyListeners();
+      _notifyListenersSafely();
     });
     _durationSub = _player.durationStream.listen((duration) {
       if (duration != null) {
         _duration = duration;
-        notifyListeners();
+        _notifyListenersSafely();
       }
     });
   }
@@ -127,6 +128,7 @@ class ChatVoicePlayerService extends ChangeNotifier {
   StreamSubscription<PlayerState>? _playerStateSub;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration?>? _durationSub;
+  bool _notifyPostFrameScheduled = false;
 
   ChatVoiceTrack? _track;
   Duration _position = Duration.zero;
@@ -155,6 +157,21 @@ class ChatVoicePlayerService extends ChangeNotifier {
   void setForegroundChatId(int? chatId) {
     if (_foregroundChatId == chatId) return;
     _foregroundChatId = chatId;
+    _notifyListenersSafely();
+  }
+
+  void _notifyListenersSafely() {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks) {
+      if (_notifyPostFrameScheduled) return;
+      _notifyPostFrameScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _notifyPostFrameScheduled = false;
+        notifyListeners();
+      });
+      return;
+    }
+
     notifyListeners();
   }
   double get progress {
@@ -183,11 +200,16 @@ class ChatVoicePlayerService extends ChangeNotifier {
     if (track.duration > Duration.zero) {
       _duration = track.duration;
     }
-    notifyListeners();
+    _notifyListenersSafely();
 
     try {
       await _player.stop();
-      await _player.setFilePath(track.localPath);
+      if (track.localPath.startsWith('http://') ||
+          track.localPath.startsWith('https://')) {
+        await _player.setUrl(track.localPath);
+      } else {
+        await _player.setFilePath(track.localPath);
+      }
       await _player.setSpeed(_speed);
       if (generation != _playGeneration) return;
       await _player.play();
@@ -209,19 +231,19 @@ class ChatVoicePlayerService extends ChangeNotifier {
 
   Future<void> pause() async {
     await _player.pause();
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   Future<void> resume() async {
     if (!isActive) return;
     await _player.play();
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   Future<void> cycleSpeed() async {
     _speed = nextVoicePlaybackSpeed(_speed);
     await _player.setSpeed(_speed);
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   Future<void> stop() async {
@@ -234,7 +256,7 @@ class ChatVoicePlayerService extends ChangeNotifier {
     } catch (error) {
       debugPrint('ChatVoicePlayerService stop error: $error');
     }
-    notifyListeners();
+    _notifyListenersSafely();
   }
 
   @override

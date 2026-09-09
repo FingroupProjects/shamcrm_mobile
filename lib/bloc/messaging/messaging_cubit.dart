@@ -337,6 +337,27 @@ class MessagingCubit extends Cubit<MessagingState> {
     mergeIncomingMessage(updatedMessage);
   }
 
+  void applyEditedMessageFromSocket({
+    required int messageId,
+    String? text,
+    bool isChanged = true,
+  }) {
+    final existing = findMessageById(messageId);
+    if (existing == null) return;
+
+    final nextText = text ?? existing.text;
+    if (existing.text == nextText && existing.isChanged == isChanged) {
+      return;
+    }
+
+    mergeMessageUpdate(
+      existing.copyWith(
+        text: nextText,
+        isChanged: isChanged,
+      ),
+    );
+  }
+
   void removeMessageLocally(int messageId) {
     final currentCollection = _currentCollectionOrNull();
     if (currentCollection == null) return;
@@ -380,6 +401,7 @@ class MessagingCubit extends Cubit<MessagingState> {
     if (_editingMessage == null) return;
 
     final editingMessage = _editingMessage!;
+    clearEditingMessage();
 
     try {
       await apiService.editMessage(editingMessage.id.toString(), newMessage);
@@ -389,9 +411,11 @@ class MessagingCubit extends Cubit<MessagingState> {
           isChanged: true,
         ),
       );
-      clearEditingMessage();
     } catch (e) {
       debugPrint('MessagingCubit.editMessage error: $e');
+      startEditingMessage(
+        editingMessage.copyWith(text: newMessage),
+      );
     }
   }
 

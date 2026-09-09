@@ -58,10 +58,10 @@ class NetProfitResult {
   factory NetProfitResult.fromJson(Map<String, dynamic> json) {
     return NetProfitResult(
       year: SafeConverters.toInt(json['year']),
-      months: SafeConverters.toList(json['months'])
-          .whereType<Map<String, dynamic>>()
-          .map((e) => NetProfitMonth.fromJson(e))
-          .toList(),
+      months: SafeConverters.toModelList(
+        json['months'],
+        NetProfitMonth.fromJson,
+      ),
       totalNetProfit: SafeConverters.toNum(json['total_net_profit']),
     );
   }

@@ -92,7 +92,8 @@ extension ApiWarehouseOrdersX on ApiService {
     }
 
     if (search != null && search.isNotEmpty) {
-      path += '&search=$search&barcode=$search';
+      final encodedSearch = Uri.encodeQueryComponent(search);
+      path += '&search=$encodedSearch&barcode=$encodedSearch';
     }
 
     if (filters != null) {
@@ -1339,7 +1340,7 @@ extension ApiWarehouseOrdersX on ApiService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      return OrderQuantityContent.fromJson(data);
+      return OrderQuantityContent.fromJson(SafeConverters.toMap(data));
     } else {
       final message = _extractErrorMessageFromResponse(response);
       throw ApiException(

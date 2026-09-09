@@ -34,5 +34,28 @@ void main() {
       expect(SafeConverters.toList(null), isEmpty);
       expect(SafeConverters.toList([1, 2]).length, 2);
     });
+
+    test('toMapOrNull decodes JSON object strings', () {
+      final map = SafeConverters.toMapOrNull('{"id":4,"name":"TJS"}');
+      expect(map?['id'], 4);
+      expect(map?['name'], 'TJS');
+    });
+
+    test('toList decodes JSON array strings', () {
+      expect(SafeConverters.toList('[{"id":1}]').length, 1);
+    });
+
+    test('toModelList skips strings/ints and parses maps', () {
+      final items = SafeConverters.toModelList(
+        [
+          {'id': 1, 'name': 'Lead'},
+          'just a name',
+          4,
+          null,
+        ],
+        (json) => json['name'],
+      );
+      expect(items, ['Lead']);
+    });
   });
 }

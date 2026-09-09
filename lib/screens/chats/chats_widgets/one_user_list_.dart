@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -143,19 +144,9 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       items: usersList,
                       searchHintText: AppLocalizations.of(context)!.translate('search'), 
                       overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: context.appColors.backgroundSecondary,
-                        expandedFillColor: context.appColors.surfacePrimary,
-                        closedBorder: Border.all(
-                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                      decoration: chatUserDropdownDecoration(
+                        context,
+                        hasError: widget.hasError,
                       ),
                       listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return Padding(
@@ -166,7 +157,15 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                           child: Row(
                             children: [
                               buildUserAvatar(item),
-                              Text(item.name),
+                              Flexible(
+                                child: Text(
+                                  item.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textStyles.bodyLg.copyWith(
+                                    color: context.appColors.textPrimary,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -176,12 +175,24 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                         return Row(
                           children: [
                             buildUserAvatar(selectedItem),
-                            Text(selectedItem.name),
+                            Flexible(
+                              child: Text(
+                                selectedItem.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: textStyles.bodyLg.copyWith(
+                                  color: context.appColors.textPrimary,
+                                ),
+                              ),
+                            ),
                           ],
                         );
                       },
-                      hintBuilder: (context, hint, enabled) =>
-                          Text(AppLocalizations.of(context)!.translate('select_user')),
+                      hintBuilder: (context, hint, enabled) => Text(
+                        AppLocalizations.of(context)!.translate('select_user'),
+                        style: textStyles.bodyLg.copyWith(
+                          color: context.appColors.textSecondary,
+                        ),
+                      ),
                       excludeSelected: false,
                       onChanged: (value) {},
                     ),

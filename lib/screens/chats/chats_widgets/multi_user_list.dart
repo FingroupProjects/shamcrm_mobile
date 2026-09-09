@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -173,19 +174,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       initialItems: selectedUsersData,
                       searchHintText: AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: context.appColors.backgroundSecondary,
-                        expandedFillColor: context.appColors.surfacePrimary,
-                        closedBorder: Border.all(
-                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: widget.hasError ? context.appColors.error : context.appColors.backgroundSecondary,
-                          width: widget.hasError ? 1.5 : 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                      decoration: chatUserDropdownDecoration(
+                        context,
+                        hasError: widget.hasError,
                       ),
                       listItemBuilder: (context, item, isSelected, onItemSelect) {
                         if (item.id == -1) {
@@ -194,6 +185,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                             contentPadding: EdgeInsets.symmetric(horizontal: 8), 
                             minVerticalPadding: 0,
                             dense: true,
+                            tileColor: Colors.transparent,
+                            selectedTileColor: Colors.transparent,
                             title: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -236,6 +229,8 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                           contentPadding: EdgeInsets.symmetric(horizontal: 8), 
                           minVerticalPadding: 0,
                           dense: true,
+                          tileColor: Colors.transparent,
+                          selectedTileColor: Colors.transparent,
                           title: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

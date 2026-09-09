@@ -57,8 +57,21 @@ class _ChatsScreenState extends State<ChatsScreen>
   StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
   final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
   String endPointInTab = 'lead';
-  Map<String, dynamic>? _activeFilters;
-  bool _hasActiveFilters = false;
+  final Map<String, Map<String, dynamic>?> _filtersByEndpoint = {
+    'lead': null,
+    'task': null,
+    'corporate': null,
+  };
+
+  Map<String, dynamic>? get _activeFilters => _filtersByEndpoint[endPointInTab];
+
+  bool get _hasActiveFilters {
+    final filters = _activeFilters;
+    return filters != null && _checkIfFiltersActive(filters);
+  }
+
+  Map<String, dynamic>? _filtersFor(String endPoint) =>
+      _filtersByEndpoint[endPoint];
 
   Map<String, dynamic>? tutorialProgress;
 
@@ -146,9 +159,9 @@ class _ChatsScreenState extends State<ChatsScreen>
     }
 
     //print('ChatsScreen._handleFiltersApplied: Received filters: $normalizedFilters');
+    final hasActive = _checkIfFiltersActive(normalizedFilters);
     setState(() {
-      _activeFilters = normalizedFilters;
-      _hasActiveFilters = _checkIfFiltersActive(normalizedFilters);
+      _filtersByEndpoint[endPointInTab] = hasActive ? normalizedFilters : null;
       //print( 'ChatsScreen._handleFiltersApplied: Updated _activeFilters: $_activeFilters, _hasActiveFilters: $_hasActiveFilters');
     });
 
@@ -168,7 +181,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       chatsBloc.add(FetchChats(
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-        filters: normalizedFilters,
+        filters: hasActive ? normalizedFilters : null,
       ));
     });
   }
@@ -203,15 +216,26 @@ class _ChatsScreenState extends State<ChatsScreen>
           filters['project_ids']?.isNotEmpty == true ||
           filters['task_status_ids']?.isNotEmpty == true ||
           filters['unread_only'] == true;
+    } else if (endPointInTab == 'corporate') {
+      return filters['hasNoReplies'] == true ||
+          filters['hasUnreadMessages'] == true ||
+          _positiveInt(filters['daysWithoutActivity']) != null;
     }
     return false;
+  }
+
+  int? _positiveInt(dynamic value) {
+    final parsed = value is int ? value : int.tryParse(value?.toString() ?? '');
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 
   void _resetFilters() {
     //print('ChatsScreen._resetFilters: Resetting filters');
     setState(() {
-      _activeFilters = null;
-      _hasActiveFilters = false;
+      _filtersByEndpoint[endPointInTab] = null;
     });
 
     SharedPreferences.getInstance().then((prefs) {
@@ -725,6 +749,20 @@ class _ChatsScreenState extends State<ChatsScreen>
         activeFiltersList
             .add(AppLocalizations.of(context)!.translate('unread_only'));
       }
+    } else if (endPointInTab == 'corporate') {
+      if (_activeFilters!['hasNoReplies'] == true) {
+        activeFiltersList
+            .add(AppLocalizations.of(context)!.translate('without_replies'));
+      }
+      if (_activeFilters!['hasUnreadMessages'] == true) {
+        activeFiltersList.add(
+            AppLocalizations.of(context)!.translate('with_unread_messages'));
+      }
+      final inactivityDays = _positiveInt(_activeFilters!['daysWithoutActivity']);
+      if (inactivityDays != null) {
+        activeFiltersList.add(
+            '${AppLocalizations.of(context)!.translate('days_without_activity')} ($inactivityDays дн.)');
+      }
     }
 
     if (activeFiltersList.isEmpty) {
@@ -854,8 +892,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         endPoint: endPoint,
         query: query,
         salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
-        filters:
-            endPoint == 'lead' || endPoint == 'task' ? _activeFilters : null,
+        filters: _filtersFor(endPoint),
       ));
     });
   }
@@ -1122,9 +1159,7 @@ class _ChatsScreenState extends State<ChatsScreen>
     chatsBloc.add(FetchChats(
       endPoint: endPointInTab,
       salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
-      filters: endPointInTab == 'lead' || endPointInTab == 'task'
-          ? _activeFilters
-          : null,
+      filters: _filtersFor(endPointInTab),
     ));
   }
 
@@ -1183,7 +1218,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                     _chatsBlocs[endPointInTab]!.add(FetchChats(
                       endPoint: endPointInTab,
                       salesFunnelId: _selectedFunnel?.id,
-                      filters: endPointInTab == 'lead' ? _activeFilters : null,
+                      filters: _filtersFor(endPointInTab),
                     ));
                   }
                 });
@@ -1197,10 +1232,14 @@ class _ChatsScreenState extends State<ChatsScreen>
               showCallCenter: true,
               showFilterIconChat: endPointInTab == 'lead' ? true : false,
               showFilterIconTaskChat: endPointInTab == 'task' ? true : false,
+              showFilterIconCorporateChat:
+                  endPointInTab == 'corporate' ? true : false,
               onChatLeadFiltersApplied: _handleFiltersApplied,
               onChatLeadFiltersReset: _resetFilters,
               onChatTaskFiltersApplied: _handleFiltersApplied,
               onChatTaskFiltersReset: _resetFilters,
+              onChatCorporateFiltersApplied: _handleFiltersApplied,
+              onChatCorporateFiltersReset: _resetFilters,
               hasActiveChatFilters: _hasActiveFilters,
               initialChatFilters: _activeFilters,
               currentSalesFunnelId: _selectedFunnel?.id,
@@ -1221,8 +1260,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                       chatsBloc.add(FetchChats(
                         endPoint: endPointInTab,
                         salesFunnelId: _selectedFunnel?.id,
-                        filters:
-                            endPointInTab == 'lead' ? _activeFilters : null,
+                        filters: _filtersFor(endPointInTab),
                       ));
                     });
                   }
@@ -1403,9 +1441,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         chatsBloc.add(FetchChats(
           endPoint: newEndPoint,
           salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
-          filters: newEndPoint == 'task' || newEndPoint == 'lead'
-              ? _activeFilters
-              : null,
+          filters: _filtersFor(newEndPoint),
         ));
       },
       child: CompositedTransformTarget(

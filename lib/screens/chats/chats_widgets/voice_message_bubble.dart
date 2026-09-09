@@ -9,6 +9,7 @@ import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/services/chat_voice_player_service.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_file_utils.dart';
@@ -76,7 +77,15 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
   }
 
   void _onPlayerChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+      return;
+    }
+    setState(() {});
   }
 
   String _getAudioSource() {
@@ -115,7 +124,9 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
       final localPath = _localPath ?? await _resolveLocalPath(source);
       if (!mounted || generation != _loadGeneration) return;
 
-      if (localPath == null || localPath.isEmpty) {
+      final playable =
+          (localPath != null && localPath.isNotEmpty) ? localPath : source;
+      if (playable.isEmpty) {
         setState(() {
           _isLoading = false;
           _hasError = true;
@@ -123,7 +134,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
         return;
       }
 
-      _localPath = localPath;
+      _localPath = playable;
       setState(() {
         _isLoading = false;
         _hasError = false;
@@ -134,7 +145,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
           messageId: widget.message.id,
           chatId: widget.chatId,
           filePath: _filePath,
-          localPath: localPath,
+          localPath: playable,
           senderName: widget.message.senderName,
           sentAtLabel: formatChatVoiceSentAt(widget.message.createMessateTime),
           duration: widget.message.duration,

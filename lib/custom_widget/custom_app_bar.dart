@@ -6,6 +6,7 @@ import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
+import 'package:crm_task_manager/custom_widget/filter/chat/corporate/chat_corporate_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/lead/chat_lead_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/task/chat_task_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/manager_app_bar_deal.dart';
@@ -69,6 +70,7 @@ class CustomAppBar extends StatefulWidget {
 
   final bool showFilterIconChat;
   final bool showFilterIconTaskChat;
+  final bool showFilterIconCorporateChat;
   final Function(Map)? onManagersLeadSelected;
 
   final Function(Map)? onManagersDealSelected;
@@ -182,7 +184,9 @@ class CustomAppBar extends StatefulWidget {
 
   final Function(Map<String, dynamic>)? onChatLeadFiltersApplied; // Для лидов
   final Function(Map<String, dynamic>)? onChatTaskFiltersApplied; // Для задач
+  final Function(Map<String, dynamic>)? onChatCorporateFiltersApplied;
   final VoidCallback? onChatLeadFiltersReset; // Сброс фильтров
+  final VoidCallback? onChatCorporateFiltersReset;
   final bool hasActiveChatFilters; // Есть ли активные фильтры
   final bool hasActiveEventFilters; // Есть ли активные фильтры для Event
   final bool hasActiveDealFilters; // Есть ли активные фильтры для сделок
@@ -254,11 +258,13 @@ class CustomAppBar extends StatefulWidget {
     this.showDashboardIcon = false,
     this.onDashboardPressed,
     this.onChatTaskFiltersReset,
+    this.onChatCorporateFiltersReset,
 
 // ДОБАВЛЯЕМ новые параметры
     this.onChatLeadFiltersApplied,
     this.onChatLeadFiltersReset,
     this.onChatTaskFiltersApplied, // Новый параметр
+    this.onChatCorporateFiltersApplied,
     this.hasActiveChatFilters = false,
     this.hasActiveEventFilters = false,
     this.hasActiveDealFilters = false,
@@ -302,6 +308,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterTaskIcon = true,
     this.showFilterIconChat = false, // Значение по умолчанию
     this.showFilterIconTaskChat = false, // Значение по умолчанию
+    this.showFilterIconCorporateChat = false,
     this.showCallCenter = true, // Значение по умолчанию
     this.showMasterclassQrScanner = false,
     this.onManagersLeadSelected,
@@ -576,6 +583,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     _setFiltersActive(false);
     widget.onChatLeadFiltersReset?.call();
     widget.onChatTaskFiltersReset?.call();
+    widget.onChatCorporateFiltersReset?.call();
   }
 
   Future<void> _playSound() async {
@@ -1188,6 +1196,59 @@ class _CustomAppBarState extends State<CustomAppBar>
                                   onManagersSelected:
                                       widget.onChatLeadFiltersApplied,
                                   onResetFilters: widget.onChatLeadFiltersReset,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+
+                  if (widget.showFilterIconCorporateChat)
+                    Transform.translate(
+                      offset: const Offset(10, 0),
+                      child: Tooltip(
+                        message:
+                            AppLocalizations.of(context)!.translate('filter'),
+                        preferBelow: false,
+                        decoration: tooltipDecoration,
+                        textStyle: tooltipTextStyle,
+                        child: IconButton(
+                          icon: Image.asset(
+                            'assets/icons/AppBar/filter.png',
+                            width: 24,
+                            height: 24,
+                            color: widget.hasActiveChatFilters
+                                ? activeIconColor
+                                : filterIconColor,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              if (widget.hasActiveChatFilters) {
+                                _setFiltersActive(true);
+                              }
+                            });
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatCorporateFilterScreen(
+                                  initialHasNoReplies: widget
+                                          .initialChatFilters?['hasNoReplies'] ==
+                                      true,
+                                  initialHasUnreadMessages:
+                                      widget.initialChatFilters?[
+                                          'hasUnreadMessages'] ==
+                                      true,
+                                  initialDaysWithoutActivity: () {
+                                    final raw = widget.initialChatFilters?[
+                                        'daysWithoutActivity'];
+                                    if (raw is int) return raw;
+                                    return int.tryParse(raw?.toString() ?? '');
+                                  }(),
+                                  onFiltersApplied:
+                                      widget.onChatCorporateFiltersApplied,
+                                  onResetFilters:
+                                      widget.onChatCorporateFiltersReset,
                                 ),
                               ),
                             );
@@ -1936,6 +1997,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         (widget.showNotification && !widget.showNotificationInMenu) ||
         widget.showFilterIconChat ||
         widget.showFilterIconTaskChat ||
+        widget.showFilterIconCorporateChat ||
         widget.showDashboardIcon ||
         widget.showFilterIconEvent ||
         widget.showFilterIconOnSelectLead ||

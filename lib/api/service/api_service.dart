@@ -50,7 +50,8 @@ import 'package:crm_task_manager/models/common/integration_model.dart';
 import 'package:crm_task_manager/models/lead/lead_deal_model.dart';
 import 'package:crm_task_manager/models/lead/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
-import 'package:crm_task_manager/models/lead/lead_multi_model.dart' hide LeadData;
+import 'package:crm_task_manager/models/lead/lead_multi_model.dart'
+    hide LeadData;
 import 'package:crm_task_manager/models/lead/lead_navigate_to_chat.dart'
     hide Integration;
 import 'package:crm_task_manager/models/field/main_field_model.dart';
@@ -133,6 +134,7 @@ import 'package:crm_task_manager/models/page_2/order_history_model.dart';
 import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/models/page_2/price_type_model.dart';
+import 'package:crm_task_manager/models/page_2/pricing_model.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
@@ -159,7 +161,8 @@ import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/models/lead/lead_history_model.dart';
 import 'package:crm_task_manager/models/lead/lead_sms_model.dart';
 import 'package:crm_task_manager/models/task/history_model_task.dart';
-import 'package:crm_task_manager/models/lead/leadById_model.dart' hide Integration;
+import 'package:crm_task_manager/models/lead/leadById_model.dart'
+    hide Integration;
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/models/lead/notes_model.dart';
 import 'package:crm_task_manager/models/common/pagination_dto.dart';
@@ -240,6 +243,7 @@ part 'events/api_events.dart';
 part 'warehouse/api_catalog.dart';
 part 'warehouse/api_documents.dart';
 part 'warehouse/api_orders.dart';
+part 'warehouse/api_pricing.dart';
 part 'warehouse/api_dashboards.dart';
 part 'warehouse/api_call_center.dart';
 part 'cash/api_cash.dart';

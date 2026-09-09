@@ -63,10 +63,10 @@ class CashBalanceSummary {
     percentageChange = SafeConverters.toNumOrNull(json['percentage_change']);
     isPositiveChange = SafeConverters.toBoolOrNull(json['is_positive_change']);
     if (json['cash_registers'] != null) {
-      cashRegisters = SafeConverters.toList(json['cash_registers']).whereType<Map<String, dynamic>>().map((v) => CashRegisters.fromJson(v)).toList();
+      cashRegisters = SafeConverters.toModelList(json['cash_registers'], CashRegisters.fromJson);
     }
     if (json['movements'] != null) {
-      movements = SafeConverters.toList(json['movements']).whereType<Map<String, dynamic>>().map((v) => Movements.fromJson(v)).toList();
+      movements = SafeConverters.toModelList(json['movements'], Movements.fromJson);
     }
     comparisonPeriod = SafeConverters.toStringOrNull(json['comparison_period']);
     period = SafeConverters.toMapOrNull(json['period']) != null ? Period.fromJson(SafeConverters.toMap(json['period'])) : null;
@@ -238,14 +238,14 @@ class CheckingAccounts {
   CheckingAccounts.fromJson(Map<String, dynamic> json) {
     currentPage = SafeConverters.toIntOrNull(json['current_page']);
     if (json['data'] != null) {
-      data = SafeConverters.toList(json['data']).whereType<Map<String, dynamic>>().map((v) => Data.fromJson(v)).toList();
+      data = SafeConverters.toModelList(json['data'], Data.fromJson);
     }
     firstPageUrl = SafeConverters.toStringOrNull(json['first_page_url']);
     from = SafeConverters.toIntOrNull(json['from']);
     lastPage = SafeConverters.toIntOrNull(json['last_page']);
     lastPageUrl = SafeConverters.toStringOrNull(json['last_page_url']);
     if (json['links'] != null) {
-      links = SafeConverters.toList(json['links']).whereType<Map<String, dynamic>>().map((v) => Links.fromJson(v)).toList();
+      links = SafeConverters.toModelList(json['links'], Links.fromJson);
     }
     nextPageUrl = SafeConverters.toStringOrNull(json['next_page_url']);
     path = SafeConverters.toStringOrNull(json['path']);

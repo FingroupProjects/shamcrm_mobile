@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 
 // Enum for profitability period types
 enum ProfitabilityTimePeriod {
@@ -27,10 +27,11 @@ class ProfitabilityDashboard {
     this.errors,
   });
 
-  factory ProfitabilityDashboard.fromJson(Map<String, dynamic> json) {
+  factory ProfitabilityDashboard.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ProfitabilityDashboard(
-      result: ProfitabilityResult.fromJson(json['result']),
-      errors: json['errors'],
+      result: ProfitabilityResult.fromJson(SafeConverters.toMap(map['result'])),
+      errors: map['errors'],
     );
   }
 
@@ -51,12 +52,14 @@ class ProfitabilityResult {
     required this.months,
   });
 
-  factory ProfitabilityResult.fromJson(Map<String, dynamic> json) {
+  factory ProfitabilityResult.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ProfitabilityResult(
-      year: json['year'],
-      months: (json['months'] as List)
-          .map((e) => ProfitabilityMonth.fromJson(e))
-          .toList(),
+      year: SafeConverters.toInt(map['year']),
+      months: SafeConverters.toModelList(
+        map['months'],
+        ProfitabilityMonth.fromJson,
+      ),
     );
   }
 
@@ -79,11 +82,12 @@ class ProfitabilityMonth {
     required this.profitabilityPercentage,
   });
 
-  factory ProfitabilityMonth.fromJson(Map<String, dynamic> json) {
+  factory ProfitabilityMonth.fromJson(dynamic json) {
+    final map = SafeConverters.toMap(json);
     return ProfitabilityMonth(
-      month: json['month'],
-      monthName: json['month_name'],
-      profitabilityPercentage: json['profitability_percentage'],
+      month: SafeConverters.toInt(map['month']),
+      monthName: SafeConverters.toSafeString(map['month_name']),
+      profitabilityPercentage: map['profitability_percentage'],
     );
   }
 
