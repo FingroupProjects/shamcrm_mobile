@@ -41,10 +41,12 @@ class PricingDocumentItem {
     final variant = json['variant'];
     final good = variant is Map ? variant['good'] : null;
     final priceType = json['price_type'];
+    final rawGoodName = good is Map
+        ? (good['full_name'] ?? good['name'] ?? 'Без названия').toString()
+        : 'Без названия';
     return PricingDocumentItem(
-      goodName: good is Map
-          ? (good['full_name'] ?? good['name'] ?? 'Без названия').toString()
-          : 'Без названия',
+      // API иногда добавляет разделитель варианта в конце названия товара.
+      goodName: rawGoodName.replaceFirst(RegExp(r'\s*/\s*$'), '').trim(),
       price: SafeConverters.toDouble(json['price']),
       priceTypeName:
           priceType is Map ? (priceType['name'] ?? 'Цена').toString() : 'Цена',

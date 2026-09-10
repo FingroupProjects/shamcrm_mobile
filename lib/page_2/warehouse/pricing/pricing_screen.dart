@@ -1,11 +1,13 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_wh.dart';
 import 'package:crm_task_manager/models/page_2/pricing_model.dart';
 import 'package:crm_task_manager/models/page_2/category_model.dart';
-import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
-import 'package:crm_task_manager/custom_widget/filter/page_2/warehouse_document_filter_type.dart';
+import 'package:crm_task_manager/models/user/user_model.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
@@ -20,6 +22,7 @@ class _PricingScreenState extends State<PricingScreen> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
   Map<String, dynamic> _filters = {};
+  bool _isSearching = false;
   bool _canCreate = false;
 
   @override
@@ -51,14 +54,16 @@ class _PricingScreenState extends State<PricingScreen> {
 
   void _onSearch(String _) => _reload();
 
-  void _onFilterSelected(Map<String, dynamic> filters) {
-    setState(() => _filters = Map<String, dynamic>.from(filters));
-    _reload();
-  }
-
-  void _resetFilters() {
-    setState(() => _filters = {});
-    _reload();
+  Future<void> _showPricingFilter() async {
+    final filters = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(
+        builder: (_) => PricingDocumentFilterScreen(initialFilters: _filters),
+      ),
+    );
+    if (filters != null) {
+      setState(() => _filters = filters);
+      _reload();
+    }
   }
 
   @override
@@ -66,31 +71,42 @@ class _PricingScreenState extends State<PricingScreen> {
     final colors = context.appColors;
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: colors.surfacePrimary,
-        title: CustomAppBarPage2(
-          title: 'Цены',
-          showSearchIcon: true,
-          showFilterIcon: false,
-          showFilterOrderIcon: false,
-          showFilterIncomeIcon: false,
-          showFilterIncomingIcon: true,
-          warehouseFilterType: WarehouseDocumentFilterType.clientSale,
-          onFilterIncomingSelected: _onFilterSelected,
-          onIncomingResetFilters: _resetFilters,
-          onChangedSearchInput: _onSearch,
-          textEditingController: _searchController,
-          focusNode: _focusNode,
-          clearButtonClick: (isSearching) {
-            if (!isSearching) {
-              _searchController.clear();
-              _reload();
-            }
-          },
-          onClickProfileAvatar: () {},
-          clearButtonClickFiltr: (_) {},
-          currentFilters: _filters,
-        ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                focusNode: _focusNode,
+                autofocus: true,
+                onChanged: _onSearch,
+                decoration: const InputDecoration(
+                  hintText: 'Поиск',
+                  border: InputBorder.none,
+                ),
+              )
+            : const Text('Цены'),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            tooltip: _isSearching ? 'Закрыть поиск' : 'Поиск',
+            onPressed: () {
+              setState(() => _isSearching = !_isSearching);
+              if (!_isSearching) {
+                _searchController.clear();
+                _reload();
+              }
+            },
+          ),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: _filters.isNotEmpty,
+              child: const Icon(Icons.filter_alt_outlined),
+            ),
+            tooltip: 'Фильтр',
+            onPressed: _showPricingFilter,
+          ),
+        ],
       ),
       body: FutureBuilder<List<PricingDocument>>(
         future: _documents,
@@ -130,8 +146,9 @@ class _PricingScreenState extends State<PricingScreen> {
                 if (saved == true) {
                   _reload();
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Цены успешно созданы')),
+                    showCustomSnackBar(
+                      context: context,
+                      message: 'Успешно',
                     );
                   }
                 }
@@ -155,6 +172,13 @@ class _PricingDocumentCard extends StatelessWidget {
         ? 'Дата не указана'
         : '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     return Card(
+      color: context.appColors.surfaceElevated,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.appColors.borderSubtle),
+      ),
       child: ListTile(
         onTap: onTap,
         leading: const CircleAvatar(child: Icon(Icons.price_change_outlined)),
@@ -218,6 +242,186 @@ class _ErrorState extends StatelessWidget {
       );
 }
 
+class PricingDocumentFilterScreen extends StatefulWidget {
+  const PricingDocumentFilterScreen({super.key, required this.initialFilters});
+  final Map<String, dynamic> initialFilters;
+
+  @override
+  State<PricingDocumentFilterScreen> createState() =>
+      _PricingDocumentFilterScreenState();
+}
+
+class _PricingDocumentFilterScreenState
+    extends State<PricingDocumentFilterScreen> {
+  final _api = ApiService();
+  final _fromController = TextEditingController();
+  final _toController = TextEditingController();
+  DateTime? _from;
+  DateTime? _to;
+  int? _authorId;
+  List<UserTask> _authors = const [];
+  bool _authorsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _from =
+        DateTime.tryParse(widget.initialFilters['date_from']?.toString() ?? '');
+    _to = DateTime.tryParse(widget.initialFilters['date_to']?.toString() ?? '');
+    _authorId =
+        int.tryParse(widget.initialFilters['author_id']?.toString() ?? '');
+    _syncDateControllers();
+    _loadAuthors();
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAuthors() async {
+    try {
+      final authors = await _api.getUserTask();
+      if (mounted) setState(() => _authors = authors);
+    } finally {
+      if (mounted) setState(() => _authorsLoading = false);
+    }
+  }
+
+  void _syncDateControllers() {
+    String format(DateTime? value) => value == null
+        ? ''
+        : '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+    _fromController.text = format(_from);
+    _toController.text = format(_to);
+  }
+
+  DateTime? _parseDate(String value) {
+    final parts = value.split('/');
+    if (parts.length != 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    return DateTime(year, month, day);
+  }
+
+  String _serverDate(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+  void _clear() {
+    setState(() {
+      _from = null;
+      _to = null;
+      _authorId = null;
+      _syncDateControllers();
+    });
+  }
+
+  void _apply() {
+    _from = _parseDate(_fromController.text);
+    _to = _parseDate(_toController.text);
+    Navigator.pop(context, {
+      if (_from != null) 'date_from': _serverDate(_from!),
+      if (_to != null) 'date_to': _serverDate(_to!),
+      if (_authorId != null) 'author_id': _authorId.toString(),
+    });
+  }
+
+  Widget _section({required String title, required Widget child}) => Card(
+        color: context.appColors.surfacePrimary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title,
+                style: context.appTextStyles.bodyLg
+                    .copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            child,
+          ]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.appColors.backgroundSecondary,
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: const Text('Фильтр'),
+        actions: [
+          TextButton(onPressed: _clear, child: const Text('Очистить')),
+          TextButton(onPressed: _apply, child: const Text('Применить')),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _section(
+            title: 'Диапазон дат',
+            child: Column(children: [
+              DateFieldWithFromTo(
+                controller: _fromController,
+                label: 'От',
+                isFrom: true,
+                onDateSelected: (value) => _from = _parseDate(value),
+              ),
+              const SizedBox(height: 12),
+              DateFieldWithFromTo(
+                controller: _toController,
+                label: 'До',
+                isFrom: false,
+                onDateSelected: (value) => _to = _parseDate(value),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          _section(
+            title: 'Автор',
+            child: _authorsLoading
+                ? const SizedBox(
+                    height: 50,
+                    child: Center(child: CircularProgressIndicator()))
+                : CustomDropdown<UserTask>.search(
+                    items: _authors,
+                    searchHintText: 'Поиск',
+                    overlayHeight: 300,
+                    decoration: CustomDropdownDecoration(
+                      closedFillColor: context.appColors.fieldBg,
+                      expandedFillColor: context.appColors.surfacePrimary,
+                      closedBorder:
+                          Border.all(color: context.appColors.fieldBg),
+                      expandedBorder:
+                          Border.all(color: context.appColors.fieldBg),
+                      closedBorderRadius: BorderRadius.circular(12),
+                      expandedBorderRadius: BorderRadius.circular(12),
+                    ),
+                    initialItem: _authors.cast<UserTask?>().firstWhere(
+                          (author) => author?.id == _authorId,
+                          orElse: () => null,
+                        ),
+                    hintBuilder: (_, __, ___) => const Text('Выберите автора'),
+                    headerBuilder: (_, author, __) =>
+                        Text('${author.name} ${author.lastname}'.trim()),
+                    listItemBuilder: (_, author, __, ___) =>
+                        Text('${author.name} ${author.lastname}'.trim()),
+                    onChanged: (author) => setState(() {
+                      _authorId = author?.id;
+                    }),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PricingCreateScreen extends StatefulWidget {
   const PricingCreateScreen({super.key});
   @override
@@ -256,14 +460,10 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
       );
       if (mounted)
         setState(() {
-          if (_rules.isNotEmpty) {
-            for (final good in page.items) {
-              for (final price in good.prices) {
-                price.isEntered = price.newPrice != 0;
-              }
-            }
-          }
-          _goods = page.items;
+          final filteredGoods = _applyPriceFilter(page.items);
+          if (_rules.isNotEmpty)
+            _applyRuleToAllPrices(filteredGoods, _rules.first);
+          _goods = filteredGoods;
           _loading = false;
         });
     } catch (e) {
@@ -272,6 +472,56 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
           _error = e.toString();
           _loading = false;
         });
+    }
+  }
+
+  List<PricingGood> _applyPriceFilter(List<PricingGood> goods) {
+    final from = double.tryParse(_priceFrom.text.trim().replaceAll(',', '.'));
+    final to = double.tryParse(_priceTo.text.trim().replaceAll(',', '.'));
+    if (from == null && to == null) return goods;
+    return goods.where((good) {
+      return good.prices.any((price) {
+        final value = price.currentPrice;
+        return (from == null || value >= from) && (to == null || value <= to);
+      });
+    }).toList();
+  }
+
+  void _applyRuleToAllPrices(
+    List<PricingGood> goods,
+    Map<String, dynamic> rule,
+  ) {
+    final percent = double.tryParse(
+      (rule['change_percent']?.toString() ?? '').replaceAll(',', '.'),
+    );
+    final sum = double.tryParse(
+      (rule['change_sum']?.toString() ?? '').replaceAll(',', '.'),
+    );
+    final isIncrease = rule['change_type'] != 'decrease';
+    final decimals =
+        (int.tryParse(rule['decimals']?.toString() ?? '') ?? 0).clamp(0, 10);
+    final roundDigits = int.tryParse(rule['round_digits']?.toString() ?? '');
+    final roundUp = rule['round_digits_change_type'] != 'decrease';
+    final steps = [1, 10, 100, 1000, 10000, 100000];
+    final step = roundDigits == null ? null : steps[roundDigits.clamp(0, 5)];
+
+    for (final good in goods) {
+      for (final price in good.prices) {
+        var next = price.currentPrice;
+        if (percent != null && percent > 0) {
+          next *= isIncrease ? 1 + percent / 100 : 1 - percent / 100;
+        }
+        if (sum != null && sum > 0) {
+          next += isIncrease ? sum : -sum;
+        }
+        next = double.parse(next.toStringAsFixed(decimals));
+        if (step != null && step > 1) {
+          next = (roundUp ? (next / step).ceil() : (next / step).floor()) *
+              step.toDouble();
+        }
+        price.newPrice = next < 0 ? 0 : next;
+        price.isEntered = price.newPrice != price.currentPrice;
+      }
     }
   }
 
@@ -287,8 +537,10 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
     final hasEnteredPrices =
         _goods.any((good) => good.prices.any((price) => price.isEntered));
     if (!hasEnteredPrices) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите хотя бы одну цену')),
+      showCustomSnackBar(
+        context: context,
+        message: 'Введите хотя бы одну цену',
+        isSuccess: false,
       );
       return;
     }
@@ -299,8 +551,11 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        showCustomSnackBar(
+          context: context,
+          message: e.toString(),
+          isSuccess: false,
+        );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -329,7 +584,11 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
 
   Future<void> _showRules() async {
     final rule = await showDialog<Map<String, dynamic>>(
-        context: context, builder: (_) => const _PricingRulesDialog());
+      context: context,
+      builder: (_) => _PricingRulesDialog(
+        initialRule: _rules.isEmpty ? null : _rules.first,
+      ),
+    );
     if (rule != null) {
       setState(() => _rules = [rule]);
       _loadGoods();
@@ -345,12 +604,16 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
         backgroundColor: colors.surfacePrimary,
         title: const Text('Добавить цены'),
         actions: [
-          TextButton(
-              onPressed: _saving ? null : () => Navigator.pop(context),
-              child: const Text('Отмена')),
-          TextButton(
-              onPressed: _saving || _goods.isEmpty ? null : _save,
-              child: Text(_saving ? 'Сохранение...' : 'Сохранить')),
+          IconButton(
+            onPressed: _saving ? null : _showFilter,
+            tooltip: 'Фильтр',
+            icon: const Icon(Icons.filter_alt_outlined),
+          ),
+          IconButton(
+            onPressed: _saving ? null : _showRules,
+            tooltip: 'Правила',
+            icon: const Icon(Icons.tune),
+          ),
         ],
       ),
       body: Column(children: [
@@ -360,17 +623,6 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
             Expanded(
                 child: Text('Товаров: ${_goods.length}',
                     style: Theme.of(context).textTheme.titleMedium)),
-            IconButton.outlined(
-              onPressed: _showFilter,
-              tooltip: 'Фильтр',
-              icon: const Icon(Icons.filter_alt_outlined),
-            ),
-            const SizedBox(width: 8),
-            IconButton.outlined(
-              onPressed: _showRules,
-              tooltip: 'Правила',
-              icon: const Icon(Icons.tune),
-            ),
           ]),
         ),
         if (_rules.isNotEmpty)
@@ -387,6 +639,53 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
           ),
         Expanded(child: _body()),
       ]),
+      bottomNavigationBar: AnimatedPadding(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              border: Border(top: BorderSide(color: colors.borderSubtle)),
+            ),
+            child: Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _saving ? null : () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48)),
+                  child: const Text('Отмена'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _saving || _goods.isEmpty ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: colors.buttonPrimaryBg,
+                    foregroundColor: colors.buttonPrimaryFg,
+                  ),
+                  child: _saving
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.buttonPrimaryFg,
+                          ),
+                        )
+                      : const Text('Сохранить'),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 
@@ -403,6 +702,7 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
       child: SingleChildScrollView(
         controller: _horizontal,
         scrollDirection: Axis.horizontal,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         child: SizedBox(
           width: 190 + priceTypes.length * 170.0,
           child: ListView.builder(
@@ -460,25 +760,69 @@ class _PricingGoodRow extends StatelessWidget {
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                child: TextFormField(
-                  initialValue: _number(price.newPrice),
-                  selectAllOnFocus: true,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
-                  ],
-                  decoration: InputDecoration(
-                      isDense: true,
-                      labelText: 'Было ${_number(price.currentPrice)}'),
-                  onChanged: (value) {
-                    final normalized = value.trim().replaceAll(',', '.');
-                    price.newPrice = double.tryParse(normalized) ?? 0;
-                    price.isEntered = normalized.isNotEmpty;
-                  },
+                child: _PricingValueInput(
+                  key: ValueKey('${good.variantId}-${price.priceTypeId}'),
+                  price: price,
                 ),
               ))),
         ]),
+      );
+}
+
+class _PricingValueInput extends StatefulWidget {
+  const _PricingValueInput({super.key, required this.price});
+  final PricingValue price;
+
+  @override
+  State<_PricingValueInput> createState() => _PricingValueInputState();
+}
+
+class _PricingValueInputState extends State<_PricingValueInput> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _number(widget.price.newPrice));
+  }
+
+  @override
+  void didUpdateWidget(covariant _PricingValueInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!FocusScope.of(context).hasFocus &&
+        oldWidget.price.newPrice != widget.price.newPrice) {
+      _controller.text = _number(widget.price.newPrice);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clearInitialZero() {
+    if (!widget.price.isEntered && _controller.text == '0') {
+      _controller.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => TextFormField(
+        controller: _controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
+        ],
+        decoration: InputDecoration(
+            isDense: true,
+            labelText: 'Было ${_number(widget.price.currentPrice)}'),
+        onTap: _clearInitialZero,
+        onChanged: (value) {
+          final normalized = value.trim().replaceAll(',', '.');
+          widget.price.newPrice = double.tryParse(normalized) ?? 0;
+          widget.price.isEntered = normalized.isNotEmpty;
+        },
       );
 }
 
@@ -571,18 +915,38 @@ class _PricingFilterSheet extends StatelessWidget {
 }
 
 class _PricingRulesDialog extends StatefulWidget {
-  const _PricingRulesDialog();
+  const _PricingRulesDialog({this.initialRule});
+  final Map<String, dynamic>? initialRule;
   @override
   State<_PricingRulesDialog> createState() => _PricingRulesDialogState();
 }
 
 class _PricingRulesDialogState extends State<_PricingRulesDialog> {
-  final _percent = TextEditingController();
-  final _sum = TextEditingController();
-  final _decimals = TextEditingController(text: '0');
+  late final TextEditingController _percent;
+  late final TextEditingController _sum;
+  late final TextEditingController _decimals;
   bool _increase = true;
-  int _roundDigits = 0;
+  int? _roundDigits;
   bool _roundIncrease = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final rule = widget.initialRule;
+    _percent = TextEditingController(
+      text: rule?['change_percent']?.toString() ?? '',
+    );
+    _sum = TextEditingController(
+      text: rule?['change_sum']?.toString() ?? '',
+    );
+    _decimals = TextEditingController(
+      text: rule?['decimals']?.toString() ?? '0',
+    );
+    _increase = rule?['change_type'] != 'decrease';
+    _roundIncrease = rule?['round_digits_change_type'] != 'decrease';
+    _roundDigits = int.tryParse(rule?['round_digits']?.toString() ?? '');
+  }
+
   @override
   void dispose() {
     _percent.dispose();
@@ -594,103 +958,125 @@ class _PricingRulesDialogState extends State<_PricingRulesDialog> {
   @override
   Widget build(BuildContext context) => Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Expanded(
-                      child: Text('Правила',
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.w700))),
-                  IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close)),
-                ]),
-                const SizedBox(height: 16),
-                _RuleNumberField(
-                  controller: _percent,
-                  label: 'Изменить на X %',
-                  hint: 'Введите процент',
-                  autofocus: true,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height - 72,
+          ),
+          child: Column(children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Expanded(
+                            child: Text('Правила',
+                                style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700))),
+                        IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close)),
+                      ]),
+                      const SizedBox(height: 16),
+                      _RuleNumberField(
+                        controller: _percent,
+                        label: 'Изменить на X %',
+                        hint: 'Введите процент',
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _RuleNumberField(
+                        controller: _sum,
+                        label: 'Изменить на X сумму',
+                        hint: 'Введите сумму',
+                      ),
+                      const SizedBox(height: 12),
+                      _RuleDirection(
+                          value: _increase,
+                          onChanged: (value) =>
+                              setState(() => _increase = value)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _decimals,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        decoration: const InputDecoration(
+                            labelText: 'Округление (знаков после запятой)'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Округление (разряды до запятой)'),
+                      const SizedBox(height: 8),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1.42,
+                        children: List.generate(
+                            6,
+                            (digit) => _RoundDigitsCard(
+                                  digit: digit,
+                                  selected: _roundDigits == digit,
+                                  onTap: () => setState(() => _roundDigits =
+                                      _roundDigits == digit ? null : digit),
+                                )),
+                      ),
+                      const SizedBox(height: 12),
+                      _RuleDirection(
+                          value: _roundIncrease,
+                          onChanged: (value) =>
+                              setState(() => _roundIncrease = value)),
+                      const SizedBox(height: 12),
+                    ]),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).dialogTheme.backgroundColor,
+                border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor)),
+              ),
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Отмена')),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final percent =
+                        double.tryParse(_percent.text.replaceAll(',', '.'));
+                    final sum = double.tryParse(_sum.text.replaceAll(',', '.'));
+                    if ((percent == null || percent <= 0) &&
+                        (sum == null || sum <= 0)) {
+                      showCustomSnackBar(
+                        context: context,
+                        message: 'Введите процент или сумму больше нуля',
+                        isSuccess: false,
+                      );
+                      return;
+                    }
+                    Navigator.pop(context, {
+                      'change_type': _increase ? 'increase' : 'decrease',
+                      'change_percent': _percent.text.trim(),
+                      'change_sum': _sum.text.trim(),
+                      'decimals': _decimals.text.trim(),
+                      if (_roundDigits != null) 'round_digits': _roundDigits,
+                      'round_digits_change_type':
+                          _roundIncrease ? 'increase' : 'decrease',
+                    });
+                  },
+                  child: const Text('Применить'),
                 ),
-                const SizedBox(height: 12),
-                _RuleNumberField(
-                  controller: _sum,
-                  label: 'Изменить на X сумму',
-                  hint: 'Введите сумму',
-                ),
-                const SizedBox(height: 12),
-                _RuleDirection(
-                    value: _increase,
-                    onChanged: (value) => setState(() => _increase = value)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _decimals,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                      labelText: 'Округление (знаков после запятой)'),
-                ),
-                const SizedBox(height: 16),
-                const Text('Округление (разряды до запятой)'),
-                const SizedBox(height: 8),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.42,
-                  children: List.generate(
-                      6,
-                      (digit) => _RoundDigitsCard(
-                            digit: digit,
-                            selected: _roundDigits == digit,
-                            onTap: () => setState(() => _roundDigits = digit),
-                          )),
-                ),
-                const SizedBox(height: 12),
-                _RuleDirection(
-                    value: _roundIncrease,
-                    onChanged: (value) =>
-                        setState(() => _roundIncrease = value)),
-                const SizedBox(height: 20),
-                Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Отмена')),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      final percent =
-                          double.tryParse(_percent.text.replaceAll(',', '.'));
-                      final sum =
-                          double.tryParse(_sum.text.replaceAll(',', '.'));
-                      if ((percent == null || percent <= 0) &&
-                          (sum == null || sum <= 0)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Введите процент или сумму больше нуля')));
-                        return;
-                      }
-                      Navigator.pop(context, {
-                        'change_type': _increase ? 'increase' : 'decrease',
-                        'change_percent': _percent.text.trim(),
-                        'change_sum': _sum.text.trim(),
-                        'decimals': _decimals.text.trim(),
-                        'round_digits': _roundDigits,
-                        'round_digits_change_type':
-                            _roundIncrease ? 'increase' : 'decrease',
-                      });
-                    },
-                    child: const Text('Применить'),
-                  ),
-                ]),
               ]),
+            ),
+          ]),
         ),
       );
 }

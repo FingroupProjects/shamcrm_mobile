@@ -11,13 +11,7 @@ extension ApiWarehousePricingX on ApiService {
       requestPath += '&search=${Uri.encodeQueryComponent(search.trim())}';
     }
     if (filters != null) {
-      const keys = [
-        'date_from',
-        'date_to',
-        'author_id',
-        'storage_id',
-        'lead_id'
-      ];
+      const keys = ['date_from', 'date_to', 'author_id'];
       for (final key in keys) {
         final value = filters[key];
         if (value != null && value.toString().trim().isNotEmpty) {
