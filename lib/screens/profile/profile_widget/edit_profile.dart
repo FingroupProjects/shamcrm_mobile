@@ -13,6 +13,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_edit_profile.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_editor.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -647,6 +648,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   String? _surnameError;
   String? _phoneError;
   String? _emailError;
+  String? _loginError;
   bool _isLoading = true; // Add loading state
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isButtonDisabled = false;
@@ -681,53 +683,43 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     return null;
   }
 
-  // Функция для выбора изображения с улучшенной обработкой
+  // Выбор фото, затем круговой редактор как в Telegram.
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        imageQuality: 80,
-        maxWidth: 1080,
-        maxHeight: 1080,
+        imageQuality: 100,
       );
+      if (pickedFile == null || !mounted) return;
 
-      if (pickedFile != null) {
-        final file = File(pickedFile.path);
+      final edited = await ProfilePhotoEditorPage.open(
+        context,
+        File(pickedFile.path),
+      );
+      if (edited == null || !mounted) return;
 
-        // Проверяем размер файла асинхронно
-        final int fileSize = await file.length();
-
-        if (fileSize > 2 * 1024 * 1024) {
-          // Если размер больше 2 MB
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!.translate('file_too_large'),
-              ),
-              backgroundColor: context.appColors.error,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-          return; // Прекращаем выполнение, если файл слишком большой
-        }
-
-        // Если файл подходит по размеру
-        setState(() {
-          _profileImage = file;
-        });
-
+      final int fileSize = await edited.length();
+      if (fileSize > 2 * 1024 * 1024) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              AppLocalizations.of(context)!
-                  .translate('image_selected_successfully'),
+              AppLocalizations.of(context)!.translate('file_too_large'),
             ),
-            backgroundColor: context.appColors.success,
-            duration: const Duration(seconds: 2),
+            backgroundColor: context.appColors.error,
+            duration: const Duration(seconds: 3),
           ),
         );
+        return;
       }
+
+      setState(() {
+        _localImage = edited;
+        _userImage = '';
+        _profileImage = edited;
+      });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -800,7 +792,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         }
       }
 
-      // Обновляем роли из API, если они есть
+      // Обновляем роли из API, если они есть. Несколько ролей через запятую.
       if (userProfile.role != null && userProfile.role!.isNotEmpty) {
         String allRoles = userProfile.role!.map((role) => role.name).join(', ');
         setState(() {
@@ -815,6 +807,10 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         SurnameController.text = userProfile.lastname;
         PatronymicController.text = userProfile.Pname;
         emailController.text = userProfile.email;
+        // Логин берём с сервера, чтобы поле совпадало с актуальным значением.
+        if (userProfile.login.isNotEmpty) {
+          loginController.text = userProfile.login;
+        }
         selectedDialCode = detectedDialCode;
         phoneController.text = phoneWithoutCode;
         _userImage = userProfile.image ?? '';
@@ -867,62 +863,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               leading: const Icon(Icons.photo_library),
               title: Text(AppLocalizations.of(context)!.translate('gallery')),
               onTap: () async {
-                final XFile? pickedFile = await _picker.pickImage(
-                  source: ImageSource.gallery,
-                  imageQuality: 80,
-                  maxWidth: 1080,
-                  maxHeight: 1080,
-                );
-                if (pickedFile != null) {
-                  final file = File(pickedFile.path);
-                  final int fileSize = await file.length();
-                  if (fileSize > 2 * 1024 * 1024) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(AppLocalizations.of(context)!
-                              .translate('file_size_limit'))),
-                    );
-                    Navigator.pop(context);
-                    return;
-                  }
-                  setState(() {
-                    _localImage = file;
-                    _userImage = ''; // Сбрасываем URL
-                    //print('Local image selected: ${_localImage?.path}'); // Логирование
-                  });
-                  Navigator.pop(context);
-                }
+                Navigator.pop(context);
+                await _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: Text(AppLocalizations.of(context)!.translate('camera')),
               onTap: () async {
-                final XFile? pickedFile = await _picker.pickImage(
-                  source: ImageSource.camera,
-                  imageQuality: 80,
-                  maxWidth: 1080,
-                  maxHeight: 1080,
-                );
-                if (pickedFile != null) {
-                  final file = File(pickedFile.path);
-                  final int fileSize = await file.length();
-                  if (fileSize > 2 * 1024 * 1024) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(AppLocalizations.of(context)!
-                              .translate('file_size_limit'))),
-                    );
-                    Navigator.pop(context);
-                    return;
-                  }
-                  setState(() {
-                    _localImage = file;
-                    _userImage = ''; // Сбрасываем URL
-                    //print('Local image selected: ${_localImage?.path}'); // Логирование
-                  });
-                  Navigator.pop(context);
-                }
+                Navigator.pop(context);
+                await _pickImage(ImageSource.camera);
               },
             ),
           ],
@@ -1163,26 +1113,40 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.6, // Прозрачность для всего виджета
-                          child: CustomTextField(
-                            controller: loginController,
-                            hintText: AppLocalizations.of(context)!
-                                .translate('enter_login'),
-                            label: AppLocalizations.of(context)!
-                                .translate('login'),
-                            backgroundColor: context.appColors.surfacePrimary
-                                .withValues(alpha: 0.62),
-                            labelColor: context.appColors.textMuted,
-                            hintColor: context.appColors.fieldHint,
-                            textColor: context.appColors.textSecondary,
-                            borderColor: context.appColors.borderSubtle
-                                .withValues(alpha: 0.32),
-                            focusedBorderColor:
-                                context.appColors.borderSubtle,
-                            readOnly: true,
-                          ),
+                        CustomTextField(
+                          controller: loginController,
+                          hintText: AppLocalizations.of(context)!
+                              .translate('enter_login'),
+                          label: AppLocalizations.of(context)!
+                              .translate('login'),
+                          backgroundColor: context.appColors.surfacePrimary
+                              .withValues(alpha: 0.78),
+                          labelColor: context.appColors.textSecondary,
+                          hintColor: context.appColors.fieldHint,
+                          textColor: context.appColors.textPrimary,
+                          borderColor: context.appColors.borderSubtle
+                              .withValues(alpha: 0.42),
+                          focusedBorderColor:
+                              context.appColors.buttonPrimaryBg,
+                          onChanged: (value) {
+                            setState(() {
+                              _loginError = null;
+                            });
+                          },
                         ),
+                        if (_loginError != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4, left: 12),
+                              child: Text(
+                                _loginError!,
+                                style: context.appTextStyles.caption.copyWith(
+                                  color: context.appColors.error,
+                                ),
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 8),
                         CustomTextField(
                           controller: emailController,
@@ -1336,6 +1300,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             _surnameError = null;
                             _phoneError = null;
                             _emailError = null;
+                            _loginError = null;
                           });
 
                           // Проверяем валидацию
@@ -1353,6 +1318,14 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                             setState(() {
                               _surnameError = AppLocalizations.of(context)!
                                   .translate('surname_required');
+                            });
+                            isValid = false;
+                          }
+
+                          if (loginController.text.trim().isEmpty) {
+                            setState(() {
+                              _loginError = AppLocalizations.of(context)!
+                                  .translate('enter_login_error');
                             });
                             isValid = false;
                           }
@@ -1390,6 +1363,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                                 sname: SurnameController.text.trim(),
                                 phone: selectedDialCode + phoneController.text,
                                 email: emailController.text.trim(),
+                                login: loginController.text.trim(),
                                 image: image,
                                 pname: ''));
                           } catch (e) {

@@ -4,10 +4,22 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/palette/app_palette_presets.dart';
 import 'package:crm_task_manager/custom_widget/full_color_wheel_dialog.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/widgets/wallpaper_carousel_card.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+// Переводы названий фоновых пресетов.
+String appearanceBackgroundTitle(
+    AppBackgroundPreset preset, AppLocalizations t) {
+  return t.translate('appearance_bg_${preset.name}');
+}
+
+// Переводы названий цветовых схем.
+String appearancePaletteTitle(AppPalettePreset preset, AppLocalizations t) {
+  return t.translate('appearance_palette_${preset.name}');
+}
 
 class AppearanceSettingsScreen extends StatefulWidget {
   const AppearanceSettingsScreen({super.key});
@@ -44,6 +56,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
         adaptivePalette.foregroundFor(adaptivePalette.headerLuminance);
     final headerShadows =
         adaptivePalette.shadowsFor(adaptivePalette.headerLuminance);
+    final t = AppLocalizations.of(context)!;
 
     return WallpaperAdaptiveScope(
       palette: adaptivePalette,
@@ -51,7 +64,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(
-            'Оформление',
+            t.translate('appearance'),
             style: context.appTextStyles.titleLg.copyWith(
               color: headerInk,
               shadows: headerShadows,
@@ -73,25 +86,24 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
               _SectionCard(
-                title: 'Режим темы',
-                subtitle:
-                    'Выберите, как приложение будет выглядеть днем и вечером.',
+                title: t.translate('appearance_theme_mode'),
+                subtitle: t.translate('appearance_theme_mode_subtitle'),
                 child: Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: [
                     _ModeChip(
-                      label: 'Светлая',
+                      label: t.translate('appearance_theme_light'),
                       selected: controller.themeMode == ThemeMode.light,
                       onTap: () => controller.setThemeMode(ThemeMode.light),
                     ),
                     _ModeChip(
-                      label: 'Темная',
+                      label: t.translate('appearance_theme_dark'),
                       selected: controller.themeMode == ThemeMode.dark,
                       onTap: () => controller.setThemeMode(ThemeMode.dark),
                     ),
                     _ModeChip(
-                      label: 'Системная',
+                      label: t.translate('appearance_theme_system'),
                       selected: controller.themeMode == ThemeMode.system,
                       onTap: () => controller.setThemeMode(ThemeMode.system),
                     ),
@@ -100,16 +112,14 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Палитра',
-                subtitle:
-                    'Выберите основной цвет темы. Приложение соберет палитру автоматически.',
+                title: t.translate('appearance_palette'),
+                subtitle: t.translate('appearance_palette_subtitle'),
                 child: _ColorWheelPalette(controller: controller),
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Фоновый арт',
-                subtitle:
-                    'Легкий художественный слой поверх интерфейса. Видно мягко и без перегруза.',
+                title: t.translate('appearance_bg_art'),
+                subtitle: t.translate('appearance_bg_art_subtitle'),
                 child: Column(
                   children: AppBackgroundPreset.values
                       .where((p) => p != AppBackgroundPreset.custom)
@@ -123,38 +133,35 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Карусель обоев',
-                subtitle:
-                    'Добавьте фото из галереи в альбом проекта, затем отметьте от 1 до 15 картинок для фона. Их можно чередовать при входе или по таймеру.',
+                title: t.translate('appearance_carousel'),
+                subtitle: t.translate('appearance_carousel_subtitle'),
                 child: WallpaperCarouselCard(controller: controller),
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Размытие фона',
-                subtitle:
-                    'Настройте, насколько сильно будет размываться активный фон.',
+                title: t.translate('appearance_blur'),
+                subtitle: t.translate('appearance_blur_subtitle'),
                 child: _BackgroundBlurControl(controller: controller),
               ),
               const SizedBox(height: 16),
               _SectionCard(
-                title: 'Анимация входа',
-                subtitle:
-                    'Короткий переход с логотипом перед открытием PIN-кода.',
+                title: t.translate('appearance_login_anim'),
+                subtitle: t.translate('appearance_login_anim_subtitle'),
                 child: SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: controller.loginIntroAnimationEnabled,
                   onChanged: controller.setLoginIntroAnimationEnabled,
                   title: Text(
                     controller.loginIntroAnimationEnabled
-                        ? 'Включена'
-                        : 'Выключена',
+                        ? t.translate('appearance_login_anim_on')
+                        : t.translate('appearance_login_anim_off'),
                     style: context.appTextStyles.bodyLg.copyWith(
                       color: context.appColors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   subtitle: Text(
-                    'Показывать короткую анимацию shamCRM при переходе к PIN.',
+                    t.translate('appearance_login_anim_switch'),
                     style: context.appTextStyles.bodySm.copyWith(
                       color: context.appColors.textSecondary,
                     ),
@@ -171,7 +178,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 ),
                 child: Text(
-                  'Сбросить оформление',
+                  t.translate('appearance_reset'),
                   style: context.appTextStyles.bodyMd.copyWith(
                     color: context.appColors.buttonSecondaryFg,
                     fontWeight: FontWeight.w600,
@@ -310,7 +317,9 @@ class _BackgroundTile extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                  child: Text(preset.title,
+                  child: Text(
+                      appearanceBackgroundTitle(
+                          preset, AppLocalizations.of(context)!),
                       style: context.appTextStyles.bodyLg.copyWith(
                         color: context.appColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -475,7 +484,9 @@ class _ColorWheelPalette extends StatelessWidget {
                       style: context.appTextStyles.bodyMd.copyWith(
                           color: context.appColors.textPrimary,
                           fontWeight: FontWeight.w700)),
-                  Text(currentPreset.title,
+                  Text(
+                      appearancePaletteTitle(
+                          currentPreset, AppLocalizations.of(context)!),
                       style: context.appTextStyles.bodySm
                           .copyWith(color: context.appColors.textSecondary)),
                 ],
@@ -488,7 +499,7 @@ class _ColorWheelPalette extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Text('Быстрые схемы',
+            Text(AppLocalizations.of(context)!.translate('appearance_quick_schemes'),
                 style: context.appTextStyles.bodySm.copyWith(
                     color: context.appColors.textSecondary,
                     fontWeight: FontWeight.w700)),
@@ -496,7 +507,8 @@ class _ColorWheelPalette extends StatelessWidget {
             TextButton.icon(
               onPressed: () => _openFullColorWheel(context),
               icon: const Icon(Icons.palette, size: 16),
-              label: const Text('Открыть палитру'),
+              label: Text(AppLocalizations.of(context)!
+                  .translate('appearance_open_palette')),
             ),
           ],
         ),
@@ -507,7 +519,8 @@ class _ColorWheelPalette extends StatelessWidget {
           children: AppPalettePreset.values
               .where((p) => p != AppPalettePreset.custom)
               .map((preset) => ChoiceChip(
-                    label: Text(preset.title),
+                    label: Text(appearancePaletteTitle(
+                        preset, AppLocalizations.of(context)!)),
                     selected: controller.palettePreset == preset,
                     onSelected: (_) => controller.setPalettePreset(preset),
                   ))
@@ -551,7 +564,8 @@ class _BackgroundBlurControl extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Text('0% - без размытия, 100% - максимальное размытие.',
+        Text(
+            AppLocalizations.of(context)!.translate('appearance_blur_hint'),
             style: context.appTextStyles.bodySm
                 .copyWith(color: context.appColors.textSecondary)),
       ],

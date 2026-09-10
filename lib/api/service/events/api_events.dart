@@ -46,6 +46,7 @@ extension ApiEventsX on ApiService {
     required String sname,
     required String phone,
     String? email,
+    String? login,
     String? filePath,
   }) async {
     try {
@@ -76,6 +77,11 @@ extension ApiEventsX on ApiService {
 
       if (email != null) {
         request.fields['email'] = email;
+      }
+
+      // Пользователь может сменить логин из профиля.
+      if (login != null && login.trim().isNotEmpty) {
+        request.fields['login'] = login.trim();
       }
 
       // Добавляем файл, если указан путь

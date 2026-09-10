@@ -46,12 +46,28 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       final userProfile = await ApiService().getUserById(int.parse(uuid));
 
       if (mounted) {
+        // API отдаёт все роли массивом. Показываем их через запятую.
+        final allRoles = (userProfile.role != null && userProfile.role!.isNotEmpty)
+            ? userProfile.role!.map((role) => role.name).join(', ')
+            : (prefs.getString('userAllRoles') ??
+                prefs.getString('userRoleName') ??
+                '');
+
+        if (allRoles.isNotEmpty) {
+          await prefs.setString('userAllRoles', allRoles);
+        }
+        if (userProfile.login.isNotEmpty) {
+          await prefs.setString('userLogin', userProfile.login);
+        }
+
         setState(() {
           _nameController.text = userProfile.name ?? '';
           _surnameController.text = userProfile.lastname ?? '';
           _emailController.text = userProfile.email ?? '';
-          _loginController.text = prefs.getString('userLogin') ?? '';
-          _roleController.text = prefs.getString('userRoleName') ?? '';
+          _loginController.text = userProfile.login.isNotEmpty
+              ? userProfile.login
+              : (prefs.getString('userLogin') ?? '');
+          _roleController.text = allRoles;
           _phoneController.text = userProfile.phone ?? '';
           _userImage = userProfile.image ?? '';
         });
@@ -124,10 +140,15 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 color: colors.iconPrimary,
                 size: 22,
               ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfileEditPage()),
-              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileEditPage()),
+                );
+                if (mounted) {
+                  _loadData();
+                }
+              },
             ),
           ),
         ),
@@ -279,6 +300,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

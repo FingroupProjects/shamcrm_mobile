@@ -204,6 +204,8 @@ class TelegramChatAppBar extends StatelessWidget
                       Expanded(
                         child: IconButton(
                           splashRadius: 22,
+                          tooltip: AppLocalizations.of(context)!
+                              .translate('chat_appearance'),
                           icon: Icon(
                             Icons.palette_outlined,
                             size: 21,

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -182,10 +183,14 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ─── Labels ────────────────────────────────────────────────────────────────
 
-  String _presetLabel(ChatAppearancePreset preset) => switch (preset) {
-        ChatAppearancePreset.system => 'Системный',
-        ChatAppearancePreset.custom => 'Пользовательский',
-        ChatAppearancePreset.classic => 'Базовый',
+  String _presetLabel(ChatAppearancePreset preset, AppLocalizations t) =>
+      switch (preset) {
+        ChatAppearancePreset.system =>
+          t.translate('chat_appearance_preset_system'),
+        ChatAppearancePreset.custom =>
+          t.translate('chat_appearance_preset_custom'),
+        ChatAppearancePreset.classic =>
+          t.translate('chat_appearance_preset_classic'),
       };
 
   IconData _presetIcon(ChatAppearancePreset preset) => switch (preset) {
@@ -194,22 +199,30 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
         ChatAppearancePreset.custom => Icons.tune_rounded,
       };
 
-  String _bubbleLabel(ChatBubbleStyle style) => switch (style) {
-        ChatBubbleStyle.classic => 'Классический',
-        ChatBubbleStyle.telegram => 'Стильный',
-        ChatBubbleStyle.soft => 'Мягкий',
-        ChatBubbleStyle.compact => 'Компактный',
-        ChatBubbleStyle.rounded => 'Скруглённый',
-        ChatBubbleStyle.glass => 'Стеклянный',
+  String _bubbleLabel(ChatBubbleStyle style, AppLocalizations t) =>
+      switch (style) {
+        ChatBubbleStyle.classic =>
+          t.translate('chat_appearance_bubble_classic'),
+        ChatBubbleStyle.telegram =>
+          t.translate('chat_appearance_bubble_telegram'),
+        ChatBubbleStyle.soft => t.translate('chat_appearance_bubble_soft'),
+        ChatBubbleStyle.compact =>
+          t.translate('chat_appearance_bubble_compact'),
+        ChatBubbleStyle.rounded =>
+          t.translate('chat_appearance_bubble_rounded'),
+        ChatBubbleStyle.glass => t.translate('chat_appearance_bubble_glass'),
       };
 
-  String _wallpaperLabel(ChatWallpaperStyle w) => switch (w) {
-        ChatWallpaperStyle.none => 'По умолчанию',
+  String _wallpaperLabel(ChatWallpaperStyle w, AppLocalizations t) =>
+      switch (w) {
+        ChatWallpaperStyle.none =>
+          t.translate('chat_appearance_wallpaper_default'),
         ChatWallpaperStyle.aurora => 'Aurora',
         ChatWallpaperStyle.ocean => 'Ocean',
         ChatWallpaperStyle.sunset => 'Sunset',
         ChatWallpaperStyle.forest => 'Forest',
-        ChatWallpaperStyle.gallery => 'Из галереи',
+        ChatWallpaperStyle.gallery =>
+          t.translate('chat_appearance_wallpaper_gallery'),
       };
 
   // ─── Build ─────────────────────────────────────────────────────────────────
@@ -219,6 +232,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
     final colors = context.appColors;
     final screenHeight = MediaQuery.of(context).size.height;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final t = AppLocalizations.of(context)!;
 
     return SafeArea(
       top: false,
@@ -263,31 +277,35 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _SectionLabel(label: 'Режим'),
-                          _buildPresetRow(context),
+                          _SectionLabel(label: t.translate('chat_appearance_mode')),
+                          _buildPresetRow(context, t),
                           const SizedBox(height: 20),
 
                           // Форма пузырьков
-                          _SectionLabel(label: 'Форма сообщений'),
-                          _buildBubbleGrid(context),
+                          _SectionLabel(
+                              label: t.translate('chat_appearance_message_shape')),
+                          _buildBubbleGrid(context, t),
 
                           // Кастомные настройки (только в режиме «Свой стиль»)
                           if (_draft.preset == ChatAppearancePreset.custom) ...[
                             const SizedBox(height: 20),
-                            _SectionLabel(label: 'Фон'),
-                            _buildWallpaperRow(context),
+                            _SectionLabel(
+                                label: t.translate('chat_appearance_background')),
+                            _buildWallpaperRow(context, t),
                             const SizedBox(height: 14),
                             _buildProjectWallpaperRow(context),
                             const SizedBox(height: 20),
-                            _buildBubbleColorSection(context),
+                            _buildBubbleColorSection(context, t),
                             const SizedBox(height: 20),
-                            _buildSliders(context),
+                            _buildSliders(context, t),
                             const SizedBox(height: 4),
-                            _SectionLabel(label: 'Толщина шрифта'),
-                            _buildFontWeightSegment(context),
+                            _SectionLabel(
+                                label: t.translate('chat_appearance_font_weight')),
+                            _buildFontWeightSegment(context, t),
                           ],
                           const SizedBox(height: 20),
-                          _SectionLabel(label: 'Просмотр'),
+                          _SectionLabel(
+                              label: t.translate('chat_appearance_preview')),
                           _ChatPreviewCard(appearance: _draft),
                           const SizedBox(height: 24),
                         ],
@@ -319,6 +337,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   Widget _buildHeader(BuildContext context) {
     final colors = context.appColors;
+    final t = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       child: Column(
@@ -359,7 +378,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Оформление чата',
+                  t.translate('chat_appearance'),
                   style: context.appTextStyles.titleMd.copyWith(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -375,7 +394,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ── Ряд пресетов ───────────────────────────────────────────────────────────
 
-  Widget _buildPresetRow(BuildContext context) {
+  Widget _buildPresetRow(BuildContext context, AppLocalizations t) {
     return Row(
       children: ChatAppearancePreset.values
           .where((preset) => preset != ChatAppearancePreset.classic)
@@ -387,7 +406,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
               right: preset != ChatAppearancePreset.custom ? 8 : 0,
             ),
             child: _PresetCard(
-              label: _presetLabel(preset),
+              label: _presetLabel(preset, t),
               icon: _presetIcon(preset),
               isSelected: isSelected,
               onTap: () => setState(() => _draft = _presetValueFor(preset)),
@@ -400,7 +419,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ── Сетка форм пузырьков ───────────────────────────────────────────────────
 
-  Widget _buildBubbleGrid(BuildContext context) {
+  Widget _buildBubbleGrid(BuildContext context, AppLocalizations t) {
     final styles = ChatBubbleStyle.values;
     // 3 колонки по 2 строки
     return Wrap(
@@ -411,7 +430,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
         final itemWidth =
             (MediaQuery.of(context).size.width - 24 - 18 * 2 - 8 * 2) / 3;
         return _BubbleStyleCard(
-          label: _bubbleLabel(style),
+          label: _bubbleLabel(style, t),
           style: style,
           isSelected: isSelected,
           width: itemWidth,
@@ -427,7 +446,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ── Ряд обоев ──────────────────────────────────────────────────────────────
 
-  Widget _buildWallpaperRow(BuildContext context) {
+  Widget _buildWallpaperRow(BuildContext context, AppLocalizations t) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -439,7 +458,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
                     padding: const EdgeInsets.only(right: 8),
                     child: _WallpaperChip(
                       wallpaper: wallpaper,
-                      label: _wallpaperLabel(wallpaper),
+                      label: _wallpaperLabel(wallpaper, t),
                       isSelected: _draft.wallpaperStyle == wallpaper,
                       customPath: null,
                       onTap: () => setState(() => _draft = _draft.copyWith(
@@ -451,7 +470,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
           // Галерея
           _WallpaperChip(
             wallpaper: ChatWallpaperStyle.gallery,
-            label: 'Галерея',
+            label: t.translate('chat_appearance_gallery'),
             isSelected: _draft.wallpaperStyle == ChatWallpaperStyle.gallery &&
                 (_draft.customBackgroundImagePath ?? '').isNotEmpty,
             customPath: _draft.customBackgroundImagePath,
@@ -487,14 +506,14 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
     );
   }
 
-  Widget _buildBubbleColorSection(BuildContext context) {
+  Widget _buildBubbleColorSection(BuildContext context, AppLocalizations t) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel(label: 'Цвет сообщений'),
+        _SectionLabel(label: t.translate('chat_appearance_message_color')),
         const SizedBox(height: 8),
         Text(
-          'Исходящие',
+          t.translate('chat_appearance_outgoing'),
           style: context.appTextStyles.bodySm.copyWith(
             color: context.appColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -504,7 +523,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
         _buildColorPalette(context, true),
         const SizedBox(height: 16),
         Text(
-          'Входящие',
+          t.translate('chat_appearance_incoming'),
           style: context.appTextStyles.bodySm.copyWith(
             color: context.appColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -517,6 +536,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
   }
 
   Widget _buildColorPalette(BuildContext context, bool isSender) {
+    final t = AppLocalizations.of(context)!;
     final selectedColor = isSender
         ? _draft.customSenderBubbleColor
         : _draft.customReceiverBubbleColor;
@@ -525,7 +545,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
       children: [
         _buildPaletteRow(
           context: context,
-          title: 'Светлые',
+          title: t.translate('chat_appearance_colors_light'),
           colors: _lightMessageColors,
           selectedColor: selectedColor,
           onSelected: (color) => _updateBubbleColor(isSender, color),
@@ -533,7 +553,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
         const SizedBox(height: 12),
         _buildPaletteRow(
           context: context,
-          title: 'Темные',
+          title: t.translate('chat_appearance_colors_dark'),
           colors: _darkMessageColors,
           selectedColor: selectedColor,
           onSelected: (color) => _updateBubbleColor(isSender, color),
@@ -566,7 +586,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'По умолчанию',
+                  t.translate('chat_appearance_default'),
                   style: context.appTextStyles.bodySm.copyWith(
                     color: selectedColor == null
                         ? context.appColors.buttonPrimaryBg
@@ -661,11 +681,11 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ── Слайдеры ───────────────────────────────────────────────────────────────
 
-  Widget _buildSliders(BuildContext context) {
+  Widget _buildSliders(BuildContext context, AppLocalizations t) {
     return Column(
       children: [
         _SliderTile(
-          label: 'Прозрачность пузырьков',
+          label: t.translate('chat_appearance_bubble_opacity'),
           value: _draft.bubbleOpacity,
           min: 0.55,
           max: 1.0,
@@ -673,7 +693,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
               setState(() => _draft = _draft.copyWith(bubbleOpacity: v)),
         ),
         _SliderTile(
-          label: 'Насыщенность фона',
+          label: t.translate('chat_appearance_background_saturation'),
           value: _draft.backgroundOpacity,
           min: 0.45,
           max: 1.0,
@@ -681,7 +701,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
               setState(() => _draft = _draft.copyWith(backgroundOpacity: v)),
         ),
         _SliderTile(
-          label: 'Размытие фона',
+          label: t.translate('chat_appearance_background_blur'),
           value: _draft.chromeOpacity,
           min: 0.0,
           max: 0.95,
@@ -689,7 +709,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
               setState(() => _draft = _draft.copyWith(chromeOpacity: v)),
         ),
         _SliderTile(
-          label: 'Размер шрифта',
+          label: t.translate('chat_appearance_font_size'),
           value: _draft.fontScale,
           min: 0.9,
           max: 1.18,
@@ -702,15 +722,21 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   // ── Толщина шрифта ─────────────────────────────────────────────────────────
 
-  Widget _buildFontWeightSegment(BuildContext context) {
+  Widget _buildFontWeightSegment(BuildContext context, AppLocalizations t) {
     final colors = context.appColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SegmentedButton<int>(
-        segments: const [
-          ButtonSegment<int>(value: 0, label: Text('Лёгкий')),
-          ButtonSegment<int>(value: 1, label: Text('Обычный')),
-          ButtonSegment<int>(value: 2, label: Text('Жирный')),
+        segments: [
+          ButtonSegment<int>(
+              value: 0,
+              label: Text(t.translate('chat_appearance_weight_light'))),
+          ButtonSegment<int>(
+              value: 1,
+              label: Text(t.translate('chat_appearance_weight_regular'))),
+          ButtonSegment<int>(
+              value: 2,
+              label: Text(t.translate('chat_appearance_weight_bold'))),
         ],
         selected: {_draft.fontWeightLevel},
         onSelectionChanged: (s) =>
@@ -732,6 +758,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
 
   Widget _buildButtons(BuildContext context) {
     final colors = context.appColors;
+    final t = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -746,7 +773,7 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: const Text('По умолчанию'),
+            child: Text(t.translate('chat_appearance_default')),
           ),
         ),
         const SizedBox(width: 12),
@@ -764,9 +791,9 @@ class _ChatAppearanceSheetState extends State<_ChatAppearanceSheet> {
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: const Text(
-              'Применить',
-              style: TextStyle(fontWeight: FontWeight.w700),
+            child: Text(
+              t.translate('apply'),
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ),
@@ -1241,6 +1268,7 @@ class _ChatPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final t = AppLocalizations.of(context)!;
     final showSystemPreviewBackground =
         appearance.preset == ChatAppearancePreset.system;
     final showClassicPreviewBackground =
@@ -1351,7 +1379,7 @@ class _ChatPreviewCard extends StatelessWidget {
                         top: 30,
                         right: 0,
                         child: _PreviewBubble(
-                          text: 'Привет, как дела?',
+                          text: t.translate('chat_appearance_preview_hello'),
                           isSender: true,
                           appearance: appearance,
                         ),
@@ -1375,7 +1403,7 @@ class _ChatPreviewCard extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              'Сегодня',
+                              t.translate('today'),
                               style: context.appTextStyles.caption.copyWith(
                                 color: colors.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -1388,7 +1416,7 @@ class _ChatPreviewCard extends StatelessWidget {
                         top: 102,
                         left: 0,
                         child: _PreviewBubble(
-                          text: 'Все хорошо, спасибо!',
+                          text: t.translate('chat_appearance_preview_reply'),
                           isSender: false,
                           appearance: appearance,
                         ),
@@ -1410,7 +1438,7 @@ class _ChatPreviewCard extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              'Сообщение...',
+                              t.translate('chat_appearance_preview_input'),
                               style: context.appTextStyles.bodySm.copyWith(
                                 color: inputText.withValues(alpha: 0.72),
                                 fontWeight: FontWeight.w500,

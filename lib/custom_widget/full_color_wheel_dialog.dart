@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +9,7 @@ class FullColorWheelDialog extends StatefulWidget {
   const FullColorWheelDialog({
     super.key,
     this.initialColor = const Color(0xFF0EA5E9),
-    this.title = 'Палитра',
+    this.title = '',
   });
 
   static Future<Color?> show(BuildContext context, {Color? initialColor}) {
@@ -40,6 +41,10 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final titleText = widget.title.isNotEmpty
+        ? widget.title
+        : t.translate('appearance_palette');
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.sizeOf(context);
@@ -84,7 +89,7 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
                   children: [
                     Expanded(
                       child: Text(
-                        widget.title,
+                        titleText,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -111,7 +116,7 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Выберите основной цвет темы. Остальная палитра соберется автоматически.',
+                  t.translate('appearance_color_wheel_hint'),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.4,
@@ -134,10 +139,13 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
                     pickersEnabled: const <ColorPickerType, bool>{
                       ColorPickerType.wheel: true,
                     },
-                    pickerTypeLabels: const <ColorPickerType, String>{
-                      ColorPickerType.primary: 'Основной',
-                      ColorPickerType.accent: 'Акцент',
-                      ColorPickerType.wheel: 'Круг',
+                    pickerTypeLabels: <ColorPickerType, String>{
+                      ColorPickerType.primary:
+                          t.translate('appearance_color_primary'),
+                      ColorPickerType.accent:
+                          t.translate('appearance_color_accent'),
+                      ColorPickerType.wheel:
+                          t.translate('appearance_color_wheel'),
                     },
                     enableShadesSelection: false,
                     enableTonalPalette: true,
@@ -175,7 +183,7 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text('Отмена'),
+                        child: Text(t.translate('cancel')),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -192,9 +200,9 @@ class _FullColorWheelDialogState extends State<FullColorWheelDialog> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text(
-                          'Применить',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                        child: Text(
+                          t.translate('apply'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),

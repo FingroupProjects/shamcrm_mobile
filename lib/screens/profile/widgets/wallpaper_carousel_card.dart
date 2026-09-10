@@ -6,6 +6,7 @@ import 'package:crm_task_manager/core/theme/background/project_wallpapers.dart';
 import 'package:crm_task_manager/core/theme/background/wallpaper_rotation_mode.dart';
 import 'package:crm_task_manager/core/theme/background/wallpaper_source.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -39,12 +40,16 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
       if (!mounted) return;
       _showMessage(
         imported == 0
-            ? 'Не удалось добавить фото в альбом проекта'
-            : 'Добавлено в альбом проекта: $imported',
+            ? AppLocalizations.of(context)!.translate('appearance_import_fail')
+            : AppLocalizations.of(context)!
+                .translate('appearance_import_ok')
+                .replaceAll('{n}', '$imported'),
       );
     } catch (_) {
       if (mounted) {
-        _showMessage('Не удалось открыть галерею');
+        _showMessage(
+          AppLocalizations.of(context)!.translate('appearance_gallery_fail'),
+        );
       }
     } finally {
       if (mounted) setState(() => _importing = false);
@@ -54,7 +59,11 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
   Future<void> _toggleSource(WallpaperSource source) async {
     final added = await widget.controller.toggleCarouselSource(source);
     if (!added && mounted && !widget.controller.isCarouselSourceSelected(source)) {
-      _showMessage('Можно выбрать не больше ${AppThemeController.maxCarouselCount} фото');
+      _showMessage(
+        AppLocalizations.of(context)!
+            .translate('appearance_carousel_max')
+            .replaceAll('{n}', '${AppThemeController.maxCarouselCount}'),
+      );
     }
   }
 
@@ -62,19 +71,18 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
+        final t = AppLocalizations.of(context)!;
         return AlertDialog(
-          title: const Text('Удалить фото?'),
-          content: const Text(
-            'Снимок будет удалён из альбома проекта и из карусели.',
-          ),
+          title: Text(t.translate('appearance_delete_photo_title')),
+          content: Text(t.translate('appearance_delete_photo_body')),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Отмена'),
+              child: Text(t.translate('cancel')),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Удалить'),
+              child: Text(t.translate('delete')),
             ),
           ],
         );
@@ -105,6 +113,7 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
         (assetPath != null && assetPath.isNotEmpty);
     final carouselPaused = selectedCount > 0 &&
         controller.backgroundPreset != AppBackgroundPreset.custom;
+    final t = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,7 +138,9 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add_photo_alternate_outlined, size: 18),
-              label: Text(_importing ? 'Добавляем…' : 'Добавить из галереи'),
+              label: Text(_importing
+                  ? t.translate('appearance_adding')
+                  : t.translate('appearance_add_from_gallery')),
               style: FilledButton.styleFrom(
                 backgroundColor: context.appColors.buttonPrimaryBg,
                 foregroundColor: context.appColors.buttonPrimaryFg,
@@ -142,13 +153,15 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
                   foregroundColor: context.appColors.textPrimary,
                   side: BorderSide(color: context.appColors.borderSubtle),
                 ),
-                child: const Text('Сбросить выбор'),
+                child: Text(t.translate('appearance_clear_selection')),
               ),
           ],
         ),
         const SizedBox(height: 10),
         Text(
-          'Сначала добавьте фото из галереи в альбом проекта, затем отметьте от 1 до ${AppThemeController.maxCarouselCount} снимков для фона.',
+          t
+              .translate('appearance_album_hint')
+              .replaceAll('{n}', '${AppThemeController.maxCarouselCount}'),
           style: context.appTextStyles.bodySm.copyWith(
             color: context.appColors.textSecondary,
             height: 1.45,
@@ -156,7 +169,10 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Выбрано $selectedCount из ${AppThemeController.maxCarouselCount}',
+          t
+              .translate('appearance_selected_count')
+              .replaceAll('{n}', '$selectedCount')
+              .replaceAll('{max}', '${AppThemeController.maxCarouselCount}'),
           style: context.appTextStyles.bodyMd.copyWith(
             color: context.appColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -172,7 +188,7 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
         ],
         const SizedBox(height: 18),
         Text(
-          'Альбом проекта',
+          t.translate('appearance_project_album'),
           style: context.appTextStyles.titleMd.copyWith(
             color: context.appColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -253,7 +269,8 @@ class _CarouselPreview extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    'Выберите фото из альбома проекта',
+                    AppLocalizations.of(context)!
+                        .translate('appearance_select_from_album'),
                     textAlign: TextAlign.center,
                     style: context.appTextStyles.bodyMd.copyWith(
                       color: context.appColors.textPrimary,
@@ -371,7 +388,8 @@ class _PausedBanner extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Сейчас включён художественный фон. Карусель на паузе.',
+              AppLocalizations.of(context)!
+                  .translate('appearance_carousel_paused'),
               style: context.appTextStyles.bodySm.copyWith(
                 color: context.appColors.textPrimary,
                 height: 1.4,
@@ -381,7 +399,7 @@ class _PausedBanner extends StatelessWidget {
           const SizedBox(width: 10),
           TextButton(
             onPressed: onEnable,
-            child: const Text('Включить'),
+            child: Text(AppLocalizations.of(context)!.translate('appearance_enable')),
           ),
         ],
       ),
@@ -394,16 +412,47 @@ class _CarouselSettings extends StatelessWidget {
 
   const _CarouselSettings({required this.controller});
 
-  String _intervalLabel(int minutes) {
-    if (minutes < 60) return '$minutes мин';
-    if (minutes == 60) return '1 ч';
-    if (minutes % 60 == 0) return '${minutes ~/ 60} ч';
-    return '$minutes мин';
+  String _intervalLabel(AppLocalizations t, int minutes) {
+    if (minutes < 60) {
+      return t.translate('appearance_minutes').replaceAll('{n}', '$minutes');
+    }
+    if (minutes == 60) {
+      return t.translate('appearance_hour_one');
+    }
+    if (minutes % 60 == 0) {
+      return t
+          .translate('appearance_hours')
+          .replaceAll('{n}', '${minutes ~/ 60}');
+    }
+    return t.translate('appearance_minutes').replaceAll('{n}', '$minutes');
+  }
+
+  String _rotationTitle(WallpaperRotationMode mode, AppLocalizations t) {
+    return t.translate(switch (mode) {
+      WallpaperRotationMode.onLaunch => 'appearance_rotation_on_launch',
+      WallpaperRotationMode.shuffleOnLaunch =>
+        'appearance_rotation_shuffle_on_launch',
+      WallpaperRotationMode.interval => 'appearance_rotation_interval',
+      WallpaperRotationMode.daily => 'appearance_rotation_daily',
+      WallpaperRotationMode.manual => 'appearance_rotation_manual',
+    });
+  }
+
+  String _rotationSubtitle(WallpaperRotationMode mode, AppLocalizations t) {
+    return t.translate(switch (mode) {
+      WallpaperRotationMode.onLaunch => 'appearance_rotation_on_launch_sub',
+      WallpaperRotationMode.shuffleOnLaunch =>
+        'appearance_rotation_shuffle_on_launch_sub',
+      WallpaperRotationMode.interval => 'appearance_rotation_interval_sub',
+      WallpaperRotationMode.daily => 'appearance_rotation_daily_sub',
+      WallpaperRotationMode.manual => 'appearance_rotation_manual_sub',
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final opacity = controller.backgroundOpacityPercent;
+    final t = AppLocalizations.of(context)!;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -416,7 +465,7 @@ class _CarouselSettings extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Настройки фона',
+            t.translate('appearance_bg_settings'),
             style: context.appTextStyles.bodyLg.copyWith(
               color: context.appColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -424,7 +473,7 @@ class _CarouselSettings extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Видимость',
+            t.translate('appearance_visibility'),
             style: context.appTextStyles.bodySm.copyWith(
               color: context.appColors.textSecondary,
               fontWeight: FontWeight.w700,
@@ -456,7 +505,7 @@ class _CarouselSettings extends StatelessWidget {
             ],
           ),
           Text(
-            'Насколько ярко картинка видна под интерфейсом.',
+            t.translate('appearance_visibility_hint'),
             style: context.appTextStyles.bodySm.copyWith(
               color: context.appColors.textSecondary,
             ),
@@ -464,7 +513,7 @@ class _CarouselSettings extends StatelessWidget {
           if (controller.canAutoRotate) ...[
             const SizedBox(height: 16),
             Text(
-              'Смена фото',
+              t.translate('appearance_photo_change'),
               style: context.appTextStyles.bodySm.copyWith(
                 color: context.appColors.textSecondary,
                 fontWeight: FontWeight.w700,
@@ -477,7 +526,7 @@ class _CarouselSettings extends StatelessWidget {
               children: WallpaperRotationMode.values.map((mode) {
                 final selected = controller.rotationMode == mode;
                 return ChoiceChip(
-                  label: Text(mode.title),
+                  label: Text(_rotationTitle(mode, t)),
                   selected: selected,
                   onSelected: (_) => controller.setRotationMode(mode),
                 );
@@ -485,7 +534,7 @@ class _CarouselSettings extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              controller.rotationMode.subtitle,
+              _rotationSubtitle(controller.rotationMode, t),
               style: context.appTextStyles.bodySm.copyWith(
                 color: context.appColors.textSecondary,
                 height: 1.4,
@@ -494,7 +543,12 @@ class _CarouselSettings extends StatelessWidget {
             if (controller.rotationMode == WallpaperRotationMode.interval) ...[
               const SizedBox(height: 12),
               Text(
-                'Интервал: ${_intervalLabel(controller.intervalMinutes)}',
+                t
+                    .translate('appearance_interval')
+                    .replaceAll(
+                      '{value}',
+                      _intervalLabel(t, controller.intervalMinutes),
+                    ),
                 style: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -507,7 +561,7 @@ class _CarouselSettings extends StatelessWidget {
                 children: AppThemeController.intervalPresets.map((minutes) {
                   final selected = controller.intervalMinutes == minutes;
                   return ChoiceChip(
-                    label: Text(_intervalLabel(minutes)),
+                    label: Text(_intervalLabel(t, minutes)),
                     selected: selected,
                     onSelected: (_) => controller.setIntervalMinutes(minutes),
                   );

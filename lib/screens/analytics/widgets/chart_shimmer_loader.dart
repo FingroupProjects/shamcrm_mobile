@@ -168,6 +168,7 @@ class AnalyticsFullCardSkeleton extends StatelessWidget {
     final chartHeight = responsive.chartHeight;
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(responsive.borderRadius),
@@ -182,107 +183,112 @@ class AnalyticsFullCardSkeleton extends StatelessWidget {
       ),
       child: _navStyleShimmer(
         context: context,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──────────────────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.all(responsive.cardPadding),
-              child: Row(
-                children: [
-                  Container(
-                    width: responsive.iconSize,
-                    height: responsive.iconSize,
-                    decoration: BoxDecoration(
-                      color: itemColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  SizedBox(width: responsive.smallSpacing),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 13,
-                          decoration: BoxDecoration(
-                            color: itemColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          height: 9,
-                          width: 90,
-                          decoration: BoxDecoration(
-                            color: itemColor.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: itemColor.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Bar-chart area ──────────────────────────────────────────────
-            SizedBox(
-              height: chartHeight,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 22, 20),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final maxH = constraints.maxHeight;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        for (var i = 0; i < _barHeights.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 5),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Container(
-                                height: (maxH * _barHeights[i]).clamp(4.0, maxH),
-                                decoration: BoxDecoration(
-                                  color: itemColor,
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Overlay cards give a tight height. A fixed bar height then overflows.
+            final boundedHeight = constraints.maxHeight.isFinite;
+            final bars = Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 22, 16),
+              child: LayoutBuilder(
+                builder: (context, barConstraints) {
+                  final maxH = barConstraints.maxHeight;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var i = 0; i < _barHeights.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 5),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height:
+                                  (maxH * _barHeights[i]).clamp(4.0, maxH),
+                              decoration: BoxDecoration(
+                                color: itemColor,
+                                borderRadius: BorderRadius.circular(7),
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ],
-                    );
-                  },
-                ),
+                    ],
+                  );
+                },
               ),
-            ),
+            );
 
-            // ── Footer ─────────────────────────────────────────────────────
-            Container(
-              padding: EdgeInsets.all(responsive.cardPadding),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: colors.borderSubtle)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _FooterBlock(color: itemColor),
-                  _FooterBlock(color: itemColor, alignEnd: true),
-                ],
-              ),
-            ),
-          ],
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(responsive.cardPadding),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: responsive.iconSize,
+                        height: responsive.iconSize,
+                        decoration: BoxDecoration(
+                          color: itemColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      SizedBox(width: responsive.smallSpacing),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              height: 13,
+                              decoration: BoxDecoration(
+                                color: itemColor,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              height: 9,
+                              width: 90,
+                              decoration: BoxDecoration(
+                                color: itemColor.withValues(alpha: 0.55),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: itemColor.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (boundedHeight)
+                  Expanded(child: bars)
+                else
+                  SizedBox(height: chartHeight, child: bars),
+                Container(
+                  padding: EdgeInsets.all(responsive.cardPadding),
+                  decoration: BoxDecoration(
+                    border:
+                        Border(top: BorderSide(color: colors.borderSubtle)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _FooterBlock(color: itemColor),
+                      _FooterBlock(color: itemColor, alignEnd: true),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

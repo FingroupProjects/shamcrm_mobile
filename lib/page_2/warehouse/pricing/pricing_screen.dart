@@ -65,7 +65,7 @@ class _PricingScreenState extends State<PricingScreen> {
       _reload();
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;

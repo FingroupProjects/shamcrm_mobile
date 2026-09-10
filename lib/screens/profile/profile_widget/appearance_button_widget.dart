@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/appearance_settings_screen.dart' show AppearanceSettingsScreen;
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class AppearanceButtonWidget extends StatelessWidget {
@@ -7,6 +8,8 @@ class AppearanceButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return GestureDetector(
       onTap: () async {
         debugPrint('AppearanceButtonWidget: tap');
@@ -59,7 +62,7 @@ class AppearanceButtonWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Оформление',
+                    t.translate('appearance'),
                     style: context.appTextStyles.bodyLg.copyWith(
                       color: context.appColors.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -67,7 +70,7 @@ class AppearanceButtonWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Палитра, тема и фоновый арт',
+                    t.translate('appearance_subtitle'),
                     style: context.appTextStyles.bodySm.copyWith(
                       color: context.appColors.textSecondary,
                     ),
