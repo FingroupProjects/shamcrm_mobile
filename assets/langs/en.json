@@ -1648,6 +1648,7 @@
   "replace": "Replace",
   "more_details": "More details",
   "top_selling_products": "Top selling products",
+  "worst_selling_products": "Top unsold products",
   "appbar_sales_dashboard": "Dashboard",
   "cancelled": "Cancelled",
   "session_expired_title": "Session Expired",

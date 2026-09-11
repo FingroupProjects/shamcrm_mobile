@@ -1,5 +1,65 @@
 part of '../api_service.dart';
 
+String _appendCheckingAccountFilters(
+  String path,
+  Map<String, dynamic>? filters,
+) {
+  if (filters == null) return path;
+
+  DateTime? asDate(dynamic value) {
+    if (value is DateTime) return value;
+    return null;
+  }
+
+  int? positiveId(dynamic value) {
+    if (value == null) return null;
+    final id = int.tryParse(value.toString());
+    if (id == null || id <= 0) return null;
+    return id;
+  }
+
+  final dateFrom = asDate(filters['date_from']);
+  final dateTo = asDate(filters['date_to']);
+  if (dateFrom != null) {
+    path += '&date_from=${_dateOnlyQuery(dateFrom)}';
+  }
+  if (dateTo != null) {
+    path += '&date_to=${_dateOnlyQuery(dateTo)}';
+  }
+
+  if (filters['deleted'] != null) {
+    path += '&deleted=${filters['deleted']}';
+  }
+  if (filters['approved'] != null) {
+    path += '&approved=${filters['approved']}';
+  }
+
+  final leadId = positiveId(filters['lead_id']);
+  if (leadId != null) {
+    path += '&lead_id=$leadId';
+    path += '&client_id=$leadId';
+  }
+
+  final cashRegisterId =
+      positiveId(filters['cash_register_id']) ??
+          positiveId(filters['storage_id']);
+  if (cashRegisterId != null) {
+    path += '&cash_register_id=$cashRegisterId';
+  }
+
+  final supplierId = positiveId(filters['supplier_id']);
+  if (supplierId != null) {
+    path += '&supplier_id=$supplierId';
+  }
+
+  final authorId = positiveId(filters['author_id']);
+  if (authorId != null) {
+    path += '&author_id=$authorId';
+  }
+
+  return path;
+}
+
 extension ApiCashX on ApiService {
   Future<CashRegisterResponseModel> getCashRegister({
     int page = 1,
@@ -474,44 +534,7 @@ extension ApiCashX on ApiService {
 
     debugPrint("Фильтры для прихода: $filters");
 
-    if (filters != null) {
-      if (filters.containsKey('date_from') && filters['date_from'] != null) {
-        final dateFrom = filters['date_from'] as DateTime;
-        path += '&date_from=${dateFrom.toIso8601String()}';
-      }
-
-      if (filters.containsKey('date_to') && filters['date_to'] != null) {
-        final dateTo = filters['date_to'] as DateTime;
-        path += "&date_to=${dateTo.toIso8601String()}";
-      }
-
-      if (filters.containsKey('deleted') && filters['deleted'] != null) {
-        path += '&deleted=${filters['deleted']}';
-      }
-
-      if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
-        path += '&lead_id=${filters['lead_id']}';
-        path += '&client_id=${filters['lead_id']}';
-      }
-
-      if (filters.containsKey('cash_register_id') &&
-          filters['cash_register_id'] != null) {
-        path += '&cash_register_id=${filters['cash_register_id']}';
-      }
-
-      if (filters.containsKey('supplier_id') &&
-          filters['supplier_id'] != null) {
-        path += '&supplier_id=${filters['supplier_id']}';
-      }
-
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('approved') && filters['approved'] != null) {
-        path += '&approved=${filters['approved']}';
-      }
-    }
+    path = _appendCheckingAccountFilters(path, filters);
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);
@@ -531,6 +554,68 @@ extension ApiCashX on ApiService {
           message ?? 'Ошибка при получении данных прихода!',
           response.statusCode,
         );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Итого по приходу (pko) или расходу (rko).
+  /// Роут принимает только GET. type и фильтры уходят query-параметрами.
+  Future<double> getCheckingAccountSum({
+    required String type,
+    String? query,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    int? approved,
+    int? deleted,
+    int? leadId,
+    int? cashRegisterId,
+    int? supplierId,
+    int? authorId,
+  }) async {
+    String url = '/checking-account/get-sum?type=$type';
+    if (query != null && query.isNotEmpty) {
+      url += '&search=$query';
+    }
+    if (dateFrom != null) {
+      url += '&date_from=${_dateOnlyQuery(dateFrom)}';
+    }
+    if (dateTo != null) {
+      url += '&date_to=${_dateOnlyQuery(dateTo)}';
+    }
+    if (approved != null) {
+      url += '&approved=$approved';
+    }
+    if (deleted != null) {
+      url += '&deleted=$deleted';
+    }
+    if (leadId != null && leadId > 0) {
+      url += '&lead_id=$leadId';
+      url += '&client_id=$leadId';
+    }
+    if (cashRegisterId != null && cashRegisterId > 0) {
+      url += '&cash_register_id=$cashRegisterId';
+    }
+    if (supplierId != null && supplierId > 0) {
+      url += '&supplier_id=$supplierId';
+    }
+    if (authorId != null && authorId > 0) {
+      url += '&author_id=$authorId';
+    }
+
+    final path = await _appendQueryParams(url);
+    if (kDebugMode) {
+      debugPrint('ApiService: getCheckingAccountSum - Generated path: $path');
+    }
+
+    try {
+      final response = await _getRequest(path);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _parseClientSalesSum(json.decode(response.body));
+      } else {
+        final message = _extractErrorMessageFromResponse(response);
+        throw ApiException(message ?? 'Ошибка сервера', response.statusCode);
       }
     } catch (e) {
       rethrow;
@@ -840,44 +925,7 @@ extension ApiCashX on ApiService {
 
     debugPrint("Фильтры для расхода: $filters");
 
-    if (filters != null) {
-      if (filters.containsKey('date_from') && filters['date_from'] != null) {
-        final dateFrom = filters['date_from'] as DateTime;
-        path += '&date_from=${dateFrom.toIso8601String()}';
-      }
-
-      if (filters.containsKey('date_to') && filters['date_to'] != null) {
-        final dateTo = filters['date_to'] as DateTime;
-        path += "&date_to=${dateTo.toIso8601String()}";
-      }
-
-      if (filters.containsKey('deleted') && filters['deleted'] != null) {
-        path += '&deleted=${filters['deleted']}';
-      }
-
-      if (filters.containsKey('lead_id') && filters['lead_id'] != null) {
-        path += '&lead_id=${filters['lead_id']}';
-        path += '&client_id=${filters['lead_id']}';
-      }
-
-      if (filters.containsKey('cash_register_id') &&
-          filters['cash_register_id'] != null) {
-        path += '&cash_register_id=${filters['cash_register_id']}';
-      }
-
-      if (filters.containsKey('supplier_id') &&
-          filters['supplier_id'] != null) {
-        path += '&supplier_id=${filters['supplier_id']}';
-      }
-
-      if (filters.containsKey('author_id') && filters['author_id'] != null) {
-        path += '&author_id=${filters['author_id']}';
-      }
-
-      if (filters.containsKey('approved') && filters['approved'] != null) {
-        path += '&approved=${filters['approved']}';
-      }
-    }
+    path = _appendCheckingAccountFilters(path, filters);
 
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     path = await _appendQueryParams(path);

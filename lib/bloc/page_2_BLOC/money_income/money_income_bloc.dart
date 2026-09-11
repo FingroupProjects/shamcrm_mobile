@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:crm_task_manager/utils/document_date_period.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 
 import 'package:crm_task_manager/models/common/api_exception_model.dart';
@@ -19,6 +20,10 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
   String? _search = '';
   List<Document> _allData = [];
   Set<Document> _selectedDocuments = {};
+  // Итого как в продажах. Показываем только на двух поддоменах.
+  double? _totalSum;
+  DocumentDatePeriod _datePeriod = DocumentDatePeriod.today;
+  bool _showTotal = false;
 
   MoneyIncomeBloc() : super(MoneyIncomeInitial()) {
     on<FetchMoneyIncome>(_onFetchMoneyIncome);
@@ -167,12 +172,47 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     }
 
     try {
-      final response = await apiService.getMoneyIncomeDocuments(
+      // Итого грузим только на разрешённых доменах и только при полном refresh.
+      _showTotal = await apiService.supportsCheckingAccountSum();
+      final dateFilter = DocumentDatePeriodX.resolveFromFilters(_filters);
+      _datePeriod = dateFilter.period;
+      final approved = _intFilter('approved');
+      final deleted = _intFilter('deleted');
+      final leadId = _intFilter('lead_id');
+      final cashRegisterId =
+          _intFilter('cash_register_id') ?? _intFilter('storage_id');
+      final supplierId = _intFilter('supplier_id');
+      final authorId = _intFilter('author_id');
+
+      final listFuture = apiService.getMoneyIncomeDocuments(
         page: _currentPage,
         perPage: _perPage,
         filters: _filters,
         search: _search,
       );
+      final sumFuture = event.forceRefresh && _showTotal
+          ? apiService.getCheckingAccountSum(
+              type: 'pko',
+              query: _search,
+              dateFrom: dateFilter.sumFrom,
+              dateTo: dateFilter.sumTo,
+              approved: approved,
+              deleted: deleted,
+              leadId: leadId,
+              cashRegisterId: cashRegisterId,
+              supplierId: supplierId,
+              authorId: authorId,
+            )
+          : null;
+
+      final response = await listFuture;
+      if (sumFuture != null) {
+        try {
+          _totalSum = await sumFuture;
+        } catch (_) {
+          _totalSum ??= 0;
+        }
+      }
 
       final newData = response.result?.data ?? [];
 
@@ -192,7 +232,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       final selectedDocuments =
           _allData.where((doc) => _selectedDocuments.contains(doc)).toList();
 
-      emit(MoneyIncomeLoaded(
+      emit(_buildLoadedState(
         data: List.from(_allData),
         pagination: response.result?.pagination,
         hasReachedMax: hasReachedMax,
@@ -299,7 +339,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     // send only if first succeeded
     if (firstFailed) {
-      emit(MoneyIncomeLoaded(data: _allData));
+      emit(_buildLoadedState(data: _allData));
       return;
     }
 
@@ -353,7 +393,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
     if (failed) {
       add(FetchMoneyIncome(forceRefresh: true));
     } else {
-      emit(MoneyIncomeLoaded(data: _allData));
+      emit(_buildLoadedState(data: _allData));
     }
   }
 
@@ -386,7 +426,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
       add(FetchMoneyIncome(forceRefresh: true));
     } else {
       _allData.removeWhere((doc) => doc.id == event.documentId);
-      emit(MoneyIncomeLoaded(
+      emit(_buildLoadedState(
         data: List.from(_allData),
         pagination: null,
         hasReachedMax: false,
@@ -409,7 +449,7 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
           .where((doc) => _selectedDocuments.contains(doc))
           .toList();
 
-      emit(MoneyIncomeLoaded(
+      emit(_buildLoadedState(
         data: currentState.data,
         pagination: currentState.pagination,
         hasReachedMax: currentState.hasReachedMax,
@@ -424,12 +464,36 @@ class MoneyIncomeBloc extends Bloc<MoneyIncomeEvent, MoneyIncomeState> {
 
     if (state is MoneyIncomeLoaded) {
       final currentState = state as MoneyIncomeLoaded;
-      emit(MoneyIncomeLoaded(
+      emit(_buildLoadedState(
         data: currentState.data,
         pagination: currentState.pagination,
         hasReachedMax: currentState.hasReachedMax,
         selectedData: [],
       ));
     }
+  }
+
+  int? _intFilter(String key) {
+    final value = _filters?[key];
+    if (value == null) return null;
+    return int.tryParse(value.toString());
+  }
+
+  MoneyIncomeLoaded _buildLoadedState({
+    required List<Document> data,
+    Pagination? pagination,
+    bool? hasReachedMax,
+    List<Document>? selectedData,
+  }) {
+    final current = state is MoneyIncomeLoaded ? state as MoneyIncomeLoaded : null;
+    return MoneyIncomeLoaded(
+      data: data,
+      pagination: pagination ?? current?.pagination,
+      hasReachedMax: hasReachedMax ?? current?.hasReachedMax ?? false,
+      selectedData: selectedData ?? current?.selectedData ?? _selectedDocuments.toList(),
+      totalSum: _totalSum,
+      datePeriod: _datePeriod,
+      showTotal: _showTotal,
+    );
   }
 }

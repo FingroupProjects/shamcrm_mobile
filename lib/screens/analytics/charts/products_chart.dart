@@ -10,9 +10,25 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_empty_overlay.dart';
 
 class ProductsChart extends StatefulWidget {
-  const ProductsChart({super.key, required this.title});
+  const ProductsChart({
+    super.key,
+    required this.title,
+    this.fetchData,
+    this.sortBySoldDescending = true,
+    this.treatZeroSoldAsEmpty = true,
+  });
 
   final String title;
+
+  /// Если не задано, грузим топ продаваемых товаров.
+  final Future<TopSellingProductsResponse> Function()? fetchData;
+
+  /// Для топа сортируем по продажам вниз. Для худших оставляем порядок API.
+  final bool sortBySoldDescending;
+
+  /// У топа нулевые продажи считаем пустым графиком.
+  /// У худших нули — нормальные данные, preview не подставляем.
+  final bool treatZeroSoldAsEmpty;
 
   @override
   State<ProductsChart> createState() => _ProductsChartState();
@@ -84,7 +100,9 @@ class _ProductsChartState extends State<ProductsChart> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getTopSellingProductsChartV2();
+      final fetch =
+          widget.fetchData ?? apiService.getTopSellingProductsChartV2;
+      final response = await fetch();
 
       AnalyticsChartRequestPolicy.reset(chartId, readyState: this);
       if (!mounted) return;
@@ -197,9 +215,12 @@ class _ProductsChartState extends State<ProductsChart> {
 
   List<TopSellingProductItem> get _topItems {
     final list = _data?.list ?? [];
-    final sorted = List<TopSellingProductItem>.from(list)
-      ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
-    return sorted.take(7).toList();
+    final items = List<TopSellingProductItem>.from(list);
+    if (widget.sortBySoldDescending) {
+      items.sort((a, b) => b.totalSold.compareTo(a.totalSold));
+    }
+    // Keep every product from the API. Extra bars stay visible via inner scroll.
+    return items;
   }
 
   String _shortName(String name) {
@@ -210,8 +231,9 @@ class _ProductsChartState extends State<ProductsChart> {
   @override
   Widget build(BuildContext context) {
     final responsive = ResponsiveHelper(context);
-    final isEmpty =
-        _topItems.isEmpty || _topItems.every((item) => item.totalSold == 0);
+    final isEmpty = _topItems.isEmpty ||
+        (widget.treatZeroSoldAsEmpty &&
+            _topItems.every((item) => item.totalSold == 0));
     final displayItems = isEmpty ? _previewItems : _topItems;
     final maxSold = displayItems.isEmpty
         ? 0.0
@@ -330,16 +352,31 @@ class _ProductsChartState extends State<ProductsChart> {
                           ],
                         ),
                       )
-                    : ChartEmptyOverlay(
-                        show: isEmpty,
-                        child: GestureDetector(
-                          onTap: _showDetails,
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                                right: 20, left: 10, bottom: 20),
-                            child: RotatedBox(
-                              quarterTurns: 1,
-                              child: BarChart(
+                    : LayoutBuilder(
+                        builder: (context, chartConstraints) {
+                          // Same density as before (~7 bars in 400px). More items scroll inside.
+                          const visibleBars = 7;
+                          final itemCount = displayItems.length;
+                          final innerHeight = itemCount <= visibleBars
+                              ? chartConstraints.maxHeight
+                              : chartConstraints.maxHeight /
+                                  visibleBars *
+                                  itemCount;
+
+                          return ChartEmptyOverlay(
+                            show: isEmpty,
+                            child: SingleChildScrollView(
+                              child: SizedBox(
+                                height: innerHeight,
+                                width: chartConstraints.maxWidth,
+                                child: GestureDetector(
+                                  onTap: _showDetails,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                        right: 20, left: 10, bottom: 20),
+                                    child: RotatedBox(
+                                      quarterTurns: 1,
+                                      child: BarChart(
                                 BarChartData(
                                   alignment: BarChartAlignment.spaceAround,
                                   maxY: maxSold <= 0 ? 1 : maxSold + 5,
@@ -533,6 +570,10 @@ class _ProductsChartState extends State<ProductsChart> {
                           ),
                         ),
                       ),
+                    ),
+                  );
+                        },
+                      ),
           ),
           // Footer
           if (_isLoading)
@@ -548,37 +589,43 @@ class _ProductsChartState extends State<ProductsChart> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        analyticsText(
-                          context,
-                          'analytics_top_product',
-                          fallback: 'Top product',
+                  // Long product names must shrink. Otherwise the footer Row overflows.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          analyticsText(
+                            context,
+                            'analytics_top_product',
+                            fallback: 'Top product',
+                          ),
+                          style: TextStyle(
+                            fontSize: responsive.smallFontSize,
+                            color: context.appColors.textSecondary,
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                        style: TextStyle(
-                          fontSize: responsive.smallFontSize,
-                          color: context.appColors.textSecondary,
-                          fontFamily: 'Golos',
+                        SizedBox(height: 4),
+                        Text(
+                          _data?.top.name.isNotEmpty == true
+                              ? _data!.top.name
+                              : (_topItems.isNotEmpty
+                                  ? _topItems.first.name
+                                  : '-'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: responsive.largeFontSize,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.textPrimary,
+                            fontFamily: 'Golos',
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        _data?.top.name.isNotEmpty == true
-                            ? _data!.top.name
-                            : (_topItems.isNotEmpty
-                                ? _topItems.first.name
-                                : '-'),
-                        style: TextStyle(
-                          fontSize: responsive.largeFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: context.appColors.textPrimary,
-                          fontFamily: 'Golos',
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [

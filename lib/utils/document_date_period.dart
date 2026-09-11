@@ -111,4 +111,54 @@ extension DocumentDatePeriodX on DocumentDatePeriod {
 
     return DocumentDatePeriod.custom;
   }
+
+  /// Как в продажах: без дат список без фильтра, итого — за сегодня.
+  static ({
+    DateTime? listFrom,
+    DateTime? listTo,
+    DateTime sumFrom,
+    DateTime sumTo,
+    DocumentDatePeriod period,
+  }) resolveFromFilters(Map<String, dynamic>? filters) {
+    final rawFrom = filters?['date_from'];
+    final rawTo = filters?['date_to'];
+    final from = rawFrom is DateTime ? rawFrom : null;
+    final to = rawTo is DateTime ? rawTo : null;
+    final todayRange = rangeFor(DocumentDatePeriod.today);
+
+    if (from == null && to == null) {
+      return (
+        listFrom: null,
+        listTo: null,
+        sumFrom: todayRange.start,
+        sumTo: todayRange.end,
+        period: DocumentDatePeriod.today,
+      );
+    }
+
+    late final DateTime dateFrom;
+    late final DateTime dateTo;
+
+    if (from != null && to == null) {
+      dateFrom = startOfDay(from);
+      dateTo = endOfDay(from);
+    } else if (from == null && to != null) {
+      dateFrom = startOfDay(to);
+      dateTo = endOfDay(to);
+    } else {
+      dateFrom = startOfDay(from!);
+      dateTo = endOfDay(to!);
+    }
+
+    final period = tryParse(filters?['date_period']?.toString()) ??
+        detect(dateFrom, dateTo);
+
+    return (
+      listFrom: dateFrom,
+      listTo: dateTo,
+      sumFrom: dateFrom,
+      sumTo: dateTo,
+      period: period,
+    );
+  }
 }

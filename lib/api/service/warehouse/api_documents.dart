@@ -1,5 +1,12 @@
 part of '../api_service.dart';
 
+String _dateOnlyQuery(DateTime date) {
+  final y = date.year.toString().padLeft(4, '0');
+  final m = date.month.toString().padLeft(2, '0');
+  final d = date.day.toString().padLeft(2, '0');
+  return '$y-$m-$d';
+}
+
 String _appendWarehouseDocumentFilters(
   String path,
   Map<String, dynamic>? filters,
@@ -780,10 +787,10 @@ extension ApiWarehouseDocumentsX on ApiService {
       params.add('search=$query');
     }
     if (dateFrom != null) {
-      params.add('date_from=${dateFrom.toIso8601String()}');
+      params.add('date_from=${_dateOnlyQuery(dateFrom)}');
     }
     if (dateTo != null) {
-      params.add('date_to=${dateTo.toIso8601String()}');
+      params.add('date_to=${_dateOnlyQuery(dateTo)}');
     }
     if (approved != null) {
       params.add('approved=$approved');

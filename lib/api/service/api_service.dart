@@ -277,6 +277,14 @@ class ApiService extends ApiServiceBase {
     'fuzaylovazam7gmailcom-new-back',
   };
 
+  // Итого по приходу/расходу денег только на этих тенантах.
+  static const Set<String> _retisegSubdomains = {
+    'retiseg712inraudcom',
+    'retiseg712inraudcom-back',
+    'retiseg712inraudcom-new',
+    'retiseg712inraudcom-new-back',
+  };
+
   static const Set<String> _fingroupcrmSubdomains = {
     'fingroupcrm',
     'fingroupcrm-back',

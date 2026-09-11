@@ -31,6 +31,7 @@ String analyticsChartTitle(
     'achieving_tasks' => 'analytics_chart_tasks_kpi',
     'online_store_orders' => 'analytics_chart_online_store_orders',
     'top_selling_products' => 'top_selling_products',
+    'worst_selling_products' => 'worst_selling_products',
     'telephony_and_events' => 'analytics_chart_telephony_events',
     'replies_to_messages' => 'analytics_chart_replies_messages',
     'task_statistics_by_project' => 'analytics_chart_task_stats_by_project',

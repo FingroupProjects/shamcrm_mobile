@@ -16,16 +16,30 @@ class MoneyOutcomeLoaded extends MoneyOutcomeState {
   final Pagination? pagination;
   final bool hasReachedMax;
   final List<Document>? selectedData;
+  final double? totalSum;
+  final DocumentDatePeriod datePeriod;
+  final bool showTotal;
 
   const MoneyOutcomeLoaded({
     required this.data,
     this.pagination,
     this.hasReachedMax = false,
     this.selectedData = const [],
+    this.totalSum,
+    this.datePeriod = DocumentDatePeriod.today,
+    this.showTotal = false,
   });
 
   @override
-  List<Object?> get props => [data, pagination, hasReachedMax, selectedData];
+  List<Object?> get props => [
+        data,
+        pagination,
+        hasReachedMax,
+        selectedData,
+        totalSum,
+        datePeriod,
+        showTotal,
+      ];
 }
 
 // --------------------- Errors & Success States ---------------------

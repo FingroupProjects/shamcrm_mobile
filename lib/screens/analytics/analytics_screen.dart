@@ -74,6 +74,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'achieving_tasks': 'Task completion (KPI)',
     'online_store_orders': 'Online store orders',
     'top_selling_products': 'Top selling products',
+    'worst_selling_products': 'Top unsold products',
     'telephony_and_events': 'Telephony and events',
     'replies_to_messages': 'Replies to messages',
     'task_statistics_by_project': 'Task statistics by project',
@@ -298,7 +299,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           title: analyticsChartTitle(
             context,
             canonicalKey,
-            fallback: _fallbackChartTitles[canonicalKey] ?? canonicalKey,
+            fallback: item.name.trim().isNotEmpty
+                ? item.name
+                : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
           ),
         ),
       );
@@ -464,6 +467,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       'task_chart': 'achieving_tasks',
       'online_store_orders': 'online_store_orders',
       'top_selling_products': 'top_selling_products',
+      'worst_selling_products': 'worst_selling_products',
       'telephony_and_events': 'telephony_and_events',
       'replies_to_messages': 'replies_to_messages',
       'message_replies': 'replies_to_messages',
@@ -549,7 +553,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       final title = analyticsChartTitle(
         context,
         canonicalKey,
-        fallback: _fallbackChartTitles[canonicalKey] ?? canonicalKey,
+        fallback: item.name.trim().isNotEmpty
+            ? item.name
+            : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
       );
 
       Widget? chartWidget;
@@ -585,6 +591,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         case 'top_selling_products':
           chartWidget = ProductsChart(
               key: ValueKey('products_$_chartsVersion'), title: title);
+          break;
+        case 'worst_selling_products':
+          // Тот же дизайн, что у топа продаж. Другой endpoint и порядок API.
+          chartWidget = ProductsChart(
+            key: ValueKey('worst_products_$_chartsVersion'),
+            title: title,
+            fetchData: () => ApiService().getWorstSellingProductsChartV2(),
+            sortBySoldDescending: false,
+            treatZeroSoldAsEmpty: false,
+          );
           break;
         case 'telephony_and_events':
           chartWidget = TelephonyEventsChart(

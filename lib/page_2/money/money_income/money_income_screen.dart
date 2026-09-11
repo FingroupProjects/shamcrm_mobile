@@ -5,7 +5,9 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/money/money_income_document_model.dart';
 import 'package:crm_task_manager/page_2/money/money_income/widgets/money_income_card.dart';
 import 'package:crm_task_manager/page_2/money/widgets/error_dialog.dart';
+import 'package:crm_task_manager/page_2/warehouse/client_sale/widgets/pinned_client_sale_total.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/document_date_period.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -404,19 +406,38 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                 }
 
                 final List<Document> currentData = state is MoneyIncomeLoaded ? state.data : [];
+                final MoneyIncomeLoaded? loadedState =
+                    state is MoneyIncomeLoaded ? state : null;
+                final showTotal = loadedState?.showTotal ?? false;
+
+                Widget pinnedTotal() => PinnedClientSaleTotal(
+                      period: loadedState?.datePeriod ?? DocumentDatePeriod.today,
+                      total: loadedState?.totalSum,
+                    );
 
                 if (currentData.isEmpty) {
-                  return _isSearching
-                      ? HelpfulEmptyState.search(localizations)
-                      : HelpfulEmptyState.section(
-                          l10n: localizations,
-                          icon: Icons.south_west_rounded,
-                          titleKey: 'empty_money_income_title',
-                          subtitleKey: 'empty_money_income_subtitle',
-                        );
+                  return Column(
+                    children: [
+                      if (showTotal) pinnedTotal(),
+                      Expanded(
+                        child: _isSearching
+                            ? HelpfulEmptyState.search(localizations)
+                            : HelpfulEmptyState.section(
+                                l10n: localizations,
+                                icon: Icons.south_west_rounded,
+                                titleKey: 'empty_money_income_title',
+                                subtitleKey: 'empty_money_income_subtitle',
+                              ),
+                      ),
+                    ],
+                  );
                 }
 
-                return RefreshIndicator(
+                return Column(
+                  children: [
+                    if (showTotal) pinnedTotal(),
+                    Expanded(
+                      child: RefreshIndicator(
                   color: colors.buttonPrimaryBg,
                   backgroundColor: colors.surfacePrimary,
                   onRefresh: _onRefresh,
@@ -508,6 +529,9 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                           : _buildMoneyIncomeCard(document, state);
                     },
                   ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

@@ -661,6 +661,26 @@ extension ApiAnalyticsX on ApiService {
     return TopSellingProductsResponse.fromJson(jsonData);
   }
 
+  /// ТОП не продаваемых товаров (V2).
+  /// Тот же формат ответа, что у top-selling-products-chart.
+  /// Endpoint: /api/v2/dashboard/worst-selling-products-chart
+  Future<TopSellingProductsResponse> getWorstSellingProductsChartV2() async {
+    final path =
+        await _appendQueryParams('/v2/dashboard/worst-selling-products-chart');
+
+    if (kDebugMode) {
+      debugPrint(
+          'ApiService: getWorstSellingProductsChartV2 - Generated path: $path');
+    }
+
+    final jsonData = await _getAnalyticsChartJsonMap(
+      path,
+      debugLabel: 'getWorstSellingProductsChartV2',
+      fallbackMessage: 'Ошибка загрузки данных товаров!',
+    );
+    return TopSellingProductsResponse.fromJson(jsonData);
+  }
+
   Future<DealStatsResponseManager> getDealStatsManagerData() async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/dashboard/dealStats/for-manager');

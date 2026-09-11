@@ -1661,6 +1661,7 @@
   "pending": "Kutilmoqda",
   "cancelled": "Bekor qilingan",
   "top_selling_products": "Eng ko‘p sotilgan mahsulotlar",
+  "worst_selling_products": "Eng kam sotilgan mahsulotlar",
   "appbar_sales_dashboard": "Dashboard",
   "session_expired_title": "Sessiya tugadi",
   "session_expired_description": "Siz tizimdan chiqdingiz.\nDavom etish uchun qayta kiring.",

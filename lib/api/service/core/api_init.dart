@@ -235,6 +235,17 @@ extension ApiInitX on ApiService {
         ApiService._fuzaylovazamSubdomains.contains(subdomain);
   }
 
+  Future<bool> isRetisegTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null &&
+        ApiService._retisegSubdomains.contains(subdomain);
+  }
+
+  // Итого в приходе и расходе денег: как в продажах, только на двух доменах.
+  Future<bool> supportsCheckingAccountSum() async {
+    return await isFuzaylovazamTenant() || await isRetisegTenant();
+  }
+
   Future<bool> isFingroupcrmTenant() async {
     final subdomain = await getCurrentTenantSubdomain();
     return subdomain != null &&
