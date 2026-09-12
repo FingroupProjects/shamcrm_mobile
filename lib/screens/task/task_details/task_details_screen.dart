@@ -372,6 +372,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   Future<void> _openTaskCopyScreen() async {
     if (currentTask == null) return;
 
+    final taskByIdBloc = context.read<TaskByIdBloc>();
+    final taskBloc = context.read<TaskBloc>();
+    final calendarBloc = context.read<CalendarBloc>();
+
     final createdAtString =
         currentTask?.createdAt != null && currentTask!.createdAt!.isNotEmpty
             ? DateFormat('dd/MM/yyyy')
@@ -402,19 +406,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       ),
     );
+    if (!mounted) return;
     if (shouldUpdate == true) {
       setState(() {
         _statusChangedFromDetails = true;
       });
       _loadFieldConfiguration();
-      context
-          .read<TaskByIdBloc>()
-          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-      context.read<TaskBloc>().add(FetchTaskStatuses(
+      taskByIdBloc.add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      taskBloc.add(FetchTaskStatuses(
             forceRefresh: true,
             projectId: widget.projectId,
           ));
-      context.read<CalendarBloc>().add(FetchCalendarEvents(
+      calendarBloc.add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
           widget.initialDate?.year ?? DateTime.now().year));
     }
@@ -422,6 +425,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Future<void> _openTaskEditScreen() async {
     if (currentTask == null) return;
+
+    final taskByIdBloc = context.read<TaskByIdBloc>();
+    final taskBloc = context.read<TaskBloc>();
+    final calendarBloc = context.read<CalendarBloc>();
 
     final createdAtString =
         currentTask?.createdAt != null && currentTask!.createdAt!.isNotEmpty
@@ -453,19 +460,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
       ),
     );
+    if (!mounted) return;
     if (shouldUpdate == true) {
       setState(() {
         _statusChangedFromDetails = true;
       });
       _loadFieldConfiguration();
-      context
-          .read<TaskByIdBloc>()
-          .add(FetchTaskByIdEvent(taskId: currentTask!.id));
-      context.read<TaskBloc>().add(FetchTaskStatuses(
+      taskByIdBloc.add(FetchTaskByIdEvent(taskId: currentTask!.id));
+      taskBloc.add(FetchTaskStatuses(
             forceRefresh: true,
             projectId: widget.projectId,
           ));
-      context.read<CalendarBloc>().add(FetchCalendarEvents(
+      calendarBloc.add(FetchCalendarEvents(
           widget.initialDate?.month ?? DateTime.now().month,
           widget.initialDate?.year ?? DateTime.now().year));
     }
@@ -1026,43 +1032,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                                     ),
                                   ],
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 34,
-                                          height: 34,
-                                          decoration: BoxDecoration(
-                                            color: _screenAccent(context)
-                                                .withValues(alpha: 0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          child: Icon(
-                                            Icons
-                                                .playlist_add_check_circle_rounded,
-                                            size: 18,
-                                            color: _screenAccent(context),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          'Выполнение',
-                                          style: TextStyle(
-                                            color: _screenPrimaryText(context),
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            fontFamily: 'Gilroy',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 14),
-                                    _buildExecutionActions(task),
-                                  ],
-                                ),
+                                child: _buildExecutionActions(task),
                               ),
                             ActionHistoryWidgetTask(
                               taskId: int.parse(widget.taskId),

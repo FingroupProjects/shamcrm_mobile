@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_dropdown_theme.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -151,30 +152,14 @@ class _UserListGroup extends State<UserListGroup> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.appColors.backgroundSecondary,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(width: 1, color: context.appColors.backgroundSecondary),
-                    ),
-                    child: CustomDropdown<UserData>.search(
+                  CustomDropdown<UserData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: usersList,
                       searchHintText: AppLocalizations.of(context)!.translate('search'), 
                       overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: context.appColors.backgroundSecondary,
-                        expandedFillColor: context.appColors.surfacePrimary,
-                        closedBorder: Border.all(
-                          color: context.appColors.backgroundSecondary,
-                          width: 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: context.appColors.backgroundSecondary,
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                      decoration: chatUserDropdownDecoration(
+                        context,
+                        hasError: false,
                       ),
                       listItemBuilder: (context, item, isSelected, onItemSelect) {
                         return Container(
@@ -226,7 +211,6 @@ class _UserListGroup extends State<UserListGroup> {
                         widget.onSelectUser(value!);
                       },
                     ),
-                  ),
                 ],
               );
             }

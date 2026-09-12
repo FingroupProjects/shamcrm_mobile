@@ -102,12 +102,12 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       closedFillColor: colors.fieldBg,
                       expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: field.hasError ? colors.error : colors.fieldBorder,
+                        color: field.hasError ? colors.error : colors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: colors.fieldBorder,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),

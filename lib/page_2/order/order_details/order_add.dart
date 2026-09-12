@@ -2641,7 +2641,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   message: widget.dealId != null
                       ? AppLocalizations.of(context)!
                           .translate('fill_all_required_fields')
-                      : AppLocalizations.of(context)!.translate('select_lead'),
+                      : AppLocalizations.of(context)!.translate('select_client'),
                   isSuccess: false,
                 );
                 return;

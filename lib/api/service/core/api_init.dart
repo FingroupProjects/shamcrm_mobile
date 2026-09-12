@@ -252,7 +252,7 @@ extension ApiInitX on ApiService {
         ApiService._fingroupcrmSubdomains.contains(subdomain);
   }
 
-  Future<bool> isAdminOrManagerRole() async {
+  Future<Set<String>> _currentUserRoles() async {
     final prefs = await SharedPreferences.getInstance();
     final roles = <String>{};
 
@@ -285,6 +285,16 @@ extension ApiInitX on ApiService {
       }
     }
 
+    return roles;
+  }
+
+  Future<bool> isAdminRole() async {
+    final roles = await _currentUserRoles();
+    return roles.contains('admin');
+  }
+
+  Future<bool> isAdminOrManagerRole() async {
+    final roles = await _currentUserRoles();
     return roles.contains('admin') || roles.contains('manager');
   }
 

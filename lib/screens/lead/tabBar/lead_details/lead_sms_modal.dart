@@ -240,16 +240,6 @@ class _LeadSmsModalState extends State<LeadSmsModal> {
                     color: colors.textPrimary,
                   ),
                 ),
-                subtitle:
-                    sender.name.isNotEmpty && sender.name != sender.displayName
-                        ? Text(
-                            sender.name,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              color: colors.textSecondary,
-                            ),
-                          )
-                        : null,
                 trailing: isSelected
                     ? Icon(
                         Icons.check_rounded,

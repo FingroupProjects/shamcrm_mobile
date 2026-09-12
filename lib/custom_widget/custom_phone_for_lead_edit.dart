@@ -312,29 +312,29 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               fontWeight: FontWeight.w500,
             ),
             border: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(color: fieldBorder),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: fieldBorder, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(color: fieldBorder),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: fieldBorder, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: focusedBorder, width: 1.2),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: context.appColors.error,
-                width: 1.0,
+                width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: context.appColors.error,
-                width: 1.0,
+                width: 1.5,
               ),
             ),
             filled: true,

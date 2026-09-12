@@ -9,15 +9,15 @@ CustomDropdownDecoration chatUserDropdownDecoration(
   final colors = context.appColors;
   final textStyles = context.appTextStyles;
   return CustomDropdownDecoration(
-    closedFillColor: colors.backgroundSecondary,
+    closedFillColor: colors.fieldBg,
     expandedFillColor: colors.surfacePrimary,
     closedBorder: Border.all(
-      color: hasError ? colors.error : colors.fieldBorder,
+      color: hasError ? colors.error : colors.borderSubtle,
       width: hasError ? 1.5 : 1,
     ),
     closedBorderRadius: BorderRadius.circular(12),
     expandedBorder: Border.all(
-      color: hasError ? colors.error : colors.fieldBorder,
+      color: hasError ? colors.error : colors.borderSubtle,
       width: hasError ? 1.5 : 1,
     ),
     expandedBorderRadius: BorderRadius.circular(12),
@@ -47,11 +47,11 @@ CustomDropdownDecoration chatUserDropdownDecoration(
         icon: Icon(Icons.close_rounded, color: colors.iconSecondary),
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: colors.fieldBorder),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: colors.borderSubtle),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: colors.buttonPrimaryBg),
       ),
     ),

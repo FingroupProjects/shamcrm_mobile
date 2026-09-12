@@ -145,7 +145,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? colors.error : colors.fieldBorder,
+                  color: field.hasError ? colors.error : colors.borderSubtle,
                 ),
               ),
               child: BlocBuilder<GetAllAuthorBloc, GetAllAuthorState>(
@@ -170,7 +170,7 @@ class _AuthorMultiSelectWidgetState extends State<AuthorMultiSelectWidget> {
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: colors.fieldBorder,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),

@@ -11,7 +11,7 @@ CustomDropdownDecoration themedSupplierDropdownDecoration(
     expandedFillColor: colors.surfacePrimary,
     closedBorder: Border.all(
       color: isInvalid ? colors.error : colors.borderSubtle,
-      width: isInvalid ? 2 : 1,
+      width: isInvalid ? 1.5 : 1,
     ),
     closedBorderRadius: BorderRadius.circular(12),
     expandedBorder: Border.all(color: colors.borderSubtle, width: 1),

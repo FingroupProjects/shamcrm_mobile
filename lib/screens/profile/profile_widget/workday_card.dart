@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/models/workday/workday_status_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/workday_capture_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -107,6 +108,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
       builder: (ctx) {
         final colors = ctx.appColors;
         final textStyles = ctx.appTextStyles;
+        final t = AppLocalizations.of(ctx)!;
         return Dialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -131,7 +133,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Фото при отметке',
+                  t.translate('workday_notice_title'),
                   style: textStyles.titleLg.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
@@ -141,7 +143,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'При нажатии «Начать работу» или «Завершить работу» приложение автоматически сделает селфи с фронтальной камеры.\n\nФото вместе с геопозицией сохраняется в системе. Руководители и администраторы могут просматривать его в разделе «Табель».',
+                  t.translate('workday_notice_body'),
                   style: textStyles.bodySm.copyWith(
                     color: colors.textSecondary,
                     height: 1.55,
@@ -167,14 +169,14 @@ class _WorkdayCardState extends State<WorkdayCard> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: const Text('Понятно, продолжить'),
+                    child: Text(t.translate('workday_notice_continue')),
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
                   child: Text(
-                    'Отмена',
+                    t.translate('cancel'),
                     style: textStyles.bodySm.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -250,8 +252,8 @@ class _WorkdayCardState extends State<WorkdayCard> {
       showCustomSnackBar(
         context: context,
         message: isStart
-            ? 'Рабочий день успешно начат'
-            : 'Рабочий день успешно завершен',
+            ? AppLocalizations.of(context)!.translate('workday_started_success')
+            : AppLocalizations.of(context)!.translate('workday_ended_success'),
       );
     } catch (e) {
       if (!mounted) return;
@@ -283,14 +285,20 @@ class _WorkdayCardState extends State<WorkdayCard> {
       await openAppSettings();
     }
 
-    throw Exception('Разрешите доступ к камере, чтобы отметить рабочий день');
+    throw Exception(
+      AppLocalizations.of(context)?.translate('workday_camera_permission') ??
+          'Разрешите доступ к камере, чтобы отметить рабочий день',
+    );
   }
 
   Future<void> _ensureLocationPermission() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       await Geolocator.openLocationSettings();
-      throw Exception('Включите геолокацию, чтобы отметить рабочий день');
+      throw Exception(
+        AppLocalizations.of(context)?.translate('workday_location_service') ??
+            'Включите геолокацию, чтобы отметить рабочий день',
+      );
     }
 
     var permission = await Geolocator.checkPermission();
@@ -308,7 +316,9 @@ class _WorkdayCardState extends State<WorkdayCard> {
     }
 
     throw Exception(
-        'Разрешите доступ к геолокации, чтобы отметить рабочий день');
+      AppLocalizations.of(context)?.translate('workday_location_permission') ??
+          'Разрешите доступ к геолокации, чтобы отметить рабочий день',
+    );
   }
 
   String _formatError(Object error) {
@@ -317,7 +327,10 @@ class _WorkdayCardState extends State<WorkdayCard> {
     }
 
     final message = error.toString().replaceFirst('Exception: ', '').trim();
-    return message.isEmpty ? 'Не удалось выполнить действие' : message;
+    return message.isEmpty
+        ? (AppLocalizations.of(context)?.translate('workday_action_failed') ??
+            'Не удалось выполнить действие')
+        : message;
   }
 
   Future<void> _deleteTempFile(File file) async {
@@ -328,25 +341,29 @@ class _WorkdayCardState extends State<WorkdayCard> {
     }
   }
 
-  String _buildSubtitle() {
+  String _buildSubtitle(AppLocalizations t) {
     if (_isLoading) {
-      return 'Проверяем статус рабочего дня...';
+      return t.translate('workday_checking');
     }
 
     final record = _status?.result;
     if (record == null) {
-      return 'Нажмите «Начать», когда приступаете к работе.';
+      return t.translate('workday_tap_to_start');
     }
 
     if (record.isActive) {
-      return 'Рабочий день начат в ${_formatTime(record.startedAt!)} · фото отправлено';
+      return t
+          .translate('workday_started_at')
+          .replaceAll('{time}', _formatTime(record.startedAt!));
     }
 
     if (record.isCompleted) {
-      return 'Рабочий день завершён в ${_formatTime(record.endedAt!)} · фото отправлено';
+      return t
+          .translate('workday_ended_at')
+          .replaceAll('{time}', _formatTime(record.endedAt!));
     }
 
-    return 'Нажмите «Начать», когда приступаете к работе.';
+    return t.translate('workday_tap_to_start');
   }
 
   IconData _workdayIcon() {
@@ -379,6 +396,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
 
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
+    final t = AppLocalizations.of(context)!;
     final canStart = !_isSubmitting && !(_status?.isActive ?? false);
     final canEnd = !_isSubmitting && (_status?.isActive ?? false);
 
@@ -406,7 +424,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Рабочий день',
+                  t.translate('workday_title'),
                   style: textStyles.bodyLg.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
@@ -430,13 +448,13 @@ class _WorkdayCardState extends State<WorkdayCard> {
             runSpacing: 10,
             children: [
               _ActionButton(
-                title: 'Начать работу',
+                title: t.translate('workday_start'),
                 backgroundColor: colors.buttonPrimaryBg,
                 disabledColor: colors.fieldBorder,
                 onPressed: canStart ? () => _handleAction(isStart: true) : null,
               ),
               _ActionButton(
-                title: 'Завершить работу',
+                title: t.translate('workday_end'),
                 backgroundColor: colors.error,
                 disabledColor: colors.fieldBorder,
                 onPressed: canEnd ? () => _handleAction(isStart: false) : null,
@@ -445,7 +463,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
           ),
           const SizedBox(height: 12),
           Text(
-            _buildSubtitle(),
+            _buildSubtitle(t),
             style: textStyles.bodySm.copyWith(
               fontWeight: FontWeight.w500,
               color: colors.textSecondary,
@@ -463,7 +481,7 @@ class _WorkdayCardState extends State<WorkdayCard> {
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
-                  'Селфи и геопозиция фиксируются при каждой отметке и доступны руководителю в табеле',
+                  t.translate('workday_hint'),
                   style: textStyles.bodySm.copyWith(
                     fontSize: 11,
                     color: colors.textSecondary.withValues(alpha: 0.6),

@@ -121,16 +121,10 @@ class _DealStatusWidgetState extends State<DealStatusWidget> {
                   ),
                 ),
                 dropdownColor: colors.surfacePrimary,
-                icon: Padding(
-                  padding: const EdgeInsets.only(right: 6), 
-                  child: Transform.rotate(
-                    angle: 90 * 3.1415926535 / 180,
-                    child: Image.asset(
-                      'assets/icons/arrow_down.png',
-                      width: 10,
-                      height: 10,
-                    ),
-                  ),
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: colors.iconSecondary,
+                  size: 22,
                 ),
               ),
           ],

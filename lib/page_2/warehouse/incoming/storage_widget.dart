@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -144,56 +145,8 @@ class _StorageWidgetState extends State<StorageWidget> {
                     AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: !isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: colors.surfaceElevated,
-                  expandedFillColor: colors.surfaceElevated,
-                  closedBorder: Border.all(
-                    color: colors.borderSubtle,
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: colors.borderSubtle,
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                  listItemDecoration: ListItemDecoration(
-                    splashColor: colors.buttonPrimaryBg.withValues(alpha: 0.10),
-                    highlightColor:
-                        colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                    selectedColor: colors.surfaceElevated,
-                  ),
-                  searchFieldDecoration: SearchFieldDecoration(
-                    fillColor: colors.surfaceElevated,
-                    textStyle: TextStyle(
-                      color: colors.textPrimary,
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    hintStyle: TextStyle(
-                      color: colors.textSecondary,
-                      fontFamily: 'Gilroy',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: colors.borderSubtle),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: colors.buttonPrimaryBg),
-                    ),
-                    prefixIcon: Icon(Icons.search,
-                        size: 22, color: colors.textSecondary),
-                    suffixIcon: (onClear) => IconButton(
-                      onPressed: onClear,
-                      icon: Icon(Icons.close,
-                          size: 20, color: colors.textSecondary),
-                    ),
-                  ),
-                ),
+                // Theme error (gold), not package default red.
+                decoration: AppFieldStyle.dropdownDecoration(context),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,
@@ -296,7 +249,7 @@ class _StorageWidgetState extends State<StorageWidget> {
                   }
                   if (value == null) {
                     return AppLocalizations.of(context)!
-                        .translate('field_required_project');
+                        .translate('field_required');
                   }
                   return null;
                 },

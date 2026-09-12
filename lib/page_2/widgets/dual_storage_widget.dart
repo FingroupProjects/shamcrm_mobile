@@ -246,7 +246,7 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
             expandedFillColor: colors.surfaceElevated,
             closedBorder: Border.all(
               color: hasError ? colors.error : colors.borderSubtle,
-              width: hasError ? 2 : 1,
+              width: hasError ? 1.5 : 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(

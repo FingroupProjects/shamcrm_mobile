@@ -431,46 +431,105 @@ class PricingCreateScreen extends StatefulWidget {
 class _PricingCreateScreenState extends State<PricingCreateScreen> {
   final _api = ApiService();
   final _horizontal = ScrollController();
+  // Вертикальный скролл таблицы — по нему грузим следующие страницы.
+  final _vertical = ScrollController();
   final _priceFrom = TextEditingController();
   final _priceTo = TextEditingController();
   int? _categoryId;
   List<PricingGood> _goods = const [];
   List<Map<String, dynamic>> _rules = const [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasReachedMax = false;
+  int _currentPage = 1;
   bool _saving = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _vertical.addListener(_onVerticalScroll);
     _loadGoods();
   }
 
-  Future<void> _loadGoods() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  void _onVerticalScroll() {
+    if (!_vertical.hasClients) return;
+    if (_vertical.position.pixels <
+        _vertical.position.maxScrollExtent - 200) {
+      return;
+    }
+    _loadGoods(reset: false);
+  }
+
+  // Если первая страница короткая, сразу догружаем следующую.
+  void _maybeLoadMoreIfListIsShort() {
+    if (!mounted || _hasReachedMax || _loading || _loadingMore) return;
+    if (_goods.isEmpty ||
+        !_vertical.hasClients ||
+        _vertical.position.maxScrollExtent <= 0) {
+      _loadGoods(reset: false);
+    }
+  }
+
+  Future<void> _loadGoods({bool reset = true}) async {
+    if (reset) {
+      setState(() {
+        _loading = true;
+        _loadingMore = false;
+        _error = null;
+        _currentPage = 1;
+        _hasReachedMax = false;
+      });
+    } else {
+      if (_loading || _loadingMore || _hasReachedMax) return;
+      setState(() => _loadingMore = true);
+    }
+
+    final pageToLoad = reset ? 1 : _currentPage + 1;
     try {
       final page = await _api.getPricingGoods(
+        page: pageToLoad,
         priceFrom: _priceFrom.text.trim(),
         priceTo: _priceTo.text.trim(),
         categoryId: _categoryId,
         rules: _rules,
       );
-      if (mounted)
-        setState(() {
-          final filteredGoods = _applyPriceFilter(page.items);
-          if (_rules.isNotEmpty)
-            _applyRuleToAllPrices(filteredGoods, _rules.first);
-          _goods = filteredGoods;
-          _loading = false;
-        });
+      if (!mounted) return;
+      final filteredGoods = _applyPriceFilter(page.items);
+      if (_rules.isNotEmpty) {
+        _applyRuleToAllPrices(filteredGoods, _rules.first);
+      }
+      final existingIds = reset
+          ? <int>{}
+          : _goods.map((good) => good.variantId).toSet();
+      final uniqueGoods = filteredGoods
+          .where((good) => !existingIds.contains(good.variantId))
+          .toList();
+      final nextGoods = reset ? uniqueGoods : [..._goods, ...uniqueGoods];
+      final reachedLastPage =
+          page.totalPages > 0 && page.currentPage >= page.totalPages;
+      final reachedTotal = page.total > 0 && nextGoods.length >= page.total;
+      setState(() {
+        _goods = nextGoods;
+        if (reset && _vertical.hasClients) {
+          _vertical.jumpTo(0);
+        }
+        _currentPage = page.currentPage;
+        _hasReachedMax = page.items.isEmpty ||
+            (!reset && uniqueGoods.isEmpty) ||
+            reachedLastPage ||
+            reachedTotal;
+        _loading = false;
+        _loadingMore = false;
+      });
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _maybeLoadMoreIfListIsShort());
     } catch (e) {
       if (mounted)
         setState(() {
           _error = e.toString();
           _loading = false;
+          _loadingMore = false;
         });
     }
   }
@@ -527,6 +586,8 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
 
   @override
   void dispose() {
+    _vertical.removeListener(_onVerticalScroll);
+    _vertical.dispose();
     _horizontal.dispose();
     _priceFrom.dispose();
     _priceTo.dispose();
@@ -616,18 +677,12 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
           ),
         ],
       ),
+      // Кнопки в Column, не в bottomNavigationBar — иначе последняя
+      // строка таблицы заезжает под «Отмена / Сохранить».
       body: Column(children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Row(children: [
-            Expanded(
-                child: Text('Товаров: ${_goods.length}',
-                    style: Theme.of(context).textTheme.titleMedium)),
-          ]),
-        ),
         if (_rules.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Align(
                 alignment: Alignment.centerLeft,
                 child: Chip(
@@ -638,54 +693,55 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
                     })),
           ),
         Expanded(child: _body()),
-      ]),
-      bottomNavigationBar: AnimatedPadding(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              border: Border(top: BorderSide(color: colors.borderSubtle)),
-            ),
-            child: Row(children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saving ? null : () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48)),
-                  child: const Text('Отмена'),
-                ),
+        AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              decoration: BoxDecoration(
+                color: colors.surfacePrimary,
+                border: Border(top: BorderSide(color: colors.borderSubtle)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _saving || _goods.isEmpty ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    backgroundColor: colors.buttonPrimaryBg,
-                    foregroundColor: colors.buttonPrimaryFg,
+              child: Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _saving ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48)),
+                    child: const Text('Отмена'),
                   ),
-                  child: _saving
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colors.buttonPrimaryFg,
-                          ),
-                        )
-                      : const Text('Сохранить'),
                 ),
-              ),
-            ]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _saving || _goods.isEmpty ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      backgroundColor: colors.buttonPrimaryBg,
+                      foregroundColor: colors.buttonPrimaryFg,
+                    ),
+                    child: _saving
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.buttonPrimaryFg,
+                            ),
+                          )
+                        : const Text('Сохранить'),
+                  ),
+                ),
+              ]),
+            ),
           ),
         ),
-      ),
+      ]),
     );
   }
 
@@ -696,6 +752,7 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
       return const Center(
           child: Text('По заданным условиям товары не найдены'));
     final priceTypes = _goods.first.prices;
+    final showMoreLoader = !_hasReachedMax;
     return Scrollbar(
       controller: _horizontal,
       thumbVisibility: true,
@@ -706,10 +763,26 @@ class _PricingCreateScreenState extends State<PricingCreateScreen> {
         child: SizedBox(
           width: 190 + priceTypes.length * 170.0,
           child: ListView.builder(
-            itemCount: _goods.length + 1,
-            itemBuilder: (context, index) => index == 0
-                ? _TableHeader(priceTypes: priceTypes)
-                : _PricingGoodRow(good: _goods[index - 1]),
+            controller: _vertical,
+            padding: const EdgeInsets.only(bottom: 24),
+            itemCount: _goods.length + 1 + (showMoreLoader ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == 0) return _TableHeader(priceTypes: priceTypes);
+              final goodIndex = index - 1;
+              if (goodIndex >= _goods.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              }
+              return _PricingGoodRow(good: _goods[goodIndex]);
+            },
           ),
         ),
       ),

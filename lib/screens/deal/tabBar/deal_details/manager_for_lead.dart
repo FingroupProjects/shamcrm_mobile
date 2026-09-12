@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -207,20 +208,19 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   decoration: CustomDropdownDecoration(
                     closedFillColor: context.appColors.fieldBackground,
                     expandedFillColor: context.appColors.surfacePrimary,
-                    closedBorder: Border.all(
-                      color: widget.hasError
-                          ? context.appColors.error
-                          : context.appColors.fieldBorder,
-                      width: 1.5,
+                    closedBorder: AppFieldStyle.dropdownBorder(
+                      context,
+                      hasError: widget.hasError,
                     ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: widget.hasError
-                          ? context.appColors.error
-                          : context.appColors.fieldBorder,
-                      width: 1.5,
+                    closedErrorBorder: AppFieldStyle.dropdownBorder(
+                      context,
+                      hasError: true,
                     ),
-                    expandedBorderRadius: BorderRadius.circular(12),
+                    closedBorderRadius: AppFieldStyle.radius,
+                    closedErrorBorderRadius: AppFieldStyle.radius,
+                    expandedBorder: AppFieldStyle.dropdownBorder(context),
+                    expandedBorderRadius: AppFieldStyle.radius,
+                    errorStyle: AppFieldStyle.errorTextStyle(context),
                     searchFieldDecoration: SearchFieldDecoration(
                       fillColor: context.appColors.fieldBackground,
                       hintStyle: context.appTextStyles.bodyMd.copyWith(
@@ -242,19 +242,9 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                           color: context.appColors.textSecondary,
                         ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: context.appColors.fieldBorder,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: context.appColors.buttonPrimaryBg,
-                          width: 1.2,
-                        ),
-                      ),
+                      border: AppFieldStyle.outline(context),
+                      focusedBorder:
+                          AppFieldStyle.outline(context, focused: true),
                     ),
                   ),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -310,11 +300,10 @@ class _ManagerForLeadState extends State<ManagerForLead> {
                   },
           ),
           if (widget.hasError) ...[
+            const SizedBox(height: 6),
             Text(
-              ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
-              style: const TextStyle(
-                color: Color.fromARGB(255, 241, 50, 36),
-              ),
+              AppLocalizations.of(context)!.translate('field_required'),
+              style: AppFieldStyle.errorTextStyle(context),
             ),
           ],
         ],

@@ -9,7 +9,9 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/task/project_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -584,6 +586,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   int _statusId = 1;
   bool _isSaving = false;
   bool _isDeleting = false;
+  bool _isNameInvalid = false;
 
   static const Map<int, String> _statuses = {
     1: 'Активный',
@@ -629,8 +632,14 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   }
 
   Future<void> _save() async {
-    if (_nameController.text.trim().isEmpty) return;
-    setState(() => _isSaving = true);
+    if (_nameController.text.trim().isEmpty) {
+      setState(() => _isNameInvalid = true);
+      return;
+    }
+    setState(() {
+      _isNameInvalid = false;
+      _isSaving = true;
+    });
     final project = widget.project;
     final result = project == null
         ? await _apiService.createProject(
@@ -648,11 +657,25 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
           );
     if (!mounted) return;
     setState(() => _isSaving = false);
+    final message = result['message']?.toString();
     if (result['success'] == true) {
+      showCustomSnackBar(
+        context: context,
+        message: (message != null && message.isNotEmpty)
+            ? message
+            : (widget.project == null
+                ? 'Проект создан'
+                : 'Проект обновлён'),
+        isSuccess: true,
+        aboveDialogs: true,
+      );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Не удалось сохранить')),
+      showCustomSnackBar(
+        context: context,
+        message: message ?? 'Не удалось сохранить',
+        isSuccess: false,
+        aboveDialogs: true,
       );
     }
   }
@@ -667,10 +690,21 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
     setState(() => _isDeleting = false);
 
     if (result['success'] == true) {
+      showCustomSnackBar(
+        context: context,
+        message: (result['message']?.toString().isNotEmpty ?? false)
+            ? result['message'].toString()
+            : 'Проект удалён',
+        isSuccess: true,
+        aboveDialogs: true,
+      );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Не удалось удалить')),
+      showCustomSnackBar(
+        context: context,
+        message: result['message'] ?? 'Не удалось удалить',
+        isSuccess: false,
+        aboveDialogs: true,
       );
     }
   }
@@ -822,6 +856,16 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                         controller: _nameController,
                         hintText: 'Введите название',
                         label: 'Название',
+                        hasError: _isNameInvalid,
+                        errorText: _isNameInvalid
+                            ? AppLocalizations.of(context)!
+                                .translate('field_required')
+                            : null,
+                        onChanged: (value) {
+                          if (_isNameInvalid && value.trim().isNotEmpty) {
+                            setState(() => _isNameInvalid = false);
+                          }
+                        },
                       ),
                       if (isEdit) ...[
                         const SizedBox(height: 18),

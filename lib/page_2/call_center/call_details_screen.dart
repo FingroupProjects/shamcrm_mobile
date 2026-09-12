@@ -87,28 +87,14 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   }
 
   String formatDate(DateTime? date) {
-    //print('Input date: $date, isUtc: ${date?.isUtc}');
     if (date == null) {
-      return AppLocalizations.of(context)!.translate('date_unknown') ??
-          'Дата неизвестна';
+      return 'Дата неизвестна';
     }
 
     try {
-      final utcDate = DateTime.utc(
-        date.year,
-        date.month,
-        date.day,
-        date.hour,
-        date.minute,
-        date.second,
-      );
-      final localDate = utcDate.toLocal();
-      //print('UTC date: $utcDate, Local date: $localDate');
-      return DateFormat('dd.MM.yy HH:mm').format(localDate);
+      return DateFormat('dd.MM.yy HH:mm').format(date.toLocal());
     } catch (e) {
-      //print('Error formatting date: $e');
-      return AppLocalizations.of(context)!.translate('invalid_format') ??
-          'Неверный формат даты';
+      return AppLocalizations.of(context)!.translate('invalid_format');
     }
   }
 
@@ -241,6 +227,12 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
             AppLocalizations.of(context)!.translate('phone_number') as String,
         'value': call.lead.phone as String,
       },
+      if (call.trunk.trim().isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!
+              .translate('call_center_number') as String,
+          'value': call.trunk,
+        },
       {
         'label':
             AppLocalizations.of(context)!.translate('date_of_call') as String,
@@ -356,6 +348,12 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
             AppLocalizations.of(context)!.translate('phone_number') as String,
         'value': call.phoneNumber as String,
       },
+      if ((call.trunk ?? '').trim().isNotEmpty)
+        {
+          'label': AppLocalizations.of(context)!
+              .translate('call_center_number') as String,
+          'value': call.trunk as String,
+        },
       {
         'label':
             AppLocalizations.of(context)!.translate('date_of_call') as String,

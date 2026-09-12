@@ -110,6 +110,7 @@ class TaskCardState extends State<TaskCard> {
 
     return GestureDetector(
         onTap: () async {
+          final taskBloc = context.read<TaskBloc>();
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
@@ -133,6 +134,8 @@ class TaskCardState extends State<TaskCard> {
             ),
           );
 
+          if (!mounted) return;
+
           if (result is Map<String, dynamic> && result['refresh'] == true) {
             final oldStatusId = result['statusId'] as int? ?? widget.statusId;
             final newStatusId = result['newStatusId'] as int? ?? oldStatusId;
@@ -148,10 +151,12 @@ class TaskCardState extends State<TaskCard> {
               }
             }
 
-            context.read<TaskBloc>().add(FetchTaskStatuses(
-                  forceRefresh: true,
-                  projectId: widget.projectId,
-                ));
+            if (!mounted) return;
+
+            taskBloc.add(FetchTaskStatuses(
+              forceRefresh: true,
+              projectId: widget.projectId,
+            ));
 
             if (newStatusId == oldStatusId) {
               widget.onStatusUpdated();

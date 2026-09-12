@@ -59,9 +59,9 @@ class CallLogItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Имя лида
+                      // Имя лида. Если имя совпадает с телефоном — одна строка.
                       Text(
-                        callEntry.leadName,
+                        callEntry.displayTitle,
                         style: context.appTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.w600,
                           color: context.appColors.textPrimary,
@@ -70,20 +70,20 @@ class CallLogItem extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
 
-                      const SizedBox(height: 4),
-
-                      // Номер телефона
-                      Text(
-                        callEntry.phoneNumber,
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          fontSize: 14,
-                          color: context.appColors.textSecondary,
+                      if (callEntry.displaySubtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          callEntry.displaySubtitle!,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            fontSize: 14,
+                            color: context.appColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
 
                       const SizedBox(height: 2),
 
@@ -193,19 +193,16 @@ class CallLogItem extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    // Проверяем, что дата не null
-    if (date == null) {
-      return 'Дата неизвестна';
-    }
-
-    // Преобразуем UTC в локальное время устройства
-    final timeZoneOffset = DateTime.now().timeZoneOffset;
-    final localDate = date.add(timeZoneOffset);
-
-    // Логика отображения относительно текущего времени
+    // callDate is already converted to the device timezone.
+    final localDate = date.toLocal();
     final now = DateTime.now();
     final difference = now.difference(localDate);
 
+    if (difference.inMinutes < 0) {
+      final hour = localDate.hour.toString().padLeft(2, '0');
+      final minute = localDate.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes} мин назад';
     } else if (difference.inHours < 24) {
@@ -213,7 +210,6 @@ class CallLogItem extends StatelessWidget {
     } else if (difference.inDays == 1) {
       return 'Вчера';
     } else {
-      // Формат даты и времени с учётом локального часового пояса
       final day = localDate.day.toString().padLeft(2, '0');
       final month = localDate.month.toString().padLeft(2, '0');
       final year = localDate.year;

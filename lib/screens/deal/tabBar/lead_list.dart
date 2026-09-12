@@ -7,6 +7,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -304,46 +305,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: !isStillLoading,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: context.appColors.surfacePrimary,
-                    expandedFillColor: context.appColors.surfacePrimary,
-                    closedBorder: Border.all(
-                      color: context.appColors.borderSubtle,
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: context.appColors.borderSubtle,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                    searchFieldDecoration: SearchFieldDecoration(
-                      fillColor: context.appColors.surfacePrimary,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      textStyle: TextStyle(
-                        color: context.appColors.textPrimary,
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
-                      ),
-                      hintStyle: TextStyle(
-                        color: context.appColors.fieldHint,
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        size: 22,
-                        color: context.appColors.iconSecondary,
-                      ),
-                    ),
-                  ),
+                  // Theme error (gold), not package default red.
+                  decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,7 +433,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
                       ? (value) {
                           if (value == null) {
                             return AppLocalizations.of(context)!
-                                .translate('field_required_project');
+                                .translate('field_required');
                           }
                           return null;
                         }

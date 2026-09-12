@@ -45,7 +45,7 @@ class _RegionRadioGroupWidgetState extends State<RegionRadioGroupWidget> {
     final fieldFill = colors.fieldBg;
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
-    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final fieldBorder = colors.borderSubtle;
     final dropdownFill = colors.surfacePrimary;
     final dropdownSelected = colors.surfaceElevated;
     final dropdownIcon = primaryText.withValues(alpha: 0.92);

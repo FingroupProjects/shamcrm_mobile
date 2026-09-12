@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
@@ -83,26 +84,7 @@ class _BranchesDropdownState extends State<BranchesDropdown> {
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: true,
-                    decoration: CustomDropdownDecoration(
-                      closedFillColor: colors.fieldBg,
-                      expandedFillColor: colors.surfacePrimary,
-                      closedBorder: Border.all(
-                        color: colors.fieldBg,
-                        width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: colors.fieldBg,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                    errorStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: colors.error,
-                      height: 1.0,
-                    ),
-                  ),
+                    decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,

@@ -170,7 +170,7 @@ class CustomTextFieldDate extends StatelessWidget {
             color: primaryText,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         GestureDetector(
           onTap: readOnly ? null : () => _selectDate(context),
           child: AbsorbPointer(
@@ -196,7 +196,7 @@ class CustomTextFieldDate extends StatelessWidget {
                   ),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
                       : BorderSide(
@@ -207,39 +207,40 @@ class CustomTextFieldDate extends StatelessWidget {
                   fontWeight: FontWeight.w400,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
                       : BorderSide(
                           color: context.appColors.borderSubtle, width: 1),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
                     color: context.appColors.error,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
                     color: context.appColors.error,
                     width: 1.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: hasError
                       ? BorderSide(color: context.appColors.error, width: 1.5)
                       : BorderSide(
-                          color: context.adaptiveFocusBorderOn(fieldFill),
-                          width: 1.5,
+                          color: context.appColors.buttonPrimaryBg
+                              .withValues(alpha: 0.6),
+                          width: 1.2,
                         ),
                 ),
                 filled: true,
                 fillColor: fieldFill,
                 contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
               ),
               style: context.appTextStyles.bodyLg.copyWith(
                 color: primaryText,

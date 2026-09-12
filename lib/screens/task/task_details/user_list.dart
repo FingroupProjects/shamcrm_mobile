@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
@@ -223,7 +224,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     final colors = context.appColors;
     final localizations = AppLocalizations.of(context)!;
     final fieldBackground = widget.backgroundColor ?? colors.fieldBg;
-    final borderColor = colors.borderSubtle.withValues(alpha: 0.7);
+    final borderColor = colors.borderSubtle;
     final accentColor = colors.buttonPrimaryBg;
     final userTextStyle = TextStyle(
       fontSize: 16,
@@ -254,30 +255,27 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                 color: colors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: fieldBackground,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: (widget.hasError || field.hasError)
-                      ? Colors.red
-                      : borderColor,
-                ),
-              ),
-              child: isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+            const SizedBox(height: 4),
+            isLoading
+                ? Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: fieldBackground,
+                      borderRadius: AppFieldStyle.radius,
+                      border: AppFieldStyle.dropdownBorder(
+                        context,
+                        hasError: widget.hasError || field.hasError,
                       ),
-                    )
-                  : CustomDropdown<UserData>.multiSelectSearchRequest(
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                : CustomDropdown<UserData>.multiSelectSearchRequest(
                       multiSelectController: _selectedUsersController,
                       futureRequest: _searchUsers,
                       futureRequestDelay: const Duration(milliseconds: 350),
@@ -291,16 +289,18 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                       decoration: CustomDropdownDecoration(
                         closedFillColor: fieldBackground,
                         expandedFillColor: colors.surfacePrimary,
-                        closedBorder: Border.all(
-                          color: borderColor,
-                          width: 1,
+                        closedBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: widget.hasError || field.hasError,
                         ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: borderColor,
-                          width: 1,
+                        closedErrorBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: true,
                         ),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                        closedBorderRadius: AppFieldStyle.radius,
+                        closedErrorBorderRadius: AppFieldStyle.radius,
+                        expandedBorder: AppFieldStyle.dropdownBorder(context),
+                        expandedBorderRadius: AppFieldStyle.radius,
                         hintStyle: userTextStyle.copyWith(
                           fontSize: 14,
                           color: colors.textSecondary,
@@ -466,14 +466,13 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         field.didChange(nextSelected);
                       },
                     ),
-            ),
             if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: colors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),

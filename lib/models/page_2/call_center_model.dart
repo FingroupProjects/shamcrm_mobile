@@ -41,7 +41,23 @@ class CallLogEntry {
     return null;
   }
 
-  factory CallLogEntry.fromJson(Map<String, dynamic> json) {
+  /// Client-facing title: lead name, or phone when the name is empty.
+  String get displayTitle {
+    final name = leadName.trim();
+    if (name.isNotEmpty && name != 'Неизвестно') return name;
+    final phone = phoneNumber.trim();
+    return phone.isEmpty ? leadName : phone;
+  }
+
+  /// Extra line under the title. Hidden when name and phone are the same.
+  String? get displaySubtitle {
+    final phone = phoneNumber.trim();
+    if (phone.isEmpty) return null;
+    if (sameLeadNameAndPhone(leadName, phone)) return null;
+    return phone;
+  }
+
+    factory CallLogEntry.fromJson(Map<String, dynamic> json) {
     final lead = SafeConverters.toMapOrNull(json['lead']);
     final isMissed = SafeConverters.toBool(json['missed']);
     final isIncoming = SafeConverters.toBool(json['incoming']);
@@ -51,54 +67,36 @@ class CallLogEntry {
             ? CallType.incoming
             : CallType.outgoing;
 
-    // Вспомогательная функция для парсинга нестандартного формата "YYYY-MM-DD HH:mm"
-    DateTime? parseCustomDate(String? dateStr) {
-      if (dateStr == null) return null;
-      try {
-        // Предполагаем формат "2025-07-02 06:36"
-        final parts = dateStr.split(' ');
-        if (parts.length != 2) return null;
-        final dateParts = parts[0].split('-');
-        final timeParts = parts[1].split(':');
-        if (dateParts.length != 3 || timeParts.length != 2) return null;
-
-        return DateTime(
-          int.parse(dateParts[0]),
-          int.parse(dateParts[1]),
-          int.parse(dateParts[2]),
-          int.parse(timeParts[0]),
-          int.parse(timeParts[1]),
-        );
-      } catch (e) {
-        return null;
-      }
-    }
-
-    // Логика выбора даты
+    // call_started_at comes as UTC (09:56Z). Convert to the device timezone (14:56).
     DateTime callDate;
     if (json['call_started_at'] != null) {
-      callDate = SafeConverters.toDateTimeOrNull(json['call_started_at']) ??
-          DateTime.now();
+      callDate = _parseCallDateTime(json['call_started_at']) ?? DateTime.now();
     } else {
-      callDate = parseCustomDate(json['created_at']) ??
-          parseCustomDate(json['updated_at']) ??
+      callDate = _parseCallDateTime(json['created_at']) ??
+          _parseCallDateTime(json['updated_at']) ??
           DateTime.now();
     }
 
     final trunkRaw = json['trunk']?.toString().trim();
+    final leadNameRaw = lead != null && lead['name'] != null
+        ? lead['name'].toString()
+        : '';
+    final leadPhoneRaw = lead != null && lead['phone'] != null
+        ? lead['phone'].toString()
+        : '';
+    // Client number is lead.phone, not the telephony caller/trunk.
+    final clientPhone = leadPhoneRaw.trim().isNotEmpty
+        ? leadPhoneRaw
+        : (json['destination_number'] ?? json['caller'] ?? 'Неизвестно')
+            .toString();
 
     return CallLogEntry(
       id: SafeConverters.toSafeString(json['id']),
       leadId: SafeConverters.toIntOrNull(lead?['id']),
       leadName: sanitizeUtf16(
-        lead != null && lead['name'] != null
-            ? lead['name'].toString()
-            : 'Неизвестно',
+        leadNameRaw.trim().isNotEmpty ? leadNameRaw : 'Неизвестно',
       ),
-      phoneNumber: sanitizeUtf16(
-        (json['caller'] ?? json['destination_number'] ?? 'Неизвестно')
-            .toString(),
-      ),
+      phoneNumber: sanitizeUtf16(clientPhone),
       destinationNumber: json['destination_number'] == null
           ? null
           : sanitizeUtf16(json['destination_number'].toString()),
@@ -121,4 +119,43 @@ class CallLogEntry {
           : sanitizeUtf16(json['report'].toString()),
     );
   }
+}
+
+/// Parses server call timestamps and converts UTC instants to local time.
+DateTime? _parseCallDateTime(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value.toLocal();
+
+  final parsed = SafeConverters.toDateTimeOrNull(value);
+  if (parsed != null) return parsed.toLocal();
+
+  final dateStr = value.toString().trim();
+  if (dateStr.isEmpty) return null;
+  try {
+    final parts = dateStr.split(' ');
+    if (parts.length != 2) return null;
+    final dateParts = parts[0].split('-');
+    final timeParts = parts[1].split(':');
+    if (dateParts.length != 3 || timeParts.length < 2) return null;
+    return DateTime(
+      int.parse(dateParts[0]),
+      int.parse(dateParts[1]),
+      int.parse(dateParts[2]),
+      int.parse(timeParts[0]),
+      int.parse(timeParts[1]),
+    );
+  } catch (e) {
+    return null;
+  }
+}
+
+bool sameLeadNameAndPhone(String name, String phone) {
+  final normalizedName = name.trim().toLowerCase();
+  final normalizedPhone = phone.trim().toLowerCase();
+  if (normalizedName.isEmpty || normalizedPhone.isEmpty) return false;
+  if (normalizedName == normalizedPhone) return true;
+
+  final nameDigits = normalizedName.replaceAll(RegExp(r'\D'), '');
+  final phoneDigits = normalizedPhone.replaceAll(RegExp(r'\D'), '');
+  return nameDigits.isNotEmpty && nameDigits == phoneDigits;
 }

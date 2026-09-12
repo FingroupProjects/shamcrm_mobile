@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -210,16 +211,16 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
               decoration: CustomDropdownDecoration(
                 closedFillColor: context.appColors.fieldBackground,
                 expandedFillColor: context.appColors.surfacePrimary,
-                closedBorder: Border.all(
-                  color: context.appColors.fieldBorder,
-                  width: 1,
+                closedBorder: AppFieldStyle.dropdownBorder(context),
+                closedErrorBorder: AppFieldStyle.dropdownBorder(
+                  context,
+                  hasError: true,
                 ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: context.appColors.fieldBorder,
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
+                closedBorderRadius: AppFieldStyle.radius,
+                closedErrorBorderRadius: AppFieldStyle.radius,
+                expandedBorder: AppFieldStyle.dropdownBorder(context),
+                expandedBorderRadius: AppFieldStyle.radius,
+                errorStyle: AppFieldStyle.errorTextStyle(context),
                 searchFieldDecoration: SearchFieldDecoration(
                   fillColor: context.appColors.fieldBackground,
                   hintStyle: context.appTextStyles.bodyMd.copyWith(
@@ -241,19 +242,8 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
                       color: context.appColors.textSecondary,
                     ),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: context.appColors.fieldBorder,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: context.appColors.buttonPrimaryBg,
-                      width: 1.2,
-                    ),
-                  ),
+                  border: AppFieldStyle.outline(context),
+                  focusedBorder: AppFieldStyle.outline(context, focused: true),
                 ),
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
@@ -262,7 +252,7 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
               headerBuilder: (context, selectedItem, enabled) {
                 if (state is GetAllLeadLoading) {
                   return Text(
-                    AppLocalizations.of(context)!.translate('select_leads'),
+                    AppLocalizations.of(context)!.translate('select_client'),
                     style: context.appTextStyles.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
                       color: context.appColors.textSecondary,
@@ -275,7 +265,7 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
-                AppLocalizations.of(context)!.translate('select_lead'),
+                AppLocalizations.of(context)!.translate('select_client'),
                 style: context.appTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w500,
                   color: context.appColors.textSecondary,
@@ -287,8 +277,7 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
                   : null,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!
-                      .translate('field_required_project');
+                  return AppLocalizations.of(context)!.translate('field_required');
                 }
                 return null;
               },

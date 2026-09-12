@@ -1,5 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/author/get_all_author_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/user/author_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -102,24 +104,18 @@ class _AuthorRadioGroupWidgetState extends State<AuthorRadioGroupWidget> {
               overlayHeight: 400,
               enabled: true,
               decoration: CustomDropdownDecoration(
-                closedFillColor: const Color(0xffF4F7FD),
-                expandedFillColor: Colors.white,
-                closedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: const Color(0xffF4F7FD),
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
+                closedFillColor: context.appColors.fieldBg,
+                expandedFillColor: context.appColors.surfacePrimary,
+                closedBorder: AppFieldStyle.dropdownBorder(context),
+                closedBorderRadius: AppFieldStyle.radius,
+                expandedBorder: AppFieldStyle.dropdownBorder(context),
+                expandedBorderRadius: AppFieldStyle.radius,
               ),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   '${item.name ?? ''} ${item.lastname ?? ''}',
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: context.appColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
@@ -130,11 +126,11 @@ class _AuthorRadioGroupWidgetState extends State<AuthorRadioGroupWidget> {
                 if (state is GetAllAuthorLoading) {
                   return Text(
                     AppLocalizations.of(context)!.translate('select_author'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'Gilroy',
-                      color: Color(0xff1E2E52),
+                      color: context.appColors.textPrimary,
                     ),
                   );
                 }
@@ -142,21 +138,21 @@ class _AuthorRadioGroupWidgetState extends State<AuthorRadioGroupWidget> {
                   selectedItem != null
                       ? '${selectedItem.name ?? ''} ${selectedItem.lastname ?? ''}'
                       : AppLocalizations.of(context)!.translate('select_author'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontFamily: 'Gilroy',
-                    color: Color(0xff1E2E52),
+                    color: context.appColors.textPrimary,
                   ),
                 );
               },
               hintBuilder: (context, hint, enabled) => Text(
                 AppLocalizations.of(context)!.translate('select_author'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Gilroy',
-                  color: Color(0xff1E2E52),
+                  color: context.appColors.textSecondary,
                 ),
               ),
               excludeSelected: false,

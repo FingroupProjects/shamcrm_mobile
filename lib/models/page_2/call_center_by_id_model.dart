@@ -99,13 +99,16 @@ class CallById {
       missed: SafeConverters.toBool(json['missed']),
       answered: SafeConverters.toBool(json['answered']),
       callStatus: SafeConverters.toSafeString(json['call_status']),
-      callStartedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_started_at'])) ??
-          DateTime.utc(1970, 1, 1, 0, 0),
+      callStartedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_started_at']))
+              ?.toLocal() ??
+          DateTime.now(),
       callAnsweredAt: SafeConverters.toStringOrNull(json['call_answered_at']) != null
           ? parseCustomDate(SafeConverters.toStringOrNull(json['call_answered_at']))
+              ?.toLocal()
           : null,
-      callEndedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_ended_at'])) ??
-          DateTime.utc(1970, 1, 1, 0, 0),
+      callEndedAt: parseCustomDate(SafeConverters.toStringOrNull(json['call_ended_at']))
+              ?.toLocal() ??
+          DateTime.now(),
       additionalData: SafeConverters.toMapOrNull(json['additional_data']) != null
           ? AdditionalData.fromJson(
               SafeConverters.toMap(json['additional_data']))

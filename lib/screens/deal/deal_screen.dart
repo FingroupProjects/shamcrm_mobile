@@ -1430,7 +1430,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                 .map((dealName) => dealName.title)
                 .toList(), // Передаем начальные имена
             onDealResetFilters: _resetFilters,
-            textEditingController: textEditingController,
+            textEditingController: _searchController,
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectDeal: !_showCustomTabBar,

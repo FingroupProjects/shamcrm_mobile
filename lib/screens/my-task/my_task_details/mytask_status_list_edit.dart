@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/my_task/my-task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -106,18 +107,7 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                     style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colors.fieldBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: widget.isSubmitted && selectedStatusData == null
-                            ? colors.error
-                            : colors.fieldBg,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: CustomDropdown<MyTaskStatus>.search(
+                  CustomDropdown<MyTaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
                       searchHintText:
@@ -126,9 +116,18 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                       decoration: CustomDropdownDecoration(
                         closedFillColor: colors.fieldBg,
                         expandedFillColor: colors.surfacePrimary,
-
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                        closedBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: widget.isSubmitted &&
+                              selectedStatusData == null,
+                        ),
+                        closedBorderRadius: AppFieldStyle.radius,
+                        expandedBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: widget.isSubmitted &&
+                              selectedStatusData == null,
+                        ),
+                        expandedBorderRadius: AppFieldStyle.radius,
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
@@ -161,7 +160,6 @@ class _MyTaskStatusEditWidgetState extends State<MyTaskStatusEditWidget> {
                         }
                       },
                     ),
-                  ),
                   if (widget.isSubmitted && selectedStatusData == null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4, left: 12),

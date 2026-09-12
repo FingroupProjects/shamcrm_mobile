@@ -100,7 +100,7 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     final fieldFill = colors.fieldBg;
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
-    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final fieldBorder = colors.borderSubtle;
     final dropdownFill = colors.surfacePrimary;
     final dropdownSelected = colors.surfaceElevated;
     final dropdownIcon = primaryText.withValues(alpha: 0.92);
@@ -189,12 +189,12 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     expandedFillColor: dropdownFill,
                     closedBorder: Border.all(
                       color: widget.hasError ? colors.error : fieldBorder,
-                      width: 1.5,
+                      width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
                       color: widget.hasError ? colors.error : fieldBorder,
-                      width: 1.5,
+                      width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),
                     closedSuffixIcon: Icon(Icons.keyboard_arrow_down_rounded,

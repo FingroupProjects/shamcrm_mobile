@@ -18,6 +18,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
   bool allLeadsFetched = false;
   Map<int, int> _leadCounts = {};
   String? _currentQuery;
+  int? _currentSalesFunnelId;
   List<int>? _currentManagerIds;
   List<int>? _currentRegionIds;
   int? _currentRegionId;
@@ -109,6 +110,41 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
     return listsOrQuery || flagsOrDates;
   }
 
+  // Повторная загрузка с тем же поиском и фильтрами.
+  void refetchKeepingFilters(int statusId, {bool ignoreCache = true}) {
+    add(FetchLeads(
+      statusId,
+      query: _currentQuery,
+      managerIds: _currentManagerIds,
+      regionsIds: _currentRegionIds,
+      regionId: _currentRegionId,
+      cityIds: _currentCityIds,
+      sourcesIds: _currentSourceIds,
+      channelIds: _currentChannelIds,
+      advertisingCampaignIds: _currentAdvertisingCampaignIds,
+      reasonForRefusalIds: _currentReasonForRefusalIds,
+      statusIds: _currentStatusId,
+      fromDate: _currentFromDate,
+      toDate: _currentToDate,
+      hasSuccessDeals: _currentHasSuccessDeals,
+      hasInProgressDeals: _currentHasInProgressDeals,
+      hasFailureDeals: _currentHasFailureDeals,
+      hasNotices: _currentHasNotices,
+      hasContact: _currentHasContact,
+      hasChat: _currentHasChat,
+      hasNoReplies: _currentHasNoReplies,
+      hasUnreadMessages: _currentHasUnreadMessages,
+      hasDeal: _currentHasDeal,
+      hasOrders: _currentHasOrders,
+      daysWithoutActivity: _currentDaysWithoutActivity,
+      numberOfDaysDeal: _currentNumberOfDaysDeal,
+      directoryValues: _currentDirectoryValues,
+      customFieldFilters: _currentCustomFieldFilters,
+      salesFunnelId: _currentSalesFunnelId,
+      ignoreCache: ignoreCache,
+    ));
+  }
+
   Future<void> _fetchLeadStatus(
       FetchLeadStatus event, Emitter<LeadState> emit) async {
     emit(LeadLoading());
@@ -164,6 +200,7 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
 
       // Сохраняем параметры текущего запроса
       _currentQuery = event.query;
+      _currentSalesFunnelId = event.salesFunnelId;
       _currentManagerIds = event.managerIds;
       _currentRegionIds = event.regionsIds;
       _currentRegionId = event.regionId;

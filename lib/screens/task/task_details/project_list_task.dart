@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -128,24 +129,16 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: widget.errorText != null
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
+            const SizedBox(height: 4),
+            BlocBuilder<GetTaskProjectBloc, GetTaskProjectState>(
                 builder: (context, state) {
                   if (state is GetTaskProjectSuccess) {
                     projectsList = state.dataProject.result ?? [];
                     _handleProjectSelection(projectsList);
                   }
+
+                  final hasError =
+                      widget.errorText != null || field.hasError;
 
                   return CustomDropdown<ProjectTask>.searchRequestPaginated(
                     paginatedRequest: _searchProjects,
@@ -158,16 +151,18 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                     decoration: CustomDropdownDecoration(
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
-                      closedBorder: Border.all(
-                        color: Colors.transparent,
-                        width: 1,
+                      closedBorder: AppFieldStyle.dropdownBorder(
+                        context,
+                        hasError: hasError,
                       ),
-                      closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder: Border.all(
-                        color: context.appColors.borderSubtle,
-                        width: 1,
+                      closedErrorBorder: AppFieldStyle.dropdownBorder(
+                        context,
+                        hasError: true,
                       ),
-                      expandedBorderRadius: BorderRadius.circular(12),
+                      closedBorderRadius: AppFieldStyle.radius,
+                      closedErrorBorderRadius: AppFieldStyle.radius,
+                      expandedBorder: AppFieldStyle.dropdownBorder(context),
+                      expandedBorderRadius: AppFieldStyle.radius,
                       hintStyle: hintStyle,
                       headerStyle: projectTextStyle,
                       listItemStyle: projectTextStyle,
@@ -231,7 +226,6 @@ class _ProjectTaskGroupWidgetState extends State<ProjectTaskGroupWidget> {
                   );
                 },
               ),
-            ),
             if (widget.errorText != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

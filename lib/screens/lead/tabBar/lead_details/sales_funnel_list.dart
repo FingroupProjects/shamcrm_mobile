@@ -42,8 +42,8 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
       fontSize: 14,
       color: context.appColors.textSecondary,
     );
-    final surfaceColor = context.appColors.surfacePrimary.withValues(alpha: 0.78);
-    final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.36);
+    final surfaceColor = context.appColors.fieldBg;
+    final borderColor = context.appColors.borderSubtle;
 
     return BlocListener<SalesFunnelBloc, SalesFunnelState>(
       listener: (context, state) {
@@ -111,12 +111,12 @@ class _SalesFunnelWidgetState extends State<SalesFunnelWidget> {
                       color: borderColor,
                       width: 1,
                     ),
-                    closedBorderRadius: BorderRadius.circular(18),
+                    closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
                       color: borderColor,
                       width: 1,
                     ),
-                    expandedBorderRadius: BorderRadius.circular(18),
+                    expandedBorderRadius: BorderRadius.circular(12),
                     hintStyle: hintStyle,
                     headerStyle: titleStyle.copyWith(fontSize: 14),
                     listItemStyle: titleStyle.copyWith(fontSize: 14),

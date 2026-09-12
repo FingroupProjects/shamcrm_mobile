@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 
 class BranchRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
@@ -289,20 +290,7 @@ class _BranchRadioGroupWidgetState extends State<BranchRadioGroupWidget> {
                       searchHintText:
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
-                      decoration: CustomDropdownDecoration(
-                        closedFillColor: colors.fieldBg,
-                        expandedFillColor: colors.surfacePrimary,
-                        closedBorder: Border.all(
-                          color: colors.fieldBorder,
-                          width: 1,
-                        ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: colors.fieldBorder,
-                          width: 1,
-                        ),
-                        expandedBorderRadius: BorderRadius.circular(12),
-                      ),
+                      decoration: AppFieldStyle.dropdownDecoration(context),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
                         return Text(

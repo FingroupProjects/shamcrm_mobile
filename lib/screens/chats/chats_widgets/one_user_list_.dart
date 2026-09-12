@@ -133,13 +133,7 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.appColors.backgroundSecondary,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(width: 1, color: context.appColors.backgroundSecondary),
-                    ),
-                    child: CustomDropdown<UserData>.search(
+                  CustomDropdown<UserData>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: usersList,
                       searchHintText: AppLocalizations.of(context)!.translate('search'), 
@@ -196,7 +190,6 @@ class _ClientRadioGroupWidgetState extends State<ClientRadioGroupWidget> {
                       excludeSelected: false,
                       onChanged: (value) {},
                     ),
-                  ),
                   if (widget.hasError && widget.errorText != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),

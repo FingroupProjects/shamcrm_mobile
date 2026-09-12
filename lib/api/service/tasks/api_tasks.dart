@@ -1076,10 +1076,10 @@ extension ApiTasksX on ApiService {
       if (endDate?.isNotEmpty ?? false) 'end_date': endDate,
       if (statusId != null) 'status_id': statusId,
     });
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'data': json.decode(response.body)};
-    }
-    return {'success': false, 'message': 'Ошибка создания проекта'};
+    return _projectMutationResult(
+      response,
+      fallbackError: 'Ошибка создания проекта',
+    );
   }
 
   Future<Map<String, dynamic>> updateProject({
@@ -1095,18 +1095,72 @@ extension ApiTasksX on ApiService {
       if (endDate?.isNotEmpty ?? false) 'end_date': endDate,
       if (statusId != null) 'status_id': statusId,
     });
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'data': json.decode(response.body)};
-    }
-    return {'success': false, 'message': 'Ошибка обновления проекта'};
+    return _projectMutationResult(
+      response,
+      fallbackError: 'Ошибка обновления проекта',
+    );
   }
 
   Future<Map<String, dynamic>> deleteProject(int projectId) async {
     final response = await _deleteRequest('/project/$projectId');
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      return {'success': true};
+    return _projectMutationResult(
+      response,
+      fallbackError: 'Ошибка удаления проекта',
+      successOnEmpty: true,
+    );
+  }
+
+  Map<String, dynamic> _projectMutationResult(
+    http.Response response, {
+    required String fallbackError,
+    bool successOnEmpty = false,
+  }) {
+    Map<String, dynamic>? data;
+    try {
+      if (response.body.isNotEmpty) {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          data = decoded;
+        }
+      }
+    } catch (_) {}
+
+    final apiMessage = _projectApiMessage(data);
+    if (data != null && data['result'] == 'error') {
+      return {'success': false, 'message': apiMessage ?? fallbackError};
     }
-    return {'success': false, 'message': 'Ошибка удаления проекта'};
+
+    final okStatus = response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        (successOnEmpty && response.statusCode == 204);
+    if (okStatus) {
+      return {'success': true, 'message': apiMessage, 'data': data};
+    }
+
+    return {'success': false, 'message': apiMessage ?? fallbackError};
+  }
+
+  String? _projectApiMessage(Map<String, dynamic>? data) {
+    if (data == null) return null;
+    final errors = data['errors'];
+    if (errors is String && errors.trim().isNotEmpty) {
+      return errors.trim();
+    }
+    if (errors is List && errors.isNotEmpty) {
+      return errors.first.toString();
+    }
+    if (errors is Map && errors.isNotEmpty) {
+      final first = errors.values.first;
+      if (first is List && first.isNotEmpty) {
+        return first.first.toString();
+      }
+      return first.toString();
+    }
+    final message = data['message'];
+    if (message is String && message.trim().isNotEmpty) {
+      return message.trim();
+    }
+    return null;
   }
 
   Future<ProjectTaskDataResponse> getTaskProject({

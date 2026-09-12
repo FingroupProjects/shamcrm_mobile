@@ -5,6 +5,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -140,51 +141,19 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
       child: BlocListener<OrderBloc, OrderState>(
         listener: (context, state) {
           if (state is OrderStatusUpdated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  "Статус успешно обновлен!",
-                  style:  TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textInverse,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: colors.success,
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: const Duration(seconds: 3),
-              ),
+            showCustomSnackBar(
+              context: context,
+              message: 'Статус успешно обновлен!',
+              isSuccess: true,
+              aboveDialogs: true,
             );
             Navigator.of(context).pop(true);
           } else if (state is OrderError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style:  TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textInverse,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: colors.error,
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: const Duration(seconds: 3),
-              ),
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              isSuccess: false,
+              aboveDialogs: true,
             );
           }
         },
@@ -319,30 +288,11 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                               isFailed: _isFailed,
                             ));
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  localizations
-                                      .translate('fill_all_required_fields'),
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: colors.textInverse,
-                                  ),
-                                ),
-                                backgroundColor: colors.error,
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 16),
-                                duration: const Duration(seconds: 3),
-                              ),
+                            showCustomSnackBar(
+                              context: context,
+                              message: 'fill_all_required_fields',
+                              isSuccess: false,
+                              aboveDialogs: true,
                             );
                           }
                         },

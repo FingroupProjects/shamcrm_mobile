@@ -182,10 +182,12 @@ class _RoleSelectionWidgetState extends State<RoleSelectionWidget> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Transform.rotate(
-                      angle: 90 * 3.1415926535 / 180,
-                      child: Image.asset('assets/icons/arrow_down.png',
-                          width: 10, height: 10),
+                    Icon(
+                      isDropdownOpen
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: colors.iconSecondary,
+                      size: 22,
                     ),
                     SizedBox(width: 8),
                   ],

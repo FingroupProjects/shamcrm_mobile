@@ -16,6 +16,8 @@ class ProductsChart extends StatefulWidget {
     this.fetchData,
     this.sortBySoldDescending = true,
     this.treatZeroSoldAsEmpty = true,
+    this.footerProductLabelKey = 'analytics_top_product',
+    this.footerProductFallback = 'Top product',
   });
 
   final String title;
@@ -29,6 +31,10 @@ class ProductsChart extends StatefulWidget {
   /// У топа нулевые продажи считаем пустым графиком.
   /// У худших нули — нормальные данные, preview не подставляем.
   final bool treatZeroSoldAsEmpty;
+
+  /// Подпись внизу слева: «Топ продукт» или «Непродаваемый товар».
+  final String footerProductLabelKey;
+  final String footerProductFallback;
 
   @override
   State<ProductsChart> createState() => _ProductsChartState();
@@ -597,8 +603,8 @@ class _ProductsChartState extends State<ProductsChart> {
                         Text(
                           analyticsText(
                             context,
-                            'analytics_top_product',
-                            fallback: 'Top product',
+                            widget.footerProductLabelKey,
+                            fallback: widget.footerProductFallback,
                           ),
                           style: TextStyle(
                             fontSize: responsive.smallFontSize,

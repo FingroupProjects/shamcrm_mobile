@@ -600,6 +600,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             fetchData: () => ApiService().getWorstSellingProductsChartV2(),
             sortBySoldDescending: false,
             treatZeroSoldAsEmpty: false,
+            footerProductLabelKey: 'analytics_unsold_product',
+            footerProductFallback: 'Непродаваемый товар',
           );
           break;
         case 'telephony_and_events':

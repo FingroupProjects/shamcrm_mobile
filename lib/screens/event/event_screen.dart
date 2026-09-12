@@ -861,7 +861,7 @@ class _EventScreenState extends State<EventScreen>
             initialNoticeManagerEventToDate: _intialNoticeToDate,
             onEventResetFilters: _resetFilters,
             hasActiveEventFilters: _hasActiveFilters(),
-            textEditingController: textEditingController,
+            textEditingController: _searchController,
             focusNode: focusNode,
             showFilterTaskIcon: false,
             showMyTaskIcon: false,

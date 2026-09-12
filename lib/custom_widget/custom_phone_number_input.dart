@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -313,7 +314,6 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill);
     final fieldBorder = colors.borderSubtle;
-    final focusedBorder = colors.buttonPrimaryBg.withValues(alpha: 0.6);
 
     if (_isLoading) {
       return Column(
@@ -363,10 +363,7 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             hintStyle: context.appTextStyles.bodyMd.copyWith(
               color: hintTextColor,
             ),
-            border: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(color: fieldBorder),
-            ),
+            border: AppFieldStyle.outline(context),
             filled: true,
             fillColor: fieldFill,
             contentPadding:
@@ -398,35 +395,11 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 ],
               ),
             ),
-            errorStyle: context.appTextStyles.bodyMd.copyWith(
-              color: context.appColors.error,
-              fontWeight: FontWeight.w400,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(color: fieldBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(
-                color: focusedBorder,
-                width: 1.2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(
-                color: context.appColors.error,
-                width: 1.5,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: context.appRadius.input,
-              borderSide: BorderSide(
-                color: context.appColors.error,
-                width: 1.5,
-              ),
-            ),
+            errorStyle: AppFieldStyle.errorTextStyle(context),
+            enabledBorder: AppFieldStyle.outline(context),
+            focusedBorder: AppFieldStyle.outline(context, focused: true),
+            errorBorder: AppFieldStyle.outline(context, hasError: true),
+            focusedErrorBorder: AppFieldStyle.outline(context, hasError: true),
           ),
           keyboardType: TextInputType.phone,
           inputFormatters: [

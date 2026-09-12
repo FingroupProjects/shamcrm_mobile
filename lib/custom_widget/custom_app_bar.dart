@@ -412,6 +412,8 @@ class _CustomAppBarState extends State<CustomAppBar>
 
     _searchController = widget.textEditingController;
     focusNode = widget.focusNode;
+    // Если в поле уже есть текст (вернулись на экран), оставляем поиск открытым.
+    _isSearching = _searchController.text.trim().isNotEmpty;
 // Устанавливаем начальное состояние фильтров на основе активности любых фильтров
     _areFiltersActive = widget.hasActiveChatFilters ||
         widget.hasActiveEventFilters ||
@@ -549,6 +551,13 @@ class _CustomAppBarState extends State<CustomAppBar>
   @override
   void didUpdateWidget(CustomAppBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.textEditingController != _searchController) {
+      _searchController = widget.textEditingController;
+    }
+    final hasQuery = _searchController.text.trim().isNotEmpty;
+    if (hasQuery && !_isSearching) {
+      _isSearching = true;
+    }
     // Синхронизируем _areFiltersActive с hasActiveChatFilters и hasActiveEventFilters при обновлении виджета
     if (widget.hasActiveChatFilters != oldWidget.hasActiveChatFilters ||
         widget.hasActiveEventFilters != oldWidget.hasActiveEventFilters ||

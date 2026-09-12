@@ -163,13 +163,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: context.appColors.backgroundSecondary,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(width: 1, color: context.appColors.backgroundSecondary),
-                    ),
-                    child: CustomDropdown<UserData>.multiSelectSearch(
+                  CustomDropdown<UserData>.multiSelectSearch(
                       items: dropdownItems, 
                       initialItems: selectedUsersData,
                       searchHintText: AppLocalizations.of(context)!.translate('search'),
@@ -292,7 +286,6 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         });
                       },
                     ),
-                  ),
                   if (widget.hasError && widget.errorText != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),

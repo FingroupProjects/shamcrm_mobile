@@ -2,6 +2,7 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/task/task_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -219,40 +220,25 @@ class _TaskStatusRadioGroupWidgetState
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FD),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          width: 1,
-                          color: colors.borderSubtle,
-                        ),
-                      ),
-                      child: CustomDropdown<TaskStatus>.search(
+                    CustomDropdown<TaskStatus>.search(
                         closeDropDownOnClearFilterSearch: true,
                         items: statusList,
                         searchHintText:
                             AppLocalizations.of(context)!.translate('search'),
                         overlayHeight: 400,
                         decoration: CustomDropdownDecoration(
-                          closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                          closedFillColor: colors.fieldBg,
                           expandedFillColor: colors.surfacePrimary,
-                          closedBorder: Border.all(
-                            color: widget
-                                    .hasError // ✅ НОВОЕ: красная граница при ошибке
-                                ? Colors.red
-                                : Colors.transparent,
-                            width: widget.hasError ? 1.5 : 1,
+                          closedBorder: AppFieldStyle.dropdownBorder(
+                            context,
+                            hasError: widget.hasError,
                           ),
-                          closedBorderRadius: BorderRadius.circular(12),
-                          expandedBorder: Border.all(
-                            color: widget
-                                    .hasError // ✅ НОВОЕ: красная граница при ошибке
-                                ? Colors.red
-                                : colors.borderSubtle,
-                            width: widget.hasError ? 1.5 : 1,
+                          closedBorderRadius: AppFieldStyle.radius,
+                          expandedBorder: AppFieldStyle.dropdownBorder(
+                            context,
+                            hasError: widget.hasError,
                           ),
-                          expandedBorderRadius: BorderRadius.circular(12),
+                          expandedBorderRadius: AppFieldStyle.radius,
                         ),
                         listItemBuilder:
                             (context, item, isSelected, onItemSelect) {
@@ -297,7 +283,6 @@ class _TaskStatusRadioGroupWidgetState
                           }
                         },
                       ),
-                    ),
                   ],
                 );
 
@@ -337,38 +322,25 @@ class _TaskStatusRadioGroupWidgetState
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          width: 1,
-                          color: colors.borderSubtle,
-                        ),
-                      ),
-                      child: CustomDropdown<TaskStatus>.search(
+                    CustomDropdown<TaskStatus>.search(
                         closeDropDownOnClearFilterSearch: true,
                         items: statusList,
                         searchHintText:
                             AppLocalizations.of(context)!.translate('search'),
                         overlayHeight: 400,
                         decoration: CustomDropdownDecoration(
-                          closedFillColor: colors.surfacePrimary.withValues(alpha: 0.72),
+                          closedFillColor: colors.fieldBg,
                           expandedFillColor: colors.surfacePrimary,
-                          closedBorder: Border.all(
-                            color: widget.hasError
-                                ? Colors.red
-                                : Colors.transparent,
-                            width: widget.hasError ? 1.5 : 1,
+                          closedBorder: AppFieldStyle.dropdownBorder(
+                            context,
+                            hasError: widget.hasError,
                           ),
-                          closedBorderRadius: BorderRadius.circular(12),
-                          expandedBorder: Border.all(
-                            color: widget.hasError
-                                ? Colors.red
-                                : colors.borderSubtle,
-                            width: widget.hasError ? 1.5 : 1,
+                          closedBorderRadius: AppFieldStyle.radius,
+                          expandedBorder: AppFieldStyle.dropdownBorder(
+                            context,
+                            hasError: widget.hasError,
                           ),
-                          expandedBorderRadius: BorderRadius.circular(12),
+                          expandedBorderRadius: AppFieldStyle.radius,
                         ),
                         listItemBuilder:
                             (context, item, isSelected, onItemSelect) {
@@ -413,7 +385,6 @@ class _TaskStatusRadioGroupWidgetState
                           }
                         },
                       ),
-                    ),
                   ],
                 );
               }
@@ -435,18 +406,16 @@ class _TaskStatusRadioGroupWidgetState
                   Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1,
-                        color: const Color(0xFFF4F7FD),
-                      ),
+                      color: colors.fieldBg,
+                      borderRadius: AppFieldStyle.radius,
+                      border: AppFieldStyle.dropdownBorder(context),
                     ),
                     child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xff1E2E52)),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colors.buttonPrimaryBg,
+                        ),
                       ),
                     ),
                   ),

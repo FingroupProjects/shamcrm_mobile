@@ -182,7 +182,7 @@ class _MyTaskScreenState extends State<MyTaskScreen>
             }
             _onSearch(value);
           },
-          textEditingController: textEditingController,
+          textEditingController: _searchController,
           focusNode: focusNode,
           showFilterIcon: false,
           showFilterTaskIcon: false,

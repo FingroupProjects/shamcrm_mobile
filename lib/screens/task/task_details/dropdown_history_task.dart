@@ -4,6 +4,8 @@ import 'package:crm_task_manager/bloc/history_task/task_history_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task/history_model_task.dart';
 import 'package:crm_task_manager/models/lead/lead_history_model.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/history_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -85,7 +87,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         }
 
         return _buildExpandableActionContainer(
-          'История',
+          AppLocalizations.of(context)!.translate('history'),
           _buildActionHistoryItems(actionHistory),
           isActionHistoryExpanded,
           () => setState(
@@ -279,11 +281,12 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
 
   // MARK: - Формирование истории
   List<String> _buildActionHistoryItems(List<TaskHistory> history) {
+    final l10n = AppLocalizations.of(context)!;
     return history.map((entry) {
       final userName = entry.user.fullName;
       final date =
           DateFormat('dd.MM.yyyy HH:mm').format(entry.date.toLocal());
-      final header = '${entry.status}\n$userName $date';
+      final header = '${HistoryLabels.status(l10n, entry.status)}\n$userName $date';
 
       if (entry.changes.isEmpty) return header;
 
@@ -293,57 +296,32 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidgetTask> {
         for (final MapEntry(:key, :value) in change.body.entries) {
           if (value is! ChangeValue) continue;
 
+          final normalizedKey = HistoryLabels.normalizeKey(key);
+          final field = HistoryLabels.fieldName(l10n, key);
           final prev = value.previousValue?.toString() ?? '';
           final next = value.newValue?.toString() ?? '';
 
-          final prevText = prev.isEmpty ? '—' : prev;
-          final nextText = next.isEmpty ? '—' : next;
-
-          final field = _formatFieldName(key);
-
-          if (key == 'from' || key == 'to') {
-            final prevDate = _formatDate(prev);
-            final nextDate = _formatDate(next);
-            lines.add('$field: $prevDate → $nextDate');
-          } else if (key == 'is_finished') {
-            final prevBool = _formatBool(prev);
-            final nextBool = _formatBool(next);
-            lines.add('$field: $prevBool → $nextBool');
+          if (HistoryLabels.dateTimeFieldKeys.contains(normalizedKey)) {
+            lines.add(
+              '$field: ${HistoryLabels.formatDate(prev, withTime: true)} → ${HistoryLabels.formatDate(next, withTime: true)}',
+            );
+          } else if (HistoryLabels.dateFieldKeys.contains(normalizedKey)) {
+            lines.add(
+              '$field: ${HistoryLabels.formatDate(prev)} → ${HistoryLabels.formatDate(next)}',
+            );
+          } else if (normalizedKey == 'is_finished') {
+            lines.add(
+              '$field: ${HistoryLabels.value(l10n, prev, asBool: true)} → ${HistoryLabels.value(l10n, next, asBool: true)}',
+            );
           } else {
-            lines.add('$field: $prevText → $nextText');
+            lines.add(
+              '$field: ${HistoryLabels.value(l10n, prev)} → ${HistoryLabels.value(l10n, next)}',
+            );
           }
         }
       }
 
       return lines.isEmpty ? header : '$header\n${lines.join('\n')}';
     }).toList();
-  }
-
-  // MARK: - Названия полей
-  String _formatFieldName(String key) {
-    return switch (key) {
-      'task_status' => 'Статус задачи',
-      'name' => 'Название',
-      'is_finished' => 'Завершающий этап',
-      'from' => 'Дата начала',
-      'to' => 'Дата завершения',
-      'project' => 'Проект',
-      'users' => 'Пользователи',
-      'description' => 'Описание',
-      _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
-    };
-  }
-
-  // MARK: - Формат даты
-  String _formatDate(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return '—';
-    final date = DateTime.tryParse(dateStr);
-    return date != null ? DateFormat('dd.MM.yyyy').format(date) : dateStr;
-  }
-
-  // MARK: - Формат bool
-  String _formatBool(String? value) {
-    if (value == null || value.isEmpty) return '—';
-    return value.toLowerCase() == 'true' ? 'Да' : 'Нет';
   }
 }

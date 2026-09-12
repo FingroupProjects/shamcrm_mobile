@@ -33,6 +33,7 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -93,6 +94,12 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
 
+  // Стартовые значения формы — чтобы отличить ввод пользователя от значений по умолчанию.
+  late final String _initialStartDate;
+  late final String? _initialProject;
+  late final String? _initialStatus;
+  late final int? _initialPriority;
+
   // ─── Screen-scoped color helpers (same pattern as LeadAddScreen) ───
   Color _screenPrimaryText(BuildContext context) =>
       context.appColors.textPrimary;
@@ -132,6 +139,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     if (widget.initialProjectId != null) {
       selectedProject = widget.initialProjectId.toString();
     }
+    _initialStartDate = startDateController.text;
+    _initialProject = selectedProject;
+    _initialStatus = selectedStatus;
+    _initialPriority = selectedPriority;
   }
 
   Future<void> _loadFieldConfiguration() async {
@@ -679,6 +690,41 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     return false;
   }
 
+  // Есть ли введённые данные, которые пропадут при выходе.
+  bool _hasUnsavedTaskInput() {
+    if (nameController.text.trim().isNotEmpty) return true;
+    if (descriptionController.text.trim().isNotEmpty) return true;
+    if (endDateController.text.trim().isNotEmpty) return true;
+    if (startDateController.text.trim() != _initialStartDate) return true;
+    if (selectedUsers != null && selectedUsers!.isNotEmpty) return true;
+    if (files.isNotEmpty) return true;
+    if (selectedProject != _initialProject) return true;
+    if (selectedStatus != _initialStatus) return true;
+    if (selectedPriority != _initialPriority) return true;
+    for (final field in customFields) {
+      if (field.controller.text.trim().isNotEmpty) return true;
+      if (field.entryIds.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  void _leaveCreateTaskScreen() {
+    Navigator.pop(context, widget.statusId);
+    context.read<TaskBloc>().add(FetchTaskStatuses());
+  }
+
+  // Назад / Отмена: если поля заполнены — спрашиваем подтверждение.
+  Future<void> _handleLeaveCreateTask() async {
+    if (!_hasUnsavedTaskInput()) {
+      _leaveCreateTaskScreen();
+      return;
+    }
+    final shouldExit = await ConfirmExitDialog.show(context);
+    if (shouldExit && mounted) {
+      _leaveCreateTaskScreen();
+    }
+  }
+
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
           context: context,
@@ -1176,7 +1222,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleLeaveCreateTask();
+      },
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: baseColors.overlay.withValues(alpha: 0),
@@ -1199,10 +1251,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () {
-                  Navigator.pop(context, widget.statusId);
-                  context.read<TaskBloc>().add(FetchTaskStatuses());
-                },
+                onPressed: _handleLeaveCreateTask,
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
@@ -1518,7 +1567,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     buttonColor:
                                         _screenFieldBackground(context),
                                     textColor: primaryText,
-                                    onPressed: () => Navigator.pop(context),
+                                    onPressed: _handleLeaveCreateTask,
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -1557,6 +1606,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

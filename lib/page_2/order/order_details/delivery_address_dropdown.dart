@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_addre
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/deliviry_adress/delivery_address_state.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -91,8 +92,8 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: colors.fieldBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colors.fieldBorder),
+                  borderRadius: AppFieldStyle.radius,
+              border: AppFieldStyle.dropdownBorder(context),
                 ),
                 child:  SizedBox(
                   width: 16,
@@ -213,20 +214,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
               enabled: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: colors.fieldBg,
-                expandedFillColor: colors.surfacePrimary,
-                closedBorder: Border.all(
-                  color: colors.fieldBorder,
-                  width: 1,
-                ),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder: Border.all(
-                  color: colors.fieldBorder,
-                  width: 1,
-                ),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
+              decoration: AppFieldStyle.dropdownDecoration(context),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.address,
@@ -263,8 +251,7 @@ class _DeliveryAddressDropdownState extends State<DeliveryAddressDropdown> {
               initialItem: initialAddress,
               validator: (value) {
                 if (value == null) {
-                  return AppLocalizations.of(context)!
-                      .translate('field_required_project');
+                  return AppLocalizations.of(context)!.translate('field_required');
                 }
                 return null;
               },

@@ -50,6 +50,8 @@ class TaskScreen extends StatefulWidget {
 
 class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+  late TaskBloc _taskBloc;
+  bool _tabListenerAttached = false;
   late ScrollController _tabScrollController;
   late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
@@ -183,6 +185,96 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     ));
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _taskBloc = context.read<TaskBloc>();
+  }
+
+  void _detachTabListener() {
+    if (!_tabListenerAttached) return;
+    _tabController.removeListener(_onTabControllerChanged);
+    _tabListenerAttached = false;
+  }
+
+  void _replaceTabController(int length) {
+    _detachTabListener();
+    _tabController.dispose();
+    _tabController = TabController(length: length, vsync: this);
+    if (length > 0) {
+      _tabController.addListener(_onTabControllerChanged);
+      _tabListenerAttached = true;
+    }
+  }
+
+  void _onTabControllerChanged() {
+    if (!mounted || _tabController.indexIsChanging) return;
+
+    if (_skipNextTabListener &&
+        _skipNextTabListenerIndex == _tabController.index) {
+      debugPrint(
+          'TaskScreen: TabController listener - SKIPPED (filter just applied)');
+      setState(() {
+        _skipNextTabListener = false;
+        _skipNextTabListenerIndex = null;
+        _currentTabIndex = _tabController.index;
+      });
+      return;
+    }
+
+    debugPrint(
+        'TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
+
+    setState(() {
+      _currentTabIndex = _tabController.index;
+      _isFilterLoading = true;
+      _shouldShowLoader = true;
+    });
+
+    if (_tabScrollController.hasClients) {
+      _scrollToActiveTab();
+    }
+
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) {
+      return;
+    }
+
+    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    final hasActiveFilters = _hasActiveFilters();
+
+    _taskBloc.add(FetchTasks(
+      currentStatusId,
+      query: _lastSearchQuery.isNotEmpty ? _lastSearchQuery : null,
+      userIds: hasActiveFilters && _selectedUsers.isNotEmpty
+          ? _selectedUsers.map((user) => user.id).toList()
+          : null,
+      statusIds: hasActiveFilters ? currentStatusId : null,
+      fromDate: hasActiveFilters ? _fromDate : null,
+      toDate: hasActiveFilters ? _toDate : null,
+      overdue: hasActiveFilters ? _isOverdue : null,
+      hasFile: hasActiveFilters ? _hasFile : null,
+      hasDeal: hasActiveFilters ? _hasDeal : null,
+      urgent: hasActiveFilters ? _isUrgent : null,
+      reasonForRefusalIds: hasActiveFilters &&
+              _selectedReasonForRefusalIds.isNotEmpty
+          ? _selectedReasonForRefusalIds
+          : null,
+      deadlinefromDate: hasActiveFilters ? _deadlinefromDate : null,
+      deadlinetoDate: hasActiveFilters ? _deadlinetoDate : null,
+      completedFromDate: hasActiveFilters ? _completedFromDate : null,
+      completedToDate: hasActiveFilters ? _completedToDate : null,
+      projectIds: _projectFilterIds(),
+      projectId: _projectContextId,
+      authors: hasActiveFilters && _selectedAuthors.isNotEmpty
+          ? _selectedAuthors
+          : null,
+      department: hasActiveFilters ? _selectedDepartment : null,
+      directoryValues: hasActiveFilters && _selectedDirectoryValues.isNotEmpty
+          ? _selectedDirectoryValues
+          : null,
+    ));
+  }
+
   void _onScroll() {
     if (!_listScrollController.hasClients) return;
     if (_listScrollController.position.maxScrollExtent <= 0) return;
@@ -286,6 +378,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _listScrollController.removeListener(_onScroll);
     _listScrollController.dispose();
     _tabScrollController.dispose();
+    _detachTabListener();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -619,11 +712,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _tabTitles.clear();
           _tabKeys.clear();
           _currentTabIndex = 0;
-
-          if (_tabController.length > 0) {
-            _tabController.dispose();
-          }
-          _tabController = TabController(length: 0, vsync: this);
+          _replaceTabController(0);
         });
       }
 
@@ -661,10 +750,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _currentTabIndex = 0;
         });
 
-        if (_tabController.length > 0) {
-          _tabController.dispose();
-        }
-        _tabController = TabController(length: 0, vsync: this);
+        _replaceTabController(0);
       }
 
       final taskBloc = context.read<TaskBloc>();
@@ -1141,7 +1227,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             initialDirectoryValuesTask:
                 _initialDirectoryValues, // Передаем initialDirectoryValues
             onResetFilters: _resetFilters,
-            textEditingController: textEditingController,
+            textEditingController: _searchController,
             focusNode: focusNode,
             showMenuIcon: _showCustomTabBar,
             showProjectsMenuItem: _showCustomTabBar && !_isProjectContext,
@@ -1894,10 +1980,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
       ),
     ).then((_) {
-      // Обновляем статусы после редактирования
-      context
-          .read<TaskBloc>()
-          .add(FetchTaskStatuses(projectId: _projectContextId));
+      if (!mounted) return;
+      _taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
     });
   }
 
@@ -1918,7 +2002,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         });
         _tabTitles.removeAt(index);
         _tabKeys.removeAt(index);
-        _tabController = TabController(length: _tabTitles.length, vsync: this);
+        _replaceTabController(_tabTitles.length);
         _currentTabIndex = 0;
 
         _isSearching = false;
@@ -2004,102 +2088,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     _tabController.length != _tabTitles.length;
 
                 if (needNewController) {
-                  // Dispose старого контроллера если он существует
-                  if (_tabController.length > 0) {
-                    _tabController.dispose();
-                  }
-
-                  // Создаем новый контроллер
-                  _tabController =
-                      TabController(length: _tabTitles.length, vsync: this);
-
-                  // ← КРИТИЧНО: Добавляем listener ТОЛЬКО при создании нового контроллера!
-                  _tabController.addListener(() {
-                    if (!_tabController.indexIsChanging) {
-                      // ← КРИТИЧНО: Проверяем флаг пропуска!
-                      if (_skipNextTabListener &&
-                          _skipNextTabListenerIndex == _tabController.index) {
-                        debugPrint(
-                            'TaskScreen: TabController listener - SKIPPED (filter just applied)');
-                        setState(() {
-                          _skipNextTabListener = false;
-                          _skipNextTabListenerIndex = null;
-                          _currentTabIndex = _tabController.index;
-                        });
-                        return; // ← ВЫХОДИМ БЕЗ ЗАПРОСА!
-                      }
-
-                      debugPrint(
-                          'TaskScreen: TabController listener triggered, new index: ${_tabController.index}');
-
-                      setState(() {
-                        _currentTabIndex = _tabController.index;
-                        _isFilterLoading = true;
-                        _shouldShowLoader = true;
-                      });
-
-                      if (_tabScrollController.hasClients) {
-                        _scrollToActiveTab();
-                      }
-
-                      if (_tabTitles.isEmpty ||
-                          _currentTabIndex >= _tabTitles.length) {
-                        return;
-                      }
-
-                      final currentStatusId =
-                          _tabTitles[_currentTabIndex]['id'];
-                      final hasActiveFilters = _hasActiveFilters();
-
-                      context.read<TaskBloc>().add(FetchTasks(
-                            currentStatusId,
-                            query: _lastSearchQuery.isNotEmpty
-                                ? _lastSearchQuery
-                                : null,
-                            userIds:
-                                hasActiveFilters && _selectedUsers.isNotEmpty
-                                    ? _selectedUsers
-                                        .map((user) => user.id)
-                                        .toList()
-                                    : null,
-                            statusIds:
-                                hasActiveFilters ? currentStatusId : null,
-                            fromDate: hasActiveFilters ? _fromDate : null,
-                            toDate: hasActiveFilters ? _toDate : null,
-                            overdue: hasActiveFilters ? _isOverdue : null,
-                            hasFile: hasActiveFilters ? _hasFile : null,
-                            hasDeal: hasActiveFilters ? _hasDeal : null,
-                            urgent: hasActiveFilters ? _isUrgent : null,
-                            reasonForRefusalIds: hasActiveFilters &&
-                                    _selectedReasonForRefusalIds.isNotEmpty
-                                ? _selectedReasonForRefusalIds
-                                : null,
-                            deadlinefromDate:
-                                hasActiveFilters ? _deadlinefromDate : null,
-                            deadlinetoDate:
-                                hasActiveFilters ? _deadlinetoDate : null,
-                            completedFromDate:
-                                hasActiveFilters ? _completedFromDate : null,
-                            completedToDate:
-                                hasActiveFilters ? _completedToDate : null,
-                            projectIds: _projectFilterIds(),
-                            projectId: _projectContextId,
-                            authors: hasActiveFilters &&
-                                    _selectedAuthors.isNotEmpty
-                                ? _selectedAuthors
-                                : null,
-                            department:
-                                hasActiveFilters ? _selectedDepartment : null,
-                            directoryValues: hasActiveFilters &&
-                                    _selectedDirectoryValues.isNotEmpty
-                                ? _selectedDirectoryValues
-                                : null,
-                          ));
-
-                      debugPrint(
-                          'TaskScreen: tab changed to index ${_tabController.index}');
-                    }
-                  }); // ← Закрываем listener здесь, только для нового контроллера!
+                  _replaceTabController(_tabTitles.length);
                 }
 
                 // Установка правильного индекса
@@ -2196,7 +2185,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   final hasActiveFilters = _hasActiveFilters();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted || _tabTitles.isEmpty) return;
-                    context.read<TaskBloc>().add(FetchTasks(
+                    _taskBloc.add(FetchTasks(
                           currentStatusId,
                           query: _lastSearchQuery.isNotEmpty
                               ? _lastSearchQuery
@@ -2239,11 +2228,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   });
                 }
               } else {
-                // Если табы пустые, создаем пустой контроллер
-                if (_tabController.length > 0) {
-                  _tabController.dispose();
-                }
-                _tabController = TabController(length: 0, vsync: this);
+                _replaceTabController(0);
                 _currentTabIndex = 0;
               }
             });

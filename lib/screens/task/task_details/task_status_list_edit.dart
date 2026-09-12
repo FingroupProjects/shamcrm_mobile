@@ -1,6 +1,8 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/task/task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -102,40 +104,25 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                         statusTextStyle.copyWith(fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        width: 1.5,
-                        color: widget.hasError
-                            ? Colors.red
-                            : const Color(0xFFF4F7FD),
-                      ),
-                    ),
-                    child: CustomDropdown<TaskStatus>.search(
+                  CustomDropdown<TaskStatus>.search(
                       closeDropDownOnClearFilterSearch: true,
                       items: statusList,
                       searchHintText:
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: const Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
-                        closedBorder: Border.all(
-                          color: widget.hasError
-                              ? Colors.red
-                              : const Color(0xffF4F7FD),
-                          width: 1.5,
+                        closedFillColor: context.appColors.fieldBg,
+                        expandedFillColor: context.appColors.surfacePrimary,
+                        closedBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: widget.hasError,
                         ),
-                        closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder: Border.all(
-                          color: widget.hasError
-                              ? Colors.red
-                              : const Color(0xffF4F7FD),
-                          width: 1.5,
+                        closedBorderRadius: AppFieldStyle.radius,
+                        expandedBorder: AppFieldStyle.dropdownBorder(
+                          context,
+                          hasError: widget.hasError,
                         ),
-                        expandedBorderRadius: BorderRadius.circular(12),
+                        expandedBorderRadius: AppFieldStyle.radius,
                       ),
                       listItemBuilder:
                           (context, item, isSelected, onItemSelect) {
@@ -180,7 +167,6 @@ class _TaskStatusEditWidgetState extends State<TaskStatusEditWidget> {
                         }
                       },
                     ),
-                  ),
                 ],
               );
             }

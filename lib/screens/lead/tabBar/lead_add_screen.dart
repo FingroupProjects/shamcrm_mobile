@@ -8,6 +8,7 @@ import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_bloc.dart';
 import 'package:crm_task_manager/bloc/source_lead/source_lead_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
@@ -516,13 +517,12 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           overlayHeight: 300,
           closeDropDownOnClearFilterSearch: true,
           decoration: CustomDropdownDecoration(
-            closedFillColor: const Color(0xffF4F7FD),
-            expandedFillColor: Colors.white,
-            closedBorder: Border.all(color: const Color(0xffF4F7FD), width: 1),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder:
-                Border.all(color: const Color(0xffF4F7FD), width: 1),
-            expandedBorderRadius: BorderRadius.circular(12),
+            closedFillColor: context.appColors.fieldBg,
+            expandedFillColor: context.appColors.surfacePrimary,
+            closedBorder: AppFieldStyle.dropdownBorder(context),
+            closedBorderRadius: AppFieldStyle.radius,
+            expandedBorder: AppFieldStyle.dropdownBorder(context),
+            expandedBorderRadius: AppFieldStyle.radius,
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
             item.name ?? '-',

@@ -55,21 +55,42 @@ class PricingDocumentItem {
 }
 
 class PricingGoodsPage {
-  const PricingGoodsPage({required this.items, required this.total});
+  const PricingGoodsPage({
+    required this.items,
+    required this.total,
+    required this.currentPage,
+    required this.totalPages,
+  });
 
   final List<PricingGood> items;
   final int total;
+  final int currentPage;
+  final int totalPages;
 
   factory PricingGoodsPage.fromJson(dynamic json) {
     final root = json is Map ? json : const <String, dynamic>{};
     final result = root['result'] is Map ? root['result'] as Map : root;
     final data = result['data'] is List ? result['data'] as List : const [];
+    // Пагинация может лежать в result.pagination или в корне result.
+    final pagination = result['pagination'] is Map
+        ? result['pagination'] as Map
+        : result;
+    final currentPage =
+        SafeConverters.toIntOrNull(pagination['current_page']) ?? 1;
+    // 0 значит, что сервер не прислал total_pages — тогда смотрим total.
+    final totalPages =
+        SafeConverters.toIntOrNull(pagination['total_pages']) ?? 0;
+    final total = SafeConverters.toIntOrNull(pagination['total']) ??
+        SafeConverters.toIntOrNull(result['total']) ??
+        0;
     return PricingGoodsPage(
       items: data
           .whereType<Map>()
           .map((item) => PricingGood.fromJson(Map<String, dynamic>.from(item)))
           .toList(),
-      total: SafeConverters.toIntOrNull(result['total']) ?? data.length,
+      total: total,
+      currentPage: currentPage,
+      totalPages: totalPages,
     );
   }
 }

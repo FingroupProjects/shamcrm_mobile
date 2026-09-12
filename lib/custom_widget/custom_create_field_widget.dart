@@ -194,21 +194,24 @@ class CustomFieldWidget extends StatelessWidget {
                       color: hintTextColor,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: context.appRadius.input,
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: showBorder
                           ? BorderSide(color: colors.borderSubtle, width: 1)
                           : BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: context.appRadius.input,
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: showBorder
                           ? BorderSide(color: colors.borderSubtle, width: 1)
                           : BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: context.appRadius.input,
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: showBorder
-                          ? BorderSide(color: colors.buttonPrimaryBg, width: 1)
+                          ? BorderSide(
+                              color: colors.buttonPrimaryBg.withValues(alpha: 0.6),
+                              width: 1.2,
+                            )
                           : BorderSide.none,
                     ),
                     filled: true,

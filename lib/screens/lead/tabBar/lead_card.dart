@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
-import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
@@ -395,24 +394,10 @@ class _LeadCardState extends State<LeadCard>
 
         if (result is Map<String, dynamic> && result['refresh'] == true) {
           final newStatusId = result['newStatusId'] as int? ?? widget.statusId;
-          context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
           widget.onStatusUpdated();
-          if (newStatusId == widget.statusId) {
-            context.read<LeadBloc>().add(
-                  FetchLeads(
-                    widget.statusId,
-                    ignoreCache: true,
-                  ),
-                );
-          }
+          // Не вызываем FetchLeadStatuses(forceRefresh) — он сбрасывает поиск.
+          context.read<LeadBloc>().refetchKeepingFilters(newStatusId);
           widget.onStatusId(newStatusId);
-        } else {
-          context.read<LeadBloc>().add(
-                FetchLeads(
-                  widget.statusId,
-                  ignoreCache: true,
-                ),
-              );
         }
       },
       child: AnimatedBuilder(

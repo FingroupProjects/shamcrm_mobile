@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -55,20 +56,7 @@ final colors = context.appColors;
           searchHintText: AppLocalizations.of(context)!.translate('search'),
           overlayHeight: 400,
           enabled: true,
-          decoration: CustomDropdownDecoration(
-            closedFillColor: colors.fieldBg,
-            expandedFillColor: colors.surfacePrimary,
-            closedBorder: Border.all(
-              color: colors.fieldBorder,
-              width: 1,
-            ),
-            closedBorderRadius: BorderRadius.circular(12),
-            expandedBorder: Border.all(
-              color: colors.fieldBorder,
-              width: 1,
-            ),
-            expandedBorderRadius: BorderRadius.circular(12),
-          ),
+          decoration: AppFieldStyle.dropdownDecoration(context),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
               item,

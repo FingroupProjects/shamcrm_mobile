@@ -7,6 +7,8 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_notice_deal_state.dart';
 import 'package:crm_task_manager/models/event/notice_history_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/history_labels.dart';
 import 'package:intl/intl.dart';
 
 class NoticeHistorySection extends StatefulWidget {
@@ -267,7 +269,7 @@ class _NoticeHistorySectionState extends State<NoticeHistorySection> {
       'date' => 'Напоминание',
       'Дата' => 'Напоминание',
       'notifications_sent' => 'Уведомления',
-      _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
+      _ => HistoryLabels.fieldName(AppLocalizations.of(context)!, key),
     };
   }
 

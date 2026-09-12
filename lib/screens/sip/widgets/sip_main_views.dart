@@ -1416,6 +1416,7 @@ extension _SipMainViewsExtension on _SipScreenState {
         onLongPress: onLongPress,
         textColor: _sipKeypadForeground(),
         isDarkBackground: _isSipKeypadOnDark(),
+        showShadow: false,
       ),
     );
   }

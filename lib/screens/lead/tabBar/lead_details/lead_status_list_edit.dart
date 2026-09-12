@@ -71,7 +71,7 @@ class _LeadStatusEditpWidgetState extends State<LeadStatusEditpWidget> {
     final fieldFill = colors.fieldBg;
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
-    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final fieldBorder = colors.borderSubtle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -2,6 +2,8 @@
 
 import 'package:crm_task_manager/models/lead/lead_history_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/history_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -271,7 +273,7 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       'status_update_date' => 'Дата обновления статуса',
       'created_at' => 'Создан',
       'updated_at' => 'Изменен',
-      _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
+      _ => HistoryLabels.fieldName(AppLocalizations.of(context)!, key),
     };
   }
 

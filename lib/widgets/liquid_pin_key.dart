@@ -25,6 +25,8 @@ class LiquidPinKey extends StatefulWidget {
   final Color textColor;
   final bool isDarkBackground;
   final double size;
+  // Telephony keypad: no drop shadow under each digit.
+  final bool showShadow;
 
   const LiquidPinKey({
     super.key,
@@ -35,6 +37,7 @@ class LiquidPinKey extends StatefulWidget {
     required this.isDarkBackground,
     this.letters,
     this.size = 88,
+    this.showShadow = true,
   });
 
   String get resolvedLetters {
@@ -242,16 +245,18 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
               height: widget.size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: _isPressed ? 0.07 : 0.14,
-                    ),
-                    blurRadius: _isPressed ? 10 : 24,
-                    spreadRadius: -2,
-                    offset: Offset(0, _isPressed ? 3 : 9),
-                  ),
-                ],
+                boxShadow: widget.showShadow
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: _isPressed ? 0.07 : 0.14,
+                          ),
+                          blurRadius: _isPressed ? 10 : 24,
+                          spreadRadius: -2,
+                          offset: Offset(0, _isPressed ? 3 : 9),
+                        ),
+                      ]
+                    : null,
               ),
               child: ClipOval(
                 child: _LiquidBackdropLens(

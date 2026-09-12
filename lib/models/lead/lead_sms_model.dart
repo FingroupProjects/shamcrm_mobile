@@ -17,8 +17,10 @@ class SmsSenderIntegration {
     this.salesFunnelId,
   });
 
+  // Как на вебе: в списке отправителей показываем username (BAYZO / Bioveco),
+  // а не внутреннее name (часто одно на все интеграции).
   String get displayName {
-    final candidates = [name, username, type];
+    final candidates = [username, name, type];
     for (final value in candidates) {
       final trimmed = value.trim();
       if (trimmed.isNotEmpty) return trimmed;

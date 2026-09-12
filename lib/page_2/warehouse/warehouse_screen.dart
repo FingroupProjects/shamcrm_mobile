@@ -107,8 +107,10 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMoneyOutcome =
           await _apiService.hasPermission('checking_account_rko.read');
       _hasOrder = await _apiService.hasPermission('order.read');
-      _hasPricing = await _apiService.hasPermission('pricing.read') ||
-          await _apiService.hasPermission('price_type.read');
+      _hasPricing = await _apiService.isFuzaylovazamTenant() &&
+          await _apiService.isAdminRole() &&
+          (await _apiService.hasPermission('pricing.read') ||
+              await _apiService.hasPermission('price_type.read'));
 
       // Проверяем права для справочников
       final hasStorage = await _apiService.hasPermission('storage.read');

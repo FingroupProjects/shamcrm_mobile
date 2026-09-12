@@ -1265,190 +1265,104 @@ class _ChatPreviewCard extends StatelessWidget {
   final ChatAppearanceData appearance;
   const _ChatPreviewCard({required this.appearance});
 
+  Color _opaqueOn(Color color, Color canvas) {
+    return Color.alphaBlend(color, canvas);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final t = AppLocalizations.of(context)!;
-    final showSystemPreviewBackground =
-        appearance.preset == ChatAppearancePreset.system;
-    final showClassicPreviewBackground =
-        appearance.preset == ChatAppearancePreset.classic;
-    final inputSurface = appearance.inputSurfaceColor(context);
+    final canvas = colors.backgroundPrimary;
+    final inputSurface = _opaqueOn(appearance.inputSurfaceColor(context), canvas);
     final inputText = context.adaptiveForegroundOn(inputSurface);
+    final chrome = _opaqueOn(appearance.chromeSurfaceColor(context), canvas);
 
-    return Container(
-      padding: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.28),
+    return SizedBox(
+      height: 228,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: colors.borderSubtle),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(21),
-        child: Container(
-          height: 164,
-          decoration: appearance.buildFullScreenDecoration(context).copyWith(
-                borderRadius: BorderRadius.circular(21),
-              ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(21),
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              if (showClassicPreviewBackground || showSystemPreviewBackground)
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          if (showSystemPreviewBackground)
-                            colors.backgroundSecondary.withValues(alpha: 0.96)
-                          else
-                            colors.backgroundSecondary.withValues(alpha: 0.98),
-                          if (showSystemPreviewBackground)
-                            colors.buttonPrimaryBg.withValues(alpha: 0.20)
-                          else
-                            colors.surfacePrimary.withValues(alpha: 0.92),
-                          if (showSystemPreviewBackground)
-                            colors.info.withValues(alpha: 0.14)
-                          else
-                            colors.backgroundPrimary.withValues(alpha: 0.96),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colors.overlay.withValues(alpha: 0.04),
-                        Colors.transparent,
-                        colors.overlay.withValues(alpha: 0.06),
-                      ],
-                    ),
-                  ),
-                ),
+              DecoratedBox(
+                decoration: appearance.buildFullScreenDecoration(context),
               ),
-              appearance.buildBackgroundLayer(context),
-              ...appearance.buildBackgroundOrbs(context),
-              Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 56,
-                        child: Container(
-                          height: 18,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: appearance.chromeSurfaceColor(context),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color:
-                                  colors.borderSubtle.withValues(alpha: 0.22),
-                            ),
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              width: 52,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: appearance.accentColor(context),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                        ),
+              ColoredBox(color: canvas.withValues(alpha: 0.28)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _PreviewBubble(
+                        text: t.translate('chat_appearance_preview_hello'),
+                        isSender: true,
+                        appearance: appearance,
+                        canvas: canvas,
                       ),
-                      Positioned(
-                        top: 30,
-                        right: 0,
-                        child: _PreviewBubble(
-                          text: t.translate('chat_appearance_preview_hello'),
-                          isSender: true,
-                          appearance: appearance,
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                      ),
-                      Positioned(
-                        top: 72,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: appearance.chromeSurfaceColor(context),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color:
-                                    colors.borderSubtle.withValues(alpha: 0.18),
-                              ),
-                            ),
-                            child: Text(
-                              t.translate('today'),
-                              style: context.appTextStyles.caption.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                        decoration: BoxDecoration(
+                          color: chrome,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: colors.borderSubtle),
+                        ),
+                        child: Text(
+                          t.translate('today'),
+                          style: context.appTextStyles.caption.copyWith(
+                            color: context.adaptiveForegroundOn(chrome),
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 102,
-                        left: 0,
-                        child: _PreviewBubble(
-                          text: t.translate('chat_appearance_preview_reply'),
-                          isSender: false,
-                          appearance: appearance,
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _PreviewBubble(
+                        text: t.translate('chat_appearance_preview_reply'),
+                        isSender: false,
+                        appearance: appearance,
+                        canvas: canvas,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: inputSurface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: context.adaptiveBorderOn(inputSurface),
                         ),
                       ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          height: 38,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: inputSurface,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: context.adaptiveBorderOn(inputSurface),
-                            ),
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              t.translate('chat_appearance_preview_input'),
-                              style: context.appTextStyles.bodySm.copyWith(
-                                color: inputText.withValues(alpha: 0.72),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          t.translate('chat_appearance_preview_input'),
+                          style: context.appTextStyles.bodySm.copyWith(
+                            color: inputText.withValues(alpha: 0.72),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1463,24 +1377,26 @@ class _PreviewBubble extends StatelessWidget {
   final String text;
   final bool isSender;
   final ChatAppearanceData appearance;
+  final Color canvas;
 
   const _PreviewBubble({
     required this.text,
     required this.isSender,
     required this.appearance,
+    required this.canvas,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = isSender
+    final rawBg = isSender
         ? appearance.senderBubbleColor(context)
         : appearance.receiverBubbleColor(context);
-    final fg = isSender
-        ? appearance.outgoingForeground(context)
-        : appearance.incomingForeground(context);
+    final bg = Color.alphaBlend(rawBg, canvas);
+    final useLightText = bg.computeLuminance() < 0.45;
+    final fg = useLightText ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 200),
+      constraints: const BoxConstraints(maxWidth: 220),
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
         color: bg,
@@ -1488,13 +1404,6 @@ class _PreviewBubble extends StatelessWidget {
         border: Border.all(
           color: appearance.borderColor(context, isSender),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: context.appColors.shadow.withValues(alpha: 0.14),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Text(
         text,

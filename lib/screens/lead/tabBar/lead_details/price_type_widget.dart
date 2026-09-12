@@ -37,7 +37,10 @@ class _PriceTypeWidgetState extends State<PriceTypeWidget> {
     final fieldFill = colors.fieldBg;
     final primaryText = context.adaptiveForegroundOn(fieldFill);
     final hintTextColor = context.adaptiveHintOn(fieldFill, lightAlpha: 0.62);
-    final fieldBorder = context.adaptiveBorderOn(fieldFill);
+    final fieldBorder = colors.borderSubtle;
+    final dropdownFill = colors.surfacePrimary;
+    final dropdownSelected = colors.surfaceElevated;
+    final dropdownIcon = primaryText.withValues(alpha: 0.92);
 
     return BlocListener<PriceTypeBloc, PriceTypeState>(
       listener: (context, state) {
@@ -105,17 +108,70 @@ class _PriceTypeWidgetState extends State<PriceTypeWidget> {
                 enabled: true,
                 decoration: CustomDropdownDecoration(
                   closedFillColor: fieldFill,
-                  expandedFillColor: colors.surfacePrimary,
-                  closedBorder: Border.all(
-                    color: fieldBorder,
-                    width: 1,
-                  ),
+                  expandedFillColor: dropdownFill,
+                  closedBorder: Border.all(color: fieldBorder, width: 1),
                   closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: fieldBorder,
-                    width: 1,
-                  ),
+                  expandedBorder: Border.all(color: fieldBorder, width: 1),
                   expandedBorderRadius: BorderRadius.circular(12),
+                  closedSuffixIcon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: dropdownIcon,
+                  ),
+                  expandedSuffixIcon: Icon(
+                    Icons.keyboard_arrow_up_rounded,
+                    color: dropdownIcon,
+                  ),
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: hintTextColor,
+                  ),
+                  headerStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: primaryText,
+                  ),
+                  listItemStyle: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: primaryText,
+                  ),
+                  searchFieldDecoration: SearchFieldDecoration(
+                    fillColor: fieldFill,
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: hintTextColor,
+                    ),
+                    textStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: primaryText,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: hintTextColor),
+                    suffixIcon: (onClear) => IconButton(
+                      onPressed: onClear,
+                      icon: Icon(Icons.close_rounded, color: hintTextColor),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: fieldBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: fieldBorder, width: 1.2),
+                    ),
+                  ),
+                  listItemDecoration: ListItemDecoration(
+                    selectedColor: dropdownSelected,
+                    highlightColor: dropdownSelected.withValues(alpha: 0.72),
+                    splashColor: colors.overlay.withValues(alpha: 0),
+                  ),
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(

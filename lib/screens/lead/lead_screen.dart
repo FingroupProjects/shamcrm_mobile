@@ -1203,7 +1203,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             initialDirectoryValuesLead: _initialDirectoryValues,
             initialLeadCustomFields: _initialCustomFieldFilters,
             onLeadResetFilters: _resetFilters,
-            textEditingController: textEditingController,
+            textEditingController: _searchController,
             focusNode: focusNode,
             showMenuIcon: true,
             showFilterIconOnSelectLead: !_showCustomTabBar,

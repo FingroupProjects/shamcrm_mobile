@@ -156,6 +156,7 @@ class _CustomTextFieldWithPriorityState
               ),
           ],
         ),
+        const SizedBox(height: 4),
         TextFormField(
           controller: widget.controller,
           obscureText: widget.isPassword && !_isPasswordVisible,
@@ -168,21 +169,21 @@ class _CustomTextFieldWithPriorityState
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(fontFamily: 'Gilroy', color: colors.fieldHint),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
             filled: true,
             fillColor: colors.fieldBg,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
             prefixIcon: widget.prefixIcon,
             suffixIcon: widget.isPassword
                 ? IconButton(
                     icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: colors.iconSecondary,
                     ),
-                    onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                    onPressed: () =>
+                        setState(() => _isPasswordVisible = !_isPasswordVisible),
                   )
                 : widget.suffixIcon,
             errorText: widget.errorText,
@@ -191,11 +192,27 @@ class _CustomTextFieldWithPriorityState
               color: colors.error,
               fontWeight: FontWeight.w400,
             ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? colors.error : colors.borderSubtle,
+                width: 1,
+              ),
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? colors.error : Colors.transparent,
-                width: 1.5,
+                color: hasError ? colors.error : colors.borderSubtle,
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError
+                    ? colors.error
+                    : colors.buttonPrimaryBg.withValues(alpha: 0.6),
+                width: 1.2,
               ),
             ),
             errorBorder: OutlineInputBorder(
