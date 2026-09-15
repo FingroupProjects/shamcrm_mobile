@@ -101,6 +101,9 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   Future<void> _fetchTaskStatuses(
       FetchTaskStatuses event, Emitter<TaskState> emit) async {
     final requestVersion = ++_taskStatusesRequestVersion;
+    // Keep the project endpoint while this bloc is opened from a project.
+    final projectId = event.projectId ?? _currentProjectId;
+    _currentProjectId = projectId;
     emit(TaskLoading());
 
     try {
@@ -176,7 +179,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         _currentHasDeal = null;
         _currentUrgent = null;
         _currentProjectIds = null;
-        _currentProjectId = event.projectId;
+        _currentProjectId = projectId;
         _currentReasonForRefusalIds = null;
         _currentAuthors = null;
         _currentDeadlineFromDate = null;
@@ -189,7 +192,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         response = await apiService
             .getTaskStatuses(
           bypassCache: true,
-          projectId: event.projectId,
+          projectId: projectId,
         )
             .timeout(
           Duration(seconds: 15),
@@ -286,7 +289,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         response = await apiService
             .getTaskStatuses(
           bypassCache: event.forceRefresh,
-          projectId: event.projectId,
+          projectId: projectId,
         )
             .timeout(
           Duration(seconds: 15),
@@ -519,11 +522,6 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
                   '✅ TaskBloc: Cached ${tasks.length} tasks for status ${event.statusId}');
             }
           } else {
-            if (event.projectId != null) {
-              _taskCounts[event.statusId] = 0;
-              tasks = <Task>[];
-              hasCachedData = false;
-            }
             final int? realTotalCount = _taskCounts[event.statusId];
 
             if ((realTotalCount ?? 0) == 0) {

@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/utils/api_validation_message.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/material.dart';
 
@@ -14,9 +15,10 @@ void showCustomSnackBar({
 }) {
   if (message.isEmpty) return;
   if (!context.mounted) return;
-  final safeMessage = friendlyError(message);
-  final text =
-      AppLocalizations.of(context)?.translate(safeMessage) ?? safeMessage;
+  final loc = AppLocalizations.of(context);
+  // First strip technical exception text, then translate Laravel field names.
+  final safeMessage = localizeApiValidationMessage(friendlyError(message), loc);
+  final text = loc?.translate(safeMessage) ?? safeMessage;
 
   if (aboveDialogs) {
     _showOverlaySnackBar(
@@ -69,12 +71,11 @@ void _showOverlaySnackBar({
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (overlayContext) {
-      final bottom = MediaQuery.paddingOf(overlayContext).bottom;
+      // Positioned must stay a direct Overlay child, or it fills the screen.
       return Positioned(
         left: 16,
         right: 16,
-        // Above the bottom nav, in front of any dialog.
-        bottom: bottom + 88,
+        bottom: _overlaySnackBarBottom(overlayContext),
         child: IgnorePointer(
           child: Material(
             color: Colors.transparent,
@@ -118,4 +119,16 @@ void _showOverlaySnackBar({
       _overlaySnackBarEntry = null;
     }
   });
+}
+
+/// Keyboard open: sit just above it. Closed: sit above the tab bar.
+double _overlaySnackBarBottom(BuildContext context) {
+  final padding = MediaQuery.paddingOf(context);
+  final mediaKeyboard = MediaQuery.viewInsetsOf(context).bottom;
+  final view = View.of(context);
+  final viewKeyboard = view.viewInsets.bottom / view.devicePixelRatio;
+  final keyboard =
+      mediaKeyboard > viewKeyboard ? mediaKeyboard : viewKeyboard;
+  if (keyboard > 0) return keyboard + 12;
+  return padding.bottom + 88;
 }

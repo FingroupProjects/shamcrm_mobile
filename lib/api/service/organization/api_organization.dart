@@ -272,4 +272,37 @@ extension ApiOrganizationX on ApiService {
       rethrow;
     }
   }
+
+  /// Загружает `/get-user-data` и кэширует `has_ai_integration`.
+  /// Нужен на PIN и установке PIN, чтобы чат знал, показывать ли ИИ-кнопку.
+  Future<void> fetchAndCacheUserData() async {
+    await AiIntegrationStore.hydrateFromPrefs();
+
+    try {
+      final response = await _getRequest('/get-user-data');
+      if (response.statusCode != 200) {
+        debugPrint(
+            'ApiService: get-user-data failed with ${response.statusCode}');
+        return;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is! Map) {
+        debugPrint('ApiService: get-user-data returned unexpected body');
+        return;
+      }
+
+      final data = Map<String, dynamic>.from(decoded);
+      final source = data['result'] is Map
+          ? Map<String, dynamic>.from(data['result'] as Map)
+          : data;
+
+      final hasAi = SafeConverters.toBool(source['has_ai_integration']);
+      await AiIntegrationStore.save(hasAi);
+
+      debugPrint('ApiService: has_ai_integration=$hasAi');
+    } catch (error) {
+      debugPrint('ApiService: fetchAndCacheUserData error: $error');
+    }
+  }
 }

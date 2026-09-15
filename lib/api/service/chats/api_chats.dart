@@ -1628,4 +1628,143 @@ extension ApiChatsX on ApiService {
       rethrow;
     }
   }
+
+  /// Генерирует черновик ответа для чата: POST `/v3/chat/{id}/ai-draft`.
+  /// Каждый вызов идёт на сервер отдельно — повторное нажатие даёт новый текст.
+  Future<String> generateChatAiDraft(int chatId) async {
+    final token = await getToken();
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+    }
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      throw Exception('Base URL не может быть инициализирован');
+    }
+
+    final path = await _appendQueryParams('/v3/chat/$chatId/ai-draft');
+    final fullUrl = '$baseUrl$path';
+
+    if (kDebugMode) {
+      debugPrint('ApiService: generateChatAiDraft $fullUrl');
+    }
+
+    final response = await http
+        .post(
+          Uri.parse(fullUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Device': 'mobile',
+          },
+        )
+        .timeout(const Duration(seconds: 60));
+
+    if (response.statusCode != 200) {
+      final message = _extractErrorMessageFromResponse(response) ??
+          'Ошибка генерации ответа';
+      throw Exception(message);
+    }
+
+    final decoded = json.decode(response.body);
+    if (decoded is! Map) {
+      throw Exception('Некорректный ответ ИИ');
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+    final errorText = _aiDraftErrorText(data['errors']);
+    if (errorText != null) {
+      throw Exception(errorText);
+    }
+
+    final result = data['result'];
+    final text = result is Map ? result['text']?.toString() : null;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception('Пустой ответ ИИ');
+    }
+
+    return text.trim();
+  }
+
+  /// Читает актуальное состояние ИИ по чату: GET `/chat/{chat}`.
+  /// Именно этот эндпоинт (без v2) отдаёт `is_ai_paused` и
+  /// `is_ai_followup_paused`. true = выключено.
+  Future<Map<String, bool>> getChatAiState(int chatId) async {
+    final token = await getToken();
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+    }
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      throw Exception('Base URL не может быть инициализирован');
+    }
+
+    final path = await _appendQueryParams('/chat/$chatId');
+    final response = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка ${response.statusCode}: ${response.body}');
+    }
+
+    final decoded = json.decode(response.body);
+    final result = decoded is Map ? decoded['result'] : null;
+    final map = result is Map
+        ? result
+        : (decoded is Map ? decoded : <String, dynamic>{});
+
+    return {
+      'is_ai_paused': SafeConverters.toBool(map['is_ai_paused']),
+      'is_ai_followup_paused':
+          SafeConverters.toBool(map['is_ai_followup_paused']),
+    };
+  }
+
+  /// Вкл/выкл ИИ в чате: POST `/v3/chat/{chat}/ai` с `{ "enabled": bool }`.
+  /// enabled=true — ИИ активен (на сервере это снимает паузу).
+  Future<void> setChatAiEnabled(int chatId, bool enabled) async {
+    final response = await _postRequest(
+      '/v3/chat/$chatId/ai',
+      <String, dynamic>{'enabled': enabled},
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ?? 'Ошибка настройки ИИ',
+      );
+    }
+  }
+
+  /// Вкл/выкл «Дожим»: POST `/v3/chat/{chat}/followup` с `{ "enabled": bool }`.
+  Future<void> setChatFollowupEnabled(int chatId, bool enabled) async {
+    final response = await _postRequest(
+      '/v3/chat/$chatId/followup',
+      <String, dynamic>{'enabled': enabled},
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ?? 'Ошибка настройки дожима',
+      );
+    }
+  }
+
+  String? _aiDraftErrorText(dynamic errors) {
+    if (errors == null) return null;
+    if (errors is String) {
+      final trimmed = errors.trim();
+      if (trimmed.isEmpty || trimmed == 'null') return null;
+      return trimmed;
+    }
+    if (errors is List && errors.isNotEmpty) {
+      return errors.map((item) => item.toString()).join('\n');
+    }
+    if (errors is Map && errors.isNotEmpty) {
+      return errors.values.map((item) => item.toString()).join('\n');
+    }
+    return null;
+  }
 }

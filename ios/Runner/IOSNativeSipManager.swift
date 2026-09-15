@@ -503,6 +503,11 @@ protocol IOSCallKitManagerDelegate: AnyObject {
         didReceiveEndFor callUUID: UUID,
         payload: VoIPIncomingPayload?
     )
+    func callKitManager(
+        _ manager: IOSCallKitManager,
+        didSetMuted muted: Bool,
+        for callUUID: UUID
+    )
     func callKitManagerDidActivateAudioSession(_ manager: IOSCallKitManager)
     func callKitManagerDidDeactivateAudioSession(_ manager: IOSCallKitManager)
     func callKitManagerDidReset(_ manager: IOSCallKitManager)
@@ -588,6 +593,48 @@ final class IOSCallKitManager: NSObject, CXProviderDelegate {
         let action = CXEndCallAction(call: callUUID)
         let transaction = CXTransaction(action: action)
         callController.request(transaction, completion: completion)
+    }
+
+    /// Reports an outgoing SIP call to CallKit so iOS keeps the green bar,
+    /// Bluetooth route picker, and elapsed time after the app is backgrounded.
+    func requestStartOutgoingCall(
+        uuid: UUID,
+        handle: String,
+        callerName: String?
+    ) {
+        let payload = VoIPIncomingPayload(
+            issuedAt: Date(),
+            eventType: "outgoing_call",
+            uuid: uuid,
+            callId: nil,
+            handle: handle,
+            callerName: callerName,
+            hasVideo: false,
+            fromUri: nil,
+            toUri: nil,
+            sipUri: handle,
+            bridgeUri: nil
+        )
+        payloadsByUUID[uuid] = payload
+        let action = CXStartCallAction(
+            call: uuid,
+            handle: CXHandle(type: handleType(for: handle), value: handle)
+        )
+        action.isVideo = false
+        callController.request(CXTransaction(action: action)) { [weak self] error in
+            if let error {
+                self?.payloadsByUUID.removeValue(forKey: uuid)
+                print("IOSCallKitManager outgoing start failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func reportOutgoingConnecting(callUUID: UUID) {
+        provider.reportOutgoingCall(with: callUUID, startedConnectingAt: Date())
+    }
+
+    func reportOutgoingConnected(callUUID: UUID) {
+        provider.reportOutgoingCall(with: callUUID, connectedAt: Date())
     }
 
     func requestAnswerCall(callUUID: UUID, completion: @escaping (Error?) -> Void) {
@@ -710,6 +757,16 @@ final class IOSCallKitManager: NSObject, CXProviderDelegate {
         delegate?.callKitManager(self, didReceiveEndFor: action.callUUID, payload: payload)
     }
 
+    func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+        action.fulfill()
+        provider.reportOutgoingCall(with: action.callUUID, startedConnectingAt: Date())
+    }
+
+    func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
+        delegate?.callKitManager(self, didSetMuted: action.isMuted, for: action.callUUID)
+        action.fulfill()
+    }
+
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         delegate?.callKitManagerDidActivateAudioSession(self)
     }
@@ -796,6 +853,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var sipReadyQueuedAt: Date?
     private var audioSessionObserversInstalled = false
     private var callKitReportedForCurrentIncoming = false
+    private var callKitReportedForCurrentOutgoing = false
     private var incomingInviteTimeoutTimer: Timer?
     private var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
     private var lastEmittedSipReadyKey: String?
@@ -806,6 +864,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var audioSessionConfiguredForCall = false
     private var isApplyingAudioRoute = false
     private var audioRouteRepairAttempts = 0
+    private var lastCallUiRequestId: Int = 0
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -900,6 +959,23 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         ])
     }
 
+    private func requestFlutterCallUi(source: String) {
+        guard isCallAudioActive else { return }
+        lastCallUiRequestId += 1
+        emit([
+            "type": "call_ui_request",
+            "source": source,
+            "requestId": lastCallUiRequestId,
+            "registrationState": snapshot.registrationState,
+            "callState": snapshot.callState,
+            "remoteIdentity": snapshot.remoteIdentity ?? NSNull(),
+            "message": snapshot.message ?? NSNull(),
+            "muted": snapshot.muted,
+            "speakerOn": snapshot.speakerOn,
+            "persistentEnabled": snapshot.persistentEnabled,
+        ])
+    }
+
     func applicationDidEnterBackground() {
         updateAppVisibility(isForeground: false)
         beginBackgroundTransitionTask(reason: "app-background")
@@ -926,6 +1002,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
         endBackgroundTransitionTask(reason: "app-foreground")
         updateAppVisibility(isForeground: true)
+        requestFlutterCallUi(source: "app-foreground")
     }
 
     private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -1448,8 +1525,13 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.remoteIdentity = target
         snapshot.message = "Outgoing call started"
         snapshot.callId = callId(from: call) ?? snapshot.callId
+        let outgoingUUID = resolvedCallUUID(from: nil) ?? UUID()
+        snapshot.callUUID = outgoingUUID.uuidString
         persistSnapshot()
         configureAudioSessionForCallIfNeeded()
+        callKitReportedForCurrentOutgoing = false
+        promoteBluetoothRouteIfAvailable(reason: "outgoing_started")
+        reportOutgoingCallToSystemIfNeeded(target: target, uuid: outgoingUUID)
         var inviteDetails: [String: String] = [
             "target": target,
             "call_id": snapshot.callId ?? "",
@@ -1777,15 +1859,23 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func availableAudioRoutes() -> [[String: Any]] {
         let session = AVAudioSession.sharedInstance()
+        if isCallAudioActive {
+            try? ensureCallAudioSessionActive()
+        }
         let inputs = session.availableInputs ?? []
         let currentOutput = currentAudioOutputKind(route: session.currentRoute)
         var routes: [[String: Any]] = []
 
-        if let bluetooth = inputs.first(where: { isBluetoothPort($0.portType) }) {
+        let bluetoothInput = inputs.first(where: { isBluetoothPort($0.portType) })
+        let bluetoothOutput = session.currentRoute.outputs.first(where: { isBluetoothPort($0.portType) })
+            ?? session.currentRoute.inputs.first(where: { isBluetoothPort($0.portType) })
+        if bluetoothInput != nil || bluetoothOutput != nil {
+            let name = (bluetoothInput?.portName ?? bluetoothOutput?.portName ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             routes.append([
                 "id": "bluetooth",
                 "type": "bluetooth",
-                "name": bluetooth.portName.isEmpty ? "Bluetooth-наушники" : bluetooth.portName,
+                "name": name.isEmpty ? "Bluetooth-наушники" : name,
                 "selected": currentOutput == "bluetooth",
             ])
         }
@@ -1950,7 +2040,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     ) -> Bool {
         switch routeId {
         case "bluetooth":
-            return type == LinphoneAudioDeviceTypeBluetooth
+            return type == LinphoneAudioDeviceTypeBluetooth ||
+                type == LinphoneAudioDeviceTypeBluetoothA2DP
         case "headset":
             return type == LinphoneAudioDeviceTypeHeadset ||
                 type == LinphoneAudioDeviceTypeHeadphones
@@ -2122,11 +2213,39 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             )
             return
         }
+        if selectedAudioRouteId == nil && !desiredSpeakerOn {
+            promoteBluetoothRouteIfAvailable(reason: reason)
+            if selectedAudioRouteId == "bluetooth" || selectedAudioRouteId == "headset" {
+                return
+            }
+        }
         applySpeakerRoute(
             enabled: desiredSpeakerOn,
             requestGeneration: requestGeneration,
             reason: reason
         )
+    }
+
+    private func promoteBluetoothRouteIfAvailable(reason: String) {
+        guard isCallAudioActive, !desiredSpeakerOn else { return }
+        if selectedAudioRouteId == "speaker" { return }
+        let routes = availableAudioRoutes()
+        guard let bluetooth = routes.first(where: { ($0["id"] as? String) == "bluetooth" }) else {
+            return
+        }
+        selectedAudioRouteId = "bluetooth"
+        snapshot.speakerOn = false
+        persistSnapshot()
+        applyExplicitAudioRoute(
+            "bluetooth",
+            requestGeneration: speakerRouteRequestGeneration,
+            reason: "promote_bluetooth_\(reason)"
+        )
+        appendDiagnosticLog("[VOIP] AUDIO_ROUTE_PROMOTED", [
+            "route_id": "bluetooth",
+            "name": bluetooth["name"] as? String ?? "",
+            "reason": reason,
+        ])
     }
 
     private func scheduleAudioRouteSync(reason: String) {
@@ -2196,7 +2315,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func audioDevicePriority(type: LinphoneAudioDeviceType) -> Int {
         switch type {
-        case LinphoneAudioDeviceTypeBluetooth:
+        case LinphoneAudioDeviceTypeBluetooth, LinphoneAudioDeviceTypeBluetoothA2DP:
             return 4
         case LinphoneAudioDeviceTypeHeadset:
             return 3
@@ -2211,7 +2330,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private func audioDeviceTypeDescription(_ type: LinphoneAudioDeviceType) -> String {
         switch type {
-        case LinphoneAudioDeviceTypeBluetooth:
+        case LinphoneAudioDeviceTypeBluetooth, LinphoneAudioDeviceTypeBluetoothA2DP:
             return "bluetooth"
         case LinphoneAudioDeviceTypeHeadset:
             return "headset"
@@ -2833,6 +2952,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 previousCallState == "early_media"
             if isFirstConnectedState, let uuid = resolvedCallUUID(from: nil) {
                 callKitManager?.reportCallConnected(callUUID: uuid)
+                if isOutgoingMedia {
+                    callKitManager?.reportOutgoingConnected(callUUID: uuid)
+                }
             }
             deferredAction = nil
             pendingIncomingPayload = nil
@@ -2845,6 +2967,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             // than once and setCategory was inverting the loudspeaker toggle.
             if isFirstConnectedState {
                 applyCurrentAudioRoutePreference(reason: "call_connected")
+                promoteBluetoothRouteIfAvailable(reason: "call_connected")
             } else {
                 let outputKind = currentAudioOutputKind(
                     route: AVAudioSession.sharedInstance().currentRoute
@@ -3233,6 +3356,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         incomingPushReceivedAt = Date()
         sipReadyQueuedAt = nil
         callKitReportedForCurrentIncoming = false
+        callKitReportedForCurrentOutgoing = false
         snapshot.callUUID = payload.uuid.uuidString
         snapshot.callId = payload.callId
         snapshot.sipCallId = existingIncomingCall.flatMap(callId(from:))
@@ -3354,6 +3478,29 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "sipCallId": sipCallId.isEmpty ? NSNull() : sipCallId,
             "extension": sipExtension,
             "remoteIdentity": payload.handle,
+        ])
+    }
+
+    private func reportOutgoingCallToSystemIfNeeded(target: String, uuid: UUID) {
+        guard CallKitAvailabilityPolicy.isAvailable, let callKitManager else { return }
+        guard !callKitReportedForCurrentOutgoing else { return }
+        callKitReportedForCurrentOutgoing = true
+        var handle = target.trimmingCharacters(in: .whitespacesAndNewlines)
+        if handle.lowercased().hasPrefix("sip:") {
+            handle = String(handle.dropFirst(4))
+        }
+        if let at = handle.firstIndex(of: "@") {
+            handle = String(handle[..<at])
+        }
+        let displayHandle = handle.isEmpty ? target : handle
+        callKitManager.requestStartOutgoingCall(
+            uuid: uuid,
+            handle: displayHandle,
+            callerName: nil
+        )
+        appendDiagnosticLog("[VOIP] CALLKIT_OUTGOING_STARTED", [
+            "call_uuid": uuid.uuidString,
+            "handle": displayHandle,
         ])
     }
 
@@ -3581,6 +3728,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private func handleCallEnded(reason: CXCallEndedReason, callUUID: UUID, remoteIdentity: String?) {
         cancelIncomingInviteTimeout()
         callKitReportedForCurrentIncoming = false
+        callKitReportedForCurrentOutgoing = false
         if let core {
             linphone_core_enable_native_ringing(core, 1)
         }
@@ -4170,6 +4318,7 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
     func callKitManagerDidReset(_ manager: IOSCallKitManager) {
         cancelIncomingInviteTimeout()
         callKitReportedForCurrentIncoming = false
+        callKitReportedForCurrentOutgoing = false
         if let core {
             linphone_core_enable_native_ringing(core, 1)
         }
@@ -4181,5 +4330,13 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         snapshot = NativeSipSnapshot.initial()
         persistSnapshot()
         emitCallEvent(state: "ended", message: "CallKit provider reset")
+    }
+
+    func callKitManager(
+        _ manager: IOSCallKitManager,
+        didSetMuted muted: Bool,
+        for callUUID: UUID
+    ) {
+        _ = setMuted(muted)
     }
 }

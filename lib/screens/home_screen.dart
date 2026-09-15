@@ -32,6 +32,7 @@ import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.d
 import 'package:crm_task_manager/page_2/warehouse/warehouse_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dart';
 import 'package:crm_task_manager/screens/MyNavBar.dart';
+import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/screens/background_data_loader_service.dart';
 import 'package:crm_task_manager/screens/chats/chats_screen.dart';
 import 'package:crm_task_manager/screens/dashboard/dashboard_screen.dart';
@@ -77,7 +78,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _lastScreensStructureKey = '';
   DateTime? _lastPermissionUpdate;
   DateTime? _lastResumeSyncAt;
-  String _profileHeaderName = 'Профиль';
+  // Имя и фото для шапки профиля. Заголовок экрана берём из локализации.
+  String _profileHeaderName = '';
+  String _profileHeaderImage = '';
 
   List<Widget> _widgetOptionsGroup1 = [];
   List<Widget> _widgetOptionsGroup2 = [];
@@ -639,6 +642,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _showProfileScreen = true;
     });
+    unawaited(_loadProfileHeaderName());
   }
 
   void _handleWorkdayProfileClose() {
@@ -681,18 +685,48 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadProfileHeaderName() async {
     final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userID') ?? '';
+    final cachedProfileImage = userId.isEmpty
+        ? ''
+        : (prefs.getString('userProfileImage_$userId') ?? '');
     final userName = prefs.getString('userNameProfile') ??
         prefs.getString('userName') ??
-        'Профиль';
+        '';
+    final userImage = prefs.getString('userImage') ?? cachedProfileImage;
     if (!mounted) return;
     setState(() {
-      _profileHeaderName = userName.isEmpty ? 'Профиль' : userName;
+      _profileHeaderName = userName;
+      _profileHeaderImage = userImage;
     });
+
+    // Prefs могут быть пустыми при первом открытии после PIN — берём свой аватар.
+    if (userId.isEmpty) return;
+    try {
+      final userProfile = await ApiService().getUserById(int.parse(userId));
+      if (!mounted) return;
+      final profileName = userProfile.name;
+      final profileImage = userProfile.image ?? '';
+      setState(() {
+        if (profileName.isNotEmpty && profileName != 'Не указано') {
+          _profileHeaderName = profileName;
+        }
+        if (profileImage.isNotEmpty) {
+          _profileHeaderImage = profileImage;
+        }
+      });
+      if (profileImage.isNotEmpty) {
+        await prefs.setString('userImage', profileImage);
+        await prefs.setString('userProfileImage_$userId', profileImage);
+      }
+    } catch (_) {
+      return;
+    }
   }
 
   String _currentSectionTitle(AppLocalizations localizations) {
     if (_showProfileScreen) {
-      return _profileHeaderName;
+      // Не хардкодим «Профиль» — ключ уже есть в ru/uz/en.
+      return localizations.translate('profile_editor');
     }
 
     if (_selectedIndexGroup1 != -1 &&
@@ -708,6 +742,101 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     return 'shamCRM';
+  }
+
+  // URL или SVG аватарки из профиля — как в CustomAppBar.
+  String? _extractImageUrlFromSvg(String svg) {
+    if (!svg.contains('href="')) return null;
+    final start = svg.indexOf('href="') + 6;
+    final end = svg.indexOf('"', start);
+    if (end <= start) return null;
+    return svg.substring(start, end);
+  }
+
+  Color? _extractBackgroundColorFromSvg(String svg) {
+    final fillMatch = RegExp(r'fill="(#[A-Fa-f0-9]+)"').firstMatch(svg);
+    final colorHex = fillMatch?.group(1);
+    if (colorHex == null) return null;
+    return Color(int.parse('FF${colorHex.replaceAll('#', '')}', radix: 16));
+  }
+
+  Widget _buildProfileHeaderAvatar(BuildContext context) {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+    const size = AppBarShell.orbSize;
+
+    Widget fallbackLetter() {
+      final translatedTitle =
+          AppLocalizations.of(context)?.translate('profile_editor') ?? 'P';
+      final letter = _profileHeaderName.isNotEmpty
+          ? _profileHeaderName.substring(0, 1).toUpperCase()
+          : translatedTitle.substring(0, 1).toUpperCase();
+      return Container(
+        width: size,
+        height: size,
+        color: colors.buttonPrimaryBg,
+        alignment: Alignment.center,
+        child: Text(
+          letter,
+          style: textStyles.titleLg.copyWith(
+            color: colors.textInverse,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    Widget avatar;
+    if (_profileHeaderImage.startsWith('<svg')) {
+      final imageUrl = _extractImageUrlFromSvg(_profileHeaderImage);
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        avatar = Image.network(
+          imageUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallbackLetter(),
+        );
+      } else {
+        final text = RegExp(r'>([^<]+)</text>')
+                .firstMatch(_profileHeaderImage)
+                ?.group(1) ??
+            '';
+        avatar = Container(
+          width: size,
+          height: size,
+          color: _extractBackgroundColorFromSvg(_profileHeaderImage) ??
+              colors.buttonPrimaryBg,
+          alignment: Alignment.center,
+          child: Text(
+            text.isNotEmpty
+                ? text
+                : (_profileHeaderName.isNotEmpty
+                    ? _profileHeaderName.substring(0, 1).toUpperCase()
+                    : 'P'),
+            style: textStyles.titleLg.copyWith(
+              color: colors.textInverse,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+    } else if (_profileHeaderImage.isNotEmpty &&
+        _profileHeaderImage != 'Не найдено') {
+      avatar = Image.network(
+        _profileHeaderImage,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallbackLetter(),
+      );
+    } else {
+      avatar = fallbackLetter();
+    }
+
+    return ClipOval(child: avatar);
   }
 
   Widget _buildEmbeddedProfileOverlay(BuildContext context) {
@@ -733,45 +862,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   bottom: false,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: SizedBox(
-                      height: 56,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: colors.buttonPrimaryBg,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              _profileHeaderName.isNotEmpty
-                                  ? _profileHeaderName
-                                      .substring(0, 1)
-                                      .toUpperCase()
-                                  : 'P',
-                              style: textStyles.titleLg.copyWith(
-                                color: colors.textInverse,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
+                    child: AppBarShell(
+                      leading: AppBarShell.capsule(
+                        context,
+                        width: AppBarShell.orbSize,
+                        padding: EdgeInsets.zero,
+                        child: _buildProfileHeaderAvatar(context),
+                      ),
+                      center: AppBarShell.capsule(
+                        context,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _currentSectionTitle(localizations),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textStyles.titleLg.copyWith(
+                              color: colors.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _currentSectionTitle(localizations),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textStyles.titleLg.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -1296,7 +1406,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   if (_showProfileScreen) {
                                     showCustomSnackBar(
                                       context: context,
-                                      message: 'Сначала начните работу',
+                                      message: AppLocalizations.of(context)!
+                                          .translate('workday_start_first'),
                                       isSuccess: false,
                                     );
                                     return;

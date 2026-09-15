@@ -24,7 +24,9 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/media_group_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_ai_settings_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
+import 'package:crm_task_manager/utils/ai_integration_store.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_corporate_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corporate.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
@@ -127,6 +129,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   String? integrationUsername;
   String? channelName;
   ChatAdvertising? _chatAdvertising;
+  // Состояние ИИ по чату: paused=true значит выключено (в UI показываем инверсию).
+  bool _isAiPaused = false;
+  bool _isAiFollowupPaused = false;
   int? _lastMarkedMessageId;
   bool _isRecordingInProgress = false;
   String? referralBody;
@@ -1044,6 +1049,64 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _markMessagesAsRead();
   }
 
+  // Кнопка «настройки ИИ» в конце баннера «Обращение на канал».
+  Widget _buildAiSettingsButton() {
+    final accent = context.appColors.buttonPrimaryBg;
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: _openAiSettingsSheet,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 40,
+          height: 40,
+          // Без фона и обводки — только сама иконка, покрупнее.
+          padding: const EdgeInsets.all(2),
+          // AI-иконка настроек (та, что недавно добавили).
+          child: Image.asset(
+            'assets/icons/chats/ai_settings.png',
+            width: 36,
+            height: 36,
+            color: accent,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Тянет актуальное состояние ИИ (is_ai_paused / is_ai_followup_paused)
+  // из /chat/{id} и обновляет локальные флаги.
+  Future<void> _refreshAiState() async {
+    try {
+      final state = await widget.apiService.getChatAiState(widget.chatId);
+      if (!mounted) return;
+      setState(() {
+        _isAiPaused = state['is_ai_paused'] ?? _isAiPaused;
+        _isAiFollowupPaused =
+            state['is_ai_followup_paused'] ?? _isAiFollowupPaused;
+      });
+    } catch (e) {
+      debugPrint('ChatSmsScreen: refresh ai state error: $e');
+    }
+  }
+
+  // Открывает шторку с переключателями «ИИ в чате» и «Дожим».
+  // enabled = !paused: сервер хранит паузу, а пользователю показываем «включено».
+  Future<void> _openAiSettingsSheet() async {
+    // Состояние уже свежее (обновляется при входе в чат), открываем сразу.
+    await showChatAiSettingsSheet(
+      context: context,
+      chatId: widget.chatId,
+      apiService: widget.apiService,
+      aiEnabled: !_isAiPaused,
+      followupEnabled: !_isAiFollowupPaused,
+    );
+
+    // После закрытия перечитываем — вдруг что-то поменяли внутри.
+    await _refreshAiState();
+  }
+
   Widget _buildScrollToBottomButton() {
     return AnimatedSlide(
       duration: const Duration(milliseconds: 180),
@@ -1771,8 +1834,14 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       setState(() {
         referralBody = chatData.referralBody;
         _chatAdvertising = chatData.advertising;
+        _isAiPaused = chatData.isAiPaused;
+        _isAiFollowupPaused = chatData.isAiFollowupPaused;
         prefs.setString('referral_body_${widget.chatId}', referralBody ?? '');
       });
+
+      // Флаги ИИ приходят из /chat/{id} (без v2). Тянем их отдельно,
+      // чтобы кнопка/шторка показывали реальное вкл/выкл.
+      _refreshAiState();
 
       IntegrationForLead? integration;
       try {
@@ -1786,23 +1855,38 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         integration = null;
       }
 
-      setState(() {
-        if (integration != null) {
-          integrationUsername = integration.username ??
-              AppLocalizations.of(context)!.translate('unknown_channel');
-          channelName =
-              _determineChannelType(integration) ?? chatData.channelName;
-        } else {
-          integrationUsername = chatData.name.isNotEmpty
-              ? chatData.name
-              : AppLocalizations.of(context)!.translate('unknown_channel');
-          channelName = chatData.channelName;
-        }
+      // Ищем первое непустое имя канала по цепочке запасных вариантов.
+      // Раньше при username=null сразу ставили "Неизвестный канал", хотя
+      // у канала есть name / channel.name / имя лида.
+      final resolvedUsername = _firstNonEmpty([
+        integration?.username,
+        integration?.name,
+        integration?.channel?.name,
+        // Интеграция из самого чата — на случай, когда /get-integration = 404.
+        chatData.integrationUsername,
+        chatData.integrationName,
+        chatData.name,
+      ]);
 
-        prefs.setString(
-            'integration_username_${widget.chatId}', integrationUsername!);
-        prefs.setString('channel_name_${widget.chatId}', channelName!);
+      final resolvedChannel =
+          (integration != null ? _determineChannelType(integration) : null) ??
+              chatData.channelName;
+
+      setState(() {
+        integrationUsername = resolvedUsername ??
+            AppLocalizations.of(context)!.translate('unknown_channel');
+        channelName = resolvedChannel;
       });
+
+      // ВАЖНО: кэшируем только реальное значение. Заглушку "неизвестно"
+      // не сохраняем, иначе она залипает в prefs и показывается всегда.
+      if (resolvedUsername != null) {
+        prefs.setString(
+            'integration_username_${widget.chatId}', resolvedUsername);
+      }
+      if (resolvedChannel.isNotEmpty) {
+        prefs.setString('channel_name_${widget.chatId}', resolvedChannel);
+      }
 
       debugPrint(
           '=================-=== ChatSmsScreen: Integration configured - username: $integrationUsername, channel: $channelName');
@@ -1822,6 +1906,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint(
           '=================-=== ChatSmsScreen: Using cached integration data');
     }
+  }
+
+  // Возвращает первое непустое значение (без 'null' и пробелов).
+  String? _firstNonEmpty(List<String?> values) {
+    for (final value in values) {
+      final trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty && trimmed != 'null') {
+        return trimmed;
+      }
+    }
+    return null;
   }
 
   String? _determineChannelType(IntegrationForLead integration) {
@@ -2903,6 +2998,15 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                           message: '@$integrationUsername',
                           channelType: channelName,
                           onTap: null,
+                          // Кнопка настроек ИИ появляется только при активной
+                          // интеграции (флаг из get-user-data).
+                          trailing: ValueListenableBuilder<bool>(
+                            valueListenable: AiIntegrationStore.enabled,
+                            builder: (context, hasAi, _) {
+                              if (!hasAi) return const SizedBox.shrink();
+                              return _buildAiSettingsButton();
+                            },
+                          ),
                         ),
                       ),
                     if (pinnedMessages.isNotEmpty)
@@ -2997,6 +3101,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             onAttachFile: _onPickFilePressed,
             focusNode: _focusNode,
             isLeadChat: widget.endPointInTab == 'lead',
+            onGenerateAiDraft: () {
+              // Черновик ответа приходит в поле ввода, не в историю чата.
+              return widget.apiService.generateChatAiDraft(widget.chatId);
+            },
             onRecordVoice: () {
               debugPrint('Record voice triggered');
             },

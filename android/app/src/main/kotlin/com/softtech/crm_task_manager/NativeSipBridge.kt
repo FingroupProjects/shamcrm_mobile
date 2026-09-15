@@ -106,6 +106,7 @@ object NativeSipBridge {
             migrateEnabledFlagIfNeeded()
             currentSnapshot["persistentEnabled"] = isPersistentEnabled()
         }
+        SipTelecom.ensureAccount(context.applicationContext)
     }
 
     /**
@@ -642,6 +643,22 @@ object NativeSipBridge {
                 }
                 currentSnapshot["muted"] = event["muted"] ?: false
                 currentSnapshot["speakerOn"] = event["speakerOn"] ?: false
+                if (callState == "in_call" && previousCallState != "in_call") {
+                    currentSnapshot["callStartedAtMs"] = System.currentTimeMillis()
+                } else if (!isActiveCallState(callState)) {
+                    currentSnapshot.remove("callStartedAtMs")
+                }
+                // Audio-route events reuse the current call state. Syncing
+                // Telecom on those repeats would start a second system call.
+                if (callState != previousCallState) {
+                    appContext?.let { context ->
+                        SipTelecom.syncCallState(
+                            context = context,
+                            callState = callState,
+                            remoteIdentity = currentSnapshot["remoteIdentity"]?.toString(),
+                        )
+                    }
+                }
             }
             "native" -> {
                 currentSnapshot["message"] = event["state"]

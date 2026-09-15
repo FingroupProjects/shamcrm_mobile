@@ -52,6 +52,7 @@ class NativeSipForegroundService : Service() {
         @Synchronized
         fun start(context: Context): Boolean {
             NativeSipBridge.initialize(context.applicationContext)
+            SipTelecom.ensureAccount(context.applicationContext)
             if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
                 Log.d(TAG, "Skip foreground SIP service: line was never connected")
                 return false
@@ -182,6 +183,7 @@ class NativeSipForegroundService : Service() {
     private var incomingCallRingtone: Ringtone? = null
     private var incomingPresentationKey: String? = null
     private var microphoneForegroundTypeActive = false
+    private var usingCallStyleNotification = false
     private var incomingUiRetryCount = 0
     private val incomingUiWatchdog = object : Runnable {
         override fun run() {
@@ -393,13 +395,16 @@ class NativeSipForegroundService : Service() {
             event = "foreground_service_task_removed",
             details = hashMapOf(
                 "persistentEnabled" to NativeSipBridge.isPersistentEnabled(),
+                "callState" to currentCallState(),
             ),
         )
-        // Removing the app task must not restart SIP. The service is declared
-        // with stopWithTask=false and remains the owner of the Linphone core;
-        // a normal recents swipe should therefore leave registration intact.
-        // Recovery after an actual process kill is handled by START_STICKY,
-        // FCM and WorkManager instead of an unconditional Alarm restart.
+        // Recents swipe must not drop a live SIP call. Keep the phoneCall
+        // foreground service and the Telecom connection. The user can still
+        // return through the ongoing call notification.
+        if (isActiveCallState(currentCallState())) {
+            updateServiceNotification()
+            return
+        }
         super.onTaskRemoved(rootIntent)
     }
 
@@ -432,7 +437,14 @@ class NativeSipForegroundService : Service() {
                             scheduleIncomingUiWatchdog()
                         }
                     }
-                    "calling", "ringing", "in_call", "ended", "failed", "idle" -> {
+                    "calling", "ringing", "in_call" -> {
+                        cancelIncomingUiWatchdog()
+                        incomingPresentationKey = null
+                        stopIncomingCallRingtone()
+                        releaseIncomingCallWakeLock()
+                        notificationManager.cancel(NOTIFICATION_CALL_ID)
+                    }
+                    "ended", "failed", "idle" -> {
                         cancelIncomingUiWatchdog()
                         incomingPresentationKey = null
                         stopIncomingCallRingtone()
@@ -559,10 +571,17 @@ class NativeSipForegroundService : Service() {
         try {
             val snapshot = NativeSipBridge.getStateSnapshot()
             val notification = buildServiceNotification(snapshot)
+            val callState = snapshot["callState"]?.toString()
             val wantsMicrophoneType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                isActiveCallState(snapshot["callState"]?.toString())
-            if (wantsMicrophoneType != microphoneForegroundTypeActive) {
+                isActiveCallState(callState)
+            val useCallStyle = callState == "calling" ||
+                callState == "ringing" ||
+                callState == "in_call"
+            if (wantsMicrophoneType != microphoneForegroundTypeActive ||
+                useCallStyle != usingCallStyleNotification
+            ) {
                 startSipForeground(notification)
+                usingCallStyleNotification = useCallStyle
             } else {
                 notificationManager.notify(NOTIFICATION_SERVICE_ID, notification)
             }
@@ -583,12 +602,13 @@ class NativeSipForegroundService : Service() {
     private fun buildServiceNotification(snapshot: HashMap<String, Any?>): Notification {
         val registrationState = snapshot["registrationState"]?.toString() ?: "disconnected"
         val callState = snapshot["callState"]?.toString() ?: "idle"
+        if (callState == "calling" || callState == "ringing" || callState == "in_call") {
+            return buildOngoingCallNotification(snapshot)
+        }
+
         val remoteIdentity = formatIdentity(snapshot["remoteIdentity"]?.toString())
         val text = when {
             callState == "incoming" -> "Входящий звонок: $remoteIdentity"
-            callState == "calling" -> "Исходящий звонок: $remoteIdentity"
-            callState == "ringing" -> "Ожидаем ответ: $remoteIdentity"
-            callState == "in_call" -> "Разговор: $remoteIdentity"
             registrationState == "registered" -> "Телефония подключена и ждёт входящие звонки"
             registrationState == "registering" -> "Подключаем телефонию..."
             else -> "Телефония не подключена"
@@ -617,12 +637,63 @@ class NativeSipForegroundService : Service() {
                 "Ответить",
                 answerActivityPendingIntent(),
             )
-        } else if (callState == "calling" || callState == "ringing" || callState == "in_call") {
-            builder.addAction(
+        }
+
+        return builder.build()
+    }
+
+    // WhatsApp-style live call: name/number, elapsed seconds, hangup, tap opens
+    // this exact conversation. Ongoing + CallStyle so the shade cannot swipe it
+    // away until the SIP session ends.
+    private fun buildOngoingCallNotification(snapshot: HashMap<String, Any?>): Notification {
+        val callState = snapshot["callState"]?.toString() ?: "in_call"
+        val remoteIdentity = formatIdentity(snapshot["remoteIdentity"]?.toString())
+        val connectedAtMs = (snapshot["callStartedAtMs"] as? Number)?.toLong()
+        val statusText = when (callState) {
+            "calling" -> "Исходящий звонок"
+            "ringing" -> "Ожидаем ответ"
+            else -> "Разговор"
+        }
+        val caller = Person.Builder()
+            .setName(remoteIdentity)
+            .setImportant(true)
+            .build()
+        val hangupIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_HANGUP)
+        val builder = NotificationCompat.Builder(this, CHANNEL_CALLS_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(remoteIdentity)
+            .setContentText(statusText)
+            .setSubText("shamCRM")
+            .setColor(0xFF1E88E5.toInt())
+            .setColorized(true)
+            .setContentIntent(mainActivityPendingIntent(openCall = true))
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .addAction(
                 R.mipmap.ic_launcher,
                 "Завершить",
-                actionPendingIntent(NativeSipActionReceiver.ACTION_HANGUP),
+                hangupIntent,
             )
+
+        if (callState == "in_call" && connectedAtMs != null && connectedAtMs > 0L) {
+            builder.setWhen(connectedAtMs)
+                .setShowWhen(true)
+                .setUsesChronometer(true)
+                .setChronometerCountDown(false)
+        }
+
+        try {
+            builder.setStyle(
+                NotificationCompat.CallStyle.forOngoingCall(caller, hangupIntent),
+            )
+        } catch (error: Throwable) {
+            Log.w(TAG, "CallStyle ongoing notification unavailable: ${error.message}")
         }
 
         return builder.build()
@@ -844,14 +915,15 @@ class NativeSipForegroundService : Service() {
             setShowBadge(false)
         }
 
-        // Канал входящих звонков без собственного notification sound:
-        // единственный звук проигрывает сервис через RingtoneManager.
+        // High-importance call channel is also used for the live conversation
+        // notification (name + timer). Users cannot swipe it away while the
+        // phoneCall foreground service owns it.
         val callsChannel = NotificationChannel(
             CHANNEL_CALLS_ID,
             "SHAMCRM Телефония Звонки",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Входящие звонки"
+            description = "Входящие и текущие звонки"
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             setSound(null, null)
             enableVibration(true)

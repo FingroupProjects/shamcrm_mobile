@@ -193,17 +193,16 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
             : CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
+          // Name sits on the chat wallpaper, not inside the bubble.
+          // Use the same wallpaper color as SMS / file / image messages.
           if (widget.isLeadChat ||
               widget.isGroupChat == true ||
               !widget.message.isMyMessage)
             Text(
               widget.message.senderName,
-              style: TextStyle(
+              style: context.appTextStyles.labelMd.copyWith(
                 fontWeight: FontWeight.w600,
-                color: appearance.secondaryForeground(
-                  context,
-                  widget.message.isMyMessage,
-                ),
+                color: appearance.senderNameColor(context),
               ),
             ),
           Material(
@@ -297,10 +296,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
               Text(
                 time(widget.message.createMessateTime),
                 style: context.appTextStyles.bodySm.copyWith(
-                  color: appearance.secondaryForeground(
-                    context,
-                    widget.message.isMyMessage,
-                  ),
+                  color: context.appColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -310,11 +306,8 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
                   Icons.done_all,
                   size: 18,
                   color: widget.message.isRead
-                      ? foreground
-                      : appearance.secondaryForeground(
-                          context,
-                          widget.message.isMyMessage,
-                        ),
+                      ? appearance.accentColor(context)
+                      : context.appColors.textSecondary,
                 ),
             ],
           ),

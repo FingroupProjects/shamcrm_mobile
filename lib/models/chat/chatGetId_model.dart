@@ -14,6 +14,13 @@ class ChatsGetId {
   final String? referralBody;
   final ChatAdvertising? advertising;
   final int unreadCount;
+  // Пауза ИИ: true = выключен. В UI показываем инверсию (enabled = !paused).
+  final bool isAiPaused;
+  final bool isAiFollowupPaused;
+  // Интеграция канала прямо из ответа чата. Нужна как запасное имя канала,
+  // когда отдельный запрос /get-integration отдаёт 404.
+  final String? integrationUsername;
+  final String? integrationName;
 
   ChatsGetId({
     required this.id,
@@ -27,6 +34,10 @@ class ChatsGetId {
     this.referralBody,
     this.advertising,
     this.unreadCount = 0,
+    this.isAiPaused = false,
+    this.isAiFollowupPaused = false,
+    this.integrationUsername,
+    this.integrationName,
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
@@ -123,6 +134,9 @@ class ChatsGetId {
       );
     }
 
+    // Встроенная интеграция канала (например {name, username}).
+    final integrationMap = SafeConverters.toMapOrNull(data['integration']);
+
     debugPrint('🔧 [ChatsGetId.fromJson] Final values:');
     debugPrint('   id: ${data['id']}');
     debugPrint('   name: "$name"');
@@ -148,6 +162,11 @@ class ChatsGetId {
           ? ChatAdvertising.fromJson(SafeConverters.toMap(data['advertising']))
           : null,
       unreadCount: SafeConverters.toInt(data['unread_count']),
+      isAiPaused: SafeConverters.toBool(data['is_ai_paused']),
+      isAiFollowupPaused: SafeConverters.toBool(data['is_ai_followup_paused']),
+      integrationUsername:
+          SafeConverters.toStringOrNull(integrationMap?['username']),
+      integrationName: SafeConverters.toStringOrNull(integrationMap?['name']),
     );
   }
 }

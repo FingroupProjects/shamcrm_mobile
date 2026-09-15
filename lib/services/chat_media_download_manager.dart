@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
-import 'package:crm_task_manager/utils/app_colors.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -193,34 +192,44 @@ class ChatMediaDownloadManager extends ChangeNotifier {
   }
 
   void _showResult(ChatDownloadTask task, bool success) {
-    final messenger = ApiService.scaffoldMessengerKey.currentState;
-    if (messenger == null) return;
-
     final context = ApiService.navigatorKey.currentContext;
-    final loc = context == null ? null : AppLocalizations.of(context);
-    final message = switch (task.kind) {
-      ChatDownloadKind.image => loc?.translate(
-            success ? 'image_saved_success' : 'image_save_failed',
-          ) ??
-          (success
-              ? 'Изображение сохранено. ✅'
-              : 'Не удалось сохранить изображение. ❌'),
-      ChatDownloadKind.video => loc?.translate(
-            success ? 'video_saved_success' : 'video_save_failed',
-          ) ??
-          (success ? 'Видео сохранено. ✅' : 'Не удалось сохранить видео. ❌'),
-      ChatDownloadKind.file => loc?.translate(
-            success ? 'file_saved_success' : 'file_save_failed',
-          ) ??
-          (success ? 'Файл сохранён. ✅' : 'Не удалось сохранить файл. ❌'),
+    final messageKey = switch (task.kind) {
+      ChatDownloadKind.image =>
+        success ? 'image_saved_success' : 'image_save_failed',
+      ChatDownloadKind.video =>
+        success ? 'video_saved_success' : 'video_save_failed',
+      ChatDownloadKind.file =>
+        success ? 'file_saved_success' : 'file_save_failed',
     };
 
+    // Overlay toast: white text on green/red, in front of the media viewer.
+    if (context != null && context.mounted) {
+      showCustomSnackBar(
+        context: context,
+        message: messageKey,
+        isSuccess: success,
+        aboveDialogs: true,
+      );
+      return;
+    }
+
+    final messenger = ApiService.scaffoldMessengerKey.currentState;
+    if (messenger == null) return;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(message),
-          backgroundColor: success ? AppColors.primaryBlue : Colors.red,
+          content: Text(
+            messageKey,
+            style: const TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor:
+              success ? const Color(0xff16A34A) : const Color(0xffDC2626),
         ),
       );
   }

@@ -1,6 +1,12 @@
 package com.softtech.crm_task_manager
 
+import android.bluetooth.BluetoothHeadset
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -46,6 +52,28 @@ class NativeSipManager(
     private var lastUnansweredIncomingEndedAtMs = 0L
     private var answerInProgress = false
     private var proximityWakeLock: PowerManager.WakeLock? = null
+    private var bluetoothReceiverRegistered = false
+    private val applyPreferredRouteRunnable = Runnable {
+        core?.let { tryApplySpeakerPreference(it) }
+    }
+    private val bluetoothReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!isEarlyCallState(lastCallState) && lastCallState != "in_call") {
+                return
+            }
+            val sipCore = core ?: return
+            if (intent?.action == BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED ||
+                intent?.action == AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED
+            ) {
+                SipCallAudio.prepareForCall(
+                    this@NativeSipManager.context,
+                    sipCore,
+                    preferBluetooth = !isSpeakerOn,
+                )
+            }
+            tryApplySpeakerPreference(sipCore)
+        }
+    }
 
     fun setEventListener(listener: ((HashMap<String, Any?>) -> Unit)?) {
         eventListener = listener
@@ -207,6 +235,7 @@ class NativeSipManager(
                 emitCallState("failed", target, "Не удалось начать звонок через телефонию")
                 false
             } else {
+                prepareCallAudio(sipCore, preferBluetooth = !isSpeakerOn)
                 emitCallState("calling", remoteIdentityFor(call), "Звонок начат")
                 true
             }
@@ -302,6 +331,7 @@ class NativeSipManager(
                 answerInProgress = false
                 return false
             }
+            prepareCallAudio(core, preferBluetooth = !isSpeakerOn)
             Log.d(TAG, "acceptCall requested successfully: state=$stateAfterAccept")
             emit(
                 type = "answer_action",
@@ -353,6 +383,7 @@ class NativeSipManager(
             currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
+            SipCallAudio.leaveCallMode(context)
             emitCallState("ended", null, "Call already ended locally")
             return true
         }
@@ -364,6 +395,7 @@ class NativeSipManager(
             currentCall = null
             isSpeakerOn = false
             lastCallState = "ended"
+            SipCallAudio.leaveCallMode(context)
             emitCallState("ended", remoteIdentity, "Call ended locally")
             true
         } catch (error: Throwable) {
@@ -426,6 +458,9 @@ class NativeSipManager(
         }
         return try {
             applyingAudioRoute = true
+            if (!enabled) {
+                prepareCallAudio(sipCore, preferBluetooth = true)
+            }
             val desired = preferredAudioDevice(sipCore, speakerEnabled = enabled)
 
             if (desired != null) {
@@ -433,7 +468,9 @@ class NativeSipManager(
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = if (enabled) "speaker_enabled" else "speaker_disabled",
-                    deviceType = audioDeviceTypeName(desired),
+                    deviceType = audioRouteTypeKey(desired),
+                    deviceId = desired.getId(),
+                    deviceName = audioRouteDisplayName(desired),
                 )
                 emitCallState(
                     state = mapCallState(currentCall?.getState()?.toString()),
@@ -468,8 +505,13 @@ class NativeSipManager(
         } catch (_: Throwable) {
             null
         }
+        val selectedType = try {
+            sipCore.getOutputAudioDevice()?.let(::audioRouteTypeKey)
+        } catch (_: Throwable) {
+            null
+        }
 
-        return sipCore.getAudioDevices()
+        val routes = sipCore.getAudioDevices()
             .filter { device ->
                 try {
                     device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
@@ -487,6 +529,33 @@ class NativeSipManager(
                     "selected" to (device.getId() == selectedId),
                 )
             }
+
+        // Headphones that were connected before the call often exist in
+        // AudioManager but not yet in Linphone. Show them anyway so the
+        // picker matches the stock Phone app.
+        val systemBluetoothName = SipCallAudio.connectedBluetoothName(context)
+        val hasLinphoneBluetooth = routes.any { it["type"] == "bluetooth" }
+        if (systemBluetoothName != null && !hasLinphoneBluetooth) {
+            val bluetoothSelected = selectedType == "bluetooth" ||
+                (selectedId == null && SipCallAudio.isBluetoothAudioOn(context))
+            routes.add(
+                0,
+                hashMapOf(
+                    "id" to SipCallAudio.SYNTHETIC_BLUETOOTH_ID,
+                    "type" to "bluetooth",
+                    "name" to systemBluetoothName,
+                    "selected" to bluetoothSelected,
+                ),
+            )
+            if (bluetoothSelected) {
+                routes.forEach { route ->
+                    if (route["id"] != SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+                        route["selected"] = false
+                    }
+                }
+            }
+        }
+        return routes
     }
 
     fun setAudioRoute(deviceId: String): Boolean {
@@ -496,11 +565,31 @@ class NativeSipManager(
 
         return try {
             applyingAudioRoute = true
-            val devices = sipCore.getAudioDevices().toList()
-            val outputDevice = devices.firstOrNull { device ->
-                device.getId() == normalizedId &&
-                    device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
-            } ?: return false
+            if (normalizedId == SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+                selectedAudioDeviceId = SipCallAudio.SYNTHETIC_BLUETOOTH_ID
+                isSpeakerOn = false
+                SipCallAudio.prepareForCall(context, sipCore, preferBluetooth = true)
+            }
+            val outputDevice = resolveOutputDevice(sipCore, normalizedId)
+            if (outputDevice == null && normalizedId == SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+                schedulePreferredRouteRetry()
+                emitAudioRouteState(
+                    state = "audio_device_selected",
+                    reason = "user_selected_bluetooth_pending",
+                    deviceType = "bluetooth",
+                    deviceId = SipCallAudio.SYNTHETIC_BLUETOOTH_ID,
+                    deviceName = SipCallAudio.connectedBluetoothName(context),
+                )
+                emitCallState(
+                    state = lastCallState,
+                    remoteIdentity = remoteIdentityFor(currentCall),
+                    message = "Audio route changed",
+                    muted = currentCall?.getMicrophoneMuted() ?: false,
+                    speakerOn = false,
+                )
+                return true
+            }
+            if (outputDevice == null) return false
 
             applyAudioDevicePair(sipCore, outputDevice)
             val routeType = audioRouteTypeKey(outputDevice)
@@ -510,7 +599,7 @@ class NativeSipManager(
             emitAudioRouteState(
                 state = "audio_device_selected",
                 reason = "user_selected",
-                deviceType = audioDeviceTypeName(outputDevice),
+                deviceType = routeType,
                 deviceId = outputDevice.getId(),
                 deviceName = audioRouteDisplayName(outputDevice),
             )
@@ -533,6 +622,9 @@ class NativeSipManager(
     fun dispose() {
         desiredRegistrationEnabled = false
         updateProximityScreenOff(callState = "ended", reason = "dispose")
+        unregisterBluetoothReceiver()
+        mainHandler.removeCallbacks(applyPreferredRouteRunnable)
+        SipCallAudio.leaveCallMode(context)
         try {
             currentCall?.terminate()
         } catch (_: Throwable) {
@@ -783,6 +875,9 @@ class NativeSipManager(
                 if (state.toString() == "End" || state.toString() == "Released") {
                     isSpeakerOn = false
                     selectedAudioDeviceId = null
+                    SipCallAudio.leaveCallMode(context)
+                    unregisterBluetoothReceiver()
+                    mainHandler.removeCallbacks(applyPreferredRouteRunnable)
                 }
 
                 lastCallState = effectiveMappedState
@@ -791,7 +886,9 @@ class NativeSipManager(
                     effectiveMappedState == "early_media" ||
                     effectiveMappedState == "in_call"
                 ) {
+                    prepareCallAudio(core, preferBluetooth = !isSpeakerOn)
                     tryApplySpeakerPreference(core)
+                    schedulePreferredRouteRetry()
                 }
 
                 if (effectiveMappedState == "in_call" &&
@@ -886,7 +983,7 @@ class NativeSipManager(
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = "device_changed",
-                    deviceType = audioDeviceTypeName(audioDevice),
+                    deviceType = audioRouteTypeKey(audioDevice),
                     deviceId = audioDevice.getId(),
                     deviceName = audioRouteDisplayName(audioDevice),
                 )
@@ -897,7 +994,14 @@ class NativeSipManager(
                     return
                 }
                 val selectedStillAvailable = selectedAudioDeviceId?.let { selectedId ->
-                    core.getAudioDevices().any { it.getId() == selectedId }
+                    if (selectedId == SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+                        SipCallAudio.isBluetoothHeadsetConnected(context) ||
+                            core.getAudioDevices().any {
+                                audioRouteTypeKey(it) == "bluetooth"
+                            }
+                    } else {
+                        core.getAudioDevices().any { it.getId() == selectedId }
+                    }
                 } ?: true
                 if (!selectedStillAvailable) {
                     selectedAudioDeviceId = null
@@ -910,7 +1014,69 @@ class NativeSipManager(
         createdCore.addListener(listener)
         coreListener = listener
         core = createdCore
+        registerBluetoothReceiver()
         return createdCore
+    }
+
+    private fun resolveOutputDevice(sipCore: Core, deviceId: String): AudioDevice? {
+        if (deviceId == SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+            SipCallAudio.prepareForCall(context, sipCore, preferBluetooth = true)
+            return sipCore.getAudioDevices().firstOrNull { device ->
+                audioRouteTypeKey(device) == "bluetooth" &&
+                    device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+            }
+        }
+        return sipCore.getAudioDevices().firstOrNull { device ->
+            device.getId() == deviceId &&
+                device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+        }
+    }
+
+    private fun prepareCallAudio(sipCore: Core?, preferBluetooth: Boolean) {
+        // Communication mode + SCO makes already-connected headphones show
+        // up in Linphone's device list. Without this the picker only has
+        // Phone / Speaker.
+        val core = sipCore ?: return
+        registerBluetoothReceiver()
+        SipCallAudio.prepareForCall(context, core, preferBluetooth = preferBluetooth)
+    }
+
+    private fun schedulePreferredRouteRetry() {
+        mainHandler.removeCallbacks(applyPreferredRouteRunnable)
+        mainHandler.postDelayed(applyPreferredRouteRunnable, 280L)
+        mainHandler.postDelayed(applyPreferredRouteRunnable, 900L)
+    }
+
+    private fun registerBluetoothReceiver() {
+        if (bluetoothReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+            addAction(AudioManager.ACTION_HEADSET_PLUG)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(
+                    bluetoothReceiver,
+                    filter,
+                    Context.RECEIVER_EXPORTED,
+                )
+            } else {
+                context.registerReceiver(bluetoothReceiver, filter)
+            }
+            bluetoothReceiverRegistered = true
+        } catch (error: Throwable) {
+            Log.w(TAG, "Bluetooth receiver was not registered: ${error.message}")
+        }
+    }
+
+    private fun unregisterBluetoothReceiver() {
+        if (!bluetoothReceiverRegistered) return
+        try {
+            context.unregisterReceiver(bluetoothReceiver)
+        } catch (_: Throwable) {
+        }
+        bluetoothReceiverRegistered = false
     }
 
     private fun tryApplySpeakerPreference(sipCore: Core) {
@@ -920,14 +1086,23 @@ class NativeSipManager(
         applyingAudioRoute = true
         try {
             val desired = selectedAudioDeviceId?.let { selectedId ->
-                sipCore.getAudioDevices().firstOrNull { it.getId() == selectedId }
+                if (selectedId == SipCallAudio.SYNTHETIC_BLUETOOTH_ID) {
+                    sipCore.getAudioDevices().firstOrNull { device ->
+                        audioRouteTypeKey(device) == "bluetooth" &&
+                            device.hasCapability(AudioDevice.Capabilities.CapabilityPlay)
+                    }
+                } else {
+                    sipCore.getAudioDevices().firstOrNull { it.getId() == selectedId }
+                }
             } ?: preferredAudioDevice(sipCore, speakerEnabled = isSpeakerOn)
             if (desired != null) {
                 applyAudioDevicePair(sipCore, desired)
                 emitAudioRouteState(
                     state = "audio_device_selected",
                     reason = "call_state_$lastCallState",
-                    deviceType = audioDeviceTypeName(desired),
+                    deviceType = audioRouteTypeKey(desired),
+                    deviceId = desired.getId(),
+                    deviceName = audioRouteDisplayName(desired),
                 )
             }
         } catch (error: Throwable) {
@@ -1033,7 +1208,7 @@ class NativeSipManager(
             payload = hashMapOf(
                 "state" to state,
                 "reason" to reason,
-                "output" to deviceType.lowercase(),
+                "output" to deviceType,
                 "outputDeviceId" to deviceId,
                 "outputDeviceName" to deviceName,
                 "speakerOn" to isSpeakerOn,

@@ -569,7 +569,7 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.appColors.buttonPrimaryBg,
-                      foregroundColor: context.appColors.textInverse,
+                      foregroundColor: context.appColors.buttonPrimaryFg,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -580,6 +580,9 @@ class _UserOverdueTasksDialogState extends State<UserOverdueTasksDialog> {
                       AppLocalizations.of(context)!.translate('close_button'),
                       style: context.appTextStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w600,
+                        // bodyLg is dark in light theme; keep the label white
+                        // on the primary button.
+                        color: context.appColors.buttonPrimaryFg,
                       ),
                     ),
                   ),

@@ -746,16 +746,41 @@ extension _SipCallViewsExtension on _SipScreenState {
     );
   }
 
-  Future<void> _showAudioRoutePicker(BuildContext context) async {
+  // Stock Phone: if a headset is connected, the speaker button opens the
+  // audio-route list instead of toggling the loudspeaker.
+  Future<void> _handleSpeakerButton(BuildContext context) async {
     final routes = await _sipRuntime.getAvailableAudioRoutes();
     if (!context.mounted) return;
 
+    final hasExternalRoute = routes.any(
+      (route) => route.type == 'bluetooth' || route.type == 'headset',
+    );
+    if (hasExternalRoute) {
+      await _presentAudioRoutePicker(context, routes);
+      return;
+    }
+    await _sipRuntime.toggleSpeaker();
+  }
+
+  Future<void> _showAudioRoutePicker(BuildContext context) async {
+    final routes = await _sipRuntime.getAvailableAudioRoutes();
+    if (!context.mounted) return;
+    await _presentAudioRoutePicker(context, routes);
+  }
+
+  Future<void> _presentAudioRoutePicker(
+    BuildContext context,
+    List<SipAudioRoute> routes,
+  ) async {
     if (routes.isEmpty) {
       await _sipRuntime.toggleSpeaker();
       return;
     }
 
-    if (routes.length < 3) {
+    final hasExternalRoute = routes.any(
+      (route) => route.type == 'bluetooth' || route.type == 'headset',
+    );
+    if (!hasExternalRoute && routes.length < 3) {
       final selectedIndex = routes.indexWhere((route) => route.selected);
       SipAudioRoute targetRoute;
       if (routes.length == 1) {
@@ -803,6 +828,31 @@ extension _SipCallViewsExtension on _SipScreenState {
       'headset' => Icons.headset_rounded,
       _ => Icons.spatial_audio_off_rounded,
     };
+  }
+
+  IconData _speakerButtonIcon() {
+    return switch (_sipRuntime.currentAudioRouteType) {
+      'bluetooth' => CupertinoIcons.bluetooth,
+      'headset' => CupertinoIcons.headphones,
+      _ => CupertinoIcons.speaker_3_fill,
+    };
+  }
+
+  String _speakerButtonLabel(AppLocalizations l10n) {
+    final routeType = _sipRuntime.currentAudioRouteType;
+    final routeName = _sipRuntime.currentAudioRouteName?.trim() ?? '';
+    if (routeType == 'bluetooth' || routeType == 'headset') {
+      return routeName.isEmpty ? 'Аудио' : routeName;
+    }
+    return l10n.translate('sip_speaker');
+  }
+
+  bool _isSpeakerButtonActive() {
+    final routeType = _sipRuntime.currentAudioRouteType;
+    return routeType == 'speaker' ||
+        routeType == 'bluetooth' ||
+        routeType == 'headset' ||
+        _sipRuntime.state.isSpeakerOn;
   }
 
   Future<void> _showIosAudioRoutePicker(
@@ -1002,11 +1052,11 @@ extension _SipCallViewsExtension on _SipScreenState {
           children: [
             Expanded(
               child: _iosCircleAction(
-                icon: CupertinoIcons.speaker_3_fill,
-                label: l10n.translate('sip_speaker'),
-                onTap: _sipRuntime.toggleSpeaker,
+                icon: _speakerButtonIcon(),
+                label: _speakerButtonLabel(l10n),
+                onTap: () => _handleSpeakerButton(context),
                 onLongPress: () => _showAudioRoutePicker(context),
-                active: state.isSpeakerOn,
+                active: _isSpeakerButtonActive(),
                 size: buttonSize,
                 iconSize: iconSize,
                 labelFontSize: labelFontSize,

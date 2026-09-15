@@ -218,6 +218,10 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
 
   Widget _buildFileSelection() {
     final colors = context.appColors;
+    // Тёмная тема — белая иконка, светлая — тёмная.
+    final addFileIcon = context.isDarkTheme
+        ? 'assets/icons/files/add_for_dark.png'
+        : 'assets/icons/files/add.png';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,10 +235,11 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
           ),
         ),
         SizedBox(height: 16),
-        Container(
+        SizedBox(
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
             itemCount: files.isEmpty ? 1 : files.length + 1,
             itemBuilder: (context, index) {
               // Кнопка добавления файла
@@ -247,33 +252,34 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
                       width: 100,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
-                        vertical: 4,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.fieldBackground.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: colors.borderPrimary),
                       ),
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              color: colors.fieldBackground.withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: colors.borderPrimary),
-                            ),
-                            alignment: Alignment.center,
-                            child: Image.asset(
-                              'assets/icons/files/add_for_dark.png',
-                              width: 60,
-                              height: 60,
-                            ),
+                          Image.asset(
+                            addFileIcon,
+                            width: 54,
+                            height: 54,
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(context)!.translate('add_file'),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: colors.textSecondary,
+                          SizedBox(height: 6),
+                          Flexible(
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .translate('add_file'),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: colors.textSecondary,
+                              ),
                             ),
                           ),
                         ],
@@ -290,23 +296,40 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
               return Padding(
                 padding: EdgeInsets.only(right: 16),
                 child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     Container(
                       width: 100,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.fieldBackground.withOpacity(0.92),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: colors.borderPrimary),
+                      ),
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // НОВОЕ: Используем метод buildFileIcon для показа превью или иконки
-                          buildFileIcon(files, fileName, fileExtension),
-                          SizedBox(height: 8),
-                          Text(
-                            fileName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Gilroy',
-                              color: colors.textPrimary,
+                          Flexible(
+                            child: Center(
+                              child: buildFileIcon(
+                                  files, fileName, fileExtension),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Flexible(
+                            child: Text(
+                              fileName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: colors.textPrimary,
+                              ),
                             ),
                           ),
                         ],
@@ -536,20 +559,25 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         );
 
       case 'task_status_id':
-        return TaskStatusEditWidget(
-          selectedStatus: _selectedStatuses?.toString(),
-          onSelectStatus: (TaskStatus selectedStatusData) {
-            setState(() {
-              _selectedStatuses = selectedStatusData.id;
-            });
-          },
-        );
+        return _buildStatusField();
 
       // case 'file':
       //   return _buildFileSelection();
       default:
         return null;
     }
+  }
+
+  // Status is required on copy. Keep it even if TaskBloc is not TaskLoaded.
+  Widget _buildStatusField() {
+    return TaskStatusEditWidget(
+      selectedStatus: _selectedStatuses?.toString(),
+      onSelectStatus: (TaskStatus selectedStatusData) {
+        setState(() {
+          _selectedStatuses = selectedStatusData.id;
+        });
+      },
+    );
   }
 
   // Метод для построения виджета на основе конфигурации поля
@@ -636,11 +664,23 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
       ..sort((a, b) => a.position.compareTo(b.position));
 
     final widgets = <Widget>[];
+    var hasStatus = false;
     for (final config in sorted) {
+      if (config.fieldName == 'task_status_id') {
+        hasStatus = true;
+      }
       final fieldWidget = _buildFieldWidget(config);
       if (fieldWidget != null) {
         widgets.add(fieldWidget);
       }
+      // API config sometimes hides status. Insert it after the name field.
+      if (!hasStatus && config.fieldName == 'name') {
+        widgets.add(_buildStatusField());
+        hasStatus = true;
+      }
+    }
+    if (!hasStatus) {
+      widgets.insert(0, _buildStatusField());
     }
     return _withVerticalSpacing(widgets, spacing: 8);
   }
@@ -660,6 +700,7 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
         },
         priorityText: AppLocalizations.of(context)!.translate('urgent'),
       ),
+      _buildStatusField(),
       CustomTextField(
         controller: descriptionController,
         hintText: AppLocalizations.of(context)!.translate('enter_description'),
@@ -1631,7 +1672,10 @@ class _TaskCopyScreenState extends State<TaskCopyScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 84),
+            // Status bar + AppBar capsules (60) + small gap.
+            padding: EdgeInsets.only(
+              top: MediaQuery.paddingOf(context).top + 68,
+            ),
             child:
                 BlocConsumer<FieldConfigurationBloc, FieldConfigurationState>(
                     listenWhen: (previous, current) {

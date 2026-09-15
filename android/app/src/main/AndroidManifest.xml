@@ -32,6 +32,12 @@
     <!-- Android 12+: обнаружение и маршрутизация звука на Bluetooth-гарнитуры
          во время SIP-звонков (Linphone требует BLUETOOTH_CONNECT). -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
 
     <!-- Доступ к медиафайлам на Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -98,6 +104,15 @@
             android:exported="false"
             android:stopWithTask="false"
             android:foregroundServiceType="phoneCall|microphone" />
+
+        <service
+            android:name=".SipConnectionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
 
         <!-- Replace FlutterFire's receiver with a compatible subclass that
              wakes native SIP before the Dart background isolate starts. -->

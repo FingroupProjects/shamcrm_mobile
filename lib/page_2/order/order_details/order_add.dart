@@ -3679,6 +3679,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   Widget _buildFileSelection() {
     final colors = context.appColors;
+    // Тёмная тема — белая иконка, светлая — тёмная.
+    final addFileIcon = context.isDarkTheme
+        ? 'assets/icons/files/add_for_dark.png'
+        : 'assets/icons/files/add.png';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3707,7 +3711,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       child: Column(
                         children: [
                           Image.asset(
-                            'assets/icons/files/add.png',
+                            addFileIcon,
                             width: 60,
                             height: 60,
                           ),

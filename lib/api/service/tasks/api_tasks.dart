@@ -354,11 +354,16 @@ extension ApiTasksX on ApiService {
         if (data is List) {
           statusList = data;
         } else if (data is Map) {
-          if (data['result'] != null) {
+          if (data['result'] is List) {
             statusList = data['result'] as List;
-          } else if (data['data'] != null) {
+          } else if (data['result'] is Map) {
+            final nested = (data['result'] as Map)['data'];
+            if (nested is List) {
+              statusList = nested;
+            }
+          } else if (data['data'] is List) {
             statusList = data['data'] as List;
-          } else if (data['statuses'] != null) {
+          } else if (data['statuses'] is List) {
             statusList = data['statuses'] as List;
           }
         }
@@ -374,7 +379,7 @@ extension ApiTasksX on ApiService {
 
           if (kDebugMode) {
             debugPrint(
-                '✅ getTaskStatuses WITH FILTERS - Got ${statuses.length} statuses');
+                '✅ getTaskStatuses WITH FILTERS - Got ${statuses.length} statuses projectId=$projectId counts=${statuses.map((s) => '${s.id}:${s.tasksCount}').join(', ')}');
           }
 
           return statuses;
@@ -1078,7 +1083,7 @@ extension ApiTasksX on ApiService {
     });
     return _projectMutationResult(
       response,
-      fallbackError: 'Ошибка создания проекта',
+      fallbackError: 'project_create_error',
     );
   }
 
@@ -1097,7 +1102,7 @@ extension ApiTasksX on ApiService {
     });
     return _projectMutationResult(
       response,
-      fallbackError: 'Ошибка обновления проекта',
+      fallbackError: 'project_update_error',
     );
   }
 
@@ -1105,7 +1110,7 @@ extension ApiTasksX on ApiService {
     final response = await _deleteRequest('/project/$projectId');
     return _projectMutationResult(
       response,
-      fallbackError: 'Ошибка удаления проекта',
+      fallbackError: 'project_delete_error',
       successOnEmpty: true,
     );
   }

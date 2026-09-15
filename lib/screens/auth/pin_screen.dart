@@ -168,6 +168,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       // ШАГ 3: Загрузка базовой информации (из кэша - быстро)
       await _loadUserBasicInfo();
 
+      // ШАГ 3.1: has_ai_integration для кнопки генерации в чате.
+      unawaited(_fetchUserData());
+
       // ШАГ 4: Проверка PIN
       await _checkSavedPin();
 
@@ -194,6 +197,15 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   // ==========================================================================
   // ЗАГРУЗКА БАЗОВОЙ ИНФОРМАЦИИ
   // ==========================================================================
+
+  Future<void> _fetchUserData() async {
+    try {
+      if (!mounted) return;
+      await context.read<ApiService>().fetchAndCacheUserData();
+    } catch (e) {
+      debugPrint('PinScreen: Ошибка загрузки get-user-data: $e');
+    }
+  }
 
   Future<void> _loadUserBasicInfo() async {
     try {
@@ -417,6 +429,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
     debugPrint('PinScreen: PIN верифицирован, плавный переход на HomeScreen');
     unawaited(ChatUnreadCounterService.instance.initialize());
+    unawaited(_fetchUserData());
 
     // Pre-warm analytics cache while the fade transition plays so that charts
     // have data ready by the time DashboardScreen renders.

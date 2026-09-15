@@ -16,6 +16,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   Map<int, int> _orderCounts = {};
   bool isFetching = false;
   int? _lastCompletedFetchStatusId;
+  int? _inFlightStatusId;
+  FetchOrders? _queuedFetchOrdersEvent;
+  FetchMoreOrders? _queuedFetchMoreOrdersEvent;
 
   int? get lastCompletedFetchStatusId => _lastCompletedFetchStatusId;
   String? _currentQuery;
@@ -94,6 +97,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         allOrders.clear();
         allOrdersFetched.clear();
         isFetching = false;
+        _inFlightStatusId = null;
+        _queuedFetchOrdersEvent = null;
+        _queuedFetchMoreOrdersEvent = null;
 
         // Сбрасываем все параметры фильтрации
         _currentQuery = null;
@@ -210,21 +216,31 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
   }
 
   Future<void> _fetchOrders(FetchOrders event, Emitter<OrderState> emit) async {
+    // Быстрая смена табов не должна терять последний запрос:
+    // иначе колонка остаётся на вечном лоадере.
     if (isFetching) {
-      debugPrint('⚠️ OrderBloc: _fetchOrders - Already fetching, skipping');
+      if (event.statusId == _inFlightStatusId && event.page == 1) {
+        debugPrint(
+            '⚠️ OrderBloc: _fetchOrders - Duplicate request ignored for status ${event.statusId}');
+        _queuedFetchOrdersEvent = null;
+        return;
+      }
+      debugPrint(
+          '⚠️ OrderBloc: _fetchOrders - Already fetching, queueing latest request for status ${event.statusId}');
+      _queuedFetchOrdersEvent = event;
+      _queuedFetchMoreOrdersEvent = null;
       return;
     }
 
     isFetching = true;
+    _inFlightStatusId = event.statusId;
+    _queuedFetchOrdersEvent = null;
+    _queuedFetchMoreOrdersEvent = null;
 
     debugPrint('🔍 OrderBloc: _fetchOrders - START');
     debugPrint('🔍 OrderBloc: statusId=${event.statusId}');
 
     try {
-      if (state is! OrderLoaded || event.page == 1) {
-        emit(OrderLoading());
-      }
-
       // Сохраняем параметры текущего запроса
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
@@ -248,22 +264,33 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
       debugPrint('✅ OrderBloc: Restored persistent counts: $_orderCounts');
 
-      List<Order> orders = [];
+      List<Order> cachedOrders = [];
+      if (event.statusId != null && event.page == 1) {
+        cachedOrders = await OrderCache.getOrdersForStatus(event.statusId);
+      }
 
-      // Попытка загрузить из кэша
-      if (event.statusId != null) {
-        orders = await OrderCache.getOrdersForStatus(event.statusId);
-        if (orders.isNotEmpty) {
-          debugPrint(
-              '✅ OrderBloc: _fetchOrders - Emitting ${orders.length} cached orders for status ${event.statusId}');
+      final currentState = state;
+      final showingRequestedStatus = currentState is OrderLoaded &&
+          currentState.orders.any(
+            (order) => order.orderStatus.id == event.statusId,
+          );
 
-          final statuses = await apiService.getOrderStatuses();
-          emit(OrderLoaded(
-            statuses,
-            orders: orders,
-            orderCounts: Map.from(_orderCounts),
-          ));
-        }
+      // Не прячем список за глобальным OrderLoading, если кэш уже есть.
+      if (event.page == 1 &&
+          cachedOrders.isEmpty &&
+          !showingRequestedStatus) {
+        emit(OrderLoading());
+      } else if (cachedOrders.isNotEmpty) {
+        debugPrint(
+            '✅ OrderBloc: _fetchOrders - Emitting ${cachedOrders.length} cached orders for status ${event.statusId}');
+        final statuses = currentState is OrderLoaded
+            ? currentState.statuses
+            : await apiService.getOrderStatuses();
+        emit(OrderLoaded(
+          statuses,
+          orders: cachedOrders,
+          orderCounts: Map.from(_orderCounts),
+        ));
       }
 
       if (await _checkInternetConnection()) {
@@ -334,6 +361,17 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         _lastCompletedFetchStatusId = event.statusId;
       } else {
         debugPrint('❌ OrderBloc: No internet connection');
+        if (cachedOrders.isEmpty && event.page == 1) {
+          final statuses = currentState is OrderLoaded
+              ? currentState.statuses
+              : await apiService.getOrderStatuses();
+          emit(OrderLoaded(
+            statuses,
+            orders: const [],
+            orderCounts: Map.from(_orderCounts),
+          ));
+          _lastCompletedFetchStatusId = event.statusId;
+        }
       }
 
       debugPrint(
@@ -345,13 +383,36 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
       }
     } finally {
       isFetching = false;
+      _inFlightStatusId = null;
       debugPrint('🏁 OrderBloc: _fetchOrders - FINISHED');
+
+      final queuedFetchOrders = _queuedFetchOrdersEvent;
+      _queuedFetchOrdersEvent = null;
+      if (queuedFetchOrders != null) {
+        debugPrint(
+            '🔁 OrderBloc: _fetchOrders - Running queued FetchOrders for status ${queuedFetchOrders.statusId}');
+        add(queuedFetchOrders);
+        return;
+      }
+
+      final queuedFetchMore = _queuedFetchMoreOrdersEvent;
+      _queuedFetchMoreOrdersEvent = null;
+      if (queuedFetchMore != null) {
+        add(queuedFetchMore);
+      }
     }
   }
 
   Future<void> _fetchMoreOrders(
       FetchMoreOrders event, Emitter<OrderState> emit) async {
     if (allOrdersFetched[event.statusId] == true || state is! OrderLoaded) {
+      return;
+    }
+
+    if (isFetching) {
+      debugPrint(
+          '⚠️ OrderBloc: _fetchMoreOrders - Already fetching, queueing request for status ${event.statusId}');
+      _queuedFetchMoreOrdersEvent = event;
       return;
     }
 
@@ -1072,6 +1133,9 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     allOrders.clear();
     allOrdersFetched.clear();
     isFetching = false;
+    _inFlightStatusId = null;
+    _queuedFetchOrdersEvent = null;
+    _queuedFetchMoreOrdersEvent = null;
 
     // Сбрасываем все текущие параметры фильтрации
     _currentQuery = null;

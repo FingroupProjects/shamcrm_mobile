@@ -477,7 +477,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         // Если права пришли позже статусов, повторно запрашиваем статусы,
         // даже если bloc уже успел уйти из TaskLoaded в другое состояние.
         if (mounted &&
-            !_isProjectContext &&
             _canReadTaskStatus &&
             _tabTitles.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -551,7 +550,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       // Если права пришли позже статусов, повторно запрашиваем статусы,
       // даже если bloc уже успел переключиться в TaskLoading/TaskDataLoaded.
       if (mounted &&
-          !_isProjectContext &&
           _canReadTaskStatus &&
           _tabTitles.isEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1751,9 +1749,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       return _buildTabButtonUI(
         index,
         isActive,
-        _validatedProjectStatusIds.contains(statusId)
-            ? (_projectTaskCounts[statusId] ?? 0)
-            : 0,
+        _projectTaskCounts[statusId] ?? 0,
       );
     }
 
@@ -2051,9 +2047,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
         if (state is TaskLoaded) {
           if (_isProjectContext) {
+            _projectTaskCounts.clear();
+            _validatedProjectStatusIds.clear();
             for (final status in state.taskStatuses) {
-              _projectTaskCounts[status.id] =
-                  int.tryParse(status.tasksCount) ?? 0;
+              final count = int.tryParse(status.tasksCount) ?? 0;
+              _projectTaskCounts[status.id] = count;
+              _validatedProjectStatusIds.add(status.id);
             }
           }
 

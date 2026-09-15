@@ -6,12 +6,15 @@ class PinnedLeadMessageWidget extends StatelessWidget {
   final String message;
   final String? channelType;
   final VoidCallback? onTap;
+  // Кнопка в конце баннера (например, настройки ИИ). null — не показываем.
+  final Widget? trailing;
 
   const PinnedLeadMessageWidget({
     super.key,
     required this.message,
     this.channelType,
     this.onTap,
+    this.trailing,
   });
 
   static const channelIconMap = {
@@ -121,6 +124,10 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                 ],
               ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 6),
+              trailing!,
+            ],
           ],
         ),
       ),

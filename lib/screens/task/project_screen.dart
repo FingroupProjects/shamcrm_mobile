@@ -6,6 +6,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/models/task/project_model.dart';
@@ -41,6 +42,20 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool _canRead = false;
   int _currentPage = 1;
   static const int _perPage = 20;
+
+  String _t(String key) => AppLocalizations.of(context)!.translate(key);
+
+  String _statusName(int? statusId) {
+    switch (statusId) {
+      case 2:
+        return _t('project_status_ready');
+      case 3:
+        return _t('project_status_frozen');
+      case 1:
+      default:
+        return _t('project_status_active');
+    }
+  }
 
   @override
   void initState() {
@@ -136,8 +151,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось загрузить проекты')),
+      showCustomSnackBar(
+        context: context,
+        message: 'failed_load_projects',
+        isSuccess: false,
       );
     } finally {
       if (mounted) {
@@ -154,18 +171,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
     final parsed = DateTime.tryParse(value);
     if (parsed == null) return value;
     return DateFormat('dd-MM-yyyy').format(parsed);
-  }
-
-  String _statusLabel(int? statusId) {
-    switch (statusId) {
-      case 2:
-        return 'Завершено';
-      case 3:
-        return 'Приостановлен';
-      case 1:
-      default:
-        return 'Активный';
-    }
   }
 
   Color _statusBg(int? statusId) {
@@ -279,7 +284,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                         const Icon(Icons.circle, size: 7, color: Colors.white),
                         const SizedBox(width: 5),
                         Text(
-                          _statusLabel(project.statusId),
+                          _statusName(project.statusId),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontSize: 11,
@@ -294,7 +299,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   if (_canUpdate) const SizedBox(width: 8),
                   if (_canUpdate)
                     Tooltip(
-                      message: 'Редактировать',
+                      message: _t('sp_edit'),
                       child: Material(
                         color: colors.surfaceAccent,
                         borderRadius: BorderRadius.circular(10),
@@ -322,7 +327,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 children: [
                   Expanded(
                     child: _ProjectDate(
-                      label: 'Дата начала',
+                      label: _t('start_date'),
                       value: _formatDate(project.startDate),
                       icon: Icons.play_circle_outline_rounded,
                     ),
@@ -330,7 +335,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ProjectDate(
-                      label: 'Дата завершения',
+                      label: _t('end_date'),
                       value: _formatDate(project.endDate),
                       icon: Icons.event_available_outlined,
                     ),
@@ -351,7 +356,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
       surfaceTintColor: Colors.transparent,
       scrolledUnderElevation: 0,
       leading: IconButton(
-        tooltip: 'Назад',
+        tooltip: _t('back'),
         icon: Container(
           width: 38,
           height: 38,
@@ -381,7 +386,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
               focusNode: _searchFocusNode,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Поиск проектов',
+                hintText: _t('search_projects'),
                 hintStyle: TextStyle(
                   color: context.appColors.fieldHint,
                   fontFamily: 'Gilroy',
@@ -414,7 +419,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
               ),
             )
           : Text(
-              'Проекты',
+              _t('appbar_projects'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 22,
@@ -424,7 +429,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
             ),
       actions: [
         IconButton(
-          tooltip: _isSearching ? 'Очистить' : 'Поиск',
+          tooltip: _isSearching ? _t('clear') : _t('search'),
           onPressed: () {
             if (_isSearching) {
               _searchController.clear();
@@ -470,7 +475,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
             child: _isLoading
                 ? const Center(child: PlayStoreImageLoading(size: 80))
                 : !_canRead
-                    ? const Center(child: Text('Нет доступа к проектам'))
+                    ? Center(child: Text(_t('no_project_access')))
                     : RefreshIndicator(
                         onRefresh: () => _loadProjects(refresh: true),
                         child: _projects.isEmpty
@@ -480,7 +485,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                   const SizedBox(height: 160),
                                   Center(
                                     child: Text(
-                                      'Проекты не найдены',
+                                      _t('projects_not_found'),
                                       style: TextStyle(
                                         fontFamily: 'Gilroy',
                                         color: context.appColors.textMuted,
@@ -588,11 +593,13 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   bool _isDeleting = false;
   bool _isNameInvalid = false;
 
-  static const Map<int, String> _statuses = {
-    1: 'Активный',
-    2: 'Готов',
-    3: 'Заморожен',
-  };
+  String _t(String key) => AppLocalizations.of(context)!.translate(key);
+
+  Map<int, String> get _statusLabels => {
+        1: _t('project_status_active'),
+        2: _t('project_status_ready'),
+        3: _t('project_status_frozen'),
+      };
 
   @override
   void initState() {
@@ -664,8 +671,8 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
         message: (message != null && message.isNotEmpty)
             ? message
             : (widget.project == null
-                ? 'Проект создан'
-                : 'Проект обновлён'),
+                ? 'project_created'
+                : 'project_updated'),
         isSuccess: true,
         aboveDialogs: true,
       );
@@ -673,16 +680,78 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
     } else {
       showCustomSnackBar(
         context: context,
-        message: message ?? 'Не удалось сохранить',
+        message: message ?? 'failed_save_project',
         isSuccess: false,
         aboveDialogs: true,
       );
     }
   }
 
+  Future<bool> _confirmDelete() async {
+    final loc = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.surfacePrimary,
+          title: Center(
+            child: Text(
+              loc.translate('delete_project'),
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          content: Text(
+            loc.translate('confirm_delete_project'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: colors.textPrimary,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: loc.translate('cancel'),
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    buttonColor: colors.buttonDangerBg,
+                    textColor: colors.buttonDangerFg,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: loc.translate('delete'),
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    buttonColor: colors.buttonPrimaryBg,
+                    textColor: colors.buttonPrimaryFg,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed == true;
+  }
+
   Future<void> _delete() async {
     final project = widget.project;
     if (project == null) return;
+
+    // Ask first. Do not call the API until the user confirms.
+    final confirmed = await _confirmDelete();
+    if (!confirmed || !mounted) return;
 
     setState(() => _isDeleting = true);
     final result = await _apiService.deleteProject(project.id);
@@ -694,7 +763,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
         context: context,
         message: (result['message']?.toString().isNotEmpty ?? false)
             ? result['message'].toString()
-            : 'Проект удалён',
+            : 'project_deleted',
         isSuccess: true,
         aboveDialogs: true,
       );
@@ -702,7 +771,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
     } else {
       showCustomSnackBar(
         context: context,
-        message: result['message'] ?? 'Не удалось удалить',
+        message: result['message'] ?? 'failed_delete_project',
         isSuccess: false,
         aboveDialogs: true,
       );
@@ -715,7 +784,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Статус',
+          _t('status'),
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -728,7 +797,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
           decoration: _decoration(),
           dropdownColor: colors.surfacePrimary,
           icon: Icon(Icons.keyboard_arrow_down, color: colors.iconPrimary),
-          items: _statuses.entries
+          items: _statusLabels.entries
               .map(
                 (entry) => DropdownMenuItem<int>(
                   value: entry.key,
@@ -808,7 +877,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                 children: [
                   Expanded(
                     child: Text(
-                      isEdit ? 'Редактирование' : 'Новый проект',
+                      isEdit ? _t('edit_project') : _t('new_project'),
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontSize: 22,
@@ -854,8 +923,8 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                     children: [
                       CustomTextField(
                         controller: _nameController,
-                        hintText: 'Введите название',
-                        label: 'Название',
+                        hintText: _t('enter_title'),
+                        label: _t('title_without_dots'),
                         hasError: _isNameInvalid,
                         errorText: _isNameInvalid
                             ? AppLocalizations.of(context)!
@@ -874,12 +943,12 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                       const SizedBox(height: 18),
                       CustomTextFieldDate(
                         controller: _startController,
-                        label: 'Дата начала',
+                        label: _t('start_date'),
                       ),
                       const SizedBox(height: 18),
                       CustomTextFieldDate(
                         controller: _endController,
-                        label: 'Дата завершения',
+                        label: _t('end_date'),
                       ),
                     ],
                   ),
@@ -900,7 +969,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                         ),
                       ),
                       child: Text(
-                        'Отмена',
+                        _t('cancel'),
                         style: TextStyle(
                           color: colors.buttonDangerFg,
                           fontSize: 14,
@@ -931,7 +1000,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                               ),
                             )
                           : Text(
-                              'Сохранить',
+                              _t('save'),
                               style: TextStyle(
                                 color: colors.buttonPrimaryFg,
                                 fontSize: 14,

@@ -4,10 +4,13 @@ import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
 import 'package:crm_task_manager/core/theme/components/rich_text_field.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_ai_generate_button.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/tamplate_chat.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/templates_panel.dart';
+import 'package:crm_task_manager/utils/ai_integration_store.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,6 +34,8 @@ class InputField extends StatefulWidget {
   final Function(File soundFile, String time) sendRequestFunction;
   final FocusNode focusNode;
   final bool isLeadChat;
+  /// POST /v3/chat/{id}/ai-draft. null — кнопку ИИ не показываем.
+  final Future<String> Function()? onGenerateAiDraft;
 
   const InputField({
     super.key,
@@ -41,6 +46,7 @@ class InputField extends StatefulWidget {
     required this.sendRequestFunction,
     required this.focusNode,
     required this.isLeadChat,
+    this.onGenerateAiDraft,
   });
 
   @override
@@ -55,7 +61,6 @@ class _InputFieldState extends State<InputField>
   bool _showFormattingPanel = false;
   String _currentQuery = '';
   late AnimationController _animationController;
-  late AnimationController _micPulseController;
   late Animation<double> _fadeAnimation;
 
   String _htmlContent = '';
@@ -67,6 +72,8 @@ class _InputFieldState extends State<InputField>
 
   Timer? _selectionDebounce;
   bool _suppressFormattingPanel = false;
+  bool _isGeneratingAiDraft = false;
+  int _aiDraftRequestId = 0;
 
   @override
   void initState() {
@@ -75,10 +82,6 @@ class _InputFieldState extends State<InputField>
       vsync: this,
       duration: Duration(milliseconds: 200),
     );
-    _micPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -98,6 +101,8 @@ class _InputFieldState extends State<InputField>
     _hasText = widget.messageController.text.isNotEmpty;
 
     WidgetsBinding.instance.addObserver(this);
+    // Кнопка ИИ берёт кэш с PIN, пока живой запрос ещё может идти.
+    AiIntegrationStore.hydrateFromPrefs();
   }
 
   @override
@@ -105,7 +110,6 @@ class _InputFieldState extends State<InputField>
     _removeOverlay();
     _removeFormattingOverlay();
     _animationController.dispose();
-    _micPulseController.dispose();
     _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
     widget.messageController.removeListener(_updateTextState);
@@ -760,6 +764,54 @@ class _InputFieldState extends State<InputField>
     widget.messageController.clear();
   }
 
+  /// Повторное нажатие очищает поле и ставит свежий черновик.
+  Future<void> _onAiGeneratePressed() async {
+    final generate = widget.onGenerateAiDraft;
+    if (generate == null) return;
+
+    final requestId = ++_aiDraftRequestId;
+    setState(() {
+      _isGeneratingAiDraft = true;
+    });
+
+    try {
+      final draft = await generate();
+      if (!mounted || requestId != _aiDraftRequestId) return;
+      _applyAiDraftText(draft);
+    } catch (error) {
+      if (!mounted || requestId != _aiDraftRequestId) return;
+      showCustomSnackBar(
+        context: context,
+        message: AppLocalizations.of(context)?.translate('ai_generation_error') ??
+            'Не удалось сгенерировать ответ',
+        isSuccess: false,
+      );
+    } finally {
+      if (mounted && requestId == _aiDraftRequestId) {
+        setState(() {
+          _isGeneratingAiDraft = false;
+        });
+      }
+    }
+  }
+
+  void _applyAiDraftText(String text) {
+    final draft = text.trim();
+    _lastPlainText = draft;
+    _syncHtmlToController(draft);
+    widget.messageController.value = TextEditingValue(
+      text: draft,
+      selection: TextSelection.collapsed(offset: draft.length),
+    );
+    setState(() {
+      _hasText = draft.isNotEmpty;
+      _showTemplates = false;
+    });
+    _animationController.reverse().then((_) {
+      _removeOverlay();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final appearance = ChatAppearanceScope.of(context);
@@ -1085,6 +1137,21 @@ class _InputFieldState extends State<InputField>
                                           lineHeight: 20.0,
                                         ),
                                       ),
+                                      ValueListenableBuilder<bool>(
+                                        valueListenable:
+                                            AiIntegrationStore.enabled,
+                                        builder: (context, hasAi, _) {
+                                          if (!hasAi ||
+                                              widget.onGenerateAiDraft ==
+                                                  null) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return ChatAiGenerateButton(
+                                            isLoading: _isGeneratingAiDraft,
+                                            onPressed: _onAiGeneratePressed,
+                                          );
+                                        },
+                                      ),
                                       IconButton(
                                         icon: Image.asset(
                                           'assets/icons/chats/file.png',
@@ -1315,137 +1382,42 @@ class _InputFieldState extends State<InputField>
         onPointerCancel: (_) {
           // Keep true while package still records; stopRecording clears it.
         },
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.centerRight,
-          children: [
-            if (_voicePressed)
-              IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _micPulseController,
-                  builder: (context, _) {
-                    final t = _micPulseController.value;
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 96 + (t * 20),
-                        height: 96 + (t * 20),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              accent.withValues(alpha: 0.28),
-                              accent.withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              )
-            else
-              IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _micPulseController,
-                  builder: (context, _) {
-                    final t = _micPulseController.value;
-                    return Container(
-                      width: 50 + (t * 5),
-                      height: 50 + (t * 5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: accent.withValues(alpha: 0.07 + (t * 0.04)),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            recorder,
-          ],
-        ),
+        child: recorder,
       ),
     );
   }
 
+  // Mic stays a static circle. Pulse rings were too loud on the idle button.
   Widget _buildVoiceMicOrb({
     required Color accent,
     required bool filled,
     double size = 36,
   }) {
-    final ringPad = _voicePressed ? 20.0 : 0.0;
     return SizedBox(
-      width: size + ringPad,
-      height: size + ringPad,
-      child: AnimatedBuilder(
-        animation: _micPulseController,
-        builder: (context, _) {
-          final t = _micPulseController.value;
-          return Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              if (_voicePressed) ...[
-                _pulseRing(accent: accent, progress: t, size: size + 20),
-                _pulseRing(
-                  accent: accent,
-                  progress: (t + 0.5) % 1.0,
-                  size: size + 20,
-                ),
-              ],
-              Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: filled ? accent : accent.withValues(alpha: 0.16),
-                  border: Border.all(
-                    color: accent.withValues(alpha: filled ? 0.55 : 0.32),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          accent.withValues(alpha: _voicePressed ? 0.4 : 0.18),
-                      blurRadius: _voicePressed ? 14 : 8,
-                      spreadRadius: _voicePressed ? 1 : 0,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.mic_rounded,
-                  size: size * 0.48,
-                  color: filled ? Colors.white : accent,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _pulseRing({
-    required Color accent,
-    required double progress,
-    required double size,
-  }) {
-    final scale = 0.72 + progress * 0.78;
-    final opacity = (1 - progress) * 0.42;
-    return Transform.scale(
-      scale: scale,
-      child: Opacity(
-        opacity: opacity,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: accent,
-              width: 2.2 * (1 - progress * 0.6),
-            ),
+      width: size,
+      height: size,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: filled ? accent : accent.withValues(alpha: 0.16),
+          border: Border.all(
+            color: accent.withValues(alpha: filled ? 0.55 : 0.32),
+            width: 1.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: _voicePressed ? 0.28 : 0.14),
+              blurRadius: _voicePressed ? 10 : 6,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.mic_rounded,
+          size: size * 0.48,
+          color: filled ? Colors.white : accent,
         ),
       ),
     );

@@ -261,11 +261,20 @@ class TaskStatus {
           ? TaskStatusName.fromJson(SafeConverters.toMap(json['taskStatus']))
           : null,
       color: SafeConverters.toSafeString(json['color'], defaultValue: 'Неизвестный цвет'),
-      tasksCount: SafeConverters.toSafeString(json['tasks_amount'], defaultValue: '0'),
+      tasksCount: _tasksCountFromJson(json),
       roles: SafeConverters.toList(json['roles'])
           .map((role) => SafeConverters.toSafeString(role))
           .toList(),
     );
+  }
+
+  static String _tasksCountFromJson(Map<String, dynamic> json) {
+    // /task-status and /task-status/get-by-project may use different keys.
+    final raw = json['tasks_amount'] ??
+        json['task_amount'] ??
+        json['tasks_count'] ??
+        json['task_count'];
+    return SafeConverters.toSafeString(raw, defaultValue: '0');
   }
 
   Map<String, dynamic> toJson() {

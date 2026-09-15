@@ -43,6 +43,7 @@ import 'package:crm_task_manager/models/task/directory_link_model.dart';
 import 'package:crm_task_manager/models/task/directory_model.dart';
 import 'package:crm_task_manager/models/event/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event/event_model.dart';
+import 'package:crm_task_manager/utils/ai_integration_store.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/models/my_task/history_model_my-task.dart';

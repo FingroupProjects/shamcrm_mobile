@@ -369,12 +369,13 @@ class _WorkdayCardState extends State<WorkdayCard> {
   IconData _workdayIcon() {
     final record = _status?.result;
 
+    // Рабочий день идёт — заполненный портфель, чтобы смена была заметна.
     if (record?.isActive == true) {
-      return Icons.work_history_outlined;
+      return Icons.work;
     }
 
     if (record?.isCompleted == true) {
-      return Icons.task_alt_outlined;
+      return Icons.task_alt;
     }
 
     // До ответа сервера и при отсутствии записи рабочий день ещё не начат.
@@ -417,9 +418,13 @@ class _WorkdayCardState extends State<WorkdayCard> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.work_history_outlined,
-                color: colors.buttonPrimaryBg,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: Icon(
+                  _workdayIcon(),
+                  key: ValueKey(_workdayIcon()),
+                  color: colors.buttonPrimaryBg,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(

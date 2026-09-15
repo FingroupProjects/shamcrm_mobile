@@ -2618,6 +2618,7 @@ class SipService extends ChangeNotifier
         _lastNativeCallUiRequestId = requestId;
       }
       _applyNativeSnapshot(payload);
+      _callUiMinimizedByUser = false;
       _callUiOpenRequestSerial += 1;
       unawaited(recordUiDiagnostic(
         'CALL_UI_EVENT_RECEIVED',
@@ -3615,6 +3616,8 @@ class SipService extends ChangeNotifier
         mappedCall == SipCallUiStatus.ended ||
         mappedCall == SipCallUiStatus.failed) {
       _currentCallStartedAt = null;
+      _currentAudioRouteType = null;
+      _currentAudioRouteName = null;
     }
 
     if (mappedCall == SipCallUiStatus.incoming) {

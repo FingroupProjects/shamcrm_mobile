@@ -99,6 +99,8 @@ class _PinSetupScreenState extends State<PinSetupScreen>
     _fetchTutorialProgress();
     _fetchSettings();
     _fetchMiniAppSettings();
+    // Флаг ИИ нужен чату сразу после установки PIN.
+    _fetchUserData();
 
     // ✅ КРИТИЧНО: Отправляем FCM токен при открытии экрана
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -277,6 +279,14 @@ class _PinSetupScreenState extends State<PinSetupScreen>
       return lower == 'true' || lower == '1';
     }
     return false;
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      await context.read<ApiService>().fetchAndCacheUserData();
+    } catch (e) {
+      debugPrint('PinSetupScreen: Ошибка загрузки get-user-data: $e');
+    }
   }
 
   Future<void> _fetchMiniAppSettings() async {
