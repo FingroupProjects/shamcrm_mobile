@@ -31,6 +31,8 @@ class NativeSipManager(
     companion object {
         private const val TAG = "NativeSipManager"
         private const val DUPLICATE_INCOMING_WINDOW_MS = 5_000L
+        // NAT keep-alive every 30s is enough. More often only heats the radio.
+        private const val SIP_KEEPALIVE_PERIOD_MS = 30_000
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -46,6 +48,8 @@ class NativeSipManager(
     private var currentDomain: String = ""
     private var desiredRegistrationEnabled = false
     private var lastCallState: String = "idle"
+    // True when Linphone is in the slow idle loop. Call audio always uses full power.
+    private var coreInPowerSave = false
     private var currentIncomingRemote: String? = null
     private var currentIncomingConnected = false
     private var lastUnansweredIncomingRemote: String? = null
@@ -162,6 +166,8 @@ class NativeSipManager(
 
             emitRegistration("registering", "Подключение телефонии")
             sipCore.start()
+            // Line is only registered here. No call yet, so keep the slow idle loop.
+            applyCorePowerMode("register-start")
             Log.d(TAG, "register invoked core.start()")
             true
         } catch (error: Throwable) {
@@ -190,6 +196,7 @@ class NativeSipManager(
 
         emitRegistration("disconnected", "Телефония отключена")
         emitCallState("ended", null, "Call ended")
+        applyCorePowerMode("unregister")
     }
 
     fun maintainRegistration(reason: String): Boolean {
@@ -212,6 +219,8 @@ class NativeSipManager(
     fun makeCall(target: String): Boolean {
         return try {
             val sipCore = ensureCore()
+            // Outgoing INVITE needs the fast loop before the first packet is sent.
+            applyCorePowerMode("outgoing-invite", forceFullPower = true)
             val address = requireNotNull(sipCore.createAddress(target)) {
                 "Invalid call target"
             }
@@ -233,6 +242,7 @@ class NativeSipManager(
 
             if (call == null) {
                 emitCallState("failed", target, "Не удалось начать звонок через телефонию")
+                applyCorePowerMode("outgoing-invite-failed")
                 false
             } else {
                 prepareCallAudio(sipCore, preferBluetooth = !isSpeakerOn)
@@ -242,6 +252,7 @@ class NativeSipManager(
         } catch (error: Throwable) {
             Log.e(TAG, "makeCall failed: ${error.message}", error)
             emitCallState("failed", target, error.message ?: "Не удалось выполнить звонок")
+            applyCorePowerMode("outgoing-invite-error")
             false
         }
     }
@@ -645,16 +656,12 @@ class NativeSipManager(
 
     fun onAppForeground() {
         try {
+            applyCorePowerMode("app-foreground")
             core?.let { sipCore ->
-                sipCore.enterForeground()
-                val hasActiveCall = lastCallState == "incoming" ||
-                    lastCallState == "calling" ||
-                    lastCallState == "ringing" ||
-                    lastCallState == "in_call"
-                if (desiredRegistrationEnabled && !hasActiveCall) {
+                if (desiredRegistrationEnabled && !isLiveCallState()) {
                     sipCore.ensureRegistered()
                     Log.d(TAG, "onAppForeground: core.ensureRegistered()")
-                } else if (hasActiveCall) {
+                } else if (isLiveCallState()) {
                     Log.d(TAG, "onAppForeground: registration refresh skipped during $lastCallState")
                 }
             }
@@ -663,11 +670,34 @@ class NativeSipManager(
     }
 
     fun onAppBackground() {
-        // Намеренно NO-OP: у нас всегда работает ForegroundService который держит
-        // Linphone живым. Вызов core.enterBackground() уменьшает частоту iterate()
-        // (обработки SIP-пакетов) — это может привести к пропуску входящих INVITE.
-        // ForegroundService И ЕСТЬ наш "foreground контекст" для Linphone.
-        // core?.enterBackground()  ← УБРАНО намеренно
+        // Keep the SIP line registered. Only slow down iterate when there is
+        // no live call. Incoming INVITE still arrives, then we go full-power.
+        applyCorePowerMode("app-background")
+    }
+
+    // Idle CRM use was heating phones because Linphone stayed in the fast
+    // foreground loop all the time. Fast loop is only needed during a call.
+    private fun applyCorePowerMode(reason: String, forceFullPower: Boolean = false) {
+        val sipCore = core ?: return
+        val wantFullPower = forceFullPower || isLiveCallState()
+        try {
+            sipCore.setAutoIterateEnabled(true)
+            if (wantFullPower) {
+                sipCore.enterForeground()
+                if (coreInPowerSave) {
+                    Log.d(TAG, "core power FULL reason=$reason state=$lastCallState")
+                }
+                coreInPowerSave = false
+            } else {
+                sipCore.enterBackground()
+                if (!coreInPowerSave) {
+                    Log.d(TAG, "core power IDLE reason=$reason state=$lastCallState")
+                }
+                coreInPowerSave = true
+            }
+        } catch (error: Throwable) {
+            Log.e(TAG, "applyCorePowerMode failed: ${error.message}, reason=$reason", error)
+        }
     }
 
     private fun ensureCore(): Core {
@@ -677,6 +707,10 @@ class NativeSipManager(
         val createdCore = factory.createCore(null, null, context)
         createdCore.setAutoIterateEnabled(true)
         createdCore.setKeepAliveEnabled(true)
+        try {
+            createdCore.config.setInt("sip", "keepalive_period", SIP_KEEPALIVE_PERIOD_MS)
+        } catch (_: Throwable) {
+        }
         createdCore.setRegisterOnlyWhenNetworkIsUp(true)
         createdCore.setMediaEncryption(MediaEncryption.None)
         createdCore.setMediaEncryptionMandatory(false)
@@ -881,6 +915,7 @@ class NativeSipManager(
                 }
 
                 lastCallState = effectiveMappedState
+                applyCorePowerMode("call-state-$effectiveMappedState")
                 if (effectiveMappedState == "calling" ||
                     effectiveMappedState == "ringing" ||
                     effectiveMappedState == "early_media" ||
@@ -1015,6 +1050,7 @@ class NativeSipManager(
         coreListener = listener
         core = createdCore
         registerBluetoothReceiver()
+        applyCorePowerMode("core-created")
         return createdCore
     }
 
@@ -1341,6 +1377,10 @@ class NativeSipManager(
 
     private fun isEarlyCallState(state: String): Boolean {
         return state == "incoming" || state == "calling" || state == "ringing" || state == "early_media"
+    }
+
+    private fun isLiveCallState(state: String = lastCallState): Boolean {
+        return isEarlyCallState(state) || state == "in_call"
     }
 
     private fun shouldTreatEarlyTerminationAsEnded(

@@ -69,7 +69,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat();
+    );
     if (sipEnabled) {
       unawaited(_sipService.initialize());
     }
@@ -156,6 +156,20 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
     if (reset) {
       _connectedAt = null;
       _connectedDuration = Duration.zero;
+    }
+  }
+
+  // Pulse rings are only for the incoming overlay. Do not tick vsync all day.
+  void _syncIncomingPulse(bool shouldPulse) {
+    if (shouldPulse) {
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat();
+      }
+      return;
+    }
+    if (_pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.reset();
     }
   }
 
@@ -343,6 +357,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
         _handleNativeCallUiRequest(state);
         final showOverlay = _shouldShowOverlay(state);
         _syncFeedback(state, showOverlay);
+        _syncIncomingPulse(state.callStatus == SipCallUiStatus.incoming && showOverlay);
 
         if (!showOverlay) {
           return widget.child;

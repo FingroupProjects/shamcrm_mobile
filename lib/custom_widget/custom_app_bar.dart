@@ -401,7 +401,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canShowMasterclassQrScanner = false;
   // DEAL custom fields were moved to filter screen
 
-  late Timer _timer;
+  Timer? _timer;
   bool _areFiltersActive = false; // Добавляем эту переменную
   bool _isFilterBlinkOn = false;
 
@@ -435,7 +435,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
-    )..repeat(reverse: true);
+    );
 
     _blinkAnimation = CurvedAnimation(
       parent: _blinkController,
@@ -447,18 +447,36 @@ class _CustomAppBarState extends State<CustomAppBar>
       (_) => _checkOverdueTasks(),
     );
 
-    // Модифицируем таймер
-    _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
-      if (_areFiltersActive) {
+    // Blink only while filters are on. The old 700ms setState ran all day.
+    _syncFilterBlinkResources();
+  }
+
+  void _syncFilterBlinkResources() {
+    if (_areFiltersActive) {
+      if (!_blinkController.isAnimating) {
+        _blinkController.repeat(reverse: true);
+      }
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+        if (!mounted || !_areFiltersActive) {
+          return;
+        }
         setState(() {
           _isFilterBlinkOn = !_isFilterBlinkOn;
         });
-      } else {
-        setState(() {
-          _isFilterBlinkOn = false;
-        });
-      }
-    });
+      });
+      return;
+    }
+
+    if (_blinkController.isAnimating) {
+      _blinkController.stop();
+      _blinkController.reset();
+    }
+    _timer?.cancel();
+    _timer = null;
+    if (_isFilterBlinkOn) {
+      _isFilterBlinkOn = false;
+    }
   }
 
   void _setFiltersActive(bool active) {
@@ -468,6 +486,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         _isFilterBlinkOn = false;
       }
     });
+    _syncFilterBlinkResources();
   }
 
 // Метод для проверки активности фильтров (можно вызывать извне)
@@ -577,7 +596,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   void dispose() {
     _blinkController.dispose();
     _checkOverdueTimer?.cancel();
-    _timer.cancel();
+    _timer?.cancel();
     notificationSubscription?.cancel();
     _firebaseMessageSubscription?.cancel();
     _firebaseOpenedAppSubscription?.cancel();
@@ -632,7 +651,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     final client = PusherChannelsClient.websocket(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {},
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
     socketClient = client;
 

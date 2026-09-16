@@ -140,6 +140,16 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool _isClientReturnFiltering =
       false; // Новая переменная для фильтров возврата от клиентов
 
+  bool get _hasActivePage2Filters {
+    return _isGoodsFiltering ||
+        _isOrdersFiltering ||
+        _isIncomeFiltering ||
+        _isIncomingFiltering ||
+        _isManufactureFiltering ||
+        _isClientSaleFiltering ||
+        _isClientReturnFiltering;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -164,7 +174,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
-    )..repeat(reverse: true);
+    );
 
     _blinkAnimation = CurvedAnimation(
       parent: _blinkController,
@@ -176,7 +186,17 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       (_) => _checkOverdueTasks(),
     );
 
-    _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+    // Blink the filter icon only while a filter is actually on.
+    _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+      if (!mounted) return;
+      if (!_hasActivePage2Filters) {
+        if (_isFilterBlinkOn) {
+          setState(() {
+            _isFilterBlinkOn = false;
+          });
+        }
+        return;
+      }
       setState(() {
         _isFilterBlinkOn = !_isFilterBlinkOn;
       });
@@ -358,7 +378,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           ////print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
         }
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
     socketClient = client;
 

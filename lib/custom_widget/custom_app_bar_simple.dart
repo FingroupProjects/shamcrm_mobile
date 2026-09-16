@@ -66,7 +66,7 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
       duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
-    )..repeat(reverse: true);
+    );
   }
 
   @override

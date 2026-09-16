@@ -998,7 +998,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         });
         refresh();
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
     _isSocketClientInitialized = true;
 

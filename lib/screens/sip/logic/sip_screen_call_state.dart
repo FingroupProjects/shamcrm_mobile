@@ -74,8 +74,23 @@ extension _SipScreenCallStateExtension on _SipScreenState {
         normalized.contains('пароль');
   }
 
+  // Pulse rings are only for the incoming call UI. Do not tick vsync all day.
+  void _syncIncomingPulse(bool shouldPulse) {
+    if (shouldPulse) {
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat();
+      }
+      return;
+    }
+    if (_pulseController.isAnimating) {
+      _pulseController.stop();
+      _pulseController.reset();
+    }
+  }
+
   void _syncCallEffects(SipUiState state) {
     final status = state.callStatus;
+    _syncIncomingPulse(status == SipCallUiStatus.incoming);
     if (_leadAutoCallPending &&
         (status == SipCallUiStatus.calling ||
             status == SipCallUiStatus.ringing ||

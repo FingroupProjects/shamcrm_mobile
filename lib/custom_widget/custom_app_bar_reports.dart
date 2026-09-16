@@ -106,7 +106,7 @@ class _CustomAppBarState extends State<CustomAppBarReports>
       duration: Duration(milliseconds: 700),
       lowerBound: 0.0,
       upperBound: 1.0,
-    )..repeat(reverse: true);
+    );
 
     _blinkAnimation = CurvedAnimation(
       parent: _blinkController,
@@ -118,7 +118,13 @@ class _CustomAppBarState extends State<CustomAppBarReports>
       (_) => _checkOverdueTasks(),
     );
 
-    _timer = Timer.periodic(Duration(milliseconds: 700), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+      if (!mounted) return;
+      final filtering =
+          widget.currentFilters[widget.currentTabIndex]?.isNotEmpty ?? false;
+      if (!filtering) {
+        return;
+      }
       setState(() {
         _iconColor = (_iconColor == Colors.blue) ? Colors.black : Colors.blue;
       });

@@ -288,7 +288,7 @@ class ChatUnreadCounterService {
         debugPrint('ChatUnreadCounterService socket error: $exception');
         refresh();
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
 
     final userChannelName = 'presence-user.$userUniqueId';

@@ -3375,7 +3375,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         });
         refresh();
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
     socketClient = client;
 

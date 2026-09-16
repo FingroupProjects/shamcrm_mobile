@@ -4140,8 +4140,12 @@ class SipService extends ChangeNotifier
 
   void _startRegistrationWatchdog() {
     _registrationWatchdogTimer?.cancel();
-    _registrationWatchdogTimer =
-        Timer.periodic(const Duration(seconds: 20), (_) {
+    // Native Linphone already keeps REGISTER alive. Flutter only needs a
+    // rare safety net. The old 20s timer woke the radio for no reason.
+    final interval = _shouldUseNativeSip()
+        ? const Duration(seconds: 90)
+        : const Duration(seconds: 20);
+    _registrationWatchdogTimer = Timer.periodic(interval, (_) {
       _checkAndRecoverRegistration('watchdog');
     });
   }
@@ -4175,6 +4179,10 @@ class SipService extends ChangeNotifier
       return;
     }
     if (_isActiveUiCallStatus(_state.callStatus)) {
+      return;
+    }
+    if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
+        _state.registrationStatus == SipRegistrationUiStatus.registering) {
       return;
     }
 

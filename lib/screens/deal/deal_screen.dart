@@ -638,7 +638,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         debugPrint('DealScreen: socket connection error: $exception');
         refresh();
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
 
     final presenceChannel = socketClient.presenceChannel(

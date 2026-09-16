@@ -422,7 +422,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         debugPrint('LeadScreen: socket connection error: $exception');
         refresh();
       },
-      minimumReconnectDelayDuration: const Duration(seconds: 1),
+      minimumReconnectDelayDuration: const Duration(seconds: 3),
     );
 
     final presenceChannel = socketClient.presenceChannel(

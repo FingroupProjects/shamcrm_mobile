@@ -826,6 +826,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         static let diagnosticLogsKey = "ios_native_sip_diagnostic_logs_v1"
         static let diagnosticLogsLimit = 5000
         static let maximumIncomingPushAge: TimeInterval = 120
+        // Idle SIP only needs a few iterates per second, not 60fps.
+        static let idleIterateInterval: TimeInterval = 0.2
     }
 
     private let defaults = UserDefaults.standard
@@ -865,6 +867,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var isApplyingAudioRoute = false
     private var audioRouteRepairAttempts = 0
     private var lastCallUiRequestId: Int = 0
+    private var idleIterateTimer: Timer?
+    private var coreInPowerSave = false
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -889,6 +893,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     deinit {
         incomingInviteTimeoutTimer?.invalidate()
+        stopIdleIterateTimer()
         audioRouteSyncWorkItem?.cancel()
         if Thread.isMainThread {
             UIDevice.current.isProximityMonitoringEnabled = false
@@ -979,27 +984,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     func applicationDidEnterBackground() {
         updateAppVisibility(isForeground: false)
         beginBackgroundTransitionTask(reason: "app-background")
-        // Keep Linphone iterating while iOS still gives us background time.
-        // Immediate enter_background + push-allowed account stops UDP INVITE
-        // processing, so a just-minimized app gets neither CallKit nor sound
-        // unless a VoIP push arrives. Enter Linphone background only when the
-        // background task is about to expire.
-        if let core {
-            linphone_core_enter_foreground(core)
-            appendDiagnosticLog("linphone_keep_foreground", [
-                "reason": "app-background-task",
-            ])
-        }
+        // Do not jump back to 60fps auto-iterate just because the app minimized.
+        // A live call stays on the fast loop. Idle stays on the slow loop.
+        // Immediate enter_background + push-allowed account can stop UDP INVITE,
+        // so we only enter Linphone background when the iOS task is about to expire.
+        syncCorePowerMode(reason: "app-background")
         if snapshot.persistentEnabled {
             _ = restoreRegistrationIfNeeded(reason: "app-did-enter-background", emitRegisteringEvent: false)
         }
     }
 
     func applicationWillEnterForeground() {
-        if let core {
-            linphone_core_enter_foreground(core)
-            appendDiagnosticLog("linphone_enter_foreground", [:])
-        }
+        syncCorePowerMode(reason: "app-foreground")
         endBackgroundTransitionTask(reason: "app-foreground")
         updateAppVisibility(isForeground: true)
         requestFlutterCallUi(source: "app-foreground")
@@ -1214,6 +1210,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         core = createdCore
         linphone_core_set_user_data(createdCore, Unmanaged.passUnretained(self).toOpaque())
         linphone_core_enable_auto_iterate(createdCore, 1)
+        linphone_core_enable_keep_alive(createdCore, 1)
+        if let config = linphone_core_get_config(createdCore) {
+            linphone_config_set_int(config, "sip", "keepalive_period", 30000)
+        }
         // CallKit owns the system incoming UI, but a just-minimized app can
         // receive a SIP INVITE before PushKit/CallKit. Native ringing is the
         // fallback so the user still hears the call. Outgoing ringback stays
@@ -1236,10 +1236,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return false
         }
 
+        syncCorePowerMode(reason: "core-started")
         return true
     }
 
     private func teardownLinphoneCore() {
+        stopIdleIterateTimer()
         guard let core else { return }
         if let callbacks = coreCallbacks {
             linphone_core_remove_callbacks(core, callbacks)
@@ -1249,6 +1251,73 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         coreCallbacks = nil
         account = nil
         currentCall = nil
+        coreInPowerSave = false
+    }
+
+    private func isLiveCallState(_ state: String? = nil) -> Bool {
+        let callState = state ?? snapshot.callState
+        return callState == "incoming" ||
+            callState == "calling" ||
+            callState == "ringing" ||
+            callState == "early_media" ||
+            callState == "in_call"
+    }
+
+    // Idle CRM use was heating iPhones because auto-iterate uses a 60fps
+    // display link. Incoming still works: we iterate 5 times per second,
+    // then switch to full speed as soon as INVITE or VoIP push arrives.
+    private func syncCorePowerMode(reason: String, forceFullPower: Bool = false, iterateNow: Bool = true) {
+        guard let core else { return }
+
+        let wantFullPower = forceFullPower || isLiveCallState()
+        if wantFullPower {
+            stopIdleIterateTimer()
+            linphone_core_enable_auto_iterate(core, 1)
+            linphone_core_enter_foreground(core)
+            if iterateNow {
+                linphone_core_iterate(core)
+            }
+            if coreInPowerSave {
+                appendDiagnosticLog("linphone_power_full", [
+                    "reason": reason,
+                    "call_state": snapshot.callState,
+                ])
+            }
+            coreInPowerSave = false
+            return
+        }
+
+        // Do not call enter_background here. Push-allowed accounts can stop
+        // UDP INVITE until a VoIP push arrives. Keep transports alive and
+        // only slow down iterate.
+        linphone_core_enter_foreground(core)
+        linphone_core_enable_auto_iterate(core, 0)
+        startIdleIterateTimer()
+        if iterateNow {
+            linphone_core_iterate(core)
+        }
+        if !coreInPowerSave {
+            appendDiagnosticLog("linphone_power_idle", [
+                "reason": reason,
+                "call_state": snapshot.callState,
+            ])
+        }
+        coreInPowerSave = true
+    }
+
+    private func startIdleIterateTimer() {
+        guard idleIterateTimer == nil else { return }
+        let timer = Timer(timeInterval: Constants.idleIterateInterval, repeats: true) { [weak self] _ in
+            guard let self, let core = self.core else { return }
+            linphone_core_iterate(core)
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        idleIterateTimer = timer
+    }
+
+    private func stopIdleIterateTimer() {
+        idleIterateTimer?.invalidate()
+        idleIterateTimer = nil
     }
 
     private func applyRegistrationConfig(
@@ -1495,14 +1564,19 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return false
         }
 
+        // Outgoing INVITE needs the fast loop before the first packet is sent.
+        syncCorePowerMode(reason: "outgoing-invite", forceFullPower: true)
+
         guard let address = linphone_factory_create_address(linphone_factory_get(), target) else {
             emitCallEvent(state: "failed", message: "Invalid target address")
+            syncCorePowerMode(reason: "outgoing-invite-invalid")
             return false
         }
 
         guard let params = linphone_core_create_call_params(core, nil) else {
             linphone_address_unref(address)
             emitCallEvent(state: "failed", message: "Failed to create call params")
+            syncCorePowerMode(reason: "outgoing-invite-no-params")
             return false
         }
 
@@ -1514,6 +1588,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         guard let call else {
             emitCallEvent(state: "failed", message: "Failed to start outgoing call")
+            syncCorePowerMode(reason: "outgoing-invite-failed")
             return false
         }
 
@@ -1767,6 +1842,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             message: snapshot.message,
             extra: ["sipCallId": endedSipCallId as Any? ?? NSNull()]
         )
+        syncCorePowerMode(reason: "local-hangup")
         return true
     }
 
@@ -3083,6 +3159,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 }
                 deferredAction = nil
                 pendingIncomingPayload = nil
+                syncCorePowerMode(reason: "call-locally-terminated", iterateNow: false)
                 return
             }
             let uuid = resolvedCallUUID(from: nil)
@@ -3109,6 +3186,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             appendDiagnosticLog("[VOIP] CALL_STATE_UNHANDLED", signalDetails)
             break
         }
+        syncCorePowerMode(reason: "call-state-\(snapshot.callState)", iterateNow: false)
     }
 
     private func beginBackgroundTransitionTask(reason: String) {
@@ -3126,7 +3204,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 callState == "early_media" ||
                 callState == "in_call"
             if let core = self.core, !keepCoreActive {
+                self.stopIdleIterateTimer()
                 linphone_core_enter_background(core)
+                self.coreInPowerSave = true
                 self.appendDiagnosticLog("linphone_enter_background", [
                     "reason": "background-task-expired",
                 ])
@@ -3276,22 +3356,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         snapshot.appForeground = isActuallyForeground
 
         if isActuallyForeground {
-            if let core {
-                linphone_core_enter_foreground(core)
-                appendDiagnosticLog("linphone_enter_foreground", [
-                    "reason": "voip-push-while-foreground",
-                ])
-            }
+            syncCorePowerMode(reason: "voip-push-while-foreground", forceFullPower: true)
         } else {
             beginBackgroundTransitionTask(reason: "voip-push")
-            if let core {
-                // PushKit woke us to receive the matching INVITE. Background
-                // mode would stop SIP iterate and drop the call.
-                linphone_core_enter_foreground(core)
-                appendDiagnosticLog("linphone_enter_foreground", [
-                    "reason": "voip-push",
-                ])
-            }
+            // PushKit woke us to receive the matching INVITE. The slow idle
+            // loop would delay it, so go full-power until the call starts.
+            syncCorePowerMode(reason: "voip-push", forceFullPower: true)
         }
 
         if isDuplicateIncomingPayload(payload) {
@@ -3761,6 +3831,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             "callId": endedCallId ?? NSNull(),
             "remoteIdentity": remoteIdentity ?? NSNull(),
         ])
+        syncCorePowerMode(reason: "call-ended", iterateNow: false)
     }
 
     private func emit(_ event: [String: Any]) {

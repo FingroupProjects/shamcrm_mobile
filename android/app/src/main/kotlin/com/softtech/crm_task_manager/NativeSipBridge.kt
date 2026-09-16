@@ -437,7 +437,12 @@ object NativeSipBridge {
         }
 
         return when (registrationState) {
-            "registered", "registering" -> ensureManager().maintainRegistration(reason)
+            // Linphone already re-REGISTER before expires=300.
+            // Extra refreshRegisters() only wakes the radio.
+            "registered", "registering" -> {
+                Log.d(TAG, "maintainRegistration skipped: registrationState=$registrationState, reason=$reason")
+                true
+            }
             else -> restoreRegistrationIfNeeded(startService = false)
         }
     }

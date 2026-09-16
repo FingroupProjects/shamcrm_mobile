@@ -334,7 +334,7 @@ class _SipScreenState extends State<SipScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat();
+    );
     final autoNumber = widget.autoCallNumber?.trim() ?? '';
     if (autoNumber.isNotEmpty) {
       // Show the call UI immediately — never flash the dial pad for lead dials.

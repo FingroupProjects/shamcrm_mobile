@@ -43,7 +43,8 @@ class NativeSipForegroundService : Service() {
         private const val NOTIFICATION_CALL_ID = 7302
         private const val RESTART_REQUEST_CODE = 7303
         private const val ANSWER_ACTIVITY_REQUEST_CODE = 7304
-        private const val REGISTRATION_HEARTBEAT_INTERVAL_MS = 45_000L
+        // Health check only. Linphone itself refreshes REGISTER before expires.
+        private const val REGISTRATION_HEARTBEAT_INTERVAL_MS = 90_000L
         @Volatile
         private var serviceRunning = false
         @Volatile
