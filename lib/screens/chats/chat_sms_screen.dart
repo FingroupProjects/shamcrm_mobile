@@ -24,6 +24,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter
 import 'package:crm_task_manager/screens/chats/chats_widgets/input_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/location_message_bubble.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/media_group_message_bubble.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/ai_message_rating_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_ai_settings_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/pin_lead_screen.dart';
 import 'package:crm_task_manager/utils/ai_integration_store.dart';
@@ -232,12 +233,20 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final Map<String, DateTime> _recentReactionEventFingerprints = {};
   final Map<String, DateTime> _recentReactionSemanticFingerprints = {};
 
+  // Локальные оценки ИИ-сообщений ('good'/'bad') для мгновенного UI.
+  final Map<int, String> _localRatings = {};
+
   Message _messageWithLocalReactions(Message message) {
     final localReactions = _localReactions[message.id];
-    if (localReactions == null) {
+    final localRating = _localRatings[message.id];
+    // Накладываем и локальные реакции, и локальную оценку ИИ.
+    if (localReactions == null && localRating == null) {
       return message;
     }
-    return message.copyWith(reactions: localReactions);
+    return message.copyWith(
+      reactions: localReactions ?? message.reactions,
+      rating: localRating ?? message.rating,
+    );
   }
 
   List<MessageReaction> _applyReactionOptimistically({
@@ -454,6 +463,50 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           content: Text(
             AppLocalizations.of(context)!
                 .translate('failed_to_update_reaction'),
+          ),
+          backgroundColor: context.appColors.error,
+        ),
+      );
+    }
+  }
+
+  /// Оценка ответа ИИ пальцем вверх/вниз.
+  /// Для плохой оценки сначала спрашиваем причину (необязательно).
+  /// Оптимистично обновляем UI, при ошибке откатываем оценку назад.
+  Future<void> _rateAiMessage(Message message, String rating) async {
+    if (message.id <= 0) return;
+
+    String? reason;
+    if (rating == 'bad') {
+      final result = await showAiRatingReasonSheet(context);
+      if (!mounted) return;
+      // null => пользователь закрыл шторку, оценку не ставим.
+      if (result == null) return;
+      reason = result.isEmpty ? null : result;
+    }
+
+    final previousRating = message.rating;
+
+    setState(() {
+      _localRatings[message.id] = rating;
+    });
+
+    try {
+      await widget.apiService.rateMessage(message.id, rating, reason: reason);
+    } catch (e) {
+      if (!mounted) return;
+      // Откат оценки на прежнее значение.
+      setState(() {
+        if (previousRating == null) {
+          _localRatings.remove(message.id);
+        } else {
+          _localRatings[message.id] = previousRating;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.translate('ai_rating_error'),
           ),
           backgroundColor: context.appColors.error,
         ),
@@ -2972,6 +3025,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                               onReactionToggle: _canUseReactionsInCurrentChat
                                   ? _toggleMessageReaction
                                   : null,
+                              // Оценку показываем только на ИИ-сообщениях.
+                              onRateMessage: _rateAiMessage,
                             ),
                           );
                         }
@@ -4685,6 +4740,8 @@ class MessageItemWidget extends StatelessWidget {
   final String? companionName;
   final bool canSendMessageInChat;
   final void Function(Message message, String emoji)? onReactionToggle;
+  // Оценка ответа ИИ: value = 'good' | 'bad'. null => оценка недоступна.
+  final void Function(Message message, String rating)? onRateMessage;
   final VoidCallback? onTargetReferralTap;
   final VoidCallback? onDeliveryErrorTap;
 
@@ -4715,6 +4772,7 @@ class MessageItemWidget extends StatelessWidget {
     this.companionName,
     required this.canSendMessageInChat,
     this.onReactionToggle,
+    this.onRateMessage,
     this.onTargetReferralTap,
     this.onDeliveryErrorTap,
   });
@@ -4841,6 +4899,8 @@ class MessageItemWidget extends StatelessWidget {
               : null,
           deliveryStatus: message.deliveryStatus,
           onDeliveryErrorTap: onDeliveryErrorTap,
+          // Значок ИИ рядом с именем, если ответ сгенерирован ИИ.
+          isCreatedByAi: message.isCreatedByAi,
         );
         break;
       case 'image':
@@ -5043,17 +5103,42 @@ class MessageItemWidget extends StatelessWidget {
         content = const SizedBox();
     }
 
+    // Если есть превью поста — оборачиваем контент вместе с ним.
+    Widget result;
     if (message.post == null) {
-      return content;
+      result = content;
+    } else {
+      result = Column(
+        crossAxisAlignment: message.isMyMessage
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          _buildPostPreview(context, message.post!),
+          content,
+        ],
+      );
     }
 
+    // Под сообщением ИИ показываем панель оценки (палец вверх/вниз).
+    return _maybeAppendAiRating(context, result);
+  }
+
+  /// Добавляет панель оценки под сообщением, если оно создано ИИ.
+  Widget _maybeAppendAiRating(BuildContext context, Widget content) {
+    if (!message.isCreatedByAi || onRateMessage == null) {
+      return content;
+    }
     return Column(
       crossAxisAlignment: message.isMyMessage
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        _buildPostPreview(context, message.post!),
         content,
+        AiMessageRatingBar(
+          rating: message.rating,
+          alignEnd: message.isMyMessage,
+          onRate: (value) => onRateMessage!.call(message, value),
+        ),
       ],
     );
   }

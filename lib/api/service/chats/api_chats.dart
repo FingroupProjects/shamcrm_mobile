@@ -1739,6 +1739,31 @@ extension ApiChatsX on ApiService {
     }
   }
 
+  /// Оценка ответа ИИ: POST `/v3/chat/messages/{message}/rating`.
+  /// rating = 'good' | 'bad'. reason — только для 'bad' и необязателен.
+  /// Одна оценка на сообщение: повторный запрос перезаписывает старую.
+  Future<void> rateMessage(
+    int messageId,
+    String rating, {
+    String? reason,
+  }) async {
+    final body = <String, dynamic>{'rating': rating};
+    // Причину отправляем только для плохой оценки и только если она есть.
+    if (rating == 'bad' && reason != null && reason.trim().isNotEmpty) {
+      body['reason'] = reason.trim();
+    }
+
+    final response = await _postRequest(
+      '/v3/chat/messages/$messageId/rating',
+      body,
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ?? 'Ошибка оценки сообщения',
+      );
+    }
+  }
+
   /// Вкл/выкл «Дожим»: POST `/v3/chat/{chat}/followup` с `{ "enabled": bool }`.
   Future<void> setChatFollowupEnabled(int chatId, bool enabled) async {
     final response = await _postRequest(

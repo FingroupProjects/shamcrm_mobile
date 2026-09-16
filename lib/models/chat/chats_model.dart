@@ -492,6 +492,10 @@ class Message {
   final MessageDeliveryStatus deliveryStatus;
   final String? localReplyMessageId;
   final String? localResponseType;
+  // Сообщение сгенерировано ИИ (если поле пришло не null).
+  final bool isCreatedByAi;
+  // Оценка ответа ИИ пользователем: 'good' | 'bad' | null (не оценено).
+  final String? rating;
 
   Message({
     required this.id,
@@ -522,6 +526,8 @@ class Message {
     this.deliveryStatus = MessageDeliveryStatus.sent,
     this.localReplyMessageId,
     this.localResponseType,
+    this.isCreatedByAi = false,
+    this.rating,
   });
 
   Message copyWith({
@@ -553,6 +559,8 @@ class Message {
     MessageDeliveryStatus? deliveryStatus,
     String? localReplyMessageId,
     String? localResponseType,
+    bool? isCreatedByAi,
+    String? rating,
   }) {
     return Message(
       id: id ?? this.id,
@@ -582,6 +590,8 @@ class Message {
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
       localReplyMessageId: localReplyMessageId ?? this.localReplyMessageId,
       localResponseType: localResponseType ?? this.localResponseType,
+      isCreatedByAi: isCreatedByAi ?? this.isCreatedByAi,
+      rating: rating ?? this.rating,
     );
   }
 
@@ -842,6 +852,11 @@ class Message {
       ),
       localReplyMessageId: json['local_reply_message_id']?.toString(),
       localResponseType: json['local_response_type']?.toString(),
+      // ИИ-сообщение: сервер шлёт is_created_by_ai (null => не ИИ).
+      isCreatedByAi: json['is_created_by_ai'] != null &&
+          json['is_created_by_ai'] != false,
+      // Оценка ответа ИИ: 'good' | 'bad' | null.
+      rating: json['rating']?.toString(),
       duration: Duration(
         seconds: json['voice_duration'] != null
             ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0

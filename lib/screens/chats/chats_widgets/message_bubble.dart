@@ -92,6 +92,8 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onLongPress; // Callback для long press
   final MessageDeliveryStatus deliveryStatus;
   final VoidCallback? onDeliveryErrorTap;
+  // Сообщение написано ИИ — рядом с именем покажем значок-«искру».
+  final bool isCreatedByAi;
 
   const MessageBubble({
     super.key,
@@ -116,7 +118,36 @@ class MessageBubble extends StatelessWidget {
     this.onLongPress, // Callback для long press
     this.deliveryStatus = MessageDeliveryStatus.sent,
     this.onDeliveryErrorTap,
+    this.isCreatedByAi = false,
   });
+
+  /// Градиентный бейдж ИИ рядом с именем автора-ИИ.
+  /// Только текст (без звёздочки). На русском — «ИИ», иначе — «AI».
+  Widget _buildAiBadge(BuildContext context) {
+    final label = AppLocalizations.of(context)?.translate('ai_badge') ?? 'AI';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        // Фирменный ИИ-градиент: фиолетовый → синий.
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 10,
+          height: 1,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,12 +194,22 @@ class MessageBubble extends StatelessWidget {
               // - В корпоративных группах: показываем имя только для собеседника
               // - В корпоративных чатах (не группа): показываем имя хотя бы для собеседника
               if (isLeadChat || isGroupChat == true || !isSender)
-                Text(
-                  senderName,
-                  style: textStyles.labelMd.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: appearance.senderNameColor(context),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      senderName,
+                      style: textStyles.labelMd.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: appearance.senderNameColor(context),
+                      ),
+                    ),
+                    // Бейдж ИИ после имени: «это написал ИИ».
+                    if (isCreatedByAi) ...[
+                      const SizedBox(width: 6),
+                      _buildAiBadge(context),
+                    ],
+                  ],
                 ),
               Container(
                 padding: const EdgeInsets.all(12),
