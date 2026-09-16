@@ -9,6 +9,8 @@ class NativeSipActionReceiver : BroadcastReceiver() {
         const val ACTION_ANSWER = "com.shamcrm.native_sip.ANSWER"
         const val ACTION_DECLINE = "com.shamcrm.native_sip.DECLINE"
         const val ACTION_HANGUP = "com.shamcrm.native_sip.HANGUP"
+        const val ACTION_TOGGLE_MUTE = "com.shamcrm.native_sip.TOGGLE_MUTE"
+        const val ACTION_TOGGLE_SPEAKER = "com.shamcrm.native_sip.TOGGLE_SPEAKER"
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
@@ -44,7 +46,12 @@ class NativeSipActionReceiver : BroadcastReceiver() {
                 }
             }
             ACTION_DECLINE -> NativeSipBridge.declineCall()
+            // Hang up from the red icon in the live-call notification.
             ACTION_HANGUP -> NativeSipBridge.hangup()
+            // Mic icon: mute if live, unmute if already muted.
+            ACTION_TOGGLE_MUTE -> NativeSipBridge.toggleMuted()
+            // Speaker icon: loud speaker or earpiece.
+            ACTION_TOGGLE_SPEAKER -> NativeSipBridge.toggleSpeaker()
         }
     }
 }

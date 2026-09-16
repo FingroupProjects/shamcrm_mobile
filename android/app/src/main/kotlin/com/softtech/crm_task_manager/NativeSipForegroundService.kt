@@ -21,6 +21,8 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
+import android.view.View
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.content.ContextCompat
@@ -291,6 +293,8 @@ class NativeSipForegroundService : Service() {
             NativeSipActionReceiver.ACTION_ANSWER -> NativeSipBridge.acceptCall()
             NativeSipActionReceiver.ACTION_DECLINE -> NativeSipBridge.declineCall()
             NativeSipActionReceiver.ACTION_HANGUP -> NativeSipBridge.hangup()
+            NativeSipActionReceiver.ACTION_TOGGLE_MUTE -> NativeSipBridge.toggleMuted()
+            NativeSipActionReceiver.ACTION_TOGGLE_SPEAKER -> NativeSipBridge.toggleSpeaker()
             else -> {
                 if (!NativeSipBridge.shouldKeepRuntimeAlive()) {
                     stopIdleRuntime("idle-restart")
@@ -643,23 +647,27 @@ class NativeSipForegroundService : Service() {
         return builder.build()
     }
 
-    // WhatsApp-style live call: name/number, elapsed seconds, hangup, tap opens
-    // this exact conversation. Ongoing + CallStyle so the shade cannot swipe it
-    // away until the SIP session ends.
+    // Live call card: number + three icon buttons.
+    // CallStyle was adding a second "Hang up" chip next to our own action.
     private fun buildOngoingCallNotification(snapshot: HashMap<String, Any?>): Notification {
         val callState = snapshot["callState"]?.toString() ?: "in_call"
         val remoteIdentity = formatIdentity(snapshot["remoteIdentity"]?.toString())
         val connectedAtMs = (snapshot["callStartedAtMs"] as? Number)?.toLong()
+        val muted = snapshot["muted"] == true
+        val speakerOn = snapshot["speakerOn"] == true
         val statusText = when (callState) {
             "calling" -> "Исходящий звонок"
             "ringing" -> "Ожидаем ответ"
             else -> "Разговор"
         }
-        val caller = Person.Builder()
-            .setName(remoteIdentity)
-            .setImportant(true)
-            .build()
-        val hangupIntent = actionPendingIntent(NativeSipActionReceiver.ACTION_HANGUP)
+        val contentView = buildOngoingCallRemoteViews(
+            remoteIdentity = remoteIdentity,
+            statusText = statusText,
+            callState = callState,
+            connectedAtMs = connectedAtMs,
+            muted = muted,
+            speakerOn = speakerOn,
+        )
         val builder = NotificationCompat.Builder(this, CHANNEL_CALLS_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(remoteIdentity)
@@ -676,11 +684,9 @@ class NativeSipForegroundService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .addAction(
-                R.mipmap.ic_launcher,
-                "Завершить",
-                hangupIntent,
-            )
+            .setCustomContentView(contentView)
+            .setCustomBigContentView(contentView)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
 
         if (callState == "in_call" && connectedAtMs != null && connectedAtMs > 0L) {
             builder.setWhen(connectedAtMs)
@@ -689,15 +695,57 @@ class NativeSipForegroundService : Service() {
                 .setChronometerCountDown(false)
         }
 
-        try {
-            builder.setStyle(
-                NotificationCompat.CallStyle.forOngoingCall(caller, hangupIntent),
-            )
-        } catch (error: Throwable) {
-            Log.w(TAG, "CallStyle ongoing notification unavailable: ${error.message}")
-        }
-
         return builder.build()
+    }
+
+    private fun buildOngoingCallRemoteViews(
+        remoteIdentity: String,
+        statusText: String,
+        callState: String,
+        connectedAtMs: Long?,
+        muted: Boolean,
+        speakerOn: Boolean,
+    ): RemoteViews {
+        val views = RemoteViews(packageName, R.layout.notification_ongoing_call)
+        views.setTextViewText(R.id.ongoing_call_identity, remoteIdentity)
+        views.setOnClickPendingIntent(
+            R.id.ongoing_call_hangup,
+            actionPendingIntent(NativeSipActionReceiver.ACTION_HANGUP),
+        )
+        views.setOnClickPendingIntent(
+            R.id.ongoing_call_mute,
+            actionPendingIntent(NativeSipActionReceiver.ACTION_TOGGLE_MUTE),
+        )
+        views.setOnClickPendingIntent(
+            R.id.ongoing_call_speaker,
+            actionPendingIntent(NativeSipActionReceiver.ACTION_TOGGLE_SPEAKER),
+        )
+        views.setImageViewResource(
+            R.id.ongoing_call_mute,
+            if (muted) R.drawable.ic_mic_off else R.drawable.ic_mic,
+        )
+        views.setImageViewResource(
+            R.id.ongoing_call_speaker,
+            if (speakerOn) R.drawable.ic_volume_up else R.drawable.ic_volume_off,
+        )
+
+        val showTimer = callState == "in_call" && connectedAtMs != null && connectedAtMs > 0L
+        if (showTimer) {
+            val elapsedMs = (System.currentTimeMillis() - connectedAtMs).coerceAtLeast(0L)
+            views.setChronometer(
+                R.id.ongoing_call_timer,
+                SystemClock.elapsedRealtime() - elapsedMs,
+                null,
+                true,
+            )
+            views.setViewVisibility(R.id.ongoing_call_timer, View.VISIBLE)
+            views.setViewVisibility(R.id.ongoing_call_status, View.GONE)
+        } else {
+            views.setTextViewText(R.id.ongoing_call_status, statusText)
+            views.setViewVisibility(R.id.ongoing_call_timer, View.GONE)
+            views.setViewVisibility(R.id.ongoing_call_status, View.VISIBLE)
+        }
+        return views
     }
 
     private fun showIncomingCallNotification(event: HashMap<String, Any?>) {

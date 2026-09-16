@@ -375,6 +375,16 @@ object NativeSipBridge {
         return ensureManager().setMuted(muted)
     }
 
+    fun toggleMuted(): Boolean {
+        val mutedNow = currentSnapshot["muted"] == true
+        return setMuted(!mutedNow)
+    }
+
+    fun toggleSpeaker(): Boolean {
+        val speakerNow = currentSnapshot["speakerOn"] == true
+        return setSpeaker(!speakerNow)
+    }
+
     fun sendDtmf(tone: String): Boolean {
         return ensureManager().sendDtmf(tone)
     }

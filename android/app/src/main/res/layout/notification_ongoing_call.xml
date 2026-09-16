@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Live-call notification: number on the left, three icon buttons on the right. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="2dp"
+    android:paddingBottom="6dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/ongoing_call_identity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Chronometer
+            android:id="@+id/ongoing_call_timer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCFFFFFF"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/ongoing_call_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#CCFFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Hang up. Red circle, no text. -->
+    <ImageView
+        android:id="@+id/ongoing_call_hangup"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/bg_notif_hangup"
+        android:clickable="true"
+        android:contentDescription="Hang up"
+        android:focusable="true"
+        android:padding="9dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_call_end" />
+
+    <!-- Mute / unmute. Icon only. -->
+    <ImageView
+        android:id="@+id/ongoing_call_mute"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_notif_call_action"
+        android:clickable="true"
+        android:contentDescription="Microphone"
+        android:focusable="true"
+        android:padding="9dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_mic" />
+
+    <!-- Speaker on / off. Icon only. -->
+    <ImageView
+        android:id="@+id/ongoing_call_speaker"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_notif_call_action"
+        android:clickable="true"
+        android:contentDescription="Speaker"
+        android:focusable="true"
+        android:padding="9dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_volume_off" />
+</LinearLayout>
