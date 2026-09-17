@@ -397,7 +397,7 @@ struct VoIPIncomingPayload {
     }
 }
 
-private struct NativeSipRegistrationConfig: Codable {
+private struct NativeSipRegistrationConfig: Codable, Equatable {
     let server: String
     let login: String
     let password: String
@@ -846,11 +846,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
     private var core: OpaquePointer?
     private var coreCallbacks: OpaquePointer?
-    private var account: OpaquePointer?
     private var currentCall: OpaquePointer?
+    private var isIteratingCore = false
     private var locallyTerminatedCall: OpaquePointer?
     private var pendingIncomingPayload: VoIPIncomingPayload?
     private var deferredAction: DeferredNativeCallAction?
+    // Deferred answer/decline/end belongs to one CallKit UUID only.
+    // A stale end from a previous call must not kill the next INVITE.
+    private var deferredActionCallUUID: UUID?
+    // Fake CallKit UUIDs from cancel/expired VoIP pushes. Apple requires
+    // reportNewIncomingCall, but CXEndCallAction for those UUIDs is not a
+    // real user hangup.
+    private var syntheticCallKitUUIDs: Set<UUID> = []
     private var incomingPushReceivedAt: Date?
     private var sipReadyQueuedAt: Date?
     private var audioSessionObserversInstalled = false
@@ -869,6 +876,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var lastCallUiRequestId: Int = 0
     private var idleIterateTimer: Timer?
     private var coreInPowerSave = false
+    // Keep the current SIP account in memory so restore/register can reuse it.
+    private var activeRegistrationConfig: NativeSipRegistrationConfig?
+    // Linphone emits Cleared while we replace an account. Flutter used that as
+    // "disconnected" and started a register loop that crashed the app.
+    private var suppressRegistrationLifecycleEvents = false
+    private var isApplyingRegistrationConfig = false
 
     init(controller: FlutterViewController) {
         methodChannel = FlutterMethodChannel(
@@ -934,21 +947,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
     }
 
-    func updateAppVisibility(isForeground: Bool) {
+    func updateAppVisibility(isForeground: Bool, restoreRegistration: Bool = false) {
         snapshot.appForeground = isForeground
         appendDiagnosticLog("app_visibility", [
             "foreground": isForeground ? "true" : "false",
             "call_state": snapshot.callState,
         ])
-        if snapshot.persistentEnabled &&
-            snapshot.callState != "incoming" &&
-            snapshot.callState != "calling" &&
-            snapshot.callState != "ringing" &&
-            snapshot.callState != "early_media" &&
-            snapshot.callState != "in_call" {
-            _ = restoreRegistrationIfNeeded(reason: isForeground ? "app-foreground" : "app-background",
-                                            emitRegisteringEvent: false)
-        }
         if !isForeground,
            snapshot.callState == "incoming",
            !callKitReportedForCurrentIncoming,
@@ -958,10 +962,20 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         persistSnapshot()
         emit([
             "type": "app_visibility",
-            "appForeground": isForeground,
+            "appForeground": snapshot.appForeground,
             "callState": snapshot.callState,
             "remoteIdentity": snapshot.remoteIdentity ?? NSNull(),
         ])
+
+        // Only restore when the caller asks. willResignActive must not do this.
+        if restoreRegistration,
+           snapshot.persistentEnabled,
+           !isLiveCallState() {
+            _ = restoreRegistrationIfNeeded(
+                reason: isForeground ? "app-foreground" : "app-background",
+                emitRegisteringEvent: false
+            )
+        }
     }
 
     private func requestFlutterCallUi(source: String) {
@@ -982,22 +996,21 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     func applicationDidEnterBackground() {
-        updateAppVisibility(isForeground: false)
+        // Do not recreate Linphone on background. That killed REGISTER in
+        // Progress and crashed the app on this Sipuni account.
+        updateAppVisibility(isForeground: false, restoreRegistration: false)
         beginBackgroundTransitionTask(reason: "app-background")
         // Do not jump back to 60fps auto-iterate just because the app minimized.
         // A live call stays on the fast loop. Idle stays on the slow loop.
         // Immediate enter_background + push-allowed account can stop UDP INVITE,
         // so we only enter Linphone background when the iOS task is about to expire.
         syncCorePowerMode(reason: "app-background")
-        if snapshot.persistentEnabled {
-            _ = restoreRegistrationIfNeeded(reason: "app-did-enter-background", emitRegisteringEvent: false)
-        }
     }
 
     func applicationWillEnterForeground() {
         syncCorePowerMode(reason: "app-foreground")
         endBackgroundTransitionTask(reason: "app-foreground")
-        updateAppVisibility(isForeground: true)
+        updateAppVisibility(isForeground: true, restoreRegistration: true)
         requestFlutterCallUi(source: "app-foreground")
     }
 
@@ -1209,7 +1222,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
 
         core = createdCore
         linphone_core_set_user_data(createdCore, Unmanaged.passUnretained(self).toOpaque())
-        linphone_core_enable_auto_iterate(createdCore, 1)
+        // Do not start the 60fps auto-iterate loop. We drive iterate ourselves.
+        // Two iterate loops plus a dying account pointer is what abort()'d the app.
+        linphone_core_enable_auto_iterate(createdCore, 0)
         linphone_core_enable_keep_alive(createdCore, 1)
         if let config = linphone_core_get_config(createdCore) {
             linphone_config_set_int(config, "sip", "keepalive_period", 30000)
@@ -1249,18 +1264,71 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         linphone_core_stop(core)
         self.core = nil
         coreCallbacks = nil
-        account = nil
         currentCall = nil
         coreInPowerSave = false
     }
 
+    // Never cache LinphoneAccount*. After remove/clear, belle-sip aborts in
+    // linphone_account_get_params / get_state (SIGABRT / SIGSEGV on this phone).
+    private var account: OpaquePointer? {
+        guard let core else { return nil }
+        return linphone_core_get_default_account(core)
+    }
+
+    private func setNetworkReachable(_ reachable: Bool) {
+        guard let core else { return }
+        linphone_core_set_network_reachable(core, reachable ? 1 : 0)
+    }
+
+    private func iterateCoreSafely() {
+        guard let core, !isIteratingCore else { return }
+        isIteratingCore = true
+        defer { isIteratingCore = false }
+        linphone_core_iterate(core)
+    }
+
     private func isLiveCallState(_ state: String? = nil) -> Bool {
         let callState = state ?? snapshot.callState
-        return callState == "incoming" ||
+        if callState == "incoming" ||
             callState == "calling" ||
             callState == "ringing" ||
             callState == "early_media" ||
-            callState == "in_call"
+            callState == "in_call" {
+            return true
+        }
+        // Foreground VoIP push sets call_state=idle until SIP INVITE arrives.
+        // CallKit then backgrounds the app. If we drop to the slow iterate
+        // loop here, Sipuni cancels after ~3s and redials. That looks like
+        // "ring for a second, drop, ring again".
+        return pendingIncomingPayload != nil
+    }
+
+    private func currentIncomingCallUUID() -> UUID? {
+        snapshot.callUUID.flatMap(UUID.init(uuidString:)) ?? pendingIncomingPayload?.uuid
+    }
+
+    private func clearDeferredCallAction() {
+        deferredAction = nil
+        deferredActionCallUUID = nil
+    }
+
+    private func setDeferredCallAction(
+        _ action: DeferredNativeCallAction,
+        callUUID: UUID? = nil
+    ) {
+        deferredAction = action
+        deferredActionCallUUID = callUUID ?? currentIncomingCallUUID()
+    }
+
+    private func deferredActionName(_ action: DeferredNativeCallAction) -> String {
+        switch action {
+        case .answer:
+            return "answer"
+        case .decline:
+            return "decline"
+        case .end:
+            return "end"
+        }
     }
 
     // Idle CRM use was heating iPhones because auto-iterate uses a 60fps
@@ -1275,7 +1343,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             linphone_core_enable_auto_iterate(core, 1)
             linphone_core_enter_foreground(core)
             if iterateNow {
-                linphone_core_iterate(core)
+                iterateCoreSafely()
             }
             if coreInPowerSave {
                 appendDiagnosticLog("linphone_power_full", [
@@ -1294,7 +1362,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         linphone_core_enable_auto_iterate(core, 0)
         startIdleIterateTimer()
         if iterateNow {
-            linphone_core_iterate(core)
+            iterateCoreSafely()
         }
         if !coreInPowerSave {
             appendDiagnosticLog("linphone_power_idle", [
@@ -1308,8 +1376,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private func startIdleIterateTimer() {
         guard idleIterateTimer == nil else { return }
         let timer = Timer(timeInterval: Constants.idleIterateInterval, repeats: true) { [weak self] _ in
-            guard let self, let core = self.core else { return }
-            linphone_core_iterate(core)
+            self?.iterateCoreSafely()
         }
         RunLoop.main.add(timer, forMode: .common)
         idleIterateTimer = timer
@@ -1320,24 +1387,107 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         idleIterateTimer = nil
     }
 
+    private func isHealthyLinphoneRegistration(_ state: LinphoneRegistrationState) -> Bool {
+        state == LinphoneRegistrationOk ||
+            state == LinphoneRegistrationProgress ||
+            state == LinphoneRegistrationRefreshing
+    }
+
+    private func hasHealthyRegistration(matching config: NativeSipRegistrationConfig) -> Bool {
+        guard core != nil, let account else { return false }
+        let currentConfig = activeRegistrationConfig ?? loadPersistedRegistrationConfig()
+        guard currentConfig == config else { return false }
+        return isHealthyLinphoneRegistration(linphone_account_get_state(account))
+    }
+
+    private func emitCurrentRegistrationState() {
+        guard let account else { return }
+        if linphone_account_get_state(account) == LinphoneRegistrationOk {
+            snapshot.registrationState = "registered"
+            snapshot.message = "Registration successful"
+            emitRegistrationEvent(state: "registered", message: snapshot.message)
+            return
+        }
+
+        snapshot.registrationState = "registering"
+        snapshot.message = "Registration in progress"
+        emitRegistrationEvent(state: "registering", message: snapshot.message)
+    }
+
+    private func clearLinphoneAccountsQuietly() {
+        guard let core else { return }
+        if let existingAccount = account {
+            linphone_core_remove_account(core, existingAccount)
+        }
+        linphone_core_clear_accounts(core)
+        linphone_core_clear_all_auth_info(core)
+    }
+
     private func applyRegistrationConfig(
         _ config: NativeSipRegistrationConfig,
         emitRegisteringEvent: Bool
     ) -> Bool {
-        // Начинаем регистрацию с чистого core, чтобы не переиспользовать
-        // устаревшие auth/account данные от прошлых попыток.
-        teardownLinphoneCore()
+        // Reuse the live Linphone core. Destroying it on every register made
+        // this account bounce and crashed iOS.
+        if isApplyingRegistrationConfig {
+            appendDiagnosticLog("sip_register_reuse", [
+                "cause": "apply-in-progress",
+            ])
+            return true
+        }
+        if hasHealthyRegistration(matching: config) {
+            appendDiagnosticLog("sip_register_reuse", [
+                "linphone_state": currentAccountRegistrationStateString(),
+                "ui_state": snapshot.registrationState,
+            ])
+            setNetworkReachable(true)
+            snapshot.persistentEnabled = true
+            persistRegistrationConfig(config)
+            activeRegistrationConfig = config
+            emitCurrentRegistrationState()
+            persistSnapshot()
+            return true
+        }
 
-        guard ensureLinphoneCore(), let core else {
-            emitRegistrationEvent(state: "failed", message: snapshot.message ?? "Linphone core unavailable")
+        isApplyingRegistrationConfig = true
+        defer { isApplyingRegistrationConfig = false }
+
+        suppressRegistrationLifecycleEvents = true
+        if core == nil {
+            let started = ensureLinphoneCore()
+            if !started || core == nil {
+                suppressRegistrationLifecycleEvents = false
+                emitRegistrationEvent(state: "failed", message: snapshot.message ?? "Linphone core unavailable")
+                return false
+            }
+        }
+
+        // Core start can auto-load the same account from linphonerc. Keep it.
+        if hasHealthyRegistration(matching: config) {
+            suppressRegistrationLifecycleEvents = false
+            setNetworkReachable(true)
+            appendDiagnosticLog("sip_register_reuse", [
+                "cause": "adopted-after-core-start",
+                "linphone_state": currentAccountRegistrationStateString(),
+            ])
+            snapshot.persistentEnabled = true
+            persistRegistrationConfig(config)
+            activeRegistrationConfig = config
+            emitCurrentRegistrationState()
+            persistSnapshot()
+            return true
+        }
+
+        // Stop SIP traffic before dropping the old account. Removing a live
+        // REGISTER left a dangling pointer; the next get_params aborted.
+        setNetworkReachable(false)
+        clearLinphoneAccountsQuietly()
+        suppressRegistrationLifecycleEvents = false
+
+        guard let core else {
+            emitRegistrationEvent(state: "failed", message: "Linphone core unavailable")
             return false
         }
-
-        if let existingAccount = account {
-            linphone_core_remove_account(core, existingAccount)
-            account = nil
-        }
-        linphone_core_clear_accounts(core)
 
         let factory = linphone_factory_get()
 
@@ -1404,8 +1554,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         linphone_core_set_default_account(core, createdAccount)
+        setNetworkReachable(true)
 
-        account = createdAccount
+        activeRegistrationConfig = config
         snapshot.persistentEnabled = true
         snapshot.registrationState = "registering"
         snapshot.message = "Registration in progress"
@@ -1459,11 +1610,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func refreshAccountPushNotificationConfig(reason: String) -> Bool {
-        guard let existingAccount = account else { return false }
-        guard let clonedParams = linphone_account_params_clone(linphone_account_get_params(existingAccount)) else {
+        guard let existingAccount = account,
+              let rawParams = linphone_account_get_params(existingAccount),
+              let clonedParams = linphone_account_params_clone(rawParams) else {
             appendDiagnosticLog("sip_push_config_missing", [
                 "reason": reason,
-                "stage": "clone_params_failed",
+                "stage": "no-live-account",
             ])
             return false
         }
@@ -1521,7 +1673,21 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return false
         }
 
-        if let account, linphone_account_get_state(account) == LinphoneRegistrationOk {
+        if isLiveCallState() {
+            appendDiagnosticLog("sip_register_restore_skipped", [
+                "reason": reason,
+                "cause": "active-call",
+                "call_state": snapshot.callState,
+            ])
+            return true
+        }
+
+        if hasHealthyRegistration(matching: config) {
+            appendDiagnosticLog("sip_register_restore_skipped", [
+                "reason": reason,
+                "cause": "already-healthy",
+                "linphone_state": currentAccountRegistrationStateString(),
+            ])
             return true
         }
 
@@ -1533,17 +1699,18 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return false
         }
 
-        if let existingAccount = account {
-            let params = linphone_account_params_clone(linphone_account_get_params(existingAccount))
+        if let existingAccount = account,
+           let rawParams = linphone_account_get_params(existingAccount),
+           let params = linphone_account_params_clone(rawParams) {
             linphone_account_params_enable_register(params, 0)
             linphone_account_set_params(existingAccount, params)
             linphone_account_params_unref(params)
             linphone_account_refresh_register(existingAccount)
             linphone_core_remove_account(core, existingAccount)
-            account = nil
         }
 
         linphone_core_clear_accounts(core)
+        activeRegistrationConfig = nil
         snapshot.registrationState = "disconnected"
         snapshot.callState = "idle"
         snapshot.message = "Unregistration done"
@@ -1691,7 +1858,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 "sip_call_id": snapshot.sipCallId ?? "",
                 "reason": reason,
             ])
-            deferredAction = .answer
+            setDeferredCallAction(.answer)
             snapshot.callState = "ringing"
             snapshot.message = "Waiting for SIP INVITE"
             persistSnapshot()
@@ -1758,7 +1925,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return status == 0
         }
 
-        deferredAction = .decline
+        setDeferredCallAction(.decline)
         appendDiagnosticLog("[VOIP] DECLINE_DEFERRED", [
             "call_uuid": snapshot.callUUID ?? "",
             "call_id": snapshot.callId ?? "",
@@ -1810,10 +1977,12 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         // the app and CallKit state immediately after BYE was queued.
         cancelIncomingInviteTimeout()
         currentCall = nil
-        deferredAction = nil
+        clearDeferredCallAction()
         pendingIncomingPayload = nil
         incomingPushReceivedAt = nil
         sipReadyQueuedAt = nil
+        callKitReportedForCurrentIncoming = false
+        callKitReportedForCurrentOutgoing = false
         snapshot.callUUID = nil
         snapshot.callId = nil
         snapshot.sipCallId = nil
@@ -2801,12 +2970,17 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     fileprivate func handleLinphoneRegistrationStateChanged(
-        account: OpaquePointer?,
+        account _: OpaquePointer?,
         state: LinphoneRegistrationState,
         message: String?
     ) {
-        if let account {
-            self.account = account
+        // Do not store the callback account pointer. Cleared/remove_account
+        // frees it; the next get_params/get_state then abort()s the app.
+
+        // Account replace emits Cleared. Flutter treated that as a real
+        // disconnect and called register again, which crashed Linphone.
+        if suppressRegistrationLifecycleEvents {
+            return
         }
 
         switch state {
@@ -2962,35 +3136,28 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 // a second incoming report.
                 snapshot.callUUID = invitePayload.uuid.uuidString
                 snapshot.callId = invitePayload.callId
-                snapshot.callState = "incoming"
-                snapshot.message = message ?? "Incoming call received"
-                persistSnapshot()
-                emitCallEvent(
-                    state: "incoming",
-                    remoteIdentity: snapshot.remoteIdentity,
-                    callUUID: snapshot.callUUID,
-                    callId: snapshot.callId,
-                    message: snapshot.message,
-                    extra: pendingIncomingPayload?.toFlutterDictionary() ?? [:]
-                )
-                reportIncomingCallToSystemIfNeeded(payload: invitePayload)
-            } else {
-                if let uuid = resolvedCallUUID(from: nil) {
-                    callKitManager?.refreshIncomingCallDisplay(callUUID: uuid, payload: invitePayload)
-                }
-                snapshot.callState = "incoming"
-                snapshot.message = message ?? "Incoming call received"
-                persistSnapshot()
-                emitCallEvent(
-                    state: "incoming",
-                    remoteIdentity: snapshot.remoteIdentity,
-                    callUUID: snapshot.callUUID,
-                    callId: snapshot.callId,
-                    message: snapshot.message,
-                    extra: pendingIncomingPayload?.toFlutterDictionary() ?? [:]
-                )
             }
+            snapshot.callState = "incoming"
+            snapshot.message = message ?? "Incoming call received"
+            persistSnapshot()
+            emitCallEvent(
+                state: "incoming",
+                remoteIdentity: snapshot.remoteIdentity,
+                callUUID: snapshot.callUUID,
+                callId: snapshot.callId,
+                message: snapshot.message,
+                extra: pendingIncomingPayload?.toFlutterDictionary() ?? [:]
+            )
+            // Apply a deferred answer/decline only if it belongs to this UUID.
+            // Then report CallKit. Reporting first caused a 1-second flash
+            // for calls we immediately hung up from a stale CallKit end.
             applyDeferredCallActionIfPossible()
+            guard isLiveCallState() else { break }
+            if callKitReportedForCurrentIncoming, let uuid = resolvedCallUUID(from: nil) {
+                callKitManager?.refreshIncomingCallDisplay(callUUID: uuid, payload: invitePayload)
+            } else {
+                reportIncomingCallToSystemIfNeeded(payload: invitePayload)
+            }
         case LinphoneCallStateOutgoingInit:
             locallyTerminatedCall = nil
             cancelIncomingInviteTimeout()
@@ -3032,7 +3199,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                     callKitManager?.reportOutgoingConnected(callUUID: uuid)
                 }
             }
-            deferredAction = nil
+            clearDeferredCallAction()
             pendingIncomingPayload = nil
             snapshot.callState = "in_call"
             snapshot.message = isOutgoingMedia
@@ -3100,7 +3267,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             currentCall = nil
             if wasLocallyTerminated {
                 locallyTerminatedCall = nil
-                deferredAction = nil
+                clearDeferredCallAction()
                 pendingIncomingPayload = nil
                 return
             }
@@ -3126,7 +3293,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }()
             snapshot.callState = remotelyDeclined ? "ended" : "failed"
             snapshot.message = failedMessage
-            deferredAction = nil
+            clearDeferredCallAction()
             pendingIncomingPayload = nil
             persistSnapshot()
             emitCallEvent(
@@ -3157,7 +3324,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                 if state == LinphoneCallStateReleased {
                     locallyTerminatedCall = nil
                 }
-                deferredAction = nil
+                clearDeferredCallAction()
                 pendingIncomingPayload = nil
                 syncCorePowerMode(reason: "call-locally-terminated", iterateNow: false)
                 return
@@ -3178,7 +3345,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
                     extra: terminatedDetails.reduce(into: [String: Any]()) { $0[$1.key] = $1.value }
                 )
             }
-            deferredAction = nil
+            clearDeferredCallAction()
             pendingIncomingPayload = nil
             incomingPushReceivedAt = nil
             sipReadyQueuedAt = nil
@@ -3197,12 +3364,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             self.appendDiagnosticLog("background_task_expired", [
                 "reason": reason,
             ])
-            let callState = self.snapshot.callState
-            let keepCoreActive = callState == "incoming" ||
-                callState == "calling" ||
-                callState == "ringing" ||
-                callState == "early_media" ||
-                callState == "in_call"
+            let keepCoreActive = self.isLiveCallState()
             if let core = self.core, !keepCoreActive {
                 self.stopIdleIterateTimer()
                 linphone_core_enter_background(core)
@@ -3233,9 +3395,24 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private func applyDeferredCallActionIfPossible() {
         guard let action = deferredAction else { return }
 
+        let targetUUID = deferredActionCallUUID
+        let currentUUID = currentIncomingCallUUID()
+        // Stale CallKit end from a previous UUID must not kill this INVITE.
+        if let targetUUID, let currentUUID,
+           targetUUID.uuidString.caseInsensitiveCompare(currentUUID.uuidString) != .orderedSame {
+            appendDiagnosticLog("deferred_action_dropped_stale_uuid", [
+                "action": deferredActionName(action),
+                "deferred_uuid": targetUUID.uuidString,
+                "current_uuid": currentUUID.uuidString,
+                "call_id": snapshot.callId ?? pendingIncomingPayload?.callId ?? "",
+            ])
+            clearDeferredCallAction()
+            return
+        }
+
         // Clear before invoking Linphone. accept/decline/terminate can emit a
         // synchronous state callback which re-enters this method.
-        deferredAction = nil
+        clearDeferredCallAction()
         let applied: Bool
         switch action {
         case .answer:
@@ -3247,7 +3424,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         if !applied && deferredAction == nil {
-            deferredAction = action
+            setDeferredCallAction(action, callUUID: targetUUID ?? currentUUID)
         }
     }
 
@@ -3337,6 +3514,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             return
         }
 
+        syntheticCallKitUUIDs.insert(payload.uuid)
         callKitManager.reportPushComplianceAttempt(payload: payload) { [weak self] _ in
             callKitManager.reportCallEnded(callUUID: payload.uuid, reason: reason)
             self?.appendDiagnosticLog(diagnosticEvent, [
@@ -3654,7 +3832,7 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
             }
 
             self.pendingIncomingPayload = nil
-            self.deferredAction = nil
+            self.clearDeferredCallAction()
             self.handleCallEnded(
                 reason: .unanswered,
                 callUUID: payload.uuid,
@@ -4324,13 +4502,34 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         didReceiveEndFor callUUID: UUID,
         payload: VoIPIncomingPayload?
     ) {
-        if let currentUUID = snapshot.callUUID,
-           currentUUID.caseInsensitiveCompare(callUUID.uuidString) != .orderedSame {
+        if syntheticCallKitUUIDs.remove(callUUID) != nil {
+            appendDiagnosticLog("callkit_end_ignored_synthetic", [
+                "ended_uuid": callUUID.uuidString,
+                "call_id": payload?.callId ?? "",
+                "call_state": snapshot.callState,
+            ])
+            return
+        }
+
+        let currentUUID = currentIncomingCallUUID()
+        if let currentUUID,
+           currentUUID.uuidString.caseInsensitiveCompare(callUUID.uuidString) != .orderedSame {
             appendDiagnosticLog("callkit_end_ignored_stale_uuid", [
                 "ended_uuid": callUUID.uuidString,
-                "current_uuid": currentUUID,
+                "current_uuid": currentUUID.uuidString,
                 "call_state": snapshot.callState,
                 "call_id": payload?.callId ?? snapshot.callId ?? "",
+            ])
+            return
+        }
+
+        // Echo after local hangup, or CallKit ending a UUID we already cleared.
+        // Do not store deferred hangup — that killed the next real INVITE.
+        if currentUUID == nil && !isLiveCallState() {
+            appendDiagnosticLog("callkit_end_ignored_no_active_call", [
+                "ended_uuid": callUUID.uuidString,
+                "call_state": snapshot.callState,
+                "call_id": payload?.callId ?? "",
             ])
             return
         }
@@ -4340,7 +4539,7 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         if action == "decline" {
             let didDeclineImmediately = declineCall()
             if !didDeclineImmediately {
-                deferredAction = .decline
+                setDeferredCallAction(.decline, callUUID: callUUID)
                 handleCallEnded(
                     reason: .unanswered,
                     callUUID: callUUID,
@@ -4356,7 +4555,15 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         } else {
             let didHangupImmediately = hangup(reason: "callkit")
             if !didHangupImmediately {
-                deferredAction = .end
+                if isLiveCallState() || pendingIncomingPayload != nil {
+                    setDeferredCallAction(.end, callUUID: callUUID)
+                } else {
+                    appendDiagnosticLog("callkit_end_not_deferred", [
+                        "call_uuid": callUUID.uuidString,
+                        "call_state": snapshot.callState,
+                        "reason": "no_active_call",
+                    ])
+                }
                 handleCallEnded(
                     reason: .remoteEnded,
                     callUUID: callUUID,
@@ -4395,7 +4602,8 @@ extension IOSNativeSipManager: IOSCallKitManagerDelegate {
         }
         currentCall = nil
         pendingIncomingPayload = nil
-        deferredAction = nil
+        clearDeferredCallAction()
+        syntheticCallKitUUIDs.removeAll()
         savePendingCallActions([])
         appendDiagnosticLog("callkit_reset", [:])
         snapshot = NativeSipSnapshot.initial()

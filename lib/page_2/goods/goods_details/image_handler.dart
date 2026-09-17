@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/image_list_poput.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -137,7 +138,9 @@ class _ImageHandlerState extends State<ImageHandler> {
           color: const Color(0xffF4F7FD),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: widget.isImagesValid ? const Color(0xffF4F7FD) : Colors.red,
+            color: widget.isImagesValid
+                ? context.appColors.fieldBg
+                : context.appColors.error,
             width: 1.5,
           ),
         ),

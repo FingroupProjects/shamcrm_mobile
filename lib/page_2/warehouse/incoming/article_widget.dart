@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/article_bloc/expense_article_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/page_2/incoming_document_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -106,68 +107,15 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<ArticleGood>.search(
+              // Same field chrome as warehouse/unit dropdowns.
+              CustomDropdown<ArticleGood>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is ArticleLoaded ? state.articleList : [],
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
-                  enabled: !isLoading, // ← Блокируем при загрузке
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: colors.surfaceElevated,
-                    expandedFillColor: colors.surfaceElevated,
-                    closedBorder: Border.all(
-                      color: colors.borderSubtle,
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: colors.borderSubtle,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                    listItemDecoration: ListItemDecoration(
-                      splashColor:
-                          colors.buttonPrimaryBg.withValues(alpha: 0.10),
-                      highlightColor:
-                          colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                      selectedColor: colors.surfaceElevated,
-                    ),
-                    searchFieldDecoration: SearchFieldDecoration(
-                      fillColor: colors.surfaceElevated,
-                      hintStyle: TextStyle(
-                        color: colors.textSecondary,
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      textStyle: TextStyle(
-                        color: colors.textPrimary,
-                        fontFamily: 'Gilroy',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        size: 20,
-                        color: colors.textSecondary,
-                      ),
-                      suffixIcon: (onClear) => IconButton(
-                        onPressed: onClear,
-                        icon: Icon(Icons.close,
-                            size: 18, color: colors.textSecondary),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colors.borderSubtle),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colors.buttonPrimaryBg),
-                      ),
-                    ),
-                  ),
+                  enabled: !isLoading,
+                  decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name ?? '',
@@ -184,14 +132,14 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   headerBuilder: (context, selectedItem, enabled) {
                     // ← Показываем загрузку в центре
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff1E2E52)),
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -212,14 +160,14 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   hintBuilder: (context, hint, enabled) {
                     // ← Загрузка когда ничего не выбрано
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff1E2E52)),
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -238,13 +186,13 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                   // ← Загрузка в открытом списке
                   noResultFoundBuilder: (context, text) {
                     if (isLoading) {
-                      return const Center(
+                      return Center(
                         child: Padding(
-                          padding: EdgeInsets.all(20.0),
+                          padding: const EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xff1E2E52)),
+                                colors.buttonPrimaryBg),
                           ),
                         ),
                       );
@@ -285,7 +233,6 @@ class _ArticleWidgetState extends State<ArticleWidget> {
                     }
                   },
                 ),
-              ),
             ],
           );
         },

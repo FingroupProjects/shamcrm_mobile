@@ -11,6 +11,7 @@ class AppFieldStyle {
 
   static Color borderColor(BuildContext context, {bool hasError = false}) {
     final colors = context.appColors;
+    // Theme error (gold in current palettes). Never hardcoded Colors.red.
     return hasError ? colors.error : colors.borderSubtle;
   }
 

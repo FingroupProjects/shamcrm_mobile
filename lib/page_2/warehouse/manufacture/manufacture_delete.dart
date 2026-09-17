@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/manufacture/manufacture_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class _ManufactureDeleteDocumentDialogState
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final colors = context.appColors;
 
     return BlocListener<ManufactureBloc, ManufactureState>(
       listener: (context, state) {
@@ -100,26 +102,27 @@ class _ManufactureDeleteDocumentDialogState
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
+        surfaceTintColor: Colors.transparent,
         title: Center(
           child: Text(
             localizations.translate('delete_document') ?? 'Удалить документ',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
         content: Text(
           localizations.translate('delete_document_confirm') ??
               'Вы уверены, что хотите удалить этот документ?',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -134,8 +137,8 @@ class _ManufactureDeleteDocumentDialogState
                       Navigator.of(context).pop();
                     }
                   },
-                  buttonColor: Colors.grey,
-                  textColor: Colors.white,
+                  buttonColor: const Color(0xffDC2626),
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
               const SizedBox(width: 8),
@@ -153,8 +156,8 @@ class _ManufactureDeleteDocumentDialogState
                                     widget.documentId, localizations),
                               );
                         },
-                  buttonColor: const Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

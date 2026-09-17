@@ -85,7 +85,9 @@ class _LeadStatusForFilterMultiSelectWidgetState extends State<LeadStatusForFilt
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   width: 1,
-                  color: field.hasError ? Colors.red : borderColor,
+                  color: field.hasError
+                      ? context.appColors.error
+                      : borderColor,
                 ),
               ),
               child: BlocBuilder<LeadStatusForFilterBloc, LeadStatusForFilterState>(
@@ -224,8 +226,8 @@ class _LeadStatusForFilterMultiSelectWidgetState extends State<LeadStatusForFilt
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: context.appColors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),

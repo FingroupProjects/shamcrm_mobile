@@ -79,18 +79,9 @@ class _SalesFunnelMultiSelectWidgetState
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
                 builder: (context, state) {
                   if (state is SalesFunnelLoaded) {
                     funnelsList = state.funnels;
@@ -115,12 +106,16 @@ class _SalesFunnelMultiSelectWidgetState
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: context.appColors.borderSubtle,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -234,7 +229,6 @@ class _SalesFunnelMultiSelectWidgetState
                   );
                 },
               ),
-            ),
             if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:flutter/material.dart';
@@ -7,18 +8,22 @@ class NoAccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.backgroundPrimary,
+        forceMaterialTransparency: true,
         elevation: 0,
         title: Text(
-          AppLocalizations.of(context)!.translate('appbar_settings'),
+          localizations.translate('appbar_settings'),
           style: TextStyle(
             fontSize: 20,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w600,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
       ),
@@ -31,51 +36,51 @@ class NoAccessScreen extends StatelessWidget {
               Icon(
                 Icons.lock_outline,
                 size: 80,
-                color: Color(0xff99A4BA),
+                color: colors.iconSecondary,
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Text(
-                'У вас нет доступа',
+                localizations.translate('no_access_title'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
-                'Обратитесь к администратору',
+                localizations.translate('no_access_contact_admin'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w400,
-                  color: Color(0xff99A4BA),
+                  color: colors.textSecondary,
                 ),
               ),
-              SizedBox(height: 40),
-              Container(
+              const SizedBox(height: 40),
+              SizedBox(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Color(0xff1E2E52),
-                ),
                 child: TextButton(
                   onPressed: () async {
                     await AppLogoutService.logoutAndReset(context: context);
                   },
                   style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: colors.buttonPrimaryBg,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(
-                    'Выйти',
+                    localizations.translate('exit'),
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: colors.buttonPrimaryFg,
                     ),
                   ),
                 ),

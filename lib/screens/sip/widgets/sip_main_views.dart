@@ -1228,7 +1228,6 @@ extension _SipMainViewsExtension on _SipScreenState {
                                 CupertinoIcons.person_crop_circle_badge_plus,
                                 color: keypadForeground.withValues(alpha: 0.9),
                                 size: actionIconSize,
-                                shadows: _sipKeypadShadows(context),
                               ),
                             )
                           : const SizedBox.shrink(),
@@ -1278,7 +1277,6 @@ extension _SipMainViewsExtension on _SipScreenState {
                                     color:
                                         keypadForeground.withValues(alpha: 0.9),
                                     size: actionIconSize - 1,
-                                    shadows: _sipKeypadShadows(context),
                                   ),
                                 ),
                               ),
@@ -1371,7 +1369,6 @@ extension _SipMainViewsExtension on _SipScreenState {
           fontWeight: FontWeight.w400,
           color: keypadForeground.withValues(alpha: 0.98),
           letterSpacing: 0,
-          shadows: _sipKeypadShadows(),
         ),
         placeholder: AppLocalizations.of(context)!
             .translate('telephony_enter_number'),
@@ -1380,7 +1377,6 @@ extension _SipMainViewsExtension on _SipScreenState {
           fontWeight: FontWeight.w300,
           color: keypadSecondary.withValues(alpha: 0.78),
           letterSpacing: 0,
-          shadows: _sipKeypadShadows(),
         ),
         contextMenuBuilder: _dialContextMenuBuilder,
         magnifierConfiguration: TextMagnifierConfiguration.disabled,

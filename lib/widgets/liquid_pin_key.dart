@@ -256,11 +256,11 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                           offset: Offset(0, _isPressed ? 3 : 9),
                         ),
                       ]
-                    : null,
+                    : const <BoxShadow>[],
               ),
               child: ClipOval(
-                child: _LiquidBackdropLens(
-                  isDarkBackground: widget.isDarkBackground,
+                clipBehavior: Clip.hardEdge,
+                child: _keySurface(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 70),
                     curve: Curves.easeOut,
@@ -270,28 +270,52 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: widget.isDarkBackground
-                            ? [
-                                Colors.white.withValues(
-                                  alpha: _isPressed ? 0.15 : 0.10,
-                                ),
-                                const Color(0xFF7D858A).withValues(
-                                  alpha: _isPressed ? 0.10 : 0.06,
-                                ),
-                                Colors.black.withValues(
-                                  alpha: _isPressed ? 0.15 : 0.20,
-                                ),
-                              ]
-                            : [
-                                Colors.white.withValues(
-                                  alpha: _isPressed ? 0.50 : 0.40,
-                                ),
-                                const Color(0xFFD8DDE0).withValues(
-                                  alpha: _isPressed ? 0.24 : 0.16,
-                                ),
-                                Colors.black.withValues(
-                                  alpha: _isPressed ? 0.05 : 0.08,
-                                ),
-                              ],
+                            ? widget.showShadow
+                                ? [
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.15 : 0.10,
+                                    ),
+                                    const Color(0xFF7D858A).withValues(
+                                      alpha: _isPressed ? 0.10 : 0.06,
+                                    ),
+                                    Colors.black.withValues(
+                                      alpha: _isPressed ? 0.15 : 0.20,
+                                    ),
+                                  ]
+                                : [
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.14 : 0.10,
+                                    ),
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.10 : 0.07,
+                                    ),
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.08 : 0.05,
+                                    ),
+                                  ]
+                            : widget.showShadow
+                                ? [
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.50 : 0.40,
+                                    ),
+                                    const Color(0xFFD8DDE0).withValues(
+                                      alpha: _isPressed ? 0.24 : 0.16,
+                                    ),
+                                    Colors.black.withValues(
+                                      alpha: _isPressed ? 0.05 : 0.08,
+                                    ),
+                                  ]
+                                : [
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.42 : 0.34,
+                                    ),
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.34 : 0.26,
+                                    ),
+                                    Colors.white.withValues(
+                                      alpha: _isPressed ? 0.28 : 0.20,
+                                    ),
+                                  ],
                         stops: const [0, 0.58, 1],
                       ),
                     ),
@@ -306,9 +330,13 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                               radius: _isPressed ? 0.74 : 0.96,
                               colors: [
                                 Colors.white.withValues(
-                                  alpha: widget.isDarkBackground
-                                      ? (_isPressed ? 0.10 : 0.14)
-                                      : (_isPressed ? 0.16 : 0.22),
+                                  alpha: widget.showShadow
+                                      ? (widget.isDarkBackground
+                                          ? (_isPressed ? 0.10 : 0.14)
+                                          : (_isPressed ? 0.16 : 0.22))
+                                      : (widget.isDarkBackground
+                                          ? (_isPressed ? 0.06 : 0.08)
+                                          : (_isPressed ? 0.10 : 0.12)),
                                 ),
                                 Colors.white.withValues(alpha: 0),
                               ],
@@ -321,6 +349,9 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                           duration: const Duration(milliseconds: 230),
                           curve: Curves.easeOutCubic,
                           builder: (context, liquidProgress, child) {
+                            if (!widget.showShadow) {
+                              return const SizedBox.expand();
+                            }
                             return CustomPaint(
                               painter: _LiquidGlassCausticPainter(
                                 isDarkBackground: widget.isDarkBackground,
@@ -345,20 +376,24 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                                     height: 0.94,
                                     fontWeight: FontWeight.w400,
                                     color: widget.textColor,
-                                    shadows: [
-                                      Shadow(
-                                        color: widget.isDarkBackground
-                                            ? Colors.black.withValues(
-                                                alpha: 0.46,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.94,
-                                              ),
-                                        blurRadius:
-                                            widget.isDarkBackground ? 2.2 : 1.6,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    shadows: widget.showShadow
+                                        ? [
+                                            Shadow(
+                                              color: widget.isDarkBackground
+                                                  ? Colors.black.withValues(
+                                                      alpha: 0.46,
+                                                    )
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.94,
+                                                    ),
+                                              blurRadius:
+                                                  widget.isDarkBackground
+                                                      ? 2.2
+                                                      : 1.6,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                          ]
+                                        : const <Shadow>[],
                                   ),
                                 ),
                                 if (letters.isNotEmpty) ...[
@@ -377,21 +412,24 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
                                             ? 0.88
                                             : 0.96,
                                       ),
-                                      shadows: [
-                                        Shadow(
-                                          color: widget.isDarkBackground
-                                              ? Colors.black.withValues(
-                                                  alpha: 0.48,
-                                                )
-                                              : Colors.white.withValues(
-                                                  alpha: 0.96,
-                                                ),
-                                          blurRadius: widget.isDarkBackground
-                                              ? 1.8
-                                              : 2.4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
+                                      shadows: widget.showShadow
+                                          ? [
+                                              Shadow(
+                                                color: widget.isDarkBackground
+                                                    ? Colors.black.withValues(
+                                                        alpha: 0.48,
+                                                      )
+                                                    : Colors.white.withValues(
+                                                        alpha: 0.96,
+                                                      ),
+                                                blurRadius:
+                                                    widget.isDarkBackground
+                                                        ? 1.8
+                                                        : 2.4,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ]
+                                          : const <Shadow>[],
                                     ),
                                   ),
                                 ],
@@ -408,6 +446,18 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
           ),
         ),
       ),
+    );
+  }
+
+  // Telephony keys pass showShadow: false. BackdropFilter blur draws a halo
+  // around the circle that looks like a drop shadow.
+  Widget _keySurface({required Widget child}) {
+    if (!widget.showShadow) {
+      return child;
+    }
+    return _LiquidBackdropLens(
+      isDarkBackground: widget.isDarkBackground,
+      child: child,
     );
   }
 }

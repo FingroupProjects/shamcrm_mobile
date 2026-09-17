@@ -323,8 +323,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                 if (widget.hasError) ...[
                   Text(
                     ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
-                    style: const TextStyle(
-                      color: Color.fromARGB(255, 241, 50, 36),
+                    style: TextStyle(
+                      color: context.appColors.error,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

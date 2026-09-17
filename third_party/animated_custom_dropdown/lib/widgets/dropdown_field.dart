@@ -121,45 +121,58 @@ class _DropDownFieldState<T> extends State<_DropDownField<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final radius = widget.borderRadius ?? _defaultBorderRadius;
+    final fillColor = widget.fillColor ??
+        (widget.enabled
+            ? CustomDropdownDecoration._defaultFillColor
+            : CustomDropdownDecoration._defaultFillColor.withOpacity(.5));
+
+    // Material shape keeps fill, border and clip on one path.
+    // Nested BoxDecoration + the same radius cuts the corners.
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        padding: widget.headerPadding ?? _defaultHeaderPadding,
         decoration: BoxDecoration(
-          color: widget.fillColor ??
-              (widget.enabled
-                  ? CustomDropdownDecoration._defaultFillColor
-                  : CustomDropdownDecoration._defaultFillColor.withOpacity(.5)),
-          border: widget.border,
-          borderRadius: widget.borderRadius ?? _defaultBorderRadius,
+          borderRadius: radius,
           boxShadow: widget.shadow,
         ),
-        child: Row(
-          children: [
-            if (widget.prefixIcon != null) ...[
-              widget.prefixIcon!,
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: switch (widget.dropdownType) {
-                _DropdownType.singleSelect => selectedItem != null
-                    ? headerBuilder(context)
-                    : hintBuilder(context),
-                _DropdownType.multipleSelect => selectedItems.isNotEmpty
-                    ? headerListBuilder(context)
-                    : hintBuilder(context),
-              },
+        child: Material(
+          color: fillColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: _borderSideFromBoxBorder(widget.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: widget.headerPadding ?? _defaultHeaderPadding,
+            child: Row(
+              children: [
+                if (widget.prefixIcon != null) ...[
+                  widget.prefixIcon!,
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: switch (widget.dropdownType) {
+                    _DropdownType.singleSelect => selectedItem != null
+                        ? headerBuilder(context)
+                        : hintBuilder(context),
+                    _DropdownType.multipleSelect => selectedItems.isNotEmpty
+                        ? headerListBuilder(context)
+                        : hintBuilder(context),
+                  },
+                ),
+                const SizedBox(width: 12),
+                widget.suffixIcon ??
+                    (widget.enabled
+                        ? _defaultOverlayIconDown
+                        : Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.black.withOpacity(.5),
+                            size: 20,
+                          )),
+              ],
             ),
-            const SizedBox(width: 12),
-            widget.suffixIcon ??
-                (widget.enabled
-                    ? _defaultOverlayIconDown
-                    : Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Colors.black.withOpacity(.5),
-                        size: 20,
-                      )),
-          ],
+          ),
         ),
       ),
     );

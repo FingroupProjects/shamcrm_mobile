@@ -1839,6 +1839,13 @@ class SipService extends ChangeNotifier
       unawaited(_syncVoipTokenAfterSipConnect());
     }
 
+    // Native path syncs Linphone first and reuses a live REGISTER.
+    if (_shouldUseNativeSip()) {
+      _logSipConfig('connect');
+      await _startSipRegistration();
+      return;
+    }
+
     if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
         _helper.connecting) {
       return;
@@ -1853,7 +1860,17 @@ class SipService extends ChangeNotifier
       _shouldStayConnected = true;
       return;
     }
-    if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
+
+    // Native Linphone is the source of truth. If the line is already up,
+    // do not call register again — that used to destroy the iOS core.
+    if (_shouldUseNativeSip()) {
+      await _syncNativeSnapshot(restoreIfNeeded: true);
+      if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
+          _state.registrationStatus == SipRegistrationUiStatus.registering) {
+        _shouldStayConnected = true;
+        return;
+      }
+    } else if (_state.registrationStatus == SipRegistrationUiStatus.registering ||
         _helper.connecting) {
       return;
     }
@@ -3771,6 +3788,29 @@ class SipService extends ChangeNotifier
       default:
         final shouldClearMessage = message == 'Registration disabled' ||
             message == 'Unregistration done';
+        // Local Linphone clear while the user still wants SIP connected.
+        // Immediate reconnect called native register, which destroyed the
+        // core in a loop and crashed iOS.
+        if (_shouldStayConnected && shouldClearMessage) {
+          unawaited(recordUiDiagnostic(
+            'REGISTRATION_LOCAL_CLEAR_IGNORED',
+            <String, Object?>{
+              'message': message,
+              'ui_state': _state.registrationStatus.name,
+            },
+          ));
+          if (_state.registrationStatus != SipRegistrationUiStatus.registered &&
+              _state.registrationStatus !=
+                  SipRegistrationUiStatus.registering) {
+            _state = _state.copyWith(
+              registrationStatus: SipRegistrationUiStatus.registering,
+              clearError: true,
+            );
+            _notifyListenersSafely();
+          }
+          unawaited(_restoreNativeRegistrationIfNeeded('native-local-clear'));
+          return;
+        }
         if (_isActiveUiCallStatus(_state.callStatus)) {
           debugPrint(
             'SipService native registration disconnected while call is active -> preserving callStatus=${_state.callStatus}',
@@ -4181,11 +4221,9 @@ class SipService extends ChangeNotifier
     if (_isActiveUiCallStatus(_state.callStatus)) {
       return;
     }
-    if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
-        _state.registrationStatus == SipRegistrationUiStatus.registering) {
-      return;
-    }
 
+    // Ask native first. Flutter can sit on "registering" after a local
+    // Unregistration done, while Linphone is actually idle.
     await _restoreNativeRegistrationIfNeeded(reason);
     if (_state.registrationStatus == SipRegistrationUiStatus.registered ||
         _state.registrationStatus == SipRegistrationUiStatus.registering) {

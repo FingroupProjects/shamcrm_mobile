@@ -397,7 +397,7 @@ class _EditMoneyOutcomeOtherOutcomeState
                                 'error_loading_outcome_categories') ??
                             'Ошибка загрузки категорий расхода',
                         style:
-                            const TextStyle(color: Colors.red, fontSize: 12)),
+                            TextStyle(color: context.appColors.error, fontSize: 12)),
                     TextButton(
                       onPressed: () {
                         context

@@ -70,18 +70,9 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<GetAllLeadChannelBloc, GetAllLeadChannelState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<GetAllLeadChannelBloc, GetAllLeadChannelState>(
                 builder: (context, state) {
                   if (state is GetAllLeadChannelSuccess) {
                     channelsList = state.dataChannels
@@ -102,16 +93,27 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                       LeadFilterChannelData>.multiSelectSearch(
                     items: channelsList,
                     initialItems: selectedChannelsData,
+                    hintText: AppLocalizations.of(context)!
+                        .translate('select_channels'),
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
+                    noResultFoundText: AppLocalizations.of(context)!
+                        .translate('nothing_found'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
-                      closedBorder: Border.all(color: Colors.transparent),
+                      closedBorder: Border.all(
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                      ),
                       closedBorderRadius: BorderRadius.circular(12),
-                      expandedBorder:
-                          Border.all(color: context.appColors.borderSubtle),
+                      expandedBorder: Border.all(
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                      ),
                       expandedBorderRadius: BorderRadius.circular(12),
                       hintStyle: hintStyle,
                       headerStyle: channelTextStyle,
@@ -216,7 +218,6 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                   );
                 },
               ),
-            ),
             if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

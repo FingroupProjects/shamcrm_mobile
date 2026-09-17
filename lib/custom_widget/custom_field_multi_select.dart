@@ -87,7 +87,7 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
           children: [
             if (widget.title != null) ...[
               Text(
-                "Доп. поле (${widget.title!})",
+                '${AppLocalizations.of(context)!.translate('extra_field')} (${widget.title!})',
                 style: textStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.w400,
                   color: colors.textPrimary,
@@ -95,30 +95,30 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
               ),
               const SizedBox(height: 8),
             ],
-            Container(
-              decoration: BoxDecoration(
-                color: colors.surfacePrimary.withValues(alpha: 0.78),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: hasError ? colors.error : colors.borderSubtle,
-                ),
-              ),
-              child: CustomDropdown<String>.multiSelectSearch(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            CustomDropdown<String>.multiSelectSearch(
                 items: widget.items,
                 initialItems: _selectedValues,
                 searchHintText: widget.searchHintText ??
                     AppLocalizations.of(context)!.translate('search'),
+                noResultFoundText:
+                    AppLocalizations.of(context)!.translate('nothing_found'),
                 overlayHeight: widget.overlayHeight ?? 400,
                 enabled: !widget.isLoading,
                 decoration: CustomDropdownDecoration(
                   closedFillColor:
                       colors.surfacePrimary.withValues(alpha: 0.78),
                   expandedFillColor: colors.surfacePrimary,
-                  closedBorder: Border.all(color: Colors.transparent, width: 1),
+                  closedBorder: Border.all(
+                    color: hasError ? colors.error : colors.borderSubtle,
+                    width: 1,
+                  ),
                   closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder:
-                      Border.all(color: colors.borderSubtle, width: 1),
+                  expandedBorder: Border.all(
+                    color: hasError ? colors.error : colors.borderSubtle,
+                    width: 1,
+                  ),
                   expandedBorderRadius: BorderRadius.circular(12),
                   hintStyle: textStyles.bodyMd.copyWith(
                     fontSize: 14,
@@ -298,7 +298,6 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                   field.didChange(values);
                 },
               ),
-            ),
             if (hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

@@ -86,19 +86,9 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
             const SizedBox(
                 height:
                     8), // Changed: Increased spacing to match AuthorMultiSelectWidget
-            Container(
-              decoration: BoxDecoration(
-                // Added: Border styling with error handling
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<GetAllManagerBloc, GetAllManagerState>(
                 builder: (context, state) {
                   if (state is GetAllManagerSuccess) {
                     managersList = [
@@ -122,18 +112,24 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                     initialItems: selectedManagersData,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
+                    noResultFoundText: AppLocalizations.of(context)!
+                        .translate('nothing_found'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       // Changed: Unified decoration to match AuthorMultiSelectWidget
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: context.appColors.borderSubtle,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -255,7 +251,6 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                   );
                 },
               ),
-            ),
             if (field.hasError) // Added: Error text display
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),

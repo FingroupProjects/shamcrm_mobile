@@ -46,6 +46,7 @@ import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
 import 'package:crm_task_manager/services/chat_unread_counter_service.dart';
 import 'package:crm_task_manager/services/workday_profile_redirect_service.dart';
+import 'package:crm_task_manager/widgets/app_update_gate.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -127,10 +128,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // ✅ Устанавливаем callback'и для навигации от виджета
     _setupWidgetNavigationCallbacks();
 
+    AppUpdateGate.setHomeVisible(true);
+
     // ✅ Запускаем фоновую загрузку и обработку push после отрисовки
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isBackgroundLoading) {
         ChatUnreadCounterService.instance.initialize();
+        // Обновление — второй шаг: сначала Face ID / PIN, потом эта модалка.
+        // Она не должна закрываться сама, только по «Позже» или «Обновить».
+        unawaited(AppUpdateGate.showAfterUnlock(context));
         // Запрашиваем permission после появления HomeScreen, а не во время
         // перехода с PIN/авторизации — так системный диалог показывается уже
         // при первом входе и не теряется между маршрутами.
@@ -245,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
+    AppUpdateGate.setHomeVisible(false);
     FirebaseApi().markHomeNotReady();
     _searchController.dispose();
     super.dispose();

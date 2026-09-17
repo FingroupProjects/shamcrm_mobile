@@ -90,7 +90,7 @@ extension ApiSessionX on ApiService {
         // debugPrint(
         //     'ApiService: getUserByEmail - Error: Status ${response.statusCode}, Body: ${response.body}');
       }
-      throw Exception('Пользователь с таким email не найден');
+      throw Exception('Пользователь с такой электронной почтой не найден');
     }
   }
 

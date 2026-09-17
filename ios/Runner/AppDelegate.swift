@@ -40,7 +40,8 @@ import WidgetKit
 
     override func applicationDidBecomeActive(_ application: UIApplication) {
         super.applicationDidBecomeActive(application)
-        nativeSipManager?.updateAppVisibility(isForeground: true)
+        // Safe to restore here: native skips REGISTER if the line is already up.
+        nativeSipManager?.updateAppVisibility(isForeground: true, restoreRegistration: true)
     }
 
     override func applicationDidEnterBackground(_ application: UIApplication) {
@@ -54,7 +55,9 @@ import WidgetKit
     }
 
     override func applicationWillResignActive(_ application: UIApplication) {
-        nativeSipManager?.updateAppVisibility(isForeground: false)
+        // Control Center, banners and system alerts fire this. Do not recreate
+        // Linphone here — a REGISTER in Progress was being killed every time.
+        nativeSipManager?.updateAppVisibility(isForeground: false, restoreRegistration: false)
         super.applicationWillResignActive(application)
     }
 

@@ -1217,8 +1217,8 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                         const SizedBox(height: 6),
                         Text(
                           _storageErrorText!,
-                          style: const TextStyle(
-                            color: Color(0xffEF4444),
+                          style: TextStyle(
+                            color: context.appColors.error,
                             fontFamily: 'Gilroy',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -1405,7 +1405,7 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
     final colors = context.appColors;
     final selected = widget.selectedSupplier;
     final borderColor =
-        widget.showError ? const Color(0xffE45454) : colors.borderSubtle;
+        widget.showError ? colors.error : colors.borderSubtle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1581,11 +1581,11 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               widget.errorText ?? 'Поле обязательно для заполнения',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Color(0xffE45454),
+                color: colors.error,
               ),
             ),
           ),

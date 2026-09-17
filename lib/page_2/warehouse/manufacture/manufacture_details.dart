@@ -456,11 +456,12 @@ class _ManufactureDocumentDetailsScreenState
   }
 
   void _showFullTextDialog(String title, String content) {
+    final colors = context.appColors;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -471,8 +472,8 @@ class _ManufactureDocumentDetailsScreenState
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff1E2E52),
+                  style: TextStyle(
+                    color: colors.textPrimary,
                     fontSize: 18,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.bold,
@@ -486,8 +487,8 @@ class _ManufactureDocumentDetailsScreenState
                   child: Text(
                     content,
                     textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      color: Color(0xff1E2E52),
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
@@ -501,7 +502,7 @@ class _ManufactureDocumentDetailsScreenState
                   text: AppLocalizations.of(context)!.translate('close') ??
                       'Закрыть',
                   icon: Icons.close,
-                  color: const Color(0xff1E2E52),
+                  color: colors.buttonPrimaryBg,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

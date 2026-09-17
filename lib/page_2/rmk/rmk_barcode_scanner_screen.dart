@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -86,38 +87,43 @@ class _RmkBarcodeScannerScreenState extends State<RmkBarcodeScannerScreen>
     if (!mounted) return;
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Ошибка',
-          style: TextStyle(
-            color: Color(0xff1E2E52),
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: Color(0xff718096),
-            fontFamily: 'Gilroy',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                color: Color(0xff1E2E52),
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w700,
-              ),
+      builder: (context) {
+        final colors = context.appColors;
+        return AlertDialog(
+          backgroundColor: colors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Ошибка',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ],
-      ),
+          content: Text(
+            message,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontFamily: 'Gilroy',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: colors.buttonPrimaryBg,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

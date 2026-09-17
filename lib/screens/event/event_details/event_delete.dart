@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class DeleteNoticeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<EventBloc, EventState>(
       listener: (context, state) {
         if (state is EventError) {
@@ -40,7 +42,8 @@ class DeleteNoticeDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
+        surfaceTintColor: Colors.transparent,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_notice'),
@@ -49,7 +52,7 @@ class DeleteNoticeDialog extends StatelessWidget {
               fontSize: 18,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -60,7 +63,7 @@ class DeleteNoticeDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -73,8 +76,8 @@ class DeleteNoticeDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: const Color(0xffDC2626),
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -117,8 +120,8 @@ class DeleteNoticeDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                     Navigator.pop(context, true);
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

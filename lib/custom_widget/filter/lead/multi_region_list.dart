@@ -86,17 +86,9 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
             const SizedBox(
                 height:
                     8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
-            Container(
-              decoration: BoxDecoration(
-                // Добавлено: Стилизация бордера с учетом ошибок
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError ? Colors.red : borderColor,
-                ),
-              ),
-              child: BlocBuilder<GetAllRegionBloc, GetAllRegionState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<GetAllRegionBloc, GetAllRegionState>(
                 builder: (context, state) {
                   if (state is GetAllRegionSuccess) {
                     regionsList = state.dataRegion.result ?? [];
@@ -123,12 +115,16 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                       closedFillColor: surfaceColor,
                       expandedFillColor: overlayColor,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : borderColor,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(18),
                       expandedBorder: Border.all(
-                        color: borderColor,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : borderColor,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(18),
@@ -259,14 +255,13 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                   );
                 },
               ),
-            ),
             if (field.hasError) // Добавлено: Отображение текста ошибки
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: context.appColors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/money/batch_model.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -669,9 +670,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                                   AppLocalizations.of(context)!
                                           .translate('quantity_required') ??
                                       'Количество обязательно',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.red,
+                                    color: context.appColors.error,
                                     fontFamily: 'Gilroy',
                                   ),
                                 )
@@ -719,9 +720,9 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
                                     AppLocalizations.of(context)!
                                             .translate('price_required') ??
                                         'Цена обязательна',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.red,
+                                      color: context.appColors.error,
                                       fontFamily: 'Gilroy',
                                     ),
                                   )
@@ -754,6 +755,7 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
   }
 
   InputDecoration _inputDecoration(String label, {bool hasError = false}) {
+    final colors = context.appColors;
     return InputDecoration(
       hintText: label,
       hintStyle: const TextStyle(
@@ -764,35 +766,35 @@ class _GoodsSelectionBottomSheetState extends State<GoodsSelectionBottomSheet> {
       border: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: hasError ? Colors.red : const Color(0xFFE5E7EB),
+          color: hasError ? colors.error : const Color(0xFFE5E7EB),
           width: 1,
         ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: hasError ? Colors.red : const Color(0xFFE5E7EB),
+          color: hasError ? colors.error : const Color(0xFFE5E7EB),
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: hasError ? Colors.red : const Color(0xff4759FF),
+          color: hasError ? colors.error : const Color(0xff4759FF),
           width: 1,
         ),
       ),
-      errorBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      errorBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: Colors.red,
+          color: colors.error,
           width: 1,
         ),
       ),
-      focusedErrorBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
         borderSide: BorderSide(
-          color: Colors.red,
+          color: colors.error,
           width: 2,
         ),
       ),

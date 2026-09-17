@@ -9,7 +9,7 @@ class AppRadiusTokens {
     this.lg = 20,
     this.xl = 24,
     this.button = const BorderRadius.all(Radius.circular(14)),
-    this.input = const BorderRadius.all(Radius.circular(14)),
+    this.input = const BorderRadius.all(Radius.circular(12)),
     this.card = const BorderRadius.all(Radius.circular(20)),
     this.sheet = const BorderRadius.vertical(top: Radius.circular(24)),
   });

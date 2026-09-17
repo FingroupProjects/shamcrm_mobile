@@ -853,7 +853,7 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
   Widget _buildEmployeeField(AppLocalizations localizations) {
     final colors = context.appColors;
     final borderColor = _employeeTouched && _selectedEmployee == null
-        ? Colors.red
+        ? colors.error
         : colors.borderSubtle;
 
     return Column(
@@ -876,18 +876,18 @@ class _SalaryPaymentFormState extends State<SalaryPaymentForm> {
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+              border: Border.all(color: colors.error.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _employeesError!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.red,
+                    color: colors.error,
                   ),
                 ),
                 const SizedBox(height: 8),

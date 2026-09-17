@@ -82,19 +82,9 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
             const SizedBox(
                 height:
                     8), // Изменено: Увеличен отступ до 8 для соответствия AuthorMultiSelectWidget
-            Container(
-              decoration: BoxDecoration(
-                // Добавлено: Стилизация бордера с учетом ошибок
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<GetAllSourceBloc, GetAllSourceState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<GetAllSourceBloc, GetAllSourceState>(
                 builder: (context, state) {
                   if (state is GetAllSourceSuccess) {
                     sourcesList = state.dataSource;
@@ -115,18 +105,24 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                     initialItems: selectedSourcesData,
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
+                    noResultFoundText: AppLocalizations.of(context)!
+                        .translate('nothing_found'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       // Изменено: Унифицированы стили декорации
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: context.appColors.borderSubtle,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -245,7 +241,6 @@ class _SourcesMultiSelectWidgetState extends State<SourcesMultiSelectWidget> {
                   );
                 },
               ),
-            ),
             if (field.hasError) // Добавлено: Отображение текста ошибки
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 0),

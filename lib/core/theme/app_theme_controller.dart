@@ -53,7 +53,9 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
   String? _backgroundAssetPath;
   double _backgroundBlurPercent = 18;
   double _backgroundOpacityPercent = 100;
-  bool _loginIntroAnimationEnabled = true;
+  // Анимация входа выключена по умолчанию.
+  // Пользователь может включить её в разделе «Оформление».
+  bool _loginIntroAnimationEnabled = false;
   bool _isInitialized = false;
   List<String> _importedLibraryPaths = [];
   List<WallpaperSource> _carouselItems = [];
@@ -413,6 +415,8 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
     _backgroundAssetPath = null;
     _backgroundBlurPercent = 18;
     _backgroundOpacityPercent = 100;
+    // Сброс оформления также выключает анимацию входа.
+    _loginIntroAnimationEnabled = false;
     _importedLibraryPaths = [];
     _carouselItems = [];
     _rotationMode = WallpaperRotationMode.onLaunch;
@@ -430,6 +434,7 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.remove(_backgroundAssetPathKey);
     await prefs.setDouble(_backgroundBlurKey, _backgroundBlurPercent);
     await prefs.setDouble(_backgroundOpacityKey, _backgroundOpacityPercent);
+    await prefs.remove(_loginIntroAnimationKey);
     await prefs.remove(_libraryKey);
     await prefs.remove(_carouselKey);
     await prefs.remove(_rotationModeKey);

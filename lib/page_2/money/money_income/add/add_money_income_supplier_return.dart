@@ -277,7 +277,7 @@ class _AddMoneyIncomeSupplierReturnState
                                 .translate('error_loading_suppliers') ??
                             'Ошибка загрузки поставщиков',
                         style:
-                            const TextStyle(color: Colors.red, fontSize: 12)),
+                            TextStyle(color: context.appColors.error, fontSize: 12)),
                     TextButton(
                       onPressed: () {
                         context

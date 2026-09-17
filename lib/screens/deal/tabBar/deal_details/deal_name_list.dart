@@ -347,8 +347,8 @@ class _DealNameSelectionWidgetState extends State<DealNameSelectionWidget> {
                 if (widget.hasError)
                   Text(
                     ' ${AppLocalizations.of(context)!.translate('field_required_project')}',
-                    style: const TextStyle(
-                      color: Color.fromARGB(255, 253, 38, 23),
+                    style: TextStyle(
+                      color: context.appColors.error,
                     ),
                   ),
               ],

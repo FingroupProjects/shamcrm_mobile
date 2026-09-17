@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -207,13 +208,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
               fontFamily: 'Gilroy',
               color: widget.hintColor ?? colors.fieldHint,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError ? colors.error : colors.borderSubtle,
-                width: 1,
-              ),
-            ),
+            // One outline. Theme fill + a second radius-14 outline
+            // was drawing a box inside a box on some fields.
+            isDense: true,
+            border: AppFieldStyle.outline(context, hasError: hasError),
             filled: true,
             fillColor: widget.backgroundColor ?? colors.fieldBg,
             contentPadding:
@@ -222,52 +220,32 @@ class _CustomTextFieldState extends State<CustomTextField> {
             suffixIcon: _buildSuffixIcon(),
             errorText: widget.errorText,
             errorMaxLines: 2,
-            errorStyle: TextStyle(
-              fontSize: 14,
-              color: colors.error,
-              fontWeight: FontWeight.w400,
-            ),
+            errorStyle: AppFieldStyle.errorTextStyle(context),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError
-                    ? colors.error
-                    : (widget.borderColor ?? colors.borderSubtle),
-              ),
+              borderRadius: AppFieldStyle.radius,
+              borderSide: widget.borderColor != null && !hasError
+                  ? BorderSide(color: widget.borderColor!)
+                  : AppFieldStyle.side(context, hasError: hasError),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError
-                    ? colors.error
-                    : (widget.focusedBorderColor ??
-                        widget.borderColor ??
-                        colors.buttonPrimaryBg.withValues(alpha: 0.6)),
-                width: 1.2,
-              ),
+              borderRadius: AppFieldStyle.radius,
+              borderSide: hasError
+                  ? AppFieldStyle.side(context, hasError: true)
+                  : widget.focusedBorderColor != null
+                      ? BorderSide(
+                          color: widget.focusedBorderColor!,
+                          width: 1.2,
+                        )
+                      : AppFieldStyle.side(context, focused: true),
             ),
             disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError
-                    ? colors.error
-                    : (widget.borderColor ?? colors.borderSubtle),
-              ),
+              borderRadius: AppFieldStyle.radius,
+              borderSide: widget.borderColor != null && !hasError
+                  ? BorderSide(color: widget.borderColor!)
+                  : AppFieldStyle.side(context, hasError: hasError),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: colors.error,
-                width: 1.5,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: colors.error,
-                width: 1.5,
-              ),
-            ),
+            errorBorder: AppFieldStyle.outline(context, hasError: true),
+            focusedErrorBorder: AppFieldStyle.outline(context, hasError: true),
           ),
         ),
       ],

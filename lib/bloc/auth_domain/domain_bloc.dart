@@ -126,8 +126,9 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         // При критической ошибке очищаем данные
         await _clearSessionData();
         
-        String errorMessage = 'Неправильный email или пользователь не найден';
-        
+        // Auth screen translates this key. Do not say "email" in Russian UI.
+        String errorMessage = 'invalid_email_or_user_not_found';
+
         // Более детальная обработка ошибок
         if (e.toString().contains('SocketException') || 
             e.toString().contains('TimeoutException')) {
@@ -135,7 +136,7 @@ class DomainBloc extends Bloc<DomainEvent, DomainState> {
         } else if (e.toString().contains('FormatException')) {
           errorMessage = 'Получены некорректные данные от сервера';
         } else if (e.toString().contains('404')) {
-          errorMessage = 'Пользователь с указанным email не найден';
+          errorMessage = 'user_with_email_not_found';
         } else if (e.toString().contains('500')) {
           errorMessage = 'Ошибка сервера, попробуйте позже';
         }

@@ -80,33 +80,40 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
           style: textStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: context.appColors.fieldBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.appColors.borderSubtle),
-          ),
-          child: _isLoading
-              ? Padding(
+        // Рамка только на самом дропдауне. Двойная обводка
+        // обрезает углы, когда список открыт.
+        _isLoading
+            ? Container(
+                decoration: BoxDecoration(
+                  color: context.appColors.fieldBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.appColors.borderSubtle),
+                ),
+                child: Padding(
                   padding: EdgeInsets.all(12),
                   child: Center(
                     child: CircularProgressIndicator(
                       color: context.appColors.buttonPrimaryBg,
                     ),
                   ),
-                )
-              : CustomDropdown<RegionData>.search(
+                ),
+              )
+            : CustomDropdown<RegionData>.search(
                   items: _states,
                   initialItem: _resolvedInitialItem,
-                  searchHintText:
-                      AppLocalizations.of(context)!.translate('search'),
                   hintText:
                       AppLocalizations.of(context)!.translate('select_oblast'),
+                  searchHintText:
+                      AppLocalizations.of(context)!.translate('search'),
+                  noResultFoundText:
+                      AppLocalizations.of(context)!.translate('nothing_found'),
                   overlayHeight: 400,
                   decoration: CustomDropdownDecoration(
                     closedFillColor: context.appColors.fieldBg,
                     expandedFillColor: context.appColors.surfacePrimary,
-                    closedBorder: Border.all(color: Colors.transparent),
+                    closedBorder: Border.all(
+                      color: context.appColors.borderSubtle,
+                    ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder:
                         Border.all(color: context.appColors.borderSubtle),
@@ -178,7 +185,6 @@ class _StateSingleSelectWidgetState extends State<StateSingleSelectWidget> {
                   },
                   onChanged: widget.onChanged,
                 ),
-        ),
       ],
     );
   }

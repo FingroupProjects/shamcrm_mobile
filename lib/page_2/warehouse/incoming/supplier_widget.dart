@@ -138,8 +138,7 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<Supplier>.searchRequestPaginated(
+              CustomDropdown<Supplier>.searchRequestPaginated(
                   paginatedRequest: _searchSuppliers,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
@@ -345,7 +344,6 @@ class _SupplierWidgetState extends State<SupplierWidget> {
                     }
                   },
                 ),
-              ),
             ],
           );
         },

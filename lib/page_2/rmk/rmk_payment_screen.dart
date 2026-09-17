@@ -418,7 +418,7 @@ class _RmkPaymentScreenState extends State<RmkPaymentScreen> {
                         Text(
                           _leadErrorText!,
                           style: TextStyle(
-                            color: Color(0xffEF4444),
+                            color: colors.error,
                             fontFamily: 'Gilroy',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -1141,13 +1141,13 @@ class _ExchangeRateField extends StatelessWidget {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? const Color(0xffEF4444) : colors.borderSubtle,
+                color: hasError ? colors.error : colors.borderSubtle,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? const Color(0xffEF4444) : colors.borderPrimary,
+                color: hasError ? colors.error : colors.borderPrimary,
               ),
             ),
           ),
@@ -1162,8 +1162,8 @@ class _ExchangeRateField extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: const TextStyle(
-              color: Color(0xffEF4444),
+            style: TextStyle(
+              color: colors.error,
               fontFamily: 'Gilroy',
               fontSize: 12,
               fontWeight: FontWeight.w500,

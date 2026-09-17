@@ -294,7 +294,7 @@ class _AddMoneyIncomeOtherIncomeState extends State<AddMoneyIncomeOtherIncome> {
                                 .translate('error_loading_income_categories') ??
                             'Ошибка загрузки категорий дохода',
                         style:
-                            const TextStyle(color: Colors.red, fontSize: 12)),
+                            TextStyle(color: context.appColors.error, fontSize: 12)),
                     TextButton(
                       onPressed: () {
                         context

@@ -415,6 +415,15 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
             ? noResultFoundBuilder(context)
             : const SizedBox(height: 12);
 
+    // One Material shape draws fill, border and clip.
+    // A BoxDecoration border plus ClipRRect with the same radius
+    // cuts the corners of the opened field.
+    final expandedRadius =
+        decoration?.expandedBorderRadius ?? _defaultBorderRadius;
+    final expandedSide = _borderSideFromBoxBorder(decoration?.expandedBorder);
+    final expandedFill = decoration?.expandedFillColor ??
+        CustomDropdownDecoration._defaultFillColor;
+
     final child = Stack(
       children: [
         Positioned(
@@ -429,11 +438,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
               key: key1,
               margin: _overlayOuterPadding,
               decoration: BoxDecoration(
-                color: decoration?.expandedFillColor ??
-                    CustomDropdownDecoration._defaultFillColor,
-                border: decoration?.expandedBorder,
-                borderRadius:
-                    decoration?.expandedBorderRadius ?? _defaultBorderRadius,
+                borderRadius: expandedRadius,
                 boxShadow: decoration?.expandedShadow ??
                     [
                       BoxShadow(
@@ -444,7 +449,12 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                     ],
               ),
               child: Material(
-                color: Colors.transparent,
+                color: expandedFill,
+                shape: RoundedRectangleBorder(
+                  borderRadius: expandedRadius,
+                  side: expandedSide,
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: _AnimatedSection(
                   animationDismissed: widget.hideOverlay,
                   expand: displayOverly,
@@ -454,11 +464,8 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
                     height: items.length > 4
                         ? widget.overlayHeight ?? (onSearch ? 270 : 225)
                         : null,
-                    child: ClipRRect(
-                      borderRadius: decoration?.expandedBorderRadius ??
-                          _defaultBorderRadius,
-                      child:
-                          NotificationListener<OverscrollIndicatorNotification>(
+                    child:
+                        NotificationListener<OverscrollIndicatorNotification>(
                         onNotification: (notification) {
                           notification.disallowIndicator();
                           return true;
@@ -680,9 +687,8 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
               ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
 
     if (widget.canCloseOutsideBounds) {
       return Stack(

@@ -127,56 +127,61 @@ class _MultiDirectoryDropdownWidgetState
           style: statusTextStyle.copyWith(fontWeight: FontWeight.w400),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: context.appColors.fieldBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              width: 1,
-              color: hasError
-                  ? context.appColors.error
-                  : context.appColors.borderSubtle,
+        // Рамка только на самом дропдауне. Двойная обводка
+        // обрезает углы, когда список открыт.
+        if (_isLoading)
+          Container(
+            decoration: BoxDecoration(
+              color: context.appColors.fieldBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                width: 1,
+                color: context.appColors.borderSubtle,
+              ),
             ),
-          ),
-          child: _isLoading
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          context.appColors.buttonPrimaryBg,
-                        ),
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.appColors.buttonPrimaryBg,
                     ),
                   ),
-                )
-              : hasError
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                      child: Text(
-                        errorMessage!,
-                        style: TextStyle(
-                          color: context.appColors.error,
-                          fontSize: 16,
-                        ),
-                      ),
-                    )
-                  : CustomDropdown<MainField>.multiSelectSearch(
+                ),
+              ),
+            ),
+          )
+        else if (hasError)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            child: Text(
+              errorMessage!,
+              style: TextStyle(
+                color: context.appColors.error,
+                fontSize: 16,
+              ),
+            ),
+          )
+        else
+          CustomDropdown<MainField>.multiSelectSearch(
                       items: mainFieldsList,
                       initialItems: _selectedFields,
                       searchHintText:
                           AppLocalizations.of(context)!.translate('search'),
+                      noResultFoundText: AppLocalizations.of(context)!
+                          .translate('nothing_found'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: context.appColors.fieldBg,
                         expandedFillColor: context.appColors.surfacePrimary,
-                        closedBorder:
-                            Border.all(color: Colors.transparent, width: 1),
+                        closedBorder: Border.all(
+                          color: context.appColors.borderSubtle,
+                          width: 1,
+                        ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
                           color: context.appColors.borderSubtle,
@@ -271,16 +276,15 @@ class _MultiDirectoryDropdownWidgetState
                         widget.onSelectField(_selectedFields);
                       },
                     ),
-        ),
         if (hasError)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               errorMessage!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: Colors.red,
+                color: context.appColors.error,
               ),
             ),
           ),

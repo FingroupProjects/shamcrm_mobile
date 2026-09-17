@@ -202,22 +202,22 @@ class _CompactTextFieldState extends State<CompactTextField> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : colors.borderSubtle,
-                width: widget.hasError ? 2 : 1,
+                color: widget.hasError ? colors.error : colors.borderSubtle,
+                width: widget.hasError ? 1.5 : 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : colors.borderSubtle,
-                width: widget.hasError ? 2 : 1,
+                color: widget.hasError ? colors.error : colors.borderSubtle,
+                width: widget.hasError ? 1.5 : 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: widget.hasError ? Colors.red : colors.buttonPrimaryBg,
-                width: widget.hasError ? 2 : 1.5,
+                color: widget.hasError ? colors.error : colors.buttonPrimaryBg,
+                width: widget.hasError ? 1.5 : 1.5,
               ),
             ),
           ),

@@ -1,4 +1,5 @@
 import '../../../../bloc/page_2_BLOC/money_outcome/money_outcome_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return BlocListener<MoneyOutcomeBloc, MoneyOutcomeState>(
       listener: (context, state) {
         if (state is MoneyOutcomeDeleteError || state is MoneyOutcomeDeleteSuccess) {
@@ -19,7 +21,8 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
         }
       },
       child: AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: colors.surfacePrimary,
+        surfaceTintColor: Colors.transparent,
         title: Center(
           child: Text(
             AppLocalizations.of(context)!.translate('delete_money_outcome'),
@@ -27,7 +30,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
               fontSize: 20,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w600,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
         ),
@@ -38,7 +41,7 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
             fontSize: 16,
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
-            color: Color(0xff1E2E52),
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -51,8 +54,8 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  buttonColor: Colors.red,
-                  textColor: Colors.white,
+                  buttonColor: const Color(0xffDC2626),
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
               SizedBox(width: 8),
@@ -62,8 +65,8 @@ class MoneyOutcomeDeleteDialog extends StatelessWidget {
                   onPressed: () {
                     onDelete != null ? onDelete!(documentId) : null;
                   },
-                  buttonColor: Color(0xff1E2E52),
-                  textColor: Colors.white,
+                  buttonColor: colors.buttonPrimaryBg,
+                  textColor: colors.buttonPrimaryFg,
                 ),
               ),
             ],

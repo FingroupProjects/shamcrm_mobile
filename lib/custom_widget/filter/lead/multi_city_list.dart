@@ -111,40 +111,52 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: isLoading
-                  ? Padding(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            isLoading
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: context.appColors.fieldBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        width: 1,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                      ),
+                    ),
+                    child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Center(
                         child: CircularProgressIndicator(
                           color: context.appColors.buttonPrimaryBg,
                         ),
                       ),
-                    )
-                  : CustomDropdown<CityData>.multiSelectSearch(
+                    ),
+                  )
+                : CustomDropdown<CityData>.multiSelectSearch(
                       items: citiesList,
                       initialItems: selectedCitiesData,
                       enabled: true,
                       searchHintText:
                           AppLocalizations.of(context)!.translate('search'),
+                      noResultFoundText: AppLocalizations.of(context)!
+                          .translate('nothing_found'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
                         closedFillColor: context.appColors.fieldBg,
                         expandedFillColor: context.appColors.surfacePrimary,
-                        closedBorder: Border.all(color: Colors.transparent),
+                        closedBorder: Border.all(
+                          color: field.hasError
+                              ? context.appColors.error
+                              : context.appColors.borderSubtle,
+                        ),
                         closedBorderRadius: BorderRadius.circular(12),
-                        expandedBorder:
-                            Border.all(color: context.appColors.borderSubtle),
+                        expandedBorder: Border.all(
+                          color: field.hasError
+                              ? context.appColors.error
+                              : context.appColors.borderSubtle,
+                        ),
                         expandedBorderRadius: BorderRadius.circular(12),
                         hintStyle: hintStyle,
                         headerStyle: cityTextStyle,
@@ -245,7 +257,6 @@ class _CityMultiSelectWidgetState extends State<CityMultiSelectWidget> {
                         field.didChange(values);
                       },
                     ),
-            ),
             if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

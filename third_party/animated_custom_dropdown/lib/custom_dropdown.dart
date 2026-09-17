@@ -38,22 +38,34 @@ class CustomDropdownPaginatedResponse<T> {
   });
 }
 
-const _defaultErrorColor = Colors.red;
-
 const _defaultBorderRadius = BorderRadius.all(
   Radius.circular(12),
 );
 
-final Border _defaultErrorBorder = Border.all(
-  color: _defaultErrorColor,
-  width: 1.5,
-);
+/// Turns a [BoxBorder] into a [BorderSide] for Material shapes.
+/// Transparent sides are treated as none so they don't inset the fill
+/// and cut the rounded corners.
+BorderSide _borderSideFromBoxBorder(BoxBorder? border) {
+  if (border is Border) {
+    final side = border.top;
+    if (side.width <= 0 || side.color.a == 0) {
+      return BorderSide.none;
+    }
+    return side;
+  }
+  return BorderSide.none;
+}
 
-const _defaultErrorStyle = TextStyle(
-  color: _defaultErrorColor,
-  fontSize: 14,
-  height: 0.5,
-);
+Border _defaultErrorBorder(Color color) => Border.all(
+      color: color,
+      width: 1.5,
+    );
+
+TextStyle _defaultErrorStyle(Color color) => TextStyle(
+      color: color,
+      fontSize: 14,
+      height: 0.5,
+    );
 
 class CustomDropdown<T> extends StatefulWidget {
   /// The list of items user can select.
@@ -732,6 +744,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final decoration = widget.decoration;
     final disabledDecoration = widget.disabledDecoration;
     final safeHintText = widget.hintText ?? 'Select value';
+    // Theme error color (gold in current palettes). Never hardcoded Colors.red.
+    final themeErrorColor = Theme.of(context).colorScheme.error;
 
     return IgnorePointer(
       ignoring: !widget.enabled,
@@ -752,15 +766,23 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
           _formFieldState = formFieldState;
           return InputDecorator(
             decoration: InputDecoration(
-              errorStyle: decoration?.errorStyle ?? _defaultErrorStyle,
+              errorStyle:
+                  decoration?.errorStyle ?? _defaultErrorStyle(themeErrorColor),
               errorText: formFieldState.errorText,
+              // AppInputTheme sets filled:true and a visible outline.
+              // If fill stays on, the decorator paints an outer box and
+              // the dropdown Material paints an inner box — two borders.
+              filled: false,
+              fillColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               disabledBorder: InputBorder.none,
               errorBorder: InputBorder.none,
               focusedErrorBorder: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
             ),
             child: _OverlayBuilder(
               overlayPortalController: widget.overlayController,
@@ -829,7 +851,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                     onTap: showCallback,
                     selectedItemNotifier: selectedItemNotifier,
                     border: formFieldState.hasError
-                        ? (decoration?.closedErrorBorder ?? _defaultErrorBorder)
+                        ? (decoration?.closedErrorBorder ??
+                            _defaultErrorBorder(themeErrorColor))
                         : enabled
                             ? decoration?.closedBorder
                             : disabledDecoration?.border,

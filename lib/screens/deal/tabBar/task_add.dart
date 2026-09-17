@@ -12,6 +12,7 @@ import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_even
 import 'package:crm_task_manager/bloc/task_add_from_deal/task_add_from_deal_state.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
 import 'package:crm_task_manager/bloc/user/user_event.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -232,7 +233,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('field_required'),
                   style: TextStyle(
-                    color: Colors.red,
+                    color: context.appColors.error,
                     fontSize: 12,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -306,7 +307,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('field_required'),
                   style: TextStyle(
-                    color: Colors.red,
+                    color: context.appColors.error,
                     fontSize: 12,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -350,7 +351,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                 child: Text(
                   AppLocalizations.of(context)!.translate('field_required'),
                   style: TextStyle(
-                    color: Colors.red,
+                    color: context.appColors.error,
                     fontSize: 12,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w500,
@@ -437,7 +438,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
               child: Text(
                 AppLocalizations.of(context)!.translate('field_required'),
                 style: TextStyle(
-                  color: Colors.red,
+                  color: context.appColors.error,
                   fontSize: 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w500,
@@ -611,7 +612,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
             child: Text(
               AppLocalizations.of(context)!.translate('field_required'),
               style: TextStyle(
-                color: Colors.red,
+                color: context.appColors.error,
                 fontSize: 12,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w500,
@@ -1319,15 +1320,17 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
+            final colors = context.appColors;
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: Colors.transparent,
               title: Text(
                 AppLocalizations.of(context)!.translate('warning'),
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               content: Text(
@@ -1337,7 +1340,7 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                   fontFamily: 'Gilroy',
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               actions: [
@@ -1349,8 +1352,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         buttonText:
                             AppLocalizations.of(context)!.translate('cancel'),
                         onPressed: () => Navigator.of(context).pop(false),
-                        buttonColor: Color(0xff1E2E52),
-                        textColor: Colors.white,
+                        buttonColor: colors.buttonPrimaryBg,
+                        textColor: colors.buttonPrimaryFg,
                       ),
                     ),
                     SizedBox(width: 8),
@@ -1359,8 +1362,8 @@ class _TaskAddFromDealState extends State<TaskAddFromDeal> {
                         buttonText: AppLocalizations.of(context)!
                             .translate('dont_save'),
                         onPressed: () => Navigator.of(context).pop(true),
-                        buttonColor: Colors.red,
-                        textColor: Colors.white,
+                        buttonColor: const Color(0xffDC2626),
+                        textColor: colors.buttonPrimaryFg,
                       ),
                     ),
                   ],

@@ -1,107 +1,70 @@
-import 'package:flutter/material.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:flutter/material.dart';
 
 class DocumentConfirmDialog {
   /// Show delete confirmation dialog
   static Future<bool?> showDeleteConfirmation(
-      BuildContext context,
-      String documentNumber,
-      ) async {
+    BuildContext context,
+    String documentNumber,
+  ) async {
     final localizations = AppLocalizations.of(context)!;
-
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Center(
-            child: Text(
-              localizations.translate('delete_document') ?? 'Удалить документ',
-              style: const TextStyle(
-                fontSize: 20,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
-              ),
-            ),
-          ),
-          content: Text(
-            localizations.translate('delete_document_confirm') ??
-                'Вы уверены, что хотите удалить этот документ?',
-            style: const TextStyle(
-              fontSize: 16,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
-            ),
-          ),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    buttonText: localizations.translate('close') ?? 'Отмена',
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(false);
-                    },
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: CustomButton(
-                    buttonText: localizations.translate('delete') ?? 'Удалить',
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(true);
-                    },
-                    buttonColor: const Color(0xff1E2E52),
-                    textColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+    return _show(
+      context,
+      title: localizations.translate('delete_document'),
+      message: localizations.translate('delete_document_confirm'),
+      confirmText: localizations.translate('delete'),
     );
   }
 
   /// Show restore confirmation dialog
   static Future<bool?> showRestoreConfirmation(
-      BuildContext context,
-      String documentNumber,
-      ) async {
+    BuildContext context,
+    String documentNumber,
+  ) async {
     final localizations = AppLocalizations.of(context)!;
+    return _show(
+      context,
+      title: localizations.translate('restore_document'),
+      message: localizations.translate('restore_document_confirm'),
+      confirmText: localizations.translate('restore'),
+    );
+  }
 
+  static Future<bool?> _show(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String confirmText,
+  }) {
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
+        final colors = dialogContext.appColors;
+        final localizations = AppLocalizations.of(dialogContext)!;
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: colors.surfacePrimary,
+          surfaceTintColor: Colors.transparent,
           title: Center(
             child: Text(
-              localizations.translate('restore_document') ?? 'Восстановить',
-              style: const TextStyle(
+              title,
+              style: TextStyle(
                 fontSize: 20,
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w600,
-                color: Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
           ),
           content: Text(
-            localizations.translate('restore_document_confirm') ??
-                'Вы уверены, что хотите восстановить этот документ?',
-            style: const TextStyle(
+            message,
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w500,
-              color: Color(0xff1E2E52),
+              color: colors.textPrimary,
             ),
           ),
           actions: [
@@ -110,23 +73,24 @@ class DocumentConfirmDialog {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText: localizations.translate('close') ?? 'Отмена',
+                    buttonText: localizations.translate('close'),
                     onPressed: () {
                       Navigator.of(dialogContext).pop(false);
                     },
-                    buttonColor: Colors.red,
-                    textColor: Colors.white,
+                    // Close stays solid red. Theme danger is gold in analogous palettes.
+                    buttonColor: const Color(0xffDC2626),
+                    textColor: colors.buttonPrimaryFg,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText: localizations.translate('restore') ?? 'Восстановить',
+                    buttonText: confirmText,
                     onPressed: () {
                       Navigator.of(dialogContext).pop(true);
                     },
-                    buttonColor: const Color(0xff1E2E52),
-                    textColor: Colors.white,
+                    buttonColor: colors.buttonPrimaryBg,
+                    textColor: colors.buttonPrimaryFg,
                   ),
                 ),
               ],

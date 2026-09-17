@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
-import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
-import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/auth/forgot_pin.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
@@ -26,12 +25,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:new_version_plus/new_version_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 
-import 'package:crm_task_manager/widgets/update_dialog.dart';
+import 'package:crm_task_manager/widgets/app_update_gate.dart';
 
 class PinScreen extends StatefulWidget {
   final RemoteMessage? initialMessage;
@@ -54,6 +52,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   late Animation<double> _shakeAnimation;
   late AnimationController _introController;
   late Animation<double> _introScale;
+  late Animation<double> _introFade;
   final BiometricService _biometricService = BiometricService();
   BiometricAvailability? _biometricAvailability;
   bool _isBiometricEnabled = false;
@@ -61,7 +60,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   bool _isInitialized = false;
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   bool _isPinChecking = false;
-  bool _showIntro = true;
+  // Тема уже загружена в main(), поэтому сразу знаем, показывать ли интро.
+  bool _showIntro =
+      AppThemeController.instance.loginIntroAnimationEnabled;
   bool _didNavigateToSipCall = false;
   final PinAdaptiveContrastController _adaptiveContrast =
       PinAdaptiveContrastController();
@@ -74,12 +75,17 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
+    // Короткая анимация логотипа shamCRM перед PIN.
+    // Раньше зумился только фон, и при «без фона» интро было пустым.
     _introController = AnimationController(
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
-    _introScale = Tween<double>(begin: 1.18, end: 1.0).animate(
+    _introScale = Tween<double>(begin: 0.86, end: 1.0).animate(
       CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
+    );
+    _introFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _introController, curve: Curves.easeOut),
     );
 
     _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
@@ -92,6 +98,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       }
     });
 
+    // Face ID / PIN must finish first. Do not show the update dialog here.
+    AppUpdateGate.setHomeVisible(false);
     _startIntroAndInitialize();
   }
 
@@ -107,23 +115,16 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _startIntroAndInitialize() async {
+    final introEnabled =
+        AppThemeController.instance.loginIntroAnimationEnabled;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final introEnabled =
-          prefs.getBool('app_login_intro_animation_v1') ?? true;
-
-      if (mounted) {
-        setState(() {
-          _showIntro = introEnabled;
-        });
-      }
-
       final initFuture = _initializeMinimal();
 
       if (introEnabled) {
         await _introController.forward();
-      } else {
-        await Future.delayed(const Duration(milliseconds: 120));
+        if (!mounted) return;
+        // Короткая пауза, чтобы логотип успели увидеть.
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       if (!mounted) return;
@@ -159,19 +160,19 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     _isInitialized = true;
 
     try {
-      // ШАГ 1: Проверка обновления (быстро, не блокирует)
-      _checkForNewVersionSilently();
+      // Обновление показываем уже после PIN / Face ID, на Home.
+      // Если открыть модалку здесь, Face ID её сразу снимет вместе с PIN.
 
-      // ШАГ 2: Инициализация FirebaseApi
+      // ШАГ 1: Инициализация FirebaseApi
       await _initializeFirebaseApi();
 
-      // ШАГ 3: Загрузка базовой информации (из кэша - быстро)
+      // ШАГ 2: Загрузка базовой информации (из кэша - быстро)
       await _loadUserBasicInfo();
 
-      // ШАГ 3.1: has_ai_integration для кнопки генерации в чате.
+      // ШАГ 2.1: has_ai_integration для кнопки генерации в чате.
       unawaited(_fetchUserData());
 
-      // ШАГ 4: Проверка PIN
+      // ШАГ 3: Проверка PIN
       await _checkSavedPin();
 
       final shouldBypassPin = await _shouldBypassPinForActiveSipCall().timeout(
@@ -223,51 +224,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       }
     } catch (e) {
       //print('PinScreen: Ошибка загрузки базовой информации: $e');
-    }
-  }
-
-  // ==========================================================================
-  // ПРОВЕРКА ОБНОВЛЕНИЙ
-  // ==========================================================================
-
-  Future<void> _checkForNewVersionSilently() async {
-    try {
-      final newVersionPlus = NewVersionPlus();
-      final status = await newVersionPlus.getVersionStatus();
-      debugPrint(
-          "pinScreen. APP_VERSION: Current: ${status?.localVersion}, Store: ${status?.storeVersion}, CanUpdate: ${status?.canUpdate}");
-
-      if (mounted &&
-          context.mounted &&
-          status != null &&
-          status.canUpdate == true) {
-        final localizations = AppLocalizations.of(context);
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && context.mounted) {
-            UpdateDialog.show(
-              context: context,
-              status: status,
-              title: localizations?.translate('app_update_available_title') ??
-                  'Обновление',
-              message:
-                  localizations?.translate('app_update_available_message') ??
-                      'Доступна новая версия приложения',
-              updateButton:
-                  localizations?.translate('app_update_button') ?? 'Обновить',
-              laterButton: localizations?.translate('later') ??
-                  'Позже', // ← Добавь перевод
-              onLaterPressed: () {
-                // Опционально: можно сохранить, что пользователь отложил обновление
-                // Например: SharedPreferences.setBool('update_later_shown', true);
-                debugPrint('Пользователь отложил обновление');
-              },
-            );
-          }
-        });
-      }
-    } catch (e) {
-      // Игнорируем
     }
   }
 
@@ -804,27 +760,60 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     }
 
     if (_showIntro) {
+      // Фон не трогаем: его уже рисует MaterialApp.
+      // Здесь только логотип shamCRM — это как раз то, что включает
+      // переключатель «Анимация входа» в Оформлении.
       return Scaffold(
         backgroundColor: Colors.transparent,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Keep the same wallpaper as the rest of the app during intro
-            // so we never flash the solid theme color / day-night assets.
-            AnimatedBuilder(
-              animation: _introController,
-              builder: (context, child) {
-                return Transform.scale(
+        body: Center(
+          child: AnimatedBuilder(
+            animation: _introController,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _introFade.value,
+                child: Transform.scale(
                   scale: _introScale.value,
                   child: child,
-                );
-              },
-              child: const AppBackgroundOverlay(
-                preset: AppBackgroundPreset.aurora,
-                forceRender: true,
-              ),
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: headerOnDarkBackground
+                      ? ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                          child: pinLogo,
+                        )
+                      : pinLogo,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'shamCRM',
+                  style: textStyles.titleLg.copyWith(
+                    color: pinForeground,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    shadows: pinTextShadows,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  localizations.translate('loading'),
+                  style: textStyles.bodyMd.copyWith(
+                    color: pinSecondary,
+                    shadows: pinTextShadows,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     }

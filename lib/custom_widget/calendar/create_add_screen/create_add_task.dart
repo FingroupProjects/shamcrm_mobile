@@ -527,8 +527,8 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
                                 child: Text(
                                   AppLocalizations.of(context)!
                                       .translate('field_required'),
-                                  style: const TextStyle(
-                                    color: Colors.red,
+                                  style: TextStyle(
+                                    color: context.appColors.error,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
                                   ),

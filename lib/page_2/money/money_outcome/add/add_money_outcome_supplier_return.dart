@@ -284,7 +284,7 @@ class _AddMoneyOutcomeSupplierReturnState
                                 .translate('error_loading_suppliers') ??
                             'Ошибка загрузки поставщиков',
                         style:
-                            const TextStyle(color: Colors.red, fontSize: 12)),
+                            TextStyle(color: context.appColors.error, fontSize: 12)),
                     TextButton(
                       onPressed: () {
                         context
@@ -415,10 +415,10 @@ class _AddMoneyOutcomeSupplierReturnState
             child: Text(
               AppLocalizations.of(context)!.translate('field_required') ??
                   'Поле обязательно для заполнения',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: Colors.red,
+                color: context.appColors.error,
               ),
             ),
           ),

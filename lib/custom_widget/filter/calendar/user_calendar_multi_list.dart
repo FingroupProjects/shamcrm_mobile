@@ -209,8 +209,8 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                 padding: const EdgeInsets.only(top: 4, left: 0),
                 child: Text(
                   field.errorText!,
-                  style: const TextStyle(
-                    color: Colors.red,
+                  style: TextStyle(
+                    color: context.appColors.error,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),

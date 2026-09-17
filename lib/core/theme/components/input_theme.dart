@@ -32,6 +32,8 @@ class AppInputTheme {
         borderRadius: AppRadiusTokens.value.input,
         borderSide: BorderSide(color: colors.error, width: 1.4),
       ),
+      // Theme error (gold in analogous palettes). Never hardcoded Colors.red.
+      errorStyle: textStyles.bodySm.copyWith(color: colors.error),
     );
   }
 }

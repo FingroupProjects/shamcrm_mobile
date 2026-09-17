@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/u
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/units_bloc/units_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/page_2/measure_unit_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -103,28 +104,14 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                 ),
               ),
               const SizedBox(height: 4),
-              Container(
-                child: CustomDropdown<MeasureUnitModel>.search(
+              CustomDropdown<MeasureUnitModel>.search(
                   closeDropDownOnClearFilterSearch: true,
                   items: state is UnitsLoaded ? state.unitsList : [],
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   enabled: !isLoading,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: colors.fieldBg,
-                    expandedFillColor: colors.surfacePrimary,
-                    closedBorder: Border.all(
-                      color: colors.borderSubtle,
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: colors.borderSubtle,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
@@ -235,7 +222,6 @@ class _UnitsWidgetState extends State<UnitsWidget> {
                     }
                   },
                 ),
-              ),
             ],
           );
         },

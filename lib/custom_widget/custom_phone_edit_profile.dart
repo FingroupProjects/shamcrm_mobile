@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -257,10 +258,10 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
               color: widget.hintColor ?? const Color(0xff99A4BA),
             ),
             errorText: _errorText,
-            errorStyle: const TextStyle(
+            errorStyle: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 15,
-              color: Colors.red,
+              color: context.appColors.error,
               fontWeight: FontWeight.w500,
             ),
             border: OutlineInputBorder(
@@ -283,15 +284,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color.fromARGB(255, 245, 90, 79),
+              borderSide: BorderSide(
+                color: context.appColors.error,
                 width: 1.5,
               ),
             ),

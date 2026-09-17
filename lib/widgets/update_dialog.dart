@@ -18,6 +18,7 @@ class UpdateDialog {
 
     await showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return PopScope(
@@ -74,7 +75,7 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
     }
 
     if (!mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   bool _isPrimaryButtonEnabled() {
@@ -159,7 +160,7 @@ class _UpdateDialogBodyState extends State<_UpdateDialogBody> {
                   child: TextButton(
                     onPressed: () {
                       widget.onLaterPressed?.call();
-                      Navigator.of(context).pop();
+                      Navigator.of(context, rootNavigator: true).pop();
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),

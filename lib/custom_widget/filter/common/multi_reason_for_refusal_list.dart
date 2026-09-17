@@ -132,21 +132,18 @@ class _ReasonForRefusalMultiSelectWidgetState
             child: Center(child: CircularProgressIndicator()),
           )
         else
-          Container(
-            decoration: BoxDecoration(
-              color: colors.fieldBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.fieldBorder, width: 1),
-            ),
-            child: CustomDropdown<ReasonForRefusalData>.multiSelectSearch(
+          // Рамка только на самом дропдауне. Двойная обводка
+          // обрезает углы, когда список открыт.
+          CustomDropdown<ReasonForRefusalData>.multiSelectSearch(
               items: _reasons,
               initialItems: _selectedReasons,
               searchHintText: localizations.translate('search'),
+              noResultFoundText: localizations.translate('nothing_found'),
               overlayHeight: 400,
               decoration: CustomDropdownDecoration(
                 closedFillColor: colors.fieldBg,
                 expandedFillColor: colors.surfacePrimary,
-                closedBorder: Border.all(color: Colors.transparent),
+                closedBorder: Border.all(color: colors.fieldBorder, width: 1),
                 closedBorderRadius: BorderRadius.circular(12),
                 expandedBorder: Border.all(
                   color: colors.fieldBorder,
@@ -268,7 +265,6 @@ class _ReasonForRefusalMultiSelectWidgetState
                 widget.onSelectReasons(values);
               },
             ),
-          ),
       ],
     );
   }

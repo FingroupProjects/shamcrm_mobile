@@ -507,7 +507,7 @@ class CreateWriteOffDocumentScreenState
               child: Column(
                 children: [
                   Container(
-                    color: colors.buttonPrimaryFg,
+                    color: colors.surfacePrimary,
                     child: TabBar(
                       controller: _tabController,
                       labelColor: colors.buttonPrimaryBg,
@@ -557,65 +557,28 @@ class CreateWriteOffDocumentScreenState
       forceMaterialTransparency: true,
       leadingWidth: 56,
       elevation: 0,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 12, top: 6, bottom: 6),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            shape: BoxShape.circle,
-            border: Border.all(color: colors.borderSubtle),
-          ),
-          child: IconButton(
-            splashRadius: 22,
-            icon:
-                Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 20),
-            onPressed: () async {
-              if (_items.isNotEmpty) {
-                final shouldExit = await ConfirmExitDialog.show(context);
-                if (shouldExit && mounted) {
-                  Navigator.pop(context);
-                }
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ),
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
+        onPressed: () async {
+          if (_items.isNotEmpty) {
+            final shouldExit = await ConfirmExitDialog.show(context);
+            if (shouldExit && mounted) {
+              Navigator.pop(context);
+            }
+          } else {
+            Navigator.pop(context);
+          }
+        },
       ),
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: colors.borderSubtle),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: colors.buttonPrimaryBg,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                localizations.translate('create_write_off') ??
-                    'Создать списание',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w700,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ),
-          ],
+      title: Text(
+        localizations.translate('create_write_off'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: colors.textPrimary,
         ),
       ),
       centerTitle: false,
@@ -701,7 +664,7 @@ class CreateWriteOffDocumentScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: colors.buttonPrimaryFg,
+            color: colors.surfacePrimary,
             boxShadow: [
               BoxShadow(
                 color: colors.shadow.withValues(alpha: 0.08),
@@ -903,7 +866,7 @@ class CreateWriteOffDocumentScreenState
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: colors.buttonPrimaryFg,
+            color: colors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: colors.borderSubtle),
             boxShadow: [

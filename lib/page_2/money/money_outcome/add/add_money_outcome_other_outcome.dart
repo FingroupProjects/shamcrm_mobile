@@ -291,7 +291,8 @@ class _AddMoneyOutcomeOtherOutcomeState
                       AppLocalizations.of(context)!
                               .translate('error_loading_outcome_categories') ??
                           'Ошибка загрузки категорий дохода',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                      style: TextStyle(
+                          color: context.appColors.error, fontSize: 12),
                     ),
                     TextButton(
                       onPressed: () {

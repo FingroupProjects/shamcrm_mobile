@@ -67,26 +67,18 @@ class _AdvertisingCampaignMultiSelectWidgetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Рекламная кампания',
+              AppLocalizations.of(context)!
+                  .translate('advertising_campaign'),
               style: campaignTextStyle.copyWith(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: context.appColors.fieldBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  width: 1,
-                  color: field.hasError
-                      ? context.appColors.error
-                      : context.appColors.borderSubtle,
-                ),
-              ),
-              child: BlocBuilder<GetAllAdvertisingCampaignBloc,
-                  GetAllAdvertisingCampaignState>(
+            // Рамка только на самом дропдауне. Двойная обводка
+            // обрезает углы, когда список открыт.
+            BlocBuilder<GetAllAdvertisingCampaignBloc,
+                GetAllAdvertisingCampaignState>(
                 builder: (context, state) {
                   if (state is GetAllAdvertisingCampaignSuccess) {
                     campaignsList = state.dataCampaigns;
@@ -107,16 +99,27 @@ class _AdvertisingCampaignMultiSelectWidgetState
                       AdvertisingCampaignData>.multiSelectSearch(
                     items: campaignsList,
                     initialItems: selectedCampaignsData,
+                    hintText: AppLocalizations.of(context)!
+                        .translate('select_advertising_campaign'),
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
+                    noResultFoundText: AppLocalizations.of(context)!
+                        .translate('nothing_found'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
                       closedFillColor: context.appColors.fieldBg,
                       expandedFillColor: context.appColors.surfacePrimary,
-                      closedBorder: Border.all(color: Colors.transparent),
+                      closedBorder: Border.all(
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
+                        width: 1,
+                      ),
                       closedBorderRadius: BorderRadius.circular(12),
                       expandedBorder: Border.all(
-                        color: context.appColors.borderSubtle,
+                        color: field.hasError
+                            ? context.appColors.error
+                            : context.appColors.borderSubtle,
                         width: 1,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
@@ -246,7 +249,6 @@ class _AdvertisingCampaignMultiSelectWidgetState
                   );
                 },
               ),
-            ),
             if (field.hasError)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
