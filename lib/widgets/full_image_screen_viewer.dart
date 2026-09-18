@@ -6,6 +6,7 @@ import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/utils/app_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
 
 class FullImageScreenViewer extends StatefulWidget {
   final List<String> imagePaths;
@@ -74,6 +75,13 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
       fileName: widget.fileName,
       kind: ChatDownloadKind.image,
     );
+  }
+
+  void _toggleControls() {
+    if (_isDownloading) return;
+    setState(() {
+      _showControls = !_showControls;
+    });
   }
 
   @override
@@ -169,14 +177,10 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                   backgroundColor: Colors.grey.shade200,
                 ),
               ),
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                if (_isDownloading) return;
-                setState(() {
-                  _showControls = !_showControls;
-                });
-              },
+            // Scope lets PhotoView steal the drag only while zoomed.
+            // At 1x, a horizontal swipe still changes the gallery page.
+            PhotoViewGestureDetectorScope(
+              axis: Axis.horizontal,
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: images.length,
@@ -186,31 +190,9 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                   });
                 },
                 itemBuilder: (context, index) {
-                  return Center(
-                    child: _PersistentPreviewImage(
-                      imageUrl: images[index],
-                      child: InteractiveViewer(
-                        panEnabled: true,
-                        minScale: 1.0,
-                        maxScale: 4.0,
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          height: MediaQuery.of(context).size.height,
-                          child: Image.network(
-                            images[index],
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade900,
-                                child:
-                                    const Icon(Icons.error, color: Colors.red),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
+                  return _ZoomableChatImage(
+                    imageUrl: images[index],
+                    onTap: _toggleControls,
                   );
                 },
               ),
@@ -220,42 +202,44 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: SafeArea(
-                  top: false,
-                  child: Container(
-                    width: MediaQuery.of(context).size.width,
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.0),
-                          Colors.black.withValues(alpha: 0.55),
+                child: IgnorePointer(
+                  child: SafeArea(
+                    top: false,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width,
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.0),
+                            Colors.black.withValues(alpha: 0.55),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.fileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.time,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontFamily: 'Gilroy',
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.fileName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.time,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -267,96 +251,109 @@ class _FullImageScreenViewerState extends State<FullImageScreenViewer> {
   }
 }
 
-class _PersistentPreviewImage extends StatefulWidget {
+/// Fullscreen chat image with gallery-like pinch and double-tap zoom.
+class _ZoomableChatImage extends StatefulWidget {
   final String imageUrl;
-  final Widget child;
+  final VoidCallback onTap;
 
-  const _PersistentPreviewImage({
+  const _ZoomableChatImage({
     required this.imageUrl,
-    required this.child,
+    required this.onTap,
   });
 
   @override
-  State<_PersistentPreviewImage> createState() =>
-      _PersistentPreviewImageState();
+  State<_ZoomableChatImage> createState() => _ZoomableChatImageState();
 }
 
-class _PersistentPreviewImageState extends State<_PersistentPreviewImage> {
-  late final Future<File?> _cachedFileFuture =
-      ChatMediaPersistentCache.instance.getImageFile(widget.imageUrl);
-  bool _isLoaded = false;
+class _ZoomableChatImageState extends State<_ZoomableChatImage> {
+  late ImageProvider _imageProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageProvider = _providerFromPath(widget.imageUrl);
+    _preferAlreadyCachedFile();
+  }
+
+  bool _isRemoteUrl(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
+  }
+
+  ImageProvider _providerFromPath(String path) {
+    if (_isRemoteUrl(path)) {
+      return NetworkImage(path);
+    }
+    return FileImage(File(path.replaceFirst('file://', '')));
+  }
+
+  /// Use a local cache hit immediately. Do not wait for a download.
+  /// Swapping the provider after a download would reset the current zoom.
+  Future<void> _preferAlreadyCachedFile() async {
+    final file =
+        await ChatMediaPersistentCache.instance.peekImageFile(widget.imageUrl);
+    if (!mounted || file == null) return;
+    setState(() {
+      _imageProvider = FileImage(file);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth.isFinite && constraints.maxWidth > 0
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
-        final height =
-            constraints.maxHeight.isFinite && constraints.maxHeight > 0
-                ? constraints.maxHeight
-                : MediaQuery.of(context).size.height;
-
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildShimmerBackdrop(width, height),
-            AnimatedOpacity(
-              opacity: _isLoaded ? 1 : 0,
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              child: widget.child,
-            ),
-            FutureBuilder<File?>(
-              future: _cachedFileFuture,
-              builder: (context, snapshot) {
-                final file = snapshot.data;
-                if (file != null && file.existsSync()) {
-                  if (!_isLoaded) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        setState(() {
-                          _isLoaded = true;
-                        });
-                      }
-                    });
-                  }
-                  return AnimatedOpacity(
-                    opacity: _isLoaded ? 1 : 0,
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    child: Image.file(
-                      file,
-                      fit: BoxFit.contain,
-                      gaplessPlayback: true,
-                    ),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox.shrink();
-                }
-
-                return _buildFallback(width, height);
-              },
-            ),
-            if (!_isLoaded)
-              Center(
-                child: SizedBox(
-                  width: 34,
-                  height: 34,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.6,
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.white),
-                    backgroundColor: Colors.white24,
-                  ),
-                ),
-              ),
-          ],
+    return PhotoView(
+      imageProvider: _imageProvider,
+      backgroundDecoration: const BoxDecoration(color: Colors.black),
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.high,
+      enableRotation: false,
+      strictScale: true,
+      wantKeepAlive: true,
+      gestureDetectorBehavior: HitTestBehavior.opaque,
+      initialScale: PhotoViewComputedScale.contained,
+      minScale: PhotoViewComputedScale.contained,
+      // 4x from the fitted size, similar to the device gallery.
+      maxScale: PhotoViewComputedScale.contained * 4,
+      onTapUp: (context, details, controllerValue) => widget.onTap(),
+      loadingBuilder: (context, event) {
+        final progress = event == null || event.expectedTotalBytes == null
+            ? null
+            : event.cumulativeBytesLoaded / event.expectedTotalBytes!;
+        return _ChatImageLoadingView(progress: progress);
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey.shade900,
+          child: const Icon(Icons.error, color: Colors.red),
         );
       },
+    );
+  }
+}
+
+class _ChatImageLoadingView extends StatelessWidget {
+  final double? progress;
+
+  const _ChatImageLoadingView({this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildShimmerBackdrop(size.width, size.height),
+        Center(
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.6,
+              value: progress,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              backgroundColor: Colors.white24,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -402,30 +399,6 @@ class _PersistentPreviewImageState extends State<_PersistentPreviewImage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFallback(double width, double height) {
-    return Container(
-      color: const Color(0xFF111827),
-      child: Center(
-        child: Container(
-          width: math.min(width, height) * 0.24,
-          height: math.min(width, height) * 0.24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.03),
-                Colors.transparent,
-              ],
-            ),
-          ),
-          child:
-              const Icon(Icons.image_rounded, color: Colors.white70, size: 30),
-        ),
       ),
     );
   }

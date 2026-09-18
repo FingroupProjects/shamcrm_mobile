@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/chat_profile/chats_profile_event.dart';
@@ -194,147 +195,161 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             Positioned.fill(
               child: BlocBuilder<ChatProfileBloc, ChatProfileState>(
                 builder: (context, state) {
-            if (state is ChatProfileLoading) {
-              return Center(
-                child: CircularProgressIndicator(
-                  color: context.appColors.buttonPrimaryBg,
-                ),
-              );
-            } else if (state is ChatProfileLoaded) {
-              final profile = state.profile;
-              final DateTime parsedDate = DateTime.parse(profile.createdAt);
-              final String formattedDate =
-                  DateFormat('dd.MM.yyyy').format(parsedDate);
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: context.appColors.surfacePrimary
-                            .withValues(alpha: 0.78),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: context.appColors.borderSubtle
-                              .withValues(alpha: 0.42),
-                        ),
-                        boxShadow: context.appShadows.card,
+                  if (state is ChatProfileLoading) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: context.appColors.buttonPrimaryBg,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 16),
-                      child: Column(
-                        children: [
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!.translate('name'),
-                            profile.name,
-                            Icons.person,
-                            null,
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!.translate('phone'),
-                            profile.phone?.isNotEmpty == true
-                                ? profile.phone!
-                                : AppLocalizations.of(context)!.translate(''),
-                            Icons.phone,
-                            null,
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!
-                                .translate('instagram'),
-                            profile.instaLogin ??
-                                AppLocalizations.of(context)!.translate(''),
-                            null,
-                            'assets/icons/leads/instagram.png',
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!.translate('telegram'),
-                            profile.tgNick ??
-                                AppLocalizations.of(context)!.translate(''),
-                            null,
-                            'assets/icons/leads/telegram.png',
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!.translate('whatsApp'),
-                            profile.waPhone ??
-                                AppLocalizations.of(context)!.translate(''),
-                            null,
-                            'assets/icons/leads/whatsapp.png',
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!.translate('facebook'),
-                            profile.facebookLogin ??
-                                AppLocalizations.of(context)!.translate(''),
-                            null,
-                            'assets/icons/leads/facebook.png',
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!
-                                .translate('description_list'),
-                            profile.description ??
-                                AppLocalizations.of(context)!.translate(''),
-                            Icons.description,
-                            null,
-                          ),
-                          buildDivider(),
-                          buildInfoRow(
-                            context,
-                            profile,
-                            AppLocalizations.of(context)!
-                                .translate('creation_date_lead'),
-                            formattedDate,
-                            Icons.calendar_today,
-                            null,
-                          ),
-                          buildDivider(),
-                          _buildManagerRow(context, profile),
-                          buildDivider(),
-                          _buildStatusRow(context, profile),
-                        ],
+                    );
+                  } else if (state is ChatProfileLoaded) {
+                    final profile = state.profile;
+                    final DateTime parsedDate =
+                        DateTime.parse(profile.createdAt);
+                    final String formattedDate =
+                        DateFormat('dd.MM.yyyy').format(parsedDate);
+
+                    return ClaritySensitive(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: context.appColors.surfacePrimary
+                                    .withValues(alpha: 0.78),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: context.appColors.borderSubtle
+                                      .withValues(alpha: 0.42),
+                                ),
+                                boxShadow: context.appShadows.card,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 16),
+                              child: Column(
+                                children: [
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('name'),
+                                    profile.name,
+                                    Icons.person,
+                                    null,
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('phone'),
+                                    profile.phone?.isNotEmpty == true
+                                        ? profile.phone!
+                                        : AppLocalizations.of(context)!
+                                            .translate(''),
+                                    Icons.phone,
+                                    null,
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('instagram'),
+                                    profile.instaLogin ??
+                                        AppLocalizations.of(context)!
+                                            .translate(''),
+                                    null,
+                                    'assets/icons/leads/instagram.png',
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('telegram'),
+                                    profile.tgNick ??
+                                        AppLocalizations.of(context)!
+                                            .translate(''),
+                                    null,
+                                    'assets/icons/leads/telegram.png',
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('whatsApp'),
+                                    profile.waPhone ??
+                                        AppLocalizations.of(context)!
+                                            .translate(''),
+                                    null,
+                                    'assets/icons/leads/whatsapp.png',
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('facebook'),
+                                    profile.facebookLogin ??
+                                        AppLocalizations.of(context)!
+                                            .translate(''),
+                                    null,
+                                    'assets/icons/leads/facebook.png',
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('description_list'),
+                                    profile.description ??
+                                        AppLocalizations.of(context)!
+                                            .translate(''),
+                                    Icons.description,
+                                    null,
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('creation_date_lead'),
+                                    formattedDate,
+                                    Icons.calendar_today,
+                                    null,
+                                  ),
+                                  buildDivider(),
+                                  _buildManagerRow(context, profile),
+                                  buildDivider(),
+                                  _buildStatusRow(context, profile),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else if (state is ChatProfileError) {
+                    return Center(
+                      child: Text(
+                        _getLeadErrorMessage(state.error),
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: context.appColors.textPrimary,
+                        ),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('download_data'),
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: context.appColors.textSecondary,
                       ),
                     ),
-                  ],
-                ),
-              );
-            } else if (state is ChatProfileError) {
-              return Center(
-                child: Text(
-                  _getLeadErrorMessage(state.error),
-                  style: context.appTextStyles.bodyMd.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: context.appColors.textPrimary,
-                  ),
-                ),
-              );
-            }
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('download_data'),
-                style: context.appTextStyles.bodyMd.copyWith(
-                  color: context.appColors.textSecondary,
-                ),
-              ),
-            );
+                  );
                 },
               ),
             ),
@@ -519,26 +534,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     IconData? icon,
     String? customIconPath,
   ) {
-    final bool isPhone = title ==
-            AppLocalizations.of(context)!.translate('phone') &&
-        value != AppLocalizations.of(context)!.translate('');
-    final bool isWhatsApp = title ==
-            AppLocalizations.of(context)!.translate('whatsApp') &&
-        value != AppLocalizations.of(context)!.translate('');
-    final bool isTelegram = title ==
-            AppLocalizations.of(context)!.translate('telegram') &&
-        value != AppLocalizations.of(context)!.translate('');
-    final bool isInstagram = title ==
-            AppLocalizations.of(context)!.translate('instagram') &&
-        value != AppLocalizations.of(context)!.translate('');
-    final bool isFacebook = title ==
-            AppLocalizations.of(context)!.translate('facebook') &&
-        value != AppLocalizations.of(context)!.translate('');
-    final bool isName = title ==
-        AppLocalizations.of(context)!.translate('name');
+    final bool isPhone =
+        title == AppLocalizations.of(context)!.translate('phone') &&
+            value != AppLocalizations.of(context)!.translate('');
+    final bool isWhatsApp =
+        title == AppLocalizations.of(context)!.translate('whatsApp') &&
+            value != AppLocalizations.of(context)!.translate('');
+    final bool isTelegram =
+        title == AppLocalizations.of(context)!.translate('telegram') &&
+            value != AppLocalizations.of(context)!.translate('');
+    final bool isInstagram =
+        title == AppLocalizations.of(context)!.translate('instagram') &&
+            value != AppLocalizations.of(context)!.translate('');
+    final bool isFacebook =
+        title == AppLocalizations.of(context)!.translate('facebook') &&
+            value != AppLocalizations.of(context)!.translate('');
+    final bool isName =
+        title == AppLocalizations.of(context)!.translate('name');
 
-    final bool isClickable =
-        isPhone || isWhatsApp || isTelegram || isInstagram || isFacebook || isName;
+    final bool isClickable = isPhone ||
+        isWhatsApp ||
+        isTelegram ||
+        isInstagram ||
+        isFacebook ||
+        isName;
 
     final VoidCallback? onTap;
     if (isPhone) {
@@ -619,8 +638,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     color: isClickable
                         ? context.appColors.buttonPrimaryBg
                         : context.appColors.textPrimary,
-                    decoration:
-                        isClickable ? TextDecoration.underline : null,
+                    decoration: isClickable ? TextDecoration.underline : null,
                   ),
                 ),
               ),
@@ -667,8 +685,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               children: [
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                        AppLocalizations.of(context)!.translate('no'),
+                    buttonText: AppLocalizations.of(context)!.translate('no'),
                     onPressed: () => Navigator.of(context).pop(false),
                     buttonColor: context.appColors.buttonDangerBg,
                     textColor: context.appColors.buttonDangerFg,
@@ -677,8 +694,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: CustomButton(
-                    buttonText:
-                        AppLocalizations.of(context)!.translate('yes'),
+                    buttonText: AppLocalizations.of(context)!.translate('yes'),
                     onPressed: () => Navigator.of(context).pop(true),
                     buttonColor: context.appColors.buttonPrimaryBg,
                     textColor: context.appColors.buttonPrimaryFg,
@@ -725,24 +741,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       await completer.future;
       listener.cancel();
 
-      context
-          .read<ChatProfileBloc>()
-          .add(FetchChatProfile(widget.chatId));
-      context
-          .read<LeadByIdBloc>()
-          .add(FetchLeadByIdEvent(leadId: profile.id));
+      context.read<ChatProfileBloc>().add(FetchChatProfile(widget.chatId));
+      context.read<LeadByIdBloc>().add(FetchLeadByIdEvent(leadId: profile.id));
       context.read<LeadBloc>().add(FetchLeadStatuses());
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!
-            .translate('manager_assigned_success'),
+        message:
+            AppLocalizations.of(context)!.translate('manager_assigned_success'),
         isSuccess: true,
       );
     } catch (e) {
       showCustomSnackBar(
         context: context,
-        message: AppLocalizations.of(context)!
-            .translate('manager_assign_failed'),
+        message:
+            AppLocalizations.of(context)!.translate('manager_assign_failed'),
         isSuccess: false,
       );
     }

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
 import 'package:crm_task_manager/bloc/login/login_event.dart';
@@ -58,13 +59,21 @@ class LoginScreen extends StatelessWidget {
                         userID.value = state.user.id.toString();
 
                         final prefs = await SharedPreferences.getInstance();
-                        await prefs.setString('userName', state.user.name.toString());
-                        await prefs.setString('userID', state.user.id.toString());
-                        await prefs.setString('userLogin', state.user.login.toString());
+                        await prefs.setString(
+                            'userName', state.user.name.toString());
+                        await prefs.setString(
+                            'userID', state.user.id.toString());
+                        await attachClaritySession(
+                          userId: state.user.id.toString(),
+                        );
+                        await prefs.setString(
+                            'userLogin', state.user.login.toString());
                         await prefs.setBool('hasMiniApp', state.hasMiniApp);
 
-                        if (state.user.role != null && state.user.role!.isNotEmpty) {
-                          await prefs.setString('userRoleName', state.user.role![0].name);
+                        if (state.user.role != null &&
+                            state.user.role!.isNotEmpty) {
+                          await prefs.setString(
+                              'userRoleName', state.user.role![0].name);
                           final allRoles =
                               state.user.role!.map((r) => r.name).join(', ');
                           await prefs.setString('userAllRoles', allRoles);
@@ -83,7 +92,8 @@ class LoginScreen extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              AppLocalizations.of(context)!.translate(state.message),
+                              AppLocalizations.of(context)!
+                                  .translate(state.message),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -139,12 +149,12 @@ class LoginScreen extends StatelessWidget {
                             const SizedBox(height: 20),
                             CustomTextField(
                               controller: loginController,
-                              hintText:
-                                  localizations.translate('login_username_hint'),
-                              label:
-                                  localizations.translate('login_username_label'),
-                              backgroundColor:
-                                  colors.backgroundPrimary.withValues(alpha: 0.36),
+                              hintText: localizations
+                                  .translate('login_username_hint'),
+                              label: localizations
+                                  .translate('login_username_label'),
+                              backgroundColor: colors.backgroundPrimary
+                                  .withValues(alpha: 0.36),
                               labelColor: colors.textPrimary,
                               hintColor: colors.textSecondary,
                               textColor: colors.textPrimary,
@@ -155,13 +165,13 @@ class LoginScreen extends StatelessWidget {
                             const SizedBox(height: 16),
                             CustomTextField(
                               controller: passwordController,
-                              hintText:
-                                  localizations.translate('login_password_hint'),
-                              label:
-                                  localizations.translate('login_password_label'),
+                              hintText: localizations
+                                  .translate('login_password_hint'),
+                              label: localizations
+                                  .translate('login_password_label'),
                               isPassword: true,
-                              backgroundColor:
-                                  colors.backgroundPrimary.withValues(alpha: 0.36),
+                              backgroundColor: colors.backgroundPrimary
+                                  .withValues(alpha: 0.36),
                               labelColor: colors.textPrimary,
                               hintColor: colors.textSecondary,
                               textColor: colors.textPrimary,
@@ -180,17 +190,20 @@ class LoginScreen extends StatelessWidget {
                               )
                             else
                               CustomButton(
-                                buttonText: localizations.translate('login_button'),
+                                buttonText:
+                                    localizations.translate('login_button'),
                                 buttonColor: colors.buttonPrimaryBg,
                                 textColor: colors.buttonPrimaryFg,
                                 onPressed: () {
                                   final login = loginController.text.trim();
-                                  final password = passwordController.text.trim();
+                                  final password =
+                                      passwordController.text.trim();
                                   if (login.isEmpty || password.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          localizations.translate('fill_all_fields'),
+                                          localizations
+                                              .translate('fill_all_fields'),
                                         ),
                                       ),
                                     );

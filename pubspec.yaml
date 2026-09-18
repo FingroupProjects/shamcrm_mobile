@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 3.2.200+276
+version: 3.2.200+278
 
 
 # The following defines the version and build number for your application.
@@ -110,6 +110,7 @@ dependencies:
   firebase_analytics: ^11.6.0
   pdf: ^3.12.0
   printing: ^5.14.3
+  clarity_flutter: ^1.10.0
   # home_widget: ^0.8.1
 
 

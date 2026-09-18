@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/storage/secure_storage_service.dart';
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/app/app_keys.dart';
 import 'package:crm_task_manager/app/app_providers.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
@@ -85,6 +86,10 @@ class _MyAppState extends State<MyApp> {
 
     WidgetService.initialize();
     await NativeInternetMonitor().initialize();
+    // Если пользователь уже в сессии, сразу вешаем id в Clarity.
+    if (widget.sessionValid) {
+      unawaited(attachClaritySession());
+    }
     _initializeDeferredStartup();
   }
 
@@ -142,125 +147,128 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: createAppProviders(
-        apiService: widget.apiService,
-        authService: widget.authService,
-      ),
-      child: Consumer<AppThemeController>(
-        builder: (context, themeController, _) {
-          return MaterialApp(
-            locale: _locale ?? const Locale('ru'),
-            color: Colors.white,
-            debugShowCheckedModeBanner: false,
-            title: 'shamCRM',
-            navigatorKey: navigatorKey,
-            navigatorObservers: [appRouteObserver],
-            scaffoldMessengerKey: scaffoldMessengerKey,
-            theme: AppTheme.light(themeController.lightPalette),
-            darkTheme: AppTheme.dark(themeController.darkPalette),
-            themeMode: themeController.themeMode,
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: [
-              const Locale('ru', ''),
-              const Locale('en', ''),
-              const Locale('uz', ''),
-            ],
-            localeResolutionCallback: (locale, supportedLocales) {
-              for (var supportedLocale in supportedLocales) {
-                if (supportedLocale.languageCode == locale?.languageCode) {
-                  return supportedLocale;
+    // Clarity живёт здесь, а не в main.dart.
+    return ClarityHost(
+      child: MultiProvider(
+        providers: createAppProviders(
+          apiService: widget.apiService,
+          authService: widget.authService,
+        ),
+        child: Consumer<AppThemeController>(
+          builder: (context, themeController, _) {
+            return MaterialApp(
+              locale: _locale ?? const Locale('ru'),
+              color: Colors.white,
+              debugShowCheckedModeBanner: false,
+              title: 'shamCRM',
+              navigatorKey: navigatorKey,
+              navigatorObservers: [appRouteObserver, clarityScreenObserver],
+              scaffoldMessengerKey: scaffoldMessengerKey,
+              theme: AppTheme.light(themeController.lightPalette),
+              darkTheme: AppTheme.dark(themeController.darkPalette),
+              themeMode: themeController.themeMode,
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: [
+                const Locale('ru', ''),
+                const Locale('en', ''),
+                const Locale('uz', ''),
+              ],
+              localeResolutionCallback: (locale, supportedLocales) {
+                for (var supportedLocale in supportedLocales) {
+                  if (supportedLocale.languageCode == locale?.languageCode) {
+                    return supportedLocale;
+                  }
                 }
-              }
-              return supportedLocales.first;
-            },
-            builder: (context, child) {
-              final colors = context.appColors;
-              final themeController = context.watch<AppThemeController>();
-              final hasCustomWallpaper = themeController.hasCustomWallpaper;
-              final appChild = Stack(
-                fit: StackFit.expand,
-                children: [
-                  ColoredBox(
-                    color: hasCustomWallpaper
-                        ? Colors.black
-                        : colors.backgroundPrimary,
-                  ),
-                  AppBackgroundOverlay(
-                    preset: themeController.backgroundPreset,
-                    imagePath: themeController.backgroundImagePath,
-                    assetPath: themeController.backgroundAssetPath,
-                  ),
-                  NativeInternetAwareWrapper(
-                    child: ChatVoiceMiniPlayerHost(
-                      child: child ?? const SizedBox.shrink(),
+                return supportedLocales.first;
+              },
+              builder: (context, child) {
+                final colors = context.appColors;
+                final themeController = context.watch<AppThemeController>();
+                final hasCustomWallpaper = themeController.hasCustomWallpaper;
+                final appChild = Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ColoredBox(
+                      color: hasCustomWallpaper
+                          ? Colors.black
+                          : colors.backgroundPrimary,
                     ),
-                  ),
-                  const InAppUpdateCornerIndicator(),
-                  if (kDebugMode) const HttpInspectorFab(),
-                ],
-              );
-              return SipCallOverlayHost(
-                child: appChild,
-              );
-            },
-            home: Builder(
-              builder: (context) {
-                if (!widget.sessionValid) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (mounted) {
-                      await checkForNewVersion(context);
-                    }
-                  });
-                  return AuthScreen();
-                }
+                    AppBackgroundOverlay(
+                      preset: themeController.backgroundPreset,
+                      imagePath: themeController.backgroundImagePath,
+                      assetPath: themeController.backgroundAssetPath,
+                    ),
+                    NativeInternetAwareWrapper(
+                      child: ChatVoiceMiniPlayerHost(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    ),
+                    const InAppUpdateCornerIndicator(),
+                    if (kDebugMode) const HttpInspectorFab(),
+                  ],
+                );
+                return SipCallOverlayHost(
+                  child: appChild,
+                );
+              },
+              home: Builder(
+                builder: (context) {
+                  if (!widget.sessionValid) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      if (mounted) {
+                        await checkForNewVersion(context);
+                      }
+                    });
+                    return AuthScreen();
+                  }
 
-                if (widget.token == null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (mounted) {
-                      await checkForNewVersion(context);
-                    }
-                  });
-                  return AuthScreen();
-                } else if (widget.pin == null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) async {
-                    if (mounted) {
-                      await checkForNewVersion(context);
-                    }
-                  });
-                  return PinSetupScreen();
-                } else {
-                  return PinScreen(
-                    initialMessage: widget.initialMessage,
+                  if (widget.token == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      if (mounted) {
+                        await checkForNewVersion(context);
+                      }
+                    });
+                    return AuthScreen();
+                  } else if (widget.pin == null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      if (mounted) {
+                        await checkForNewVersion(context);
+                      }
+                    });
+                    return PinSetupScreen();
+                  } else {
+                    return PinScreen(
+                      initialMessage: widget.initialMessage,
+                    );
+                  }
+                },
+              ),
+              routes: {
+                '/local_auth': (context) => AuthScreen(),
+                '/login': (context) => LoginScreen(),
+                '/chats': (context) => ChatsScreen(),
+                '/pin_setup': (context) => PinSetupScreen(),
+                '/pin_screen': (context) => PinScreen(),
+                '/profile': (context) => ProfileScreen(),
+              },
+              onGenerateRoute: (settings) {
+                if (settings.name == '/home') {
+                  return AppFadePageRoute<void>(
+                    settings: settings,
+                    builder: (_) => const HomeScreen(),
+                    duration: const Duration(milliseconds: 340),
                   );
                 }
+                return null;
               },
-            ),
-            routes: {
-              '/local_auth': (context) => AuthScreen(),
-              '/login': (context) => LoginScreen(),
-              '/chats': (context) => ChatsScreen(),
-              '/pin_setup': (context) => PinSetupScreen(),
-              '/pin_screen': (context) => PinScreen(),
-              '/profile': (context) => ProfileScreen(),
-            },
-            onGenerateRoute: (settings) {
-              if (settings.name == '/home') {
-                return AppFadePageRoute<void>(
-                  settings: settings,
-                  builder: (_) => const HomeScreen(),
-                  duration: const Duration(milliseconds: 340),
-                );
-              }
-              return null;
-            },
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

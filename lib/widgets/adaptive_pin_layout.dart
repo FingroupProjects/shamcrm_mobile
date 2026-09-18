@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:flutter/material.dart';
 
 /// Preserves the intended PIN layout and scales the whole composition down
@@ -20,11 +21,14 @@ class AdaptivePinContent extends StatelessWidget {
       builder: (context, constraints) {
         final width = math.min(constraints.maxWidth, maxWidth);
 
-        return Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: SizedBox(width: width, child: child),
+        // PIN и точки ввода не должны попадать в запись сессии.
+        return ClaritySensitive(
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: SizedBox(width: width, child: child),
+            ),
           ),
         );
       },

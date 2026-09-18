@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/profile/profile_bloc.dart';
 import 'package:crm_task_manager/bloc/profile/profile_state.dart';
@@ -47,11 +48,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
 
       if (mounted) {
         // API отдаёт все роли массивом. Показываем их через запятую.
-        final allRoles = (userProfile.role != null && userProfile.role!.isNotEmpty)
-            ? userProfile.role!.map((role) => role.name).join(', ')
-            : (prefs.getString('userAllRoles') ??
-                prefs.getString('userRoleName') ??
-                '');
+        final allRoles =
+            (userProfile.role != null && userProfile.role!.isNotEmpty)
+                ? userProfile.role!.map((role) => role.name).join(', ')
+                : (prefs.getString('userAllRoles') ??
+                    prefs.getString('userRoleName') ??
+                    '');
 
         if (allRoles.isNotEmpty) {
           await prefs.setString('userAllRoles', allRoles);
@@ -168,79 +170,93 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 ),
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      _buildAvatar(),
-                      const SizedBox(height: 28),
-                      _buildField(_nameController, t.translate('name'), Icons.person_outline),
-                      const SizedBox(height: 12),
-                      _buildField(_surnameController, t.translate('surname'), Icons.badge_outlined),
-                      const SizedBox(height: 12),
-                      _buildField(_phoneController, t.translate('phone'), Icons.phone_outlined),
-                      const SizedBox(height: 12),
-                      _buildField(_roleController, t.translate('role'), Icons.work_outline),
-                      const SizedBox(height: 12),
-                      _buildField(_loginController, t.translate('login'), Icons.person_outline),
-                      const SizedBox(height: 12),
-                      _buildField(_emailController, t.translate('email'), Icons.email_outlined),
-                      const SizedBox(height: 24),
-                      BlocListener<ProfileBloc, ProfileState>(
-                        listener: (context, state) {
-                          if (state is ProfileSuccess) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  t.translate('profile_updated_successfully'),
-                                  style: context.appTextStyles.bodyMd.copyWith(
-                                    color: context.appColors.textInverse,
-                                    fontWeight: FontWeight.w500,
+                  child: ClaritySensitive(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        _buildAvatar(),
+                        const SizedBox(height: 28),
+                        _buildField(_nameController, t.translate('name'),
+                            Icons.person_outline),
+                        const SizedBox(height: 12),
+                        _buildField(_surnameController, t.translate('surname'),
+                            Icons.badge_outlined),
+                        const SizedBox(height: 12),
+                        _buildField(_phoneController, t.translate('phone'),
+                            Icons.phone_outlined),
+                        const SizedBox(height: 12),
+                        _buildField(_roleController, t.translate('role'),
+                            Icons.work_outline),
+                        const SizedBox(height: 12),
+                        _buildField(_loginController, t.translate('login'),
+                            Icons.person_outline),
+                        const SizedBox(height: 12),
+                        _buildField(_emailController, t.translate('email'),
+                            Icons.email_outlined),
+                        const SizedBox(height: 24),
+                        BlocListener<ProfileBloc, ProfileState>(
+                          listener: (context, state) {
+                            if (state is ProfileSuccess) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    t.translate('profile_updated_successfully'),
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                backgroundColor: context.appColors.success,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                            Navigator.pop(context);
-                          } else if (state is ProfileError) {
-                            final map = {
-                              '500': 'server_error',
-                              '422': 'validation_error',
-                              '404': 'resource_not_found',
-                            };
-                            final key = map.keys.firstWhere(
-                              (k) => state.message.contains(k),
-                              orElse: () => '',
-                            );
-                            final msg = t.translate(key.isNotEmpty ? map[key]! : 'invalid_phone_number');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  msg,
-                                  style: context.appTextStyles.bodyMd.copyWith(
-                                    color: context.appColors.textInverse,
-                                    fontWeight: FontWeight.w500,
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
+                                  backgroundColor: context.appColors.success,
+                                  duration: const Duration(seconds: 3),
                                 ),
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              );
+                              Navigator.pop(context);
+                            } else if (state is ProfileError) {
+                              final map = {
+                                '500': 'server_error',
+                                '422': 'validation_error',
+                                '404': 'resource_not_found',
+                              };
+                              final key = map.keys.firstWhere(
+                                (k) => state.message.contains(k),
+                                orElse: () => '',
+                              );
+                              final msg = t.translate(key.isNotEmpty
+                                  ? map[key]!
+                                  : 'invalid_phone_number');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    msg,
+                                    style:
+                                        context.appTextStyles.bodyMd.copyWith(
+                                      color: context.appColors.textInverse,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  backgroundColor: context.appColors.error,
+                                  duration: const Duration(seconds: 3),
                                 ),
-                                backgroundColor: context.appColors.error,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        },
-                        child: const SizedBox.shrink(),
-                      ),
-                    ],
+                              );
+                            }
+                          },
+                          child: const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -255,7 +271,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     );
   }
 
-  Widget _buildField(TextEditingController controller, String label, IconData icon) {
+  Widget _buildField(
+      TextEditingController controller, String label, IconData icon) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -276,7 +293,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               color: context.appColors.surfaceAccent.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: context.appColors.buttonPrimaryBg, size: 22),
+            child:
+                Icon(icon, color: context.appColors.buttonPrimaryBg, size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(

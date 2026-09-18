@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
@@ -80,6 +81,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       await apiService.initializeWithDomain(domain, mainDomain);
       await apiService.saveQrData(
           domain, mainDomain, login, token, userId, organizationId);
+      await attachClaritySession(userId: userId, tenant: domain);
 
       await controller.stop();
 

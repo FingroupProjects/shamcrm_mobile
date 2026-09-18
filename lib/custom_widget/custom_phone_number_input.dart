@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
@@ -316,7 +317,38 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     final fieldBorder = colors.borderSubtle;
 
     if (_isLoading) {
-      return Column(
+      return ClaritySensitive(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.label,
+              style: context.appTextStyles.labelLg.copyWith(
+                fontWeight: FontWeight.w500,
+                color: primaryText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: fieldFill,
+                borderRadius: context.appRadius.input,
+                border: Border.all(
+                  color: fieldBorder,
+                ),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ClaritySensitive(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -327,91 +359,65 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: fieldFill,
-              borderRadius: context.appRadius.input,
-              border: Border.all(
-                color: fieldBorder,
+          TextFormField(
+            controller: widget.controller,
+            decoration: InputDecoration(
+              hintText:
+                  AppLocalizations.of(context)!.translate('enter_phone_number'),
+              hintStyle: context.appTextStyles.bodyMd.copyWith(
+                color: hintTextColor,
               ),
+              border: AppFieldStyle.outline(context),
+              filled: true,
+              fillColor: fieldFill,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              prefixIcon: InkWell(
+                onTap: () => _showCountryPicker(context),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        selectedCountry?.dialCode ?? '+?',
+                        style: context.appTextStyles.bodyLg.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: primaryText,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        selectedCountry?.flag ?? '',
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    ),
+                    Icon(Icons.arrow_drop_down,
+                        color: primaryText.withValues(alpha: 0.9)),
+                  ],
+                ),
+              ),
+              errorStyle: AppFieldStyle.errorTextStyle(context),
+              enabledBorder: AppFieldStyle.outline(context),
+              focusedBorder: AppFieldStyle.outline(context, focused: true),
+              errorBorder: AppFieldStyle.outline(context, hasError: true),
+              focusedErrorBorder:
+                  AppFieldStyle.outline(context, hasError: true),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(),
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              _phoneNumberPasteFormatter(),
+            ],
+            validator: widget.validator,
+            style: context.appTextStyles.bodyLg.copyWith(
+              color: primaryText,
             ),
           ),
         ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: context.appTextStyles.labelLg.copyWith(
-            fontWeight: FontWeight.w500,
-            color: primaryText,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: widget.controller,
-          decoration: InputDecoration(
-            hintText:
-                AppLocalizations.of(context)!.translate('enter_phone_number'),
-            hintStyle: context.appTextStyles.bodyMd.copyWith(
-              color: hintTextColor,
-            ),
-            border: AppFieldStyle.outline(context),
-            filled: true,
-            fillColor: fieldFill,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            prefixIcon: InkWell(
-              onTap: () => _showCountryPicker(context),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      selectedCountry?.dialCode ?? '+?',
-                      style: context.appTextStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: primaryText,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      selectedCountry?.flag ?? '',
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
-                  Icon(Icons.arrow_drop_down,
-                      color: primaryText.withValues(alpha: 0.9)),
-                ],
-              ),
-            ),
-            errorStyle: AppFieldStyle.errorTextStyle(context),
-            enabledBorder: AppFieldStyle.outline(context),
-            focusedBorder: AppFieldStyle.outline(context, focused: true),
-            errorBorder: AppFieldStyle.outline(context, hasError: true),
-            focusedErrorBorder: AppFieldStyle.outline(context, hasError: true),
-          ),
-          keyboardType: TextInputType.phone,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            _phoneNumberPasteFormatter(),
-          ],
-          validator: widget.validator,
-          style: context.appTextStyles.bodyLg.copyWith(
-            color: primaryText,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

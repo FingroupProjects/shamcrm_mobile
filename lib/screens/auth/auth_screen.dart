@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
@@ -442,6 +443,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                   await prefs.setString(
                                     'userID',
                                     loginState.user.id.toString(),
+                                  );
+                                  await attachClaritySession(
+                                    userId: loginState.user.id.toString(),
                                   );
                                   await prefs.setString(
                                     'userLogin',

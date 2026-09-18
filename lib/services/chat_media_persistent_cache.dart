@@ -76,6 +76,25 @@ class ChatMediaPersistentCache {
     );
   }
 
+  /// Returns a disk-cached image only if it is already saved.
+  /// Does not start a download. Used by the fullscreen viewer so pinch-zoom
+  /// is not reset when a background download finishes.
+  Future<File?> peekImageFile(String url) async {
+    if (url.startsWith('/') || url.startsWith('file:')) {
+      return _localFileIfExists(url);
+    }
+
+    final key = _safeKey(url);
+    final cachedPath = await _readPath('$_imagePrefix$key');
+    if (cachedPath == null) return null;
+
+    final cachedFile = File(cachedPath);
+    if (await cachedFile.exists() && await cachedFile.length() > 0) {
+      return cachedFile;
+    }
+    return null;
+  }
+
   String _fileExtension(String url, String fallback) {
     final path = Uri.tryParse(url)?.path ?? url;
     final name = path.split('/').last;

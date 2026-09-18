@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:flutter/material.dart';
@@ -186,70 +187,86 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
         ),
         const SizedBox(height: 4),
-        TextFormField(
-          controller: widget.controller,
-          focusNode: _focusNode,
-          obscureText: widget.isPassword && !_isPasswordVisible,
-          enabled: widget.showEditButton ? true : widget.enabled,
-          readOnly: widget.showEditButton ? true : widget.readOnly,
-          keyboardType: widget.keyboardType,
-          inputFormatters: widget.inputFormatters,
-          maxLines: widget.maxLines,
-          validator: widget.validator,
-          onChanged: widget.onChanged,
-          textAlign: widget.textAlign,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            color: widget.textColor ?? colors.textPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            hintStyle: TextStyle(
+        _maskIfPersonal(
+          TextFormField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            obscureText: widget.isPassword && !_isPasswordVisible,
+            enabled: widget.showEditButton ? true : widget.enabled,
+            readOnly: widget.showEditButton ? true : widget.readOnly,
+            keyboardType: widget.keyboardType,
+            inputFormatters: widget.inputFormatters,
+            maxLines: widget.maxLines,
+            validator: widget.validator,
+            onChanged: widget.onChanged,
+            textAlign: widget.textAlign,
+            style: TextStyle(
               fontFamily: 'Gilroy',
-              color: widget.hintColor ?? colors.fieldHint,
+              color: widget.textColor ?? colors.textPrimary,
             ),
-            // One outline. Theme fill + a second radius-14 outline
-            // was drawing a box inside a box on some fields.
-            isDense: true,
-            border: AppFieldStyle.outline(context, hasError: hasError),
-            filled: true,
-            fillColor: widget.backgroundColor ?? colors.fieldBg,
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-            prefixIcon: widget.prefixIcon,
-            suffixIcon: _buildSuffixIcon(),
-            errorText: widget.errorText,
-            errorMaxLines: 2,
-            errorStyle: AppFieldStyle.errorTextStyle(context),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppFieldStyle.radius,
-              borderSide: widget.borderColor != null && !hasError
-                  ? BorderSide(color: widget.borderColor!)
-                  : AppFieldStyle.side(context, hasError: hasError),
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              hintStyle: TextStyle(
+                fontFamily: 'Gilroy',
+                color: widget.hintColor ?? colors.fieldHint,
+              ),
+              // One outline. Theme fill + a second radius-14 outline
+              // was drawing a box inside a box on some fields.
+              isDense: true,
+              border: AppFieldStyle.outline(context, hasError: hasError),
+              filled: true,
+              fillColor: widget.backgroundColor ?? colors.fieldBg,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+              prefixIcon: widget.prefixIcon,
+              suffixIcon: _buildSuffixIcon(),
+              errorText: widget.errorText,
+              errorMaxLines: 2,
+              errorStyle: AppFieldStyle.errorTextStyle(context),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppFieldStyle.radius,
+                borderSide: widget.borderColor != null && !hasError
+                    ? BorderSide(color: widget.borderColor!)
+                    : AppFieldStyle.side(context, hasError: hasError),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppFieldStyle.radius,
+                borderSide: hasError
+                    ? AppFieldStyle.side(context, hasError: true)
+                    : widget.focusedBorderColor != null
+                        ? BorderSide(
+                            color: widget.focusedBorderColor!,
+                            width: 1.2,
+                          )
+                        : AppFieldStyle.side(context, focused: true),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: AppFieldStyle.radius,
+                borderSide: widget.borderColor != null && !hasError
+                    ? BorderSide(color: widget.borderColor!)
+                    : AppFieldStyle.side(context, hasError: hasError),
+              ),
+              errorBorder: AppFieldStyle.outline(context, hasError: true),
+              focusedErrorBorder:
+                  AppFieldStyle.outline(context, hasError: true),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppFieldStyle.radius,
-              borderSide: hasError
-                  ? AppFieldStyle.side(context, hasError: true)
-                  : widget.focusedBorderColor != null
-                      ? BorderSide(
-                          color: widget.focusedBorderColor!,
-                          width: 1.2,
-                        )
-                      : AppFieldStyle.side(context, focused: true),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: AppFieldStyle.radius,
-              borderSide: widget.borderColor != null && !hasError
-                  ? BorderSide(color: widget.borderColor!)
-                  : AppFieldStyle.side(context, hasError: hasError),
-            ),
-            errorBorder: AppFieldStyle.outline(context, hasError: true),
-            focusedErrorBorder: AppFieldStyle.outline(context, hasError: true),
           ),
         ),
       ],
     );
+  }
+
+  // Пароль, PIN, телефон и почта в записи Clarity закрыты.
+  Widget _maskIfPersonal(Widget field) {
+    if (!isPersonalClarityField(
+      isPassword: widget.isPassword,
+      keyboardType: widget.keyboardType,
+      label: widget.label,
+      hint: widget.hintText,
+    )) {
+      return field;
+    }
+    return ClaritySensitive(child: field);
   }
 
   Widget? _buildSuffixIcon() {

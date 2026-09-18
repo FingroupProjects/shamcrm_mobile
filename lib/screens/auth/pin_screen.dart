@@ -1,5 +1,6 @@
 import 'dart:async';
 // import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
@@ -61,8 +62,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   bool _isPinVerified = false; // ✅ НОВОЕ: Флаг верификации PIN
   bool _isPinChecking = false;
   // Тема уже загружена в main(), поэтому сразу знаем, показывать ли интро.
-  bool _showIntro =
-      AppThemeController.instance.loginIntroAnimationEnabled;
+  bool _showIntro = AppThemeController.instance.loginIntroAnimationEnabled;
   bool _didNavigateToSipCall = false;
   final PinAdaptiveContrastController _adaptiveContrast =
       PinAdaptiveContrastController();
@@ -115,8 +115,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _startIntroAndInitialize() async {
-    final introEnabled =
-        AppThemeController.instance.loginIntroAnimationEnabled;
+    final introEnabled = AppThemeController.instance.loginIntroAnimationEnabled;
     try {
       final initFuture = _initializeMinimal();
 
@@ -448,6 +447,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
           if (_pin == savedPin) {
             debugPrint('PinScreen: PIN корректен');
+            unawaited(attachClaritySession());
 
             final hasAccess = await _checkAccountAccess();
             if (!hasAccess) return;

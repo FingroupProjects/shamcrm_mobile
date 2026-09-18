@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -56,14 +57,17 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     // Читаем сохранённый код региона из SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     String? savedDialCode = prefs.getString('default_dial_code');
-    
-    debugPrint('CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
-    debugPrint('CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
+
+    debugPrint(
+        'CustomPhoneNumberInput: Сохранённый default_dial_code = $savedDialCode');
+    debugPrint(
+        'CustomPhoneNumberInput: selectedDialCode из параметров = ${widget.selectedDialCode}');
 
     // Определяем, какой код использовать
     String? dialCodeToUse;
-    
-    if (widget.selectedDialCode != null && widget.selectedDialCode!.isNotEmpty) {
+
+    if (widget.selectedDialCode != null &&
+        widget.selectedDialCode!.isNotEmpty) {
       // Если передан код явно - используем его
       dialCodeToUse = widget.selectedDialCode;
     } else if (savedDialCode != null && savedDialCode.isNotEmpty) {
@@ -80,7 +84,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
     selectedCountry = countries.firstWhere(
       (country) => country.dialCode == dialCodeToUse,
       orElse: () {
-        debugPrint('CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
+        debugPrint(
+            'CustomPhoneNumberInput: Страна с кодом $dialCodeToUse не найдена, используем TJ (+992)');
         return countries.firstWhere(
           (country) => country.name == "TJ",
           orElse: () => countries.first,
@@ -88,13 +93,15 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
       },
     );
 
-    debugPrint('CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
+    debugPrint(
+        'CustomPhoneNumberInput: Выбрана страна: ${selectedCountry?.name}, код: ${selectedCountry?.dialCode}');
 
     // Очищаем код страны из начального текста, если он присутствует
     if (widget.controller.text.startsWith(selectedCountry?.dialCode ?? '')) {
       widget.controller.text =
           widget.controller.text.substring(selectedCountry!.dialCode.length);
-      debugPrint('CustomPhoneNumberInput: Очищен код страны из текста: ${widget.controller.text}');
+      debugPrint(
+          'CustomPhoneNumberInput: Очищен код страны из текста: ${widget.controller.text}');
     }
 
     // Валидируем начальный текст
@@ -118,7 +125,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         _errorText = null;
         _hasReachedMaxLength = true;
       } else {
-        _errorText = AppLocalizations.of(context)!.translate('error_phone_number');
+        _errorText =
+            AppLocalizations.of(context)!.translate('error_phone_number');
         _hasReachedMaxLength = false;
       }
     });
@@ -137,7 +145,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
         String checkText = hasPlus ? newText : '+' + newText;
 
         for (var code in countryCodes) {
-          if (checkText.startsWith(code) && (matchedDialCode == null || code.length > matchedDialCode.length)) {
+          if (checkText.startsWith(code) &&
+              (matchedDialCode == null ||
+                  code.length > matchedDialCode.length)) {
             matchedDialCode = code;
             matchedCountry = countries.firstWhere(
               (country) => country.dialCode == code,
@@ -146,7 +156,9 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
           }
         }
 
-        if (matchedDialCode != null && matchedCountry != null && matchedCountry.name.isNotEmpty) {
+        if (matchedDialCode != null &&
+            matchedCountry != null &&
+            matchedCountry.name.isNotEmpty) {
           String phoneNumber = hasPlus
               ? newText.substring(matchedDialCode.length)
               : newText.substring(matchedDialCode.length - 1);
@@ -163,7 +175,8 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 widget.controller.text = phoneNumber;
                 _validatePhoneNumber(phoneNumber);
               });
-              final formattedNumber = (matchedCountry?.dialCode ?? '') + phoneNumber;
+              final formattedNumber =
+                  (matchedCountry?.dialCode ?? '') + phoneNumber;
               if (widget.onInputChanged != null) {
                 widget.onInputChanged!(formattedNumber);
               }
@@ -204,7 +217,37 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Column(
+      return ClaritySensitive(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: widget.labelColor ?? const Color(0xff1E2E52),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: widget.backgroundColor ?? const Color(0xffF4F7FD),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ClaritySensitive(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -217,166 +260,147 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: widget.backgroundColor ?? const Color(0xffF4F7FD),
-              borderRadius: BorderRadius.circular(12),
+          TextFormField(
+            controller: widget.controller,
+            readOnly: widget.readOnly,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              color: widget.textColor ?? const Color(0xff1E2E52),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(),
+            decoration: InputDecoration(
+              hintText:
+                  AppLocalizations.of(context)!.translate('enter_phone_number'),
+              hintStyle: TextStyle(
+                fontFamily: 'Gilroy',
+                color: widget.hintColor ?? const Color(0xff99A4BA),
+              ),
+              errorText: _errorText,
+              errorStyle: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 15,
+                color: context.appColors.error,
+                fontWeight: FontWeight.w500,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: widget.borderColor ?? Colors.transparent,
+                  width: widget.borderColor == null ? 0 : 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: widget.focusedBorderColor ?? Colors.transparent,
+                  width: widget.focusedBorderColor == null ? 0 : 1.4,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: context.appColors.error,
+                  width: 1.5,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: context.appColors.error,
+                  width: 1.5,
+                ),
+              ),
+              filled: true,
+              fillColor: widget.backgroundColor ?? const Color(0xffF4F7FD),
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              prefixIcon: DropdownButtonHideUnderline(
+                child: DropdownButton<Country>(
+                  value: selectedCountry,
+                  dropdownColor: widget.dropdownBackgroundColor ?? Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  menuMaxHeight: 500,
+                  itemHeight: 48,
+                  items: countries.map((Country country) {
+                    return DropdownMenuItem<Country>(
+                      value: country,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 8),
+                          Text(country.flag,
+                              style: const TextStyle(fontSize: 24)),
+                          const SizedBox(width: 4),
+                          Text(
+                            country.dialCode,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color:
+                                  widget.textColor ?? const Color(0xff1E2E52),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: widget.readOnly
+                      ? null
+                      : (Country? newValue) {
+                          setState(() {
+                            selectedCountry = newValue;
+                            widget.controller.text = '';
+                            _errorText = null;
+                            _hasReachedMaxLength = false;
+                            if (newValue != null &&
+                                widget.onInputChanged != null) {
+                              widget.onInputChanged!('');
+                            }
+                          });
+                        },
+                ),
+              ),
             ),
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              _phoneNumberPasteFormatter(),
+            ],
+            onChanged: widget.readOnly
+                ? null
+                : (value) {
+                    final maxLength =
+                        widget.phoneNumberLengths[selectedCountry?.dialCode] ??
+                            0;
+                    String phoneNumber = value;
+
+                    if (value.length > maxLength) {
+                      phoneNumber = value.substring(0, maxLength);
+                      widget.controller.text = phoneNumber;
+                      widget.controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: maxLength));
+                    }
+
+                    _validatePhoneNumber(phoneNumber);
+                    // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
+                    String formattedNumber;
+                    if (phoneNumber.isEmpty) {
+                      formattedNumber = ''; // Пустая строка, если нет номера
+                    } else {
+                      formattedNumber =
+                          (selectedCountry?.dialCode ?? '') + phoneNumber;
+                    }
+
+                    if (widget.onInputChanged != null) {
+                      widget.onInputChanged!(formattedNumber);
+                    }
+                  },
           ),
         ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Gilroy',
-            color: widget.labelColor ?? const Color(0xff1E2E52),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: widget.controller,
-          readOnly: widget.readOnly,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            color: widget.textColor ?? const Color(0xff1E2E52),
-          ),
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.translate('enter_phone_number'),
-            hintStyle: TextStyle(
-              fontFamily: 'Gilroy',
-              color: widget.hintColor ?? const Color(0xff99A4BA),
-            ),
-            errorText: _errorText,
-            errorStyle: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 15,
-              color: context.appColors.error,
-              fontWeight: FontWeight.w500,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: widget.borderColor ?? Colors.transparent,
-                width: widget.borderColor == null ? 0 : 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: widget.focusedBorderColor ?? Colors.transparent,
-                width: widget.focusedBorderColor == null ? 0 : 1.4,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: context.appColors.error,
-                width: 1.5,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: context.appColors.error,
-                width: 1.5,
-              ),
-            ),
-            filled: true,
-            fillColor: widget.backgroundColor ?? const Color(0xffF4F7FD),
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            prefixIcon: DropdownButtonHideUnderline(
-              child: DropdownButton<Country>(
-                value: selectedCountry,
-                dropdownColor: widget.dropdownBackgroundColor ?? Colors.white,
-                borderRadius: BorderRadius.circular(6),
-                menuMaxHeight: 500,
-                itemHeight: 48,
-                items: countries.map((Country country) {
-                  return DropdownMenuItem<Country>(
-                    value: country,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        Text(country.flag, style: const TextStyle(fontSize: 24)),
-                        const SizedBox(width: 4),
-                        Text(
-                          country.dialCode,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w500,
-                            color: widget.textColor ?? const Color(0xff1E2E52),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: widget.readOnly
-                    ? null
-                    : (Country? newValue) {
-                        setState(() {
-                          selectedCountry = newValue;
-                          widget.controller.text = '';
-                          _errorText = null;
-                          _hasReachedMaxLength = false;
-                                               if (newValue != null && widget.onInputChanged != null) {
-                          widget.onInputChanged!('');
-                        }
-
-                        });
-                      },
-              ),
-            ),
-          ),
-          keyboardType: TextInputType.phone,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            _phoneNumberPasteFormatter(),
-          ],
-          onChanged: widget.readOnly
-              ? null
-              : (value) {
-                  final maxLength = widget.phoneNumberLengths[selectedCountry?.dialCode] ?? 0;
-                  String phoneNumber = value;
-
-                  if (value.length > maxLength) {
-                    phoneNumber = value.substring(0, maxLength);
-                    widget.controller.text = phoneNumber;
-                    widget.controller.selection =
-                        TextSelection.fromPosition(TextPosition(offset: maxLength));
-                  }
-
-                  _validatePhoneNumber(phoneNumber);
-                   // ✅ ИСПРАВЛЕНО: отправляем код региона ТОЛЬКО если есть цифры
-                String formattedNumber;
-                if (phoneNumber.isEmpty) {
-                  formattedNumber = ''; // Пустая строка, если нет номера
-                } else {
-                  formattedNumber = (selectedCountry?.dialCode ?? '') + phoneNumber;
-                }
-
-                  if (widget.onInputChanged != null) {
-                    widget.onInputChanged!(formattedNumber);
-                  }
-                },
-        ),
-      ],
+      ),
     );
   }
 }

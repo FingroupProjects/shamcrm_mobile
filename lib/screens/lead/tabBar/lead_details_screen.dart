@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
@@ -1166,197 +1167,200 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     return SwipeBackPopResult(
       result: _buildNavigationResult,
       child: PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        await _handleBackNavigation();
-      },
-      child: Theme(
-        data: screenTheme,
-        child: Scaffold(
-          extendBodyBehindAppBar: false,
-          backgroundColor: context.appColors.overlay.withValues(alpha: 0),
-          appBar: _buildAppBar(
-            context,
-            AppLocalizations.of(context)!.translate('view_lead') +
-                widget.leadId,
-          ),
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              const AppBackgroundOverlay(
-                preset: AppBackgroundPreset.aurora,
-              ),
-              MultiBlocListener(
-                listeners: [
-                  BlocListener<LeadByIdBloc, LeadByIdState>(
-                    listener: (context, state) {
-                      if (!mounted) return;
-                      if (state is LeadByIdLoaded || state is LeadByIdError) {
-                        _leadDataReady = true;
-                        _tryHideCombinedLoader();
-                      }
-                      if (state is LeadByIdLoaded) {
-                        _updateDetails(state.lead);
-                        _loadLeadActionAvailability(lead: state.lead);
-                      }
-                      if (state is LeadByIdError) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          showCustomSnackBar(
-                            context: context,
-                            message: AppLocalizations.of(context)!
-                                .translate(state.message),
-                            isSuccess: false,
-                          );
-                        });
-                      }
-                    },
-                  ),
-                  BlocListener<NotesBloc, NotesState>(
-                    listener: (context, state) {
-                      if (state is NotesLoaded || state is NotesError) {
-                        _notesDataReady = true;
-                        _tryHideCombinedLoader();
-                      }
-                    },
-                  ),
-                  BlocListener<LeadDealsBloc, LeadDealsState>(
-                    listener: (context, state) {
-                      if (state is LeadDealsLoaded || state is LeadDealsError) {
-                        _dealsDataReady = true;
-                        _tryHideCombinedLoader();
-                      }
-                    },
-                  ),
-                  BlocListener<OrderByLeadBloc, OrderByLeadState>(
-                    listener: (context, state) {
-                      if (state is OrderByLeadLoaded ||
-                          state is OrderByLeadError) {
-                        _ordersDataReady = true;
-                        _tryHideCombinedLoader();
-                      }
-                    },
-                  ),
-                ],
-                child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
-                  builder: (context, state) {
-                    if (_showCombinedLoader || state is LeadByIdLoading) {
-                      return Center(
-                        child: CircularProgressIndicator(color: primaryText),
-                      );
-                    }
-
-                    if (state is LeadByIdLoaded) {
-                      final LeadById lead = state.lead;
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-                        child: ListView(
-                          controller: _scrollController,
-                          children: [
-                            Container(
-                              padding:
-                                  const EdgeInsets.fromLTRB(18, 18, 18, 22),
-                              decoration: BoxDecoration(
-                                color: formSurface,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: subtleBorder),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: context.appColors.shadow
-                                        .withValues(alpha: 0.14),
-                                    blurRadius: 28,
-                                    offset: const Offset(0, 14),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  _buildDetailsList(),
-                                  if (_shouldShowAcceptDeclineButtons)
-                                    _buildAcceptDeclineActions(),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            LeadNavigateToChat(
-                              key: keyLeadNavigateChat,
-                              leadId: int.parse(widget.leadId),
-                              leadName: widget.leadName,
-                              chats: state.lead.chats
-                                  .map((chat) => {
-                                        'id': chat.id,
-                                        'integration': chat.integration != null
-                                            ? {
-                                                'id': chat.integration!.id,
-                                                'name': chat.integration!.name,
-                                                'username':
-                                                    chat.integration!.username,
-                                              }
-                                            : null,
-                                      })
-                                  .toList(),
-                            ),
-                            const SizedBox(height: 8),
-                            if (selectedOrganization != null)
-                              LeadToC(
-                                leadId: int.parse(widget.leadId),
-                                selectedOrganization: selectedOrganization!,
-                              ),
-                            const SizedBox(height: 8),
-                            ActionHistoryWidget(
-                                leadId: int.parse(widget.leadId)),
-                            const SizedBox(height: 8),
-                            if (_canReadNotes)
-                              NotesWidget(
-                                leadId: int.parse(widget.leadId),
-                                key: keyLeadNotice,
-                                managerId: lead.manager?.id,
-                                autoFetch: false,
-                              ),
-                            if (_canReadDeal)
-                              DealsWidget(
-                                leadId: int.parse(widget.leadId),
-                                key: keyLeadDeal,
-                                autoFetch: false,
-                              ),
-                            if (_canReadOrders)
-                              OrdersWidget(
-                                entityId: int.parse(widget.leadId),
-                                clientPhone: lead.phone,
-                                autoFetch: false,
-                                key: keyLeadOrders,
-                              ),
-                            ContactPersonWidget(
-                              leadId: int.parse(widget.leadId),
-                              key: keyLeadContactPerson,
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    if (state is LeadByIdError) {
-                      return Center(
-                        child: Text(
-                          _getLeadErrorMessage(state.message),
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: primaryText,
-                          ),
-                        ),
-                      );
-                    }
-                    return Center(child: Text(''));
-                  },
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await _handleBackNavigation();
+        },
+        child: Theme(
+          data: screenTheme,
+          child: Scaffold(
+            extendBodyBehindAppBar: false,
+            backgroundColor: context.appColors.overlay.withValues(alpha: 0),
+            appBar: _buildAppBar(
+              context,
+              AppLocalizations.of(context)!.translate('view_lead') +
+                  widget.leadId,
+            ),
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                const AppBackgroundOverlay(
+                  preset: AppBackgroundPreset.aurora,
                 ),
-              ),
-            ],
+                MultiBlocListener(
+                  listeners: [
+                    BlocListener<LeadByIdBloc, LeadByIdState>(
+                      listener: (context, state) {
+                        if (!mounted) return;
+                        if (state is LeadByIdLoaded || state is LeadByIdError) {
+                          _leadDataReady = true;
+                          _tryHideCombinedLoader();
+                        }
+                        if (state is LeadByIdLoaded) {
+                          _updateDetails(state.lead);
+                          _loadLeadActionAvailability(lead: state.lead);
+                        }
+                        if (state is LeadByIdError) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            showCustomSnackBar(
+                              context: context,
+                              message: AppLocalizations.of(context)!
+                                  .translate(state.message),
+                              isSuccess: false,
+                            );
+                          });
+                        }
+                      },
+                    ),
+                    BlocListener<NotesBloc, NotesState>(
+                      listener: (context, state) {
+                        if (state is NotesLoaded || state is NotesError) {
+                          _notesDataReady = true;
+                          _tryHideCombinedLoader();
+                        }
+                      },
+                    ),
+                    BlocListener<LeadDealsBloc, LeadDealsState>(
+                      listener: (context, state) {
+                        if (state is LeadDealsLoaded ||
+                            state is LeadDealsError) {
+                          _dealsDataReady = true;
+                          _tryHideCombinedLoader();
+                        }
+                      },
+                    ),
+                    BlocListener<OrderByLeadBloc, OrderByLeadState>(
+                      listener: (context, state) {
+                        if (state is OrderByLeadLoaded ||
+                            state is OrderByLeadError) {
+                          _ordersDataReady = true;
+                          _tryHideCombinedLoader();
+                        }
+                      },
+                    ),
+                  ],
+                  child: BlocBuilder<LeadByIdBloc, LeadByIdState>(
+                    builder: (context, state) {
+                      if (_showCombinedLoader || state is LeadByIdLoading) {
+                        return Center(
+                          child: CircularProgressIndicator(color: primaryText),
+                        );
+                      }
+
+                      if (state is LeadByIdLoaded) {
+                        final LeadById lead = state.lead;
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+                          child: ListView(
+                            controller: _scrollController,
+                            children: [
+                              Container(
+                                padding:
+                                    const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                                decoration: BoxDecoration(
+                                  color: formSurface,
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: subtleBorder),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.appColors.shadow
+                                          .withValues(alpha: 0.14),
+                                      blurRadius: 28,
+                                      offset: const Offset(0, 14),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildDetailsList(),
+                                    if (_shouldShowAcceptDeclineButtons)
+                                      _buildAcceptDeclineActions(),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              LeadNavigateToChat(
+                                key: keyLeadNavigateChat,
+                                leadId: int.parse(widget.leadId),
+                                leadName: widget.leadName,
+                                chats: state.lead.chats
+                                    .map((chat) => {
+                                          'id': chat.id,
+                                          'integration': chat.integration !=
+                                                  null
+                                              ? {
+                                                  'id': chat.integration!.id,
+                                                  'name':
+                                                      chat.integration!.name,
+                                                  'username': chat
+                                                      .integration!.username,
+                                                }
+                                              : null,
+                                        })
+                                    .toList(),
+                              ),
+                              const SizedBox(height: 8),
+                              if (selectedOrganization != null)
+                                LeadToC(
+                                  leadId: int.parse(widget.leadId),
+                                  selectedOrganization: selectedOrganization!,
+                                ),
+                              const SizedBox(height: 8),
+                              ActionHistoryWidget(
+                                  leadId: int.parse(widget.leadId)),
+                              const SizedBox(height: 8),
+                              if (_canReadNotes)
+                                NotesWidget(
+                                  leadId: int.parse(widget.leadId),
+                                  key: keyLeadNotice,
+                                  managerId: lead.manager?.id,
+                                  autoFetch: false,
+                                ),
+                              if (_canReadDeal)
+                                DealsWidget(
+                                  leadId: int.parse(widget.leadId),
+                                  key: keyLeadDeal,
+                                  autoFetch: false,
+                                ),
+                              if (_canReadOrders)
+                                OrdersWidget(
+                                  entityId: int.parse(widget.leadId),
+                                  clientPhone: lead.phone,
+                                  autoFetch: false,
+                                  key: keyLeadOrders,
+                                ),
+                              ContactPersonWidget(
+                                leadId: int.parse(widget.leadId),
+                                key: keyLeadContactPerson,
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (state is LeadByIdError) {
+                        return Center(
+                          child: Text(
+                            _getLeadErrorMessage(state.message),
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: primaryText,
+                            ),
+                          ),
+                        );
+                      }
+                      return Center(child: Text(''));
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -1623,33 +1627,35 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
   }
 
   Widget _buildDetailsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (currentLead?.verification_code != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              '${AppLocalizations.of(context)!.translate('confirmation_code_label')}: ${currentLead!.verification_code}',
-              style: TextStyle(
-                fontSize: 18,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: context.appColors.buttonPrimaryBg,
+    return ClaritySensitive(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (currentLead?.verification_code != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                '${AppLocalizations.of(context)!.translate('confirmation_code_label')}: ${currentLead!.verification_code}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: context.appColors.buttonPrimaryBg,
+                ),
+              ),
+            ),
+          ...details.map(
+            (item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: _buildDetailItem(
+                item['label']!,
+                item['value']!,
+                item['fieldName'] ?? '',
               ),
             ),
           ),
-        ...details.map(
-          (item) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: _buildDetailItem(
-              item['label']!,
-              item['value']!,
-              item['fieldName'] ?? '',
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
