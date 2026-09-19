@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -248,14 +249,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
   }
 
   CustomDropdownDecoration _buildDropdownDecoration() {
-    return CustomDropdownDecoration(
-      closedFillColor: context.appColors.fieldBg,
-      expandedFillColor: context.appColors.surfacePrimary,
-      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
-      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
-      closedBorderRadius: BorderRadius.circular(12),
-      expandedBorderRadius: BorderRadius.circular(12),
-    );
+    return AppFieldStyle.dropdownDecoration(context);
   }
 
   void _applyFilters() async {
@@ -482,6 +476,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                   decoration: BoxDecoration(
                     color: context.appColors.fieldBg,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.appColors.borderSubtle),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!
@@ -626,6 +621,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                   decoration: BoxDecoration(
                     color: context.appColors.fieldBg,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.appColors.borderSubtle),
                   ),
                   child: Text(
                     AppLocalizations.of(context)!.translate('select_client') ??
@@ -755,8 +751,9 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: context.appColors.surfacePrimary,
+                            color: context.appColors.fieldBg,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.appColors.borderSubtle),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,

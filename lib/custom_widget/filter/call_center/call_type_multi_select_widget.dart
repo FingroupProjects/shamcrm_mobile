@@ -24,6 +24,7 @@ class _CallTypeMultiSelectWidgetState extends State<CallTypeMultiSelectWidget> {
     CallTypeData(id: 1, name: 'Входящий'),
     CallTypeData(id: 2, name: 'Исходящий'),
     CallTypeData(id: 3, name: 'Пропущенный'),
+    CallTypeData(id: 4, name: 'Исходящий без ответа'),
     // CallTypeData(id: 4, name: 'Консультация'),
     // CallTypeData(id: 5, name: 'Обратный звонок'),
   ];

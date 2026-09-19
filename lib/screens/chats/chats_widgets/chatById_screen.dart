@@ -16,9 +16,14 @@ import 'package:crm_task_manager/bloc/lead_by_id/leadById_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/main.dart';
+import 'package:crm_task_manager/models/chat/chatById_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/profile_status_bottom_sheet.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_sms_modal.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/sip/sip_screen.dart';
+import 'package:crm_task_manager/screens/sip/sip_service.dart';
+import 'package:crm_task_manager/screens/sip/sip_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +54,26 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       return error;
     }
     return 'Лид был удален';
+  }
+
+  /// Имя источника из профиля чата. green_api показываем как WhatsApp.
+  String _sourceLabel(ChatProfile profile) {
+    final raw = (profile.source?.name ?? '').trim();
+    if (raw.isEmpty) {
+      return AppLocalizations.of(context)!.translate('');
+    }
+    return raw.toLowerCase() == 'green_api' ? 'WhatsApp' : raw;
+  }
+
+  /// Имя автора лида. Как в просмотре лида: имя или «Система».
+  String _authorLabel(ChatProfile profile) {
+    final name = (profile.author?.fullName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final first = (profile.author?.name ?? '').trim();
+    final last = (profile.author?.lastname ?? '').trim();
+    final combined = '$first $last'.trim();
+    if (combined.isNotEmpty) return combined;
+    return 'Система';
   }
 
   @override
@@ -85,6 +110,201 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (!await launchUrl(launchUri)) {
       throw Exception('Could not launch $launchUri');
     }
+  }
+
+  /// SMS из просмотра лида: тот же LeadSmsModal и те же аргументы.
+  Future<void> _openLeadSms(dynamic profile, String phoneNumber) async {
+    await LeadSmsModal.show(
+      context,
+      leadId: profile.id is int
+          ? profile.id as int
+          : int.tryParse('${profile.id}') ?? 0,
+      leadName: profile.name ?? '',
+      phone: phoneNumber,
+      salesFunnelId: profile.salesFunnelId,
+    );
+  }
+
+  /// Звонок и SMS как в просмотре лида: телефон, CRM если SIP, SMS.
+  Future<void> _handlePhoneTap(dynamic profile, String phoneNumber) async {
+    final sipService = SipService();
+    final canCallThroughTelephony = sipService.state.registrationStatus ==
+        SipRegistrationUiStatus.registered;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.appColors.surfacePrimary,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: context.appColors.borderSubtle),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.appColors.borderSubtle,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildPhoneActionTile(
+                    icon: Icons.phone_in_talk_rounded,
+                    title: 'Через телефон',
+                    subtitle: phoneNumber,
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _makePhoneCall(phoneNumber);
+                    },
+                  ),
+                  if (canCallThroughTelephony) ...[
+                    const SizedBox(height: 12),
+                    _buildPhoneActionTile(
+                      icon: Icons.dialer_sip_rounded,
+                      title: 'Через CRM',
+                      subtitle: 'Позвонить из shamCRM',
+                      onTap: () async {
+                        Navigator.pop(sheetContext);
+                        await _makeTelephonyCall(
+                          sipService,
+                          phoneNumber,
+                          profile,
+                        );
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _buildPhoneActionTile(
+                    icon: Icons.sms_rounded,
+                    title: 'Сообщение',
+                    subtitle: 'Открыть SMS диалог',
+                    onTap: () async {
+                      Navigator.pop(sheetContext);
+                      await _openLeadSms(profile, phoneNumber);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// SIP-звонок из профиля чата. Логика как в lead_details_screen.
+  Future<void> _makeTelephonyCall(
+    SipService sipService,
+    String phoneNumber,
+    dynamic profile,
+  ) async {
+    final clientName = (profile.name ?? '').toString().trim();
+    final displayName =
+        clientName.isEmpty || clientName.toLowerCase() == 'неизвестно'
+            ? phoneNumber
+            : clientName;
+
+    if (sipService.isSipScreenVisible) {
+      await sipService.makeCallTo(
+        phoneNumber,
+        displayName: displayName,
+      );
+      return;
+    }
+
+    final ownsScreenClaim = sipService.claimSipScreenOpen();
+    if (!ownsScreenClaim) {
+      await sipService.makeCallTo(
+        phoneNumber,
+        displayName: displayName,
+      );
+      return;
+    }
+
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SipScreen(
+            autoCallNumber: phoneNumber,
+            autoCallDisplayName: displayName,
+          ),
+          fullscreenDialog: true,
+          settings: const RouteSettings(name: '/sip_call'),
+        ),
+      );
+    } finally {
+      sipService.releaseSipScreenOpenClaim();
+    }
+  }
+
+  Widget _buildPhoneActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.appColors.fieldBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.appColors.borderSubtle),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: context.appColors.buttonPrimaryBg),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: context.appTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.appColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: context.appTextStyles.bodySm.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: context.appColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: context.appColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _openWhatsApp(String phone) async {
@@ -251,6 +471,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     null,
                                   ),
                                   buildDivider(),
+                                  _buildStatusRow(context, profile),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
+                                        .translate('source'),
+                                    _sourceLabel(profile),
+                                    Icons.source_outlined,
+                                    null,
+                                  ),
+                                  buildDivider(),
                                   buildInfoRow(
                                     context,
                                     profile,
@@ -315,6 +547,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                     context,
                                     profile,
                                     AppLocalizations.of(context)!
+                                        .translate('author'),
+                                    _authorLabel(profile),
+                                    Icons.person_outline,
+                                    null,
+                                  ),
+                                  buildDivider(),
+                                  buildInfoRow(
+                                    context,
+                                    profile,
+                                    AppLocalizations.of(context)!
                                         .translate('creation_date_lead'),
                                     formattedDate,
                                     Icons.calendar_today,
@@ -322,8 +564,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   ),
                                   buildDivider(),
                                   _buildManagerRow(context, profile),
-                                  buildDivider(),
-                                  _buildStatusRow(context, profile),
                                 ],
                               ),
                             ),
@@ -496,13 +736,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ),
         if (!_isLoadingPermissions && _canEditLead)
-          IconButton(
-            icon: Icon(
-              Icons.edit,
-              color: context.appColors.buttonPrimaryBg,
-              size: 24,
-            ),
-            onPressed: () {
+          _buildTrailingActionIcon(
+            icon: Icons.edit,
+            onTap: () {
               if (profile.leadStatus?.id != null) {
                 showProfileStatusBottomSheet(
                   context,
@@ -561,7 +797,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     final VoidCallback? onTap;
     if (isPhone) {
-      onTap = () => _makePhoneCall(value);
+      onTap = () => _handlePhoneTap(profile, value);
     } else if (isWhatsApp) {
       onTap = () => _openWhatsApp(value);
     } else if (isTelegram) {
@@ -645,7 +881,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ],
           ),
         ),
+        // SMS и карандаш статуса в одном столбце и одного размера.
+        if (isPhone)
+          _buildTrailingActionIcon(
+            icon: Icons.sms_rounded,
+            onTap: () => _openLeadSms(profile, value),
+          ),
       ],
+    );
+  }
+
+  /// Правая иконка строки профиля. Одна ячейка для SMS и карандаша.
+  Widget _buildTrailingActionIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: 40,
+      height: 42,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 40, height: 42),
+        visualDensity: VisualDensity.compact,
+        icon: Icon(
+          icon,
+          color: context.appColors.buttonPrimaryBg,
+          size: 22,
+        ),
+        onPressed: onTap,
+      ),
     );
   }
 

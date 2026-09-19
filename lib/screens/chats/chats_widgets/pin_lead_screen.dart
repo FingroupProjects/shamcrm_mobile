@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
@@ -17,29 +18,8 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     this.trailing,
   });
 
-  static const channelIconMap = {
-    'mini_app': 'assets/icons/leads/telegram.png',
-    'telegram_bot': 'assets/icons/leads/telegram.png',
-    'telegram_account': 'assets/icons/leads/telegram.png',
-    'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'green_api': 'assets/icons/leads/whatsapp.png',
-    'instagram': 'assets/icons/leads/instagram.png',
-    'instagram_comment': 'assets/icons/leads/instagram.png',
-    'facebook': 'assets/icons/leads/messenger.png',
-    'site': '',
-  };
-
-  String _getChannelIcon(BuildContext context, String? channelType) {
-    final normalized = (channelType ?? '').replaceAll('channel-', '');
-    if (normalized == 'email') {
-      final isDarkSurface =
-          context.useLightForeground(context.appColors.surfacePrimary);
-      return isDarkSurface
-          ? 'assets/icons/leads/email_dark.png'
-          : 'assets/icons/leads/email.png';
-    }
-    return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
-  }
+  // Иконка канала теперь рисуется через ChannelSourceIcon.
+  // Она сама становится светлой или тёмной.
 
   @override
   Widget build(BuildContext context) {
@@ -73,24 +53,11 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
-            channelType == 'site'
-                ? Icon(
-                    Icons.language,
-                    size: 28,
-                    color: context.appColors.textPrimary,
-                  )
-                : Image.asset(
-                    _getChannelIcon(context, channelType),
-                    width: 28,
-                    height: 28,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/icons/leads/default.png',
-                        width: 28,
-                        height: 28,
-                      );
-                    },
-                  ),
+            ChannelSourceIcon(
+              sourceName: channelType,
+              size: 28,
+              background: context.appColors.surfacePrimary,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

@@ -3,11 +3,11 @@ import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/calendar/calendar_state.dart';
 import 'package:crm_task_manager/custom_widget/filter/calendar/filter_calendar.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
-import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
+// import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
-import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+// import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -36,6 +36,10 @@ class _CalendarScreenState extends State<CalendarScreen> with TickerProviderStat
   Set<DateTime> _filteredDates = {};
   List<String> _selectedTypes = [];
   List<String> _selectedUsers = [];
+
+  /// Мои задачи скрыты в календаре — не шлём этот тип в API.
+  List<String> get _visibleCalendarTypes =>
+      _selectedTypes.where((type) => type != 'my_task').toList();
   late AnimationController _blinkController;
   late Animation<Color?> _colorAnimation;
 
@@ -98,7 +102,7 @@ void _changeView(String view) {
           _focusedDate.month,
           _focusedDate.year,
           search: null,
-          types: _selectedTypes,
+          types: _visibleCalendarTypes,
           usersId: _selectedUsers,
         ));
       }
@@ -121,7 +125,7 @@ void _changeView(String view) {
               _focusedDate.month,
               _focusedDate.year,
               search: _searchController.text.isNotEmpty ? _searchController.text : null,
-              types: _selectedTypes,
+              types: _visibleCalendarTypes,
               usersId: _selectedUsers,
             ));
           },
@@ -174,20 +178,21 @@ void _changeView(String view) {
       );
       break;
       
-    case 'my_task':
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MyTaskDetailsScreen(
-            taskId: id.toString(),
-            taskName: event?.title ?? '',
-            taskStatus: '',
-            statusId: 0,
-            taskNumber: 0,
-          ),
-        ),
-      );
-      break;
+    // Мои задачи в календаре скрыты.
+    // case 'my_task':
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(
+    //       builder: (context) => MyTaskDetailsScreen(
+    //         taskId: id.toString(),
+    //         taskName: event?.title ?? '',
+    //         taskStatus: '',
+    //         statusId: 0,
+    //         taskNumber: 0,
+    //       ),
+    //     ),
+    //   );
+    //   break;
       
     case 'notice':
       Navigator.push(
@@ -236,7 +241,7 @@ void _changeView(String view) {
                       _focusedDate.month,
                       _focusedDate.year,
                       search: value.isNotEmpty ? value : null,
-                      types: _selectedTypes,
+                      types: _visibleCalendarTypes,
                       usersId: _selectedUsers,
                     ));
                   },
@@ -345,6 +350,8 @@ void _changeView(String view) {
                   _filteredDates.clear();
 
                   for (var event in state.events) {
+                    // Мои задачи в календаре не показываем.
+                    if (event.type == 'my_task') continue;
                     final eventDate = DateTime(event.date.year, event.date.month, event.date.day);
                     _events[eventDate] = _events[eventDate] ?? [];
                     _events[eventDate]!.add(
@@ -404,7 +411,7 @@ void _changeView(String view) {
                         _focusedDate.month,
                         _focusedDate.year,
                         search: _searchController.text.isNotEmpty ? _searchController.text : null,
-                        types: _selectedTypes,
+                        types: _visibleCalendarTypes,
                         usersId: _selectedUsers,
                       ));
                     },
@@ -475,7 +482,7 @@ void _changeView(String view) {
             _focusedDate.month,
             _focusedDate.year,
             search: _searchController.text.isNotEmpty ? _searchController.text : null,
-            types: _selectedTypes,
+            types: _visibleCalendarTypes,
             usersId: _selectedUsers,
           ));
           Navigator.pop(context);

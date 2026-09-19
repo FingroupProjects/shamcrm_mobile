@@ -1145,7 +1145,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 : null,
         maxLength: isTojsokhtmontjInnField ? 9 : null,
         validator: isTojsokhtmontjInnField ? _validateTojsokhtmontjInn : null,
-        showBorder: isTojsokhtmontjInnField,
+        showBorder: true,
         autovalidateMode:
             isTojsokhtmontjInnField ? AutovalidateMode.onUserInteraction : null,
         readOnlyOverride: isTojsokhtmontjReadOnlyCalculatedField,
@@ -3710,10 +3710,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       width: 100,
                       child: Column(
                         children: [
-                          Image.asset(
-                            addFileIcon,
-                            width: 60,
-                            height: 60,
+                          ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              colors.iconPrimary,
+                              BlendMode.srcIn,
+                            ),
+                            child: Image.asset(
+                              addFileIcon,
+                              width: 60,
+                              height: 60,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(

@@ -120,7 +120,7 @@ class SubCategoryEditBottomSheet {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               PriceAffectSwitcher(
                                 isActive: isAffectingPrice,
                                 onChanged: (value) {
@@ -129,7 +129,7 @@ class SubCategoryEditBottomSheet {
                                   });
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               CategoryTypeSelector(
                                 selectedType: selectedType,
                                 onTypeChanged: (type) {
@@ -139,7 +139,7 @@ class SubCategoryEditBottomSheet {
                                 },
                                 isAffectingPrice: isAffectingPrice,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               CategoryImageField(
                                 image: _image,
                                 onChanged: (file) {

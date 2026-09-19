@@ -87,20 +87,16 @@ Future<void> _loadCharacteristics() async {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 4),
-        _buildTextField(),
-      ],
-    );
+    return _buildTextField();
   }
 
 Widget _buildTextField() {
   final colors = context.appColors;
   return Column(
+    mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      // One outer border only. Theme outlines on TextField are turned off below.
       Container(
         decoration: BoxDecoration(
           color: colors.fieldBg,
@@ -130,8 +126,16 @@ Widget _buildTextField() {
                     fontFamily: 'Gilroy',
                     color: colors.textSecondary.withValues(alpha: 0.6),
                   ),
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.transparent,
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (value) {
                   widget.onSelectCharacteristic(value);
@@ -169,11 +173,8 @@ Widget _buildTextField() {
       ),
       if (_isDropdownVisible)
         Container(
-          margin: EdgeInsets.only(top: 2),
-          constraints: BoxConstraints(
-            maxHeight: 200,
-            maxWidth: 330,
-          ),
+          margin: const EdgeInsets.only(top: 8),
+          constraints: const BoxConstraints(maxHeight: 220),
           decoration: BoxDecoration(
             color: colors.fieldBg,
             borderRadius: BorderRadius.circular(12),
@@ -186,18 +187,31 @@ Widget _buildTextField() {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  style: TextStyle(color: colors.textPrimary),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Gilroy',
+                    color: colors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.translate('search'),
-                    hintStyle: TextStyle(color: colors.textSecondary),
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: colors.textSecondary,
+                    ),
                     prefixIcon: Icon(Icons.search, color: colors.textSecondary),
+                    isDense: true,
+                    filled: true,
+                    fillColor: colors.surfacePrimary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(color: colors.borderSubtle),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -207,18 +221,17 @@ Widget _buildTextField() {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: colors.borderPrimary),
                     ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    filled: true,
-                    fillColor: colors.surfacePrimary,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   ),
                   onChanged: (value) {
                     filterSearchResults(value);
                   },
                 ),
               ),
-              Expanded(
+              Flexible(
                 child: filteredList.isEmpty && _searchController.text.isNotEmpty
-                    ? Center(
+                    ? Padding(
+                        padding: const EdgeInsets.all(16),
                         child: Text(
                           AppLocalizations.of(context)!.translate('no_data_to_display'),
                           style: TextStyle(
@@ -230,11 +243,12 @@ Widget _buildTextField() {
                       )
                     : ListView.builder(
                         shrinkWrap: true,
-                        physics: AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
                         itemCount: filteredList.length,
                         itemBuilder: (context, index) {
                           return ListTile(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            dense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                             title: Text(
                               filteredList[index].title,
                               style: TextStyle(

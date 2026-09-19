@@ -1,11 +1,12 @@
-import 'package:crm_task_manager/api/service/api_service.dart';
+// import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_event.dart';
-import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_myTask.dart';
-import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
+// import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_myTask.dart';
+// import 'package:crm_task_manager/custom_widget/calendar/create_add_screen/create_add_task.dart';
+import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
-import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+// import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -315,10 +316,10 @@ class EventListForDate extends StatelessWidget {
                                     event.type == 'task'
                                         ? AppLocalizations.of(context)!
                                             .translate('task')
-                                        : event.type == 'my_task'
-                                            ? AppLocalizations.of(context)!
-                                                .translate('my_task')
-                                            : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
+                                        // : event.type == 'my_task'
+                                        //     ? AppLocalizations.of(context)!
+                                        //         .translate('my_task')
+                                        : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
                                     style: TextStyle(
                                       color: colors.textSecondary,
                                       fontFamily: 'Gilroy',
@@ -493,11 +494,11 @@ class DayViewEventList extends StatelessWidget {
                                           event.type == 'task'
                                               ? AppLocalizations.of(context)!
                                                   .translate('task')
-                                              : event.type == 'my_task'
-                                                  ? AppLocalizations.of(
-                                                          context)!
-                                                      .translate('my_task')
-                                                  : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
+                                              // : event.type == 'my_task'
+                                              //     ? AppLocalizations.of(
+                                              //             context)!
+                                              //         .translate('my_task')
+                                              : '${AppLocalizations.of(context)!.translate('notice')}: ${DateFormat('HH:mm').format(event.date.toLocal())}',
                                           style: TextStyle(
                                             color: colors.textSecondary,
                                             fontFamily: 'Gilroy',
@@ -778,15 +779,15 @@ void showOptionsBottomSheet(
   );
 }
 
-Future<bool> _checkTaskStatuses(BuildContext context) async {
-  try {
-    final apiService = ApiService();
-    final statuses = await apiService.getTaskStatuses();
-    return statuses != null && statuses.isNotEmpty;
-  } catch (e) {
-    return false;
-  }
-}
+// Future<bool> _checkTaskStatuses(BuildContext context) async {
+//   try {
+//     final apiService = ApiService();
+//     final statuses = await apiService.getTaskStatuses();
+//     return statuses != null && statuses.isNotEmpty;
+//   } catch (e) {
+//     return false;
+//   }
+// }
 
 class OptionsBottomSheet extends StatelessWidget {
   final DateTime date;
@@ -822,8 +823,10 @@ class OptionsBottomSheet extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreateTaskFromCalendare(
-                    initialDate: date,
+                  builder: (context) => TaskAddScreen(
+                    statusId: 0,
+                    fromCalendar: true,
+                    initialEndDate: date,
                   ),
                 ),
               );
@@ -850,38 +853,39 @@ class OptionsBottomSheet extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: Icon(Icons.assignment, color: colors.surfaceAccent),
-            title: Text(
-              AppLocalizations.of(context)!.translate('appbar_my_tasks'),
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: colors.textPrimary),
-            ),
-            onTap: () async {
-              bool hasStatuses = await _checkTaskStatuses(context);
-              if (hasStatuses) {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateMyTaskFromCalendare(
-                      initialDate: date,
-                    ),
-                  ),
-                );
-              } else {
-                Navigator.pop(context);
-                showCustomSnackBar(
-                  context: context,
-                  message: AppLocalizations.of(context)!
-                      .translate('please_create_status'),
-                  isSuccess: false,
-                );
-              }
-            },
-          ),
+          // Мои задачи в календаре скрыты.
+          // ListTile(
+          //   leading: Icon(Icons.assignment, color: colors.surfaceAccent),
+          //   title: Text(
+          //     AppLocalizations.of(context)!.translate('appbar_my_tasks'),
+          //     style: TextStyle(
+          //         fontSize: 16,
+          //         fontWeight: FontWeight.w500,
+          //         color: colors.textPrimary),
+          //   ),
+          //   onTap: () async {
+          //     bool hasStatuses = await _checkTaskStatuses(context);
+          //     if (hasStatuses) {
+          //       Navigator.pop(context);
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(
+          //           builder: (context) => CreateMyTaskFromCalendare(
+          //             initialDate: date,
+          //           ),
+          //         ),
+          //       );
+          //     } else {
+          //       Navigator.pop(context);
+          //       showCustomSnackBar(
+          //         context: context,
+          //         message: AppLocalizations.of(context)!
+          //             .translate('please_create_status'),
+          //         isSuccess: false,
+          //       );
+          //     }
+          //   },
+          // ),
         ],
       ),
     );

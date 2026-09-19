@@ -794,8 +794,12 @@ class SipService extends ChangeNotifier
           searchQuery: searchQuery,
         );
       case CallType.outgoingMissed:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return _apiService.getOutgoingCalls(
+          page: page,
+          perPage: perPage,
+          searchQuery: searchQuery,
+          unanswered: true,
+        );
     }
   }
 

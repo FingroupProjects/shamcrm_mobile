@@ -82,8 +82,11 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
               ),
             ),
           )
-        else
-          ...items.map((item) => _buildLeadCard(item)).toList(),
+        else ...[
+          // Две колонки: название и телефон, как у поставщика.
+          _buildNamePhoneHeader(),
+          ...items.map((item) => _buildLeadCard(item)),
+        ],
       ],
     );
   }
@@ -121,21 +124,83 @@ class _ClientLeadsDialogState extends State<ClientLeadsDialog> {
             width: 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              item.name ?? 'N/A',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-            ),
-          ],
+        child: _buildNamePhoneRow(
+          name: item.name ?? 'N/A',
+          phone: _leadPhone(item),
+          nameStyle: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: colors.textPrimary,
+          ),
+          phoneStyle: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colors.textSecondary,
+          ),
         ),
       ),
+    );
+  }
+
+  // Lead phone, then WhatsApp phone if the main one is empty.
+  String _leadPhone(Lead item) {
+    final phone = item.phone?.trim();
+    if (phone != null && phone.isNotEmpty) return phone;
+    final waPhone = item.waPhone?.trim();
+    if (waPhone != null && waPhone.isNotEmpty) return waPhone;
+    return '—';
+  }
+
+  Widget _buildNamePhoneHeader() {
+    final colors = context.appColors;
+    final headerStyle = TextStyle(
+      fontFamily: 'Gilroy',
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: colors.textSecondary,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
+      child: _buildNamePhoneRow(
+        name: _translate(context, 'title_without_dots', 'Название'),
+        phone: _translate(context, 'phone_number', 'Номер телефона'),
+        nameStyle: headerStyle,
+        phoneStyle: headerStyle,
+      ),
+    );
+  }
+
+  Widget _buildNamePhoneRow({
+    required String name,
+    required String phone,
+    required TextStyle nameStyle,
+    required TextStyle phoneStyle,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: nameStyle,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(
+            phone,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: phoneStyle,
+          ),
+        ),
+      ],
     );
   }
 

@@ -1,7 +1,29 @@
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/utils/utf16_sanitizer.dart';
+import 'package:flutter/material.dart';
 
 enum CallType { incoming, outgoing, missed, outgoingMissed }
+
+/// Цвета типов звонков по умолчанию.
+class CallTypeColors {
+  static const incoming = Color(0xFF22C55E);
+  static const outgoing = Color(0xFF3B82F6);
+  static const outgoingUnanswered = Color(0xFFF59E0B);
+  static const missed = Color(0xFFEF4444);
+
+  static Color of(CallType type) {
+    switch (type) {
+      case CallType.incoming:
+        return incoming;
+      case CallType.outgoing:
+        return outgoing;
+      case CallType.outgoingMissed:
+        return outgoingUnanswered;
+      case CallType.missed:
+        return missed;
+    }
+  }
+}
 
 class CallLogEntry {
   final String id;

@@ -101,8 +101,11 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
               ],
             ),
           )
-        else
-          ...items.map((item) => _buildSupplierCard(item)).toList(),
+        else ...[
+          // Две колонки: название и телефон.
+          _buildNamePhoneHeader(),
+          ...items.map((item) => _buildSupplierCard(item)),
+        ],
       ],
     );
   }
@@ -140,16 +143,80 @@ class _SupplierVariantsDialogState extends State<SupplierVariantsDialog> {
             width: 1,
           ),
         ),
-        child: Text(
-          item.name ?? '',
-          style: TextStyle(
+        child: _buildNamePhoneRow(
+          name: item.name ?? '',
+          phone: _formatPhone(item.phone),
+          nameStyle: TextStyle(
             fontFamily: 'Gilroy',
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: colors.textPrimary,
           ),
+          phoneStyle: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: colors.textSecondary,
+          ),
         ),
       ),
+    );
+  }
+
+  String _formatPhone(String? phone) {
+    final value = phone?.trim();
+    if (value == null || value.isEmpty) return '—';
+    return value;
+  }
+
+  Widget _buildNamePhoneHeader() {
+    final colors = context.appColors;
+    final headerStyle = TextStyle(
+      fontFamily: 'Gilroy',
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: colors.textSecondary,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
+      child: _buildNamePhoneRow(
+        name: _translate(context, 'title_without_dots', 'Название'),
+        phone: _translate(context, 'phone_number', 'Номер телефона'),
+        nameStyle: headerStyle,
+        phoneStyle: headerStyle,
+      ),
+    );
+  }
+
+  Widget _buildNamePhoneRow({
+    required String name,
+    required String phone,
+    required TextStyle nameStyle,
+    required TextStyle phoneStyle,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: nameStyle,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: Text(
+            phone,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: phoneStyle,
+          ),
+        ),
+      ],
     );
   }
 

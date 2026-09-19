@@ -402,34 +402,38 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
+        final colors = dialogContext.appColors;
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.borderSubtle),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Сбросить выбор?',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xff1E2E52),
+                    color: colors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Text(
+                const SizedBox(height: 8),
+                Text(
                   'Закрыть меню вложений и сбросить выбранные файлы?',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xff4A5A74),
+                    color: colors.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -437,47 +441,21 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(false),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xffD7DCE9)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          'Отмена',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xff4A5A74),
-                          ),
-                        ),
+                      child: _DialogActionButton(
+                        label: 'Отмена',
+                        background: colors.fieldBg,
+                        foreground: colors.textPrimary,
+                        border: colors.borderSubtle,
+                        onTap: () => Navigator.of(dialogContext).pop(false),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(dialogContext).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: const Color(0xff4F40EC),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          'Сбросить',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: _DialogActionButton(
+                        label: 'Сбросить',
+                        background: colors.buttonPrimaryBg,
+                        foreground: colors.buttonPrimaryFg,
+                        onTap: () => Navigator.of(dialogContext).pop(true),
                       ),
                     ),
                   ],
@@ -585,103 +563,98 @@ class _ChatMediaPickerSheetState extends State<_ChatMediaPickerSheet> {
               Expanded(child: _buildBody(context)),
               Padding(
                 padding:
-                    EdgeInsets.fromLTRB(12, 8, 12, bottomInset > 0 ? 10 : 16),
-                child: DecoratedBox(
+                    EdgeInsets.fromLTRB(12, 6, 12, bottomInset > 0 ? 8 : 12),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(2, 4, 4, 4),
                   decoration: BoxDecoration(
-                    color: colors.surfacePrimary.withValues(alpha: 0.96),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.shadow.withValues(alpha: 0.12),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    color: colors.fieldBg,
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: colors.borderSubtle),
                   ),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _BottomPickerAction(
-                            icon: Icons.photo_library_rounded,
-                            label: 'Галерея',
-                            selected: true,
-                            onTap: () {},
-                          ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 11,
+                        child: _BottomPickerAction(
+                          icon: Icons.photo_library_rounded,
+                          label: 'Галерея',
+                          selected: true,
+                          onTap: () {},
                         ),
-                        Expanded(
-                          child: _BottomPickerAction(
-                            icon: Icons.camera_alt_rounded,
-                            label: 'Камера',
-                            onTap: () {
-                              Navigator.pop(
-                                context,
-                                ChatMediaPreviewResult(
-                                  action: ChatMediaPickerAction.openCameraPhoto,
-                                  quality: _quality,
-                                ),
-                              );
-                            },
-                          ),
+                      ),
+                      Expanded(
+                        flex: 11,
+                        child: _BottomPickerAction(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Камера',
+                          onTap: () {
+                            Navigator.pop(
+                              context,
+                              ChatMediaPreviewResult(
+                                action: ChatMediaPickerAction.openCameraPhoto,
+                                quality: _quality,
+                              ),
+                            );
+                          },
                         ),
-                        Expanded(
-                          child: _BottomPickerAction(
-                            icon: Icons.videocam_rounded,
-                            label: 'Видео',
-                            onTap: () {
-                              Navigator.pop(
-                                context,
-                                ChatMediaPreviewResult(
-                                  action: ChatMediaPickerAction.openCameraVideo,
-                                  quality: _quality,
-                                ),
-                              );
-                            },
-                          ),
+                      ),
+                      Expanded(
+                        flex: 10,
+                        child: _BottomPickerAction(
+                          icon: Icons.videocam_rounded,
+                          label: 'Видео',
+                          onTap: () {
+                            Navigator.pop(
+                              context,
+                              ChatMediaPreviewResult(
+                                action: ChatMediaPickerAction.openCameraVideo,
+                                quality: _quality,
+                              ),
+                            );
+                          },
                         ),
-                        Expanded(
-                          child: _BottomPickerAction(
-                            icon: Icons.insert_drive_file_rounded,
-                            label: 'Файл',
-                            onTap: () {
-                              Navigator.pop(
-                                context,
-                                ChatMediaPreviewResult(
-                                  action: ChatMediaPickerAction.openFilePicker,
-                                  quality: _quality,
-                                ),
-                              );
-                            },
-                          ),
+                      ),
+                      Expanded(
+                        flex: 9,
+                        child: _BottomPickerAction(
+                          icon: Icons.insert_drive_file_rounded,
+                          label: 'Файл',
+                          onTap: () {
+                            Navigator.pop(
+                              context,
+                              ChatMediaPreviewResult(
+                                action: ChatMediaPickerAction.openFilePicker,
+                                quality: _quality,
+                              ),
+                            );
+                          },
                         ),
-                        Expanded(
-                          child: _BottomPickerAction(
-                            icon: Icons.location_on_rounded,
-                            label: 'Геопозиция',
-                            onTap: () {
-                              Navigator.pop(
-                                context,
-                                ChatMediaPreviewResult(
-                                  action:
-                                      ChatMediaPickerAction.openLocationPicker,
-                                  quality: _quality,
-                                ),
-                              );
-                            },
-                          ),
+                      ),
+                      Expanded(
+                        flex: 15,
+                        child: _BottomPickerAction(
+                          icon: Icons.location_on_rounded,
+                          label: 'Геопозиция',
+                          onTap: () {
+                            Navigator.pop(
+                              context,
+                              ChatMediaPreviewResult(
+                                action:
+                                    ChatMediaPickerAction.openLocationPicker,
+                                quality: _quality,
+                              ),
+                            );
+                          },
                         ),
-                        const SizedBox(width: 6),
-                        _SendButton(
-                          enabled: _selectedIds.isNotEmpty && !_isSending,
-                          isLoading: _isSending,
-                          isWarning: isOverLimit,
-                          onTap: _submitSelection,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 4),
+                      _SendButton(
+                        enabled: _selectedIds.isNotEmpty && !_isSending,
+                        isLoading: _isSending,
+                        isWarning: isOverLimit,
+                        onTap: _submitSelection,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1002,15 +975,19 @@ class _CircleActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     return Material(
-      color: colors.backgroundSecondary,
+      color: colors.fieldBg,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Icon(icon, color: colors.textPrimary, size: 22),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.borderSubtle),
+          ),
+          child: Icon(icon, color: colors.iconPrimary, size: 20),
         ),
       ),
     );
@@ -1031,8 +1008,9 @@ class _QualityToggle extends StatelessWidget {
     final colors = context.appColors;
     return Container(
       decoration: BoxDecoration(
-        color: colors.backgroundSecondary,
-        borderRadius: BorderRadius.circular(16),
+        color: colors.fieldBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
         children: [
@@ -1064,7 +1042,7 @@ class _QualityToggle extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         child: Text(
           label,
           style: TextStyle(
@@ -1095,31 +1073,83 @@ class _BottomPickerAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final color = selected ? colors.buttonPrimaryBg : colors.iconSecondary;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: selected ? const Color(0xff4F40EC) : colors.textSecondary,
-              size: 22,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: selected ? const Color(0xff4F40EC) : colors.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 3),
+            // Scale the label down so long words like "Геопозиция" stay on one line.
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    height: 1,
+                  ),
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogActionButton extends StatelessWidget {
+  final String label;
+  final Color background;
+  final Color foreground;
+  final Color? border;
+  final VoidCallback onTap;
+
+  const _DialogActionButton({
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+    this.border,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: border == null ? null : Border.all(color: border!),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: foreground,
+            ),
+          ),
         ),
       ),
     );
@@ -1141,34 +1171,45 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+    // Idle state stays dark. The old light pill looked empty on dark theme.
+    final background = isWarning
+        ? colors.warning
+        : enabled
+            ? colors.buttonPrimaryBg
+            : colors.surfaceElevated;
+    final iconColor = enabled || isWarning
+        ? colors.buttonPrimaryFg
+        : colors.iconSecondary;
+
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Container(
-        width: isLoading ? 44 : 92,
-        height: 44,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: isWarning
-              ? const Color(0xffF97316)
-              : enabled
-                  ? const Color(0xff4F40EC)
-                  : const Color(0xffD7DCE9),
-          borderRadius: BorderRadius.circular(999),
+          color: background,
+          shape: BoxShape.circle,
+          border: enabled
+              ? null
+              : Border.all(color: colors.borderSubtle),
         ),
         alignment: Alignment.center,
         child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
+            ? SizedBox(
+                width: 16,
+                height: 16,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(iconColor),
                 ),
               )
             : Image.asset(
                 'assets/icons/chats/send.png',
-                width: 18,
-                height: 18,
-                color: Colors.white,
+                width: 16,
+                height: 16,
+                color: iconColor,
               ),
       ),
     );

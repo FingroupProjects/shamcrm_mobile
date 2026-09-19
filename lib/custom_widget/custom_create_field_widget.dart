@@ -128,8 +128,9 @@ class CustomFieldWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final fieldFill = colors.fieldBg;
-    final primaryText = context.adaptiveForegroundOn(fieldFill);
-    final hintTextColor = context.adaptiveHintOn(fieldFill);
+    // Как у остальных полей формы: светлый текст в тёмной теме.
+    final primaryText = colors.textPrimary;
+    final hintTextColor = colors.textSecondary;
 
     TextInputType keyboardType;
     List<TextInputFormatter>? inputFormatters;

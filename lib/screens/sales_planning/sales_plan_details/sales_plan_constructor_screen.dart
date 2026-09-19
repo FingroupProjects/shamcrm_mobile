@@ -1,25 +1,34 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/models/lead/manager_model.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/sales_plan/sales_plan_filter_field.dart';
 import 'package:crm_task_manager/models/sales_plan/sales_plan_model.dart';
+import 'package:crm_task_manager/models/user/user_data_response.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/screens/sales_planning/sales_plan_colors.dart';
+import 'package:crm_task_manager/screens/sales_planning/sales_plan_filter_field_loader.dart';
 import 'package:crm_task_manager/screens/sales_planning/sales_plan_labels.dart';
+import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 class _ConstructorFilter {
+  String key;
   String field;
   String value;
   String label;
+  int? customFieldId;
+  int? directoryId;
 
   _ConstructorFilter({
+    required this.key,
     required this.field,
     required this.value,
     required this.label,
+    this.customFieldId,
+    this.directoryId,
   });
 }
 
@@ -40,6 +49,8 @@ class _SalesPlanConstructorScreenState
   final _nameController = TextEditingController();
   final _valueController = TextEditingController();
   final _commentController = TextEditingController();
+  final _startDateController = TextEditingController();
+  final _endDateController = TextEditingController();
 
   SalesPlanObjectType? _object;
   SalesPlanAggregation? _aggregation;
@@ -51,16 +62,36 @@ class _SalesPlanConstructorScreenState
   DateTime _periodStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime _periodEnd = DateTime(DateTime.now().year, DateTime.now().month + 1, 0);
   final Set<int> _selectedUserIds = {};
-  List<ManagerData> _managers = [];
   bool _saving = false;
   bool _nameTouched = false;
+  late final SalesPlanFilterFieldLoader _filterLoader;
+  List<SalesPlanFilterField> _filterFields = [];
+  bool _filterFieldsLoading = false;
+  final Map<String, List<SalesPlanFilterOption>> _filterOptions = {};
+  final Set<String> _loadingFilterKeys = {};
+
+  // Даты в том же формате, что у полей дедлайна в задачах.
+  String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
+
+  DateTime? _parseDate(String text) {
+    try {
+      return DateFormat('dd/MM/yyyy').parse(text);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _syncDateFields() {
+    _startDateController.text = _formatDate(_periodStart);
+    _endDateController.text = _formatDate(_periodEnd);
+  }
 
   bool get _isEdit => widget.planId != null;
 
   @override
   void initState() {
     super.initState();
-    context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+    _filterLoader = SalesPlanFilterFieldLoader(_api);
     final plan = widget.plan;
     if (plan != null) {
       _object = plan.objectType;
@@ -78,11 +109,22 @@ class _SalesPlanConstructorScreenState
       _selectedUserIds.addAll(plan.users.map((u) => u.id));
       for (final f in plan.filters) {
         _filters.add(_ConstructorFilter(
+          key: f.field,
           field: f.field,
           value: f.value,
           label: f.field,
+          customFieldId: f.customFieldId,
+          directoryId: f.directoryId,
         ));
       }
+    }
+    _syncDateFields();
+    if (_object != null) {
+      _filterFieldsLoading = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _object == null) return;
+        _loadFilterFields(_object!);
+      });
     }
   }
 
@@ -91,56 +133,97 @@ class _SalesPlanConstructorScreenState
     _nameController.dispose();
     _valueController.dispose();
     _commentController.dispose();
+    _startDateController.dispose();
+    _endDateController.dispose();
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _filterDefsFor(SalesPlanObjectType object) {
-    switch (object) {
-      case SalesPlanObjectType.deals:
-        return [
-          {
-            'field': 'deal_status_id',
-            'label': 'sp_filter_deal_status',
-            'options': ['new', 'in_progress', 'success', 'failed'],
-          },
-          {
-            'field': 'source',
-            'label': 'sp_filter_source',
-            'options': ['Instagram', 'Telegram', 'Site', 'Call', 'Referral'],
-          },
-        ];
-      case SalesPlanObjectType.leads:
-        return [
-          {
-            'field': 'lead_status_id',
-            'label': 'sp_filter_lead_status',
-            'options': ['new', 'qualified', 'rejected', 'converted'],
-          },
-          {
-            'field': 'source',
-            'label': 'sp_filter_source',
-            'options': ['Instagram', 'Telegram', 'Site', 'Call', 'Referral'],
-          },
-        ];
-      case SalesPlanObjectType.calls:
-        return [
-          {
-            'field': 'call_type',
-            'label': 'sp_filter_call_type',
-            'options': ['incoming', 'outgoing', 'missed'],
-          },
-        ];
-      case SalesPlanObjectType.tasks:
-        return [
-          {
-            'field': 'task_status',
-            'label': 'sp_filter_task_status',
-            'options': ['open', 'in_progress', 'done', 'overdue'],
-          },
-        ];
-      case SalesPlanObjectType.notices:
-        return [];
+  SalesPlanFilterField? _fieldByKey(String key) {
+    for (final field in _filterFields) {
+      if (field.key == key) return field;
     }
+    return null;
+  }
+
+  List<SalesPlanFilterOption> _optionsFor(SalesPlanFilterField field, String current) {
+    final options = List<SalesPlanFilterOption>.from(
+      _filterOptions[field.key] ?? field.presetOptions,
+    );
+    if (current.isNotEmpty && !options.any((o) => o.value == current)) {
+      options.insert(
+        0,
+        SalesPlanFilterOption(value: current, label: current),
+      );
+    }
+    return options;
+  }
+
+  Future<void> _loadFilterFields(SalesPlanObjectType object) async {
+    setState(() {
+      _filterFieldsLoading = true;
+      _filterFields = [];
+      _filterOptions.clear();
+      _loadingFilterKeys.clear();
+    });
+    final fields = await _filterLoader.load(object);
+    if (!mounted || _object != object) return;
+    setState(() {
+      _filterFields = fields;
+      _filterFieldsLoading = false;
+      _syncExistingFilters();
+    });
+    for (final filter in _filters) {
+      final field = _fieldByKey(filter.key);
+      if (field != null) {
+        _ensureFilterOptions(field);
+      }
+    }
+  }
+
+  void _syncExistingFilters() {
+    final t = AppLocalizations.of(context)!;
+    for (final filter in _filters) {
+      SalesPlanFilterField? match;
+      for (final field in _filterFields) {
+        final sameCustom = field.customFieldId != null &&
+            field.customFieldId == filter.customFieldId;
+        final sameDirectory = field.directoryId != null &&
+            field.directoryId == filter.directoryId;
+        if (sameCustom || sameDirectory || field.field == filter.field) {
+          match = field;
+          break;
+        }
+      }
+      if (match == null) continue;
+      filter.key = match.key;
+      filter.field = match.field;
+      filter.label = match.displayLabel(t);
+      filter.customFieldId = match.customFieldId;
+      filter.directoryId = match.directoryId;
+    }
+  }
+
+  Future<void> _ensureFilterOptions(SalesPlanFilterField field) async {
+    if (_object == null) return;
+    if (field.inputType != SalesPlanFilterInputType.select) return;
+    if (_filterOptions.containsKey(field.key) ||
+        _loadingFilterKeys.contains(field.key)) {
+      return;
+    }
+    if (field.presetOptions.isNotEmpty) {
+      _filterOptions[field.key] = field.presetOptions;
+      return;
+    }
+    _loadingFilterKeys.add(field.key);
+    final options = await _filterLoader.loadOptions(
+      object: _object!,
+      field: field,
+    );
+    if (!mounted) return;
+    setState(() {
+      _filterOptions[field.key] = options;
+      _loadingFilterKeys.remove(field.key);
+    });
   }
 
   bool get _aggReady =>
@@ -184,6 +267,7 @@ class _SalesPlanConstructorScreenState
             '${SalesPlanLabels.objectType(context, object)} — ';
       }
     });
+    _loadFilterFields(object);
   }
 
   void _selectAgg(SalesPlanAggregation agg) {
@@ -201,19 +285,23 @@ class _SalesPlanConstructorScreenState
 
   void _addFilter() {
     if (_object == null) return;
-    final defs = _filterDefsFor(_object!);
-    final used = _filters.map((f) => f.field).toSet();
-    final avail = defs.where((d) => !used.contains(d['field'])).toList();
+    final used = _filters.map((f) => f.key).toSet();
+    final avail =
+        _filterFields.where((field) => !used.contains(field.key)).toList();
     if (avail.isEmpty) return;
-    final def = avail.first;
-    final options = (def['options'] as List).cast<String>();
+    final field = avail.first;
+    final t = AppLocalizations.of(context)!;
     setState(() {
       _filters.add(_ConstructorFilter(
-        field: def['field'] as String,
-        value: options.first,
-        label: AppLocalizations.of(context)!.translate(def['label'] as String),
+        key: field.key,
+        field: field.field,
+        value: '',
+        label: field.displayLabel(t),
+        customFieldId: field.customFieldId,
+        directoryId: field.directoryId,
       ));
     });
+    _ensureFilterOptions(field);
   }
 
   DateTimeRange _defaultRangeFor(SalesPlanPeriodType type) {
@@ -270,6 +358,11 @@ class _SalesPlanConstructorScreenState
       );
       return;
     }
+    final start = _parseDate(_startDateController.text) ?? _periodStart;
+    final end = _parseDate(_endDateController.text) ?? _periodEnd;
+    _periodStart = start;
+    _periodEnd = end;
+
     if (_selectedUserIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t.translate('sp_select_owners'))),
@@ -295,9 +388,12 @@ class _SalesPlanConstructorScreenState
           ? null
           : _commentController.text.trim(),
       filters: _filters
+          .where((f) => f.value.trim().isNotEmpty)
           .map((f) => SalesPlanFilterItem(
                 field: f.field,
                 value: f.value,
+                customFieldId: f.customFieldId,
+                directoryId: f.directoryId,
               ))
           .toList(),
     );
@@ -328,6 +424,10 @@ class _SalesPlanConstructorScreenState
       _aggregation = null;
       _field = null;
       _filters.clear();
+      _filterFields = [];
+      _filterOptions.clear();
+      _loadingFilterKeys.clear();
+      _filterFieldsLoading = false;
       _nameController.clear();
       _valueController.clear();
       _commentController.clear();
@@ -338,6 +438,7 @@ class _SalesPlanConstructorScreenState
       final range = _defaultRangeFor(_periodType);
       _periodStart = range.start;
       _periodEnd = range.end;
+      _syncDateFields();
     });
   }
 
@@ -348,7 +449,7 @@ class _SalesPlanConstructorScreenState
     final numeric = _object == null
         ? <String>[]
         : SalesPlanLabels.numericFieldsFor(_object!);
-    final filterDefs = _object == null ? <Map<String, dynamic>>[] : _filterDefsFor(_object!);
+    final filterDefs = _filterFields;
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -357,17 +458,11 @@ class _SalesPlanConstructorScreenState
         foregroundColor: colors.textPrimary,
         title: Text(t.translate('sales_planning')),
       ),
-      body: BlocListener<GetAllManagerBloc, GetAllManagerState>(
-        listener: (context, state) {
-          if (state is GetAllManagerSuccess) {
-            setState(() => _managers = state.dataManager.result ?? []);
-          }
-        },
-        child: Column(
+      body: Column(
           children: [
             Expanded(
               child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           children: [
             _steps(context),
             const SizedBox(height: 18),
@@ -438,93 +533,19 @@ class _SalesPlanConstructorScreenState
             if (_aggReady) ...[
               const SizedBox(height: 16),
               _sectionLabel(t.translate('sp_step_filters')),
-              if (filterDefs.isEmpty)
+              if (_filterFieldsLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LinearProgressIndicator(minHeight: 2),
+                )
+              else if (filterDefs.isEmpty)
                 Text(
                   t.translate('sp_no_filters'),
                   style: TextStyle(fontSize: 12, color: colors.textSecondary),
                 )
               else ...[
                 ..._filters.asMap().entries.map((entry) {
-                  final idx = entry.key;
-                  final f = entry.value;
-                  final def = filterDefs.firstWhere(
-                    (d) => d['field'] == f.field,
-                    orElse: () => filterDefs.first,
-                  );
-                  final options = (def['options'] as List).cast<String>();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String>(
-                                value: f.field,
-                                isExpanded: true,
-                                decoration: _inputDecoration(),
-                                items: filterDefs.map((d) {
-                                  final used = _filters.any((sf) =>
-                                      sf.field == d['field'] && sf != f);
-                                  return DropdownMenuItem(
-                                    value: d['field'] as String,
-                                    enabled: !used,
-                                    child: Text(
-                                      t.translate(d['label'] as String),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (v) {
-                                  if (v == null) return;
-                                  final nd = filterDefs
-                                      .firstWhere((d) => d['field'] == v);
-                                  setState(() {
-                                    _filters[idx] = _ConstructorFilter(
-                                      field: v,
-                                      value: (nd['options'] as List)
-                                          .cast<String>()
-                                          .first,
-                                      label: t.translate(nd['label'] as String),
-                                    );
-                                  });
-                                },
-                              ),
-                            ),
-                            IconButton(
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () =>
-                                  setState(() => _filters.removeAt(idx)),
-                              icon: const Icon(Icons.close, size: 18),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: options.contains(f.value)
-                              ? f.value
-                              : options.first,
-                          isExpanded: true,
-                          decoration: _inputDecoration(),
-                          items: options
-                              .map((o) => DropdownMenuItem(
-                                    value: o,
-                                    child: Text(
-                                      SalesPlanLabels.filterOptionLabel(
-                                          context, o),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ))
-                              .toList(),
-                          onChanged: (v) {
-                            if (v == null) return;
-                            setState(() => f.value = v);
-                          },
-                        ),
-                      ],
-                    ),
-                  );
+                  return _buildFilterRow(entry.key, entry.value, t);
                 }),
                 if (_filters.length < filterDefs.length)
                   _chip(
@@ -536,11 +557,13 @@ class _SalesPlanConstructorScreenState
               ],
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: SalesPlanColors.selectionBg(context),
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: SalesPlanColors.selection(context)),
+                  color: colors.surfaceAccent,
+                  borderRadius: AppFieldStyle.radius,
+                  border: Border.all(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.35),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,10 +571,10 @@ class _SalesPlanConstructorScreenState
                     Text(
                       t.translate('sp_indicator'),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: SalesPlanColors.selection(context),
-                        letterSpacing: 0.5,
+                        fontFamily: 'Gilroy',
+                        color: colors.buttonPrimaryBg,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -567,74 +590,80 @@ class _SalesPlanConstructorScreenState
                 ),
               ),
             ],
-            const SizedBox(height: 22),
-            Divider(color: colors.borderSubtle),
+            const SizedBox(height: 16),
+            Divider(color: colors.borderSubtle.withValues(alpha: 0.6)),
             const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_name')} *'),
-            TextField(
+            // Поля как в создании задачи: CustomTextField + мультиселект.
+            CustomTextField(
               controller: _nameController,
+              label: t.translate('sp_name'),
+              hintText: t.translate('sp_name_hint'),
               onChanged: (_) => _nameTouched = true,
-              decoration: _inputDecoration(
-                hint: t.translate('sp_name_hint'),
-              ),
             ),
             const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_filter_type')} *'),
+            Text(
+              t.translate('sp_filter_type'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                color: colors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: colors.borderSubtle),
+                color: colors.fieldBg,
+                borderRadius: AppFieldStyle.radius,
+                border: AppFieldStyle.dropdownBorder(context),
               ),
               child: Text(
                 _aggReady
                     ? SalesPlanLabels.planType(context, _autoType)
                     : t.translate('sp_type_auto'),
                 style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 15,
                   color: _aggReady ? colors.textPrimary : colors.textSecondary,
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_target')} *'),
-            TextField(
+            CustomTextField(
               controller: _valueController,
+              label: t.translate('sp_target'),
+              hintText: '500000',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: _inputDecoration(hint: '500000'),
             ),
             const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_owners')} *'),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _managers.map((m) {
-                final selected = _selectedUserIds.contains(m.id);
-                final label = '${m.name} ${m.lastname ?? ''}'.trim();
-                return _chip(
-                  label,
-                  selected: selected,
-                  onTap: () {
-                    setState(() {
-                      if (selected) {
-                        _selectedUserIds.remove(m.id);
-                      } else {
-                        _selectedUserIds.add(m.id);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
+            UserMultiSelectWidget(
+              selectedUsers:
+                  _selectedUserIds.map((id) => id.toString()).toList(),
+              customLabelText: t.translate('sp_owners'),
+              hintText: t.translate('sp_select_owners'),
+              isRequired: true,
+              onSelectUsers: (List<UserData> users) {
+                setState(() {
+                  _selectedUserIds
+                    ..clear()
+                    ..addAll(users.map((user) => user.id));
+                });
+              },
             ),
-            if (_managers.isEmpty)
-              Text(
-                t.translate('sp_managers_loading'),
-                style: TextStyle(fontSize: 12, color: colors.textSecondary),
+            const SizedBox(height: 12),
+            Text(
+              t.translate('sp_period'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: colors.textPrimary,
               ),
-            const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_period')} *'),
+            ),
+            const SizedBox(height: 4),
             DropdownButtonFormField<SalesPlanPeriodType>(
               value: _periodType,
               isExpanded: true,
@@ -645,6 +674,10 @@ class _SalesPlanConstructorScreenState
                         child: Text(
                           SalesPlanLabels.periodType(context, p),
                           overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ))
                   .toList(),
@@ -655,45 +688,52 @@ class _SalesPlanConstructorScreenState
                   _periodType = v;
                   _periodStart = range.start;
                   _periodEnd = range.end;
+                  _syncDateFields();
                 });
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: _periodStart,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (d != null) setState(() => _periodStart = d);
+                  child: CustomTextFieldDate(
+                    controller: _startDateController,
+                    label: t.translate('sp_period_from'),
+                    onDateSelected: (value) {
+                      final parsed = _parseDate(value);
+                      if (parsed != null) {
+                        setState(() => _periodStart = parsed);
+                      }
                     },
-                    child: Text(DateFormat('dd.MM.yyyy').format(_periodStart)),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: _periodEnd,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (d != null) setState(() => _periodEnd = d);
+                  child: CustomTextFieldDate(
+                    controller: _endDateController,
+                    label: t.translate('sp_period_to'),
+                    onDateSelected: (value) {
+                      final parsed = _parseDate(value);
+                      if (parsed != null) {
+                        setState(() => _periodEnd = parsed);
+                      }
                     },
-                    child: Text(DateFormat('dd.MM.yyyy').format(_periodEnd)),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _fieldLabel('${t.translate('sp_recurrence')} *'),
+            Text(
+              t.translate('sp_recurrence'),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
             DropdownButtonFormField<SalesPlanRecurrence>(
               value: _recurrence,
               isExpanded: true,
@@ -704,6 +744,10 @@ class _SalesPlanConstructorScreenState
                         child: Text(
                           SalesPlanLabels.recurrence(context, r),
                           overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ))
                   .toList(),
@@ -712,11 +756,11 @@ class _SalesPlanConstructorScreenState
               },
             ),
             const SizedBox(height: 12),
-            _fieldLabel(t.translate('sp_comment')),
-            TextField(
+            CustomTextField(
               controller: _commentController,
-              decoration: _inputDecoration(),
-              maxLines: 2,
+              label: t.translate('sp_comment'),
+              hintText: t.translate('sp_comment'),
+              maxLines: 3,
             ),
           ],
               ),
@@ -760,8 +804,191 @@ class _SalesPlanConstructorScreenState
             ),
           ],
         ),
+    );
+  }
+
+  Widget _buildFilterRow(
+    int idx,
+    _ConstructorFilter filter,
+    AppLocalizations t,
+  ) {
+    final field = _fieldByKey(filter.key);
+    final seen = <String>{};
+    final fieldItems = <SalesPlanFilterField>[];
+    for (final item in _filterFields) {
+      if (seen.add(item.key)) fieldItems.add(item);
+    }
+    if (field == null && seen.add(filter.key)) {
+      fieldItems.insert(
+        0,
+        SalesPlanFilterField(
+          key: filter.key,
+          field: filter.field,
+          label: filter.label,
+          inputType: SalesPlanFilterInputType.text,
+          customFieldId: filter.customFieldId,
+          directoryId: filter.directoryId,
+        ),
+      );
+    }
+    if (fieldItems.isEmpty) return const SizedBox.shrink();
+    final selectedKey = fieldItems.any((item) => item.key == filter.key)
+        ? filter.key
+        : fieldItems.first.key;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: selectedKey,
+                  isExpanded: true,
+                  decoration: _inputDecoration(),
+                  items: fieldItems.map((item) {
+                    final used = _filters.any(
+                      (other) => other.key == item.key && other != filter,
+                    );
+                    return DropdownMenuItem(
+                      value: item.key,
+                      enabled: !used,
+                      child: Text(
+                        item.displayLabel(t),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (key) {
+                    if (key == null) return;
+                    final next = fieldItems.firstWhere((item) => item.key == key);
+                    setState(() {
+                      _filters[idx] = _ConstructorFilter(
+                        key: next.key,
+                        field: next.field,
+                        value: '',
+                        label: next.displayLabel(t),
+                        customFieldId: next.customFieldId,
+                        directoryId: next.directoryId,
+                      );
+                    });
+                    _ensureFilterOptions(next);
+                  },
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () => setState(() => _filters.removeAt(idx)),
+                icon: const Icon(Icons.close, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildFilterValue(filter, field ?? fieldItems.first, t),
+        ],
       ),
     );
+  }
+
+  Widget _buildFilterValue(
+    _ConstructorFilter filter,
+    SalesPlanFilterField field,
+    AppLocalizations t,
+  ) {
+    if (field.inputType == SalesPlanFilterInputType.date) {
+      final display = _dateValueForUi(filter.value);
+      return InkWell(
+        onTap: () => _pickFilterDate(filter),
+        child: InputDecorator(
+          decoration: _inputDecoration(hint: t.translate('select_date')),
+          child: Text(
+            display.isEmpty ? t.translate('select_date') : display,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 15,
+              color: display.isEmpty
+                  ? context.appColors.textSecondary
+                  : context.appColors.textPrimary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final options = _optionsFor(field, filter.value);
+    final loading = _loadingFilterKeys.contains(field.key);
+    if (field.inputType == SalesPlanFilterInputType.select &&
+        (loading || options.isNotEmpty)) {
+      if (loading && options.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: LinearProgressIndicator(minHeight: 2),
+        );
+      }
+      final value = options.any((o) => o.value == filter.value)
+          ? filter.value
+          : (filter.value.isEmpty ? null : filter.value);
+      return DropdownButtonFormField<String>(
+        value: value != null && options.any((o) => o.value == value)
+            ? value
+            : null,
+        isExpanded: true,
+        decoration: _inputDecoration(),
+        items: options
+            .map((option) => DropdownMenuItem(
+                  value: option.value,
+                  child: Text(
+                    SalesPlanLabels.filterOptionLabel(context, option.label),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ))
+            .toList(),
+        onChanged: (next) {
+          if (next == null) return;
+          setState(() => filter.value = next);
+        },
+      );
+    }
+
+    return TextFormField(
+      key: ValueKey('filter_value_${filter.key}'),
+      initialValue: filter.value,
+      keyboardType: field.inputType == SalesPlanFilterInputType.number
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: _inputDecoration(),
+      onChanged: (next) => filter.value = next,
+    );
+  }
+
+  Future<void> _pickFilterDate(_ConstructorFilter filter) async {
+    DateTime initial = DateTime.now();
+    if (filter.value.isNotEmpty) {
+      try {
+        initial = DateTime.parse(filter.value);
+      } catch (_) {}
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      filter.value = DateFormat('yyyy-MM-dd').format(picked);
+    });
+  }
+
+  String _dateValueForUi(String apiDate) {
+    if (apiDate.isEmpty) return '';
+    try {
+      return DateFormat('dd/MM/yyyy').format(DateTime.parse(apiDate));
+    } catch (_) {
+      return apiDate;
+    }
   }
 
   Widget _steps(BuildContext context) {
@@ -772,20 +999,20 @@ class _SalesPlanConstructorScreenState
     final s3Active = _aggReady;
 
     Widget step(int n, String title, String sub, {bool active = false, bool done = false}) {
-      final accent = active ? SalesPlanColors.orange : SalesPlanColors.green;
+      final accent = colors.buttonPrimaryBg;
       return Expanded(
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             color: active
-                ? SalesPlanColors.orange.withValues(alpha: 0.12)
-                : colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(9),
+                ? accent.withValues(alpha: 0.12)
+                : colors.fieldBg,
+            borderRadius: AppFieldStyle.radius,
             border: Border.all(
               color: active
-                  ? SalesPlanColors.orange
+                  ? accent
                   : done
-                      ? SalesPlanColors.green.withValues(alpha: 0.5)
+                      ? colors.success.withValues(alpha: 0.45)
                       : colors.borderSubtle,
             ),
           ),
@@ -793,45 +1020,48 @@ class _SalesPlanConstructorScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 20,
-                height: 20,
+                width: 18,
+                height: 18,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: active
-                      ? SalesPlanColors.orange
+                      ? accent
                       : done
-                          ? SalesPlanColors.green.withValues(alpha: 0.2)
-                          : colors.backgroundPrimary,
+                          ? colors.success.withValues(alpha: 0.2)
+                          : colors.surfaceElevated,
                 ),
                 child: Text(
                   '$n',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
+                    fontFamily: 'Gilroy',
                     color: active
-                        ? SalesPlanColors.actionNavy
+                        ? colors.buttonPrimaryFg
                         : done
-                            ? SalesPlanColors.green
+                            ? colors.success
                             : colors.textSecondary,
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
+                  fontFamily: 'Gilroy',
                   color: colors.textPrimary,
                 ),
               ),
               Text(
                 sub,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
+                  fontFamily: 'Gilroy',
                   color: active ? accent : colors.textSecondary,
                 ),
                 maxLines: 1,
@@ -882,37 +1112,35 @@ class _SalesPlanConstructorScreenState
     VoidCallback? onTap,
   }) {
     final colors = context.appColors;
-    final sel = SalesPlanColors.selection(context);
-    // Each option is its own bordered tile (never share a panel background).
-    final borderColor = selected
-        ? sel
-        : colors.textSecondary.withValues(alpha: 0.55);
+    final sel = colors.buttonPrimaryBg;
+    // Компактные чипы как в остальных мобильных формах.
+    final borderColor = selected ? sel : colors.borderSubtle;
     final fill = selected
-        ? SalesPlanColors.selectionBg(context)
-        : colors.surfaceElevated;
+        ? sel.withValues(alpha: 0.14)
+        : colors.fieldBg;
     return Opacity(
       opacity: disabled ? 0.35 : 1,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: disabled ? null : onTap,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppFieldStyle.radius,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: fill,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppFieldStyle.radius,
               border: Border.all(
                 color: dashed
                     ? colors.textSecondary.withValues(alpha: 0.4)
                     : borderColor,
-                width: selected ? 1.5 : 1,
               ),
             ),
             child: Text(
               label,
               style: TextStyle(
                 fontSize: 13,
+                fontFamily: 'Gilroy',
                 color: selected ? sel : colors.textPrimary,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -924,24 +1152,14 @@ class _SalesPlanConstructorScreenState
   }
 
   Widget _sectionLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: context.appColors.textSecondary,
-          ),
-        ),
-      );
-
-  Widget _fieldLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 12.5,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: context.appColors.textPrimary.withValues(alpha: 0.82),
+            fontFamily: 'Gilroy',
+            color: context.appColors.textPrimary,
           ),
         ),
       );
@@ -950,23 +1168,15 @@ class _SalesPlanConstructorScreenState
     final colors = context.appColors;
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: colors.textSecondary.withValues(alpha: 0.85)),
+      hintStyle: TextStyle(
+        fontFamily: 'Gilroy',
+        color: colors.fieldHint,
+      ),
       filled: true,
-      fillColor: colors.surfaceElevated,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: colors.borderSubtle),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(
-          color: colors.textSecondary.withValues(alpha: 0.35),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: colors.success, width: 1.4),
-      ),
+      fillColor: colors.fieldBg,
+      border: AppFieldStyle.outline(context),
+      enabledBorder: AppFieldStyle.outline(context),
+      focusedBorder: AppFieldStyle.outline(context, focused: true),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }

@@ -8,7 +8,6 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/detailed_report_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
-import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
@@ -53,7 +52,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasSupplierReturnDocument = false;
   bool _hasMoneyIncome = false;
   bool _hasMoneyOutcome = false;
-  bool _hasOrder = false; // Новое право для заказов
   bool _hasPricing = false;
   bool _showReferences = false;
 
@@ -106,7 +104,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           await _apiService.hasPermission('checking_account_pko.read');
       _hasMoneyOutcome =
           await _apiService.hasPermission('checking_account_rko.read');
-      _hasOrder = await _apiService.hasPermission('order.read');
       _hasPricing = await _apiService.isFuzaylovazamTenant() &&
           await _apiService.isAdminRole() &&
           (await _apiService.hasPermission('pricing.read') ||
@@ -137,7 +134,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           _hasSupplierReturnDocument ||
           _hasMoneyIncome ||
           _hasMoneyOutcome ||
-          _hasOrder ||
           hasStorage ||
           hasUnit ||
           hasSupplier ||
@@ -161,7 +157,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasSupplierReturnDocument = false;
       _hasMoneyIncome = false;
       _hasMoneyOutcome = false;
-      _hasOrder = false;
       _hasPricing = false;
       _showReferences = false;
     }
@@ -300,18 +295,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           title: AppLocalizations.of(context)!.translate('money_outcome') ??
               'Расход денег',
           icon: Icons.remove_circle_outline,
-          color: docColor,
-        ),
-      );
-    }
-
-    if (_hasOrder) {
-      allDocuments.add(
-        WarehouseDocument(
-          keyName: 'order',
-          title: AppLocalizations.of(context)!.translate('appbar_orders') ??
-              'Заказы',
-          icon: Icons.receipt_long_outlined,
           color: docColor,
         ),
       );
@@ -462,12 +445,6 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         MaterialPageRoute(
             builder: (context) =>
                 MoneyOutcomeScreen(organizationId: organizationId)),
-      );
-    } else if (document.keyName == 'order') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => OrderScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'pricing') {
       Navigator.push(context,

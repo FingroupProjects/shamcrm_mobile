@@ -64,7 +64,6 @@ class PinnedReportTotal extends StatelessWidget {
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 36,
@@ -84,63 +83,24 @@ class PinnedReportTotal extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (showPrimaryTotal) ...[
-                    Row(
-                      children: [
-                        Text(
-                          normalizedLabel,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                total,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                  if (showPrimaryTotal)
+                    _TotalLine(
+                      label: normalizedLabel,
+                      value: total,
                     ),
-                    if (displayedCurrencyTotals.isNotEmpty)
-                      const SizedBox(height: 10),
-                  ],
-                  if (displayedCurrencyTotals.isNotEmpty)
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns = constraints.maxWidth < 270 ? 1 : 2;
-                        final tileWidth =
-                            (constraints.maxWidth - ((columns - 1) * 8)) /
-                                columns;
-
-                        return Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: displayedCurrencyTotals.map((item) {
-                            return SizedBox(
-                              width: tileWidth,
-                              child: _CurrencyTotalTile(item: item),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
+                  if (showPrimaryTotal && displayedCurrencyTotals.isNotEmpty)
+                    const SizedBox(height: 8),
+                  ...displayedCurrencyTotals.asMap().entries.map((entry) {
+                    final item = entry.value;
+                    final currency = item.currency.trim();
+                    return Padding(
+                      padding: EdgeInsets.only(top: entry.key == 0 ? 0 : 8),
+                      child: _TotalLine(
+                        label: currency.isEmpty ? normalizedLabel : '$currency:',
+                        value: item.total,
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -151,41 +111,51 @@ class PinnedReportTotal extends StatelessWidget {
   }
 }
 
-class _CurrencyTotalTile extends StatelessWidget {
-  final PinnedReportCurrencyTotal item;
+/// Подпись слева, сумма справа — без пустого места в середине.
+class _TotalLine extends StatelessWidget {
+  final String label;
+  final String value;
 
-  const _CurrencyTotalTile({required this.item});
+  const _TotalLine({
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final currency = item.currency.trim();
-    final text =
-        currency.isEmpty ? 'Итого: ${item.total}' : '${item.total} $currency';
-
-    return Container(
-      height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colors.borderSubtle,
-          width: 1,
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: colors.textSecondary,
+          ),
         ),
-      ),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontFamily: 'Gilroy',
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: colors.textPrimary,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

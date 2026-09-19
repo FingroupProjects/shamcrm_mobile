@@ -24,6 +24,7 @@ import 'filter/page_2/reports/top_selling_goods_filter.dart';
 import 'filter/page_2/reports/sales_dynamics_filter.dart';
 import 'filter/page_2/reports/net_profit_filter.dart';
 import 'filter/page_2/reports/orders_quantity_filter.dart';
+import 'filter/page_2/reports/goods_expiration_filter.dart';
 
 class CustomAppBarReports extends StatefulWidget {
   final String title;
@@ -879,6 +880,18 @@ class _CustomAppBarState extends State<CustomAppBarReports>
           initialSumFrom: sumFrom,
           initialSumTo: sumTo,
           initialStatus: statusId,
+        );
+        break;
+      case 15:
+        filterScreen = GoodsExpirationFilterScreen(
+          onSelectedDataFilter: (filters) {
+            widget.onFilterSelected?.call(filters);
+          },
+          onResetFilters: () {
+            widget.onResetFilters?.call();
+          },
+          initialFromDate: initialFromDate,
+          initialToDate: initialToDate,
         );
         break;
       case 13:

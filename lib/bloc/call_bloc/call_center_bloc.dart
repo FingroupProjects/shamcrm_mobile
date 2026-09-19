@@ -385,12 +385,19 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
             filters: filters);
         break;
       case CallType.outgoing:
-      case CallType.outgoingMissed:
         response = await apiService.getOutgoingCalls(
             page: page,
             perPage: perPage,
             searchQuery: searchQuery,
             filters: filters);
+        break;
+      case CallType.outgoingMissed:
+        response = await apiService.getOutgoingCalls(
+            page: page,
+            perPage: perPage,
+            searchQuery: searchQuery,
+            filters: filters,
+            unanswered: true);
         break;
       case CallType.missed:
         response = await apiService.getMissedCalls(
@@ -410,6 +417,17 @@ class CallCenterBloc extends Bloc<CallCenterEvent, CallCenterState> {
     if (kDebugMode) {
       //print("API response: calls=${(response['calls'] as List).length}, pagination=${response['pagination']}");
     }
+    // API иногда отдаёт чужие типы во вкладке. Оставляем только нужные.
+    final rawCalls = response['calls'];
+    if (rawCalls is List<CallLogEntry>) {
+      response['calls'] = _callsForTab(callType, rawCalls);
+    }
     return response;
+  }
+
+  /// Каждая вкладка держит только свой тип звонка.
+  List<CallLogEntry> _callsForTab(CallType? callType, List<CallLogEntry> calls) {
+    if (callType == null) return calls;
+    return calls.where((call) => call.callType == callType).toList();
   }
 }

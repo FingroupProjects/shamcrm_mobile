@@ -146,7 +146,12 @@ class TelegramChatAppBar extends StatelessWidget
                                       color: context.appColors.textSecondary
                                           .withValues(alpha: 0.8),
                                     ),
+                                    filled: false,
+                                    fillColor: Colors.transparent,
                                     border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
                                       vertical: 10,
                                     ),

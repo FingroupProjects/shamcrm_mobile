@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/client_return/client_return_bloc.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -24,6 +25,7 @@ import 'package:intl/intl.dart';
 
 import '../incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/compact_expiration_date_field.dart';
 
 class EditClientReturnDocumentScreen extends StatefulWidget {
   final IncomingDocument document;
@@ -73,6 +75,9 @@ class _EditClientReturnDocumentScreenState
   late TabController _tabController;
   int? _organizationCurrencyId;
   String? _exchangeRateErrorText;
+  // Срок годности в товаре — только adminbiovecotj.
+  bool _showExpirationDate = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -80,6 +85,7 @@ class _EditClientReturnDocumentScreenState
     _initializeFormData();
     _tabController = TabController(length: 2, vsync: this);
     _loadOrganizationCurrency();
+    _loadExpirationDateVisibility();
 
     // ✅ Add tab listener to validate required fields before switching to Products tab
     _tabController.addListener(() {
@@ -101,6 +107,14 @@ class _EditClientReturnDocumentScreenState
           });
         }
       }
+    });
+  }
+
+  Future<void> _loadExpirationDateVisibility() async {
+    final visible = await _apiService.isAdminbiovecotjTenant();
+    if (!mounted) return;
+    setState(() {
+      _showExpirationDate = visible;
     });
   }
 
@@ -195,6 +209,8 @@ class _EditClientReturnDocumentScreenState
           'unit_id': selectedUnitObj.id,
           'amount': amount,
           'availableUnits': availableUnits,
+          'expiration_date':
+              CompactExpirationDateField.toApiDate(good.expirationDate),
         });
 
         _priceControllers[variantId] =
@@ -648,14 +664,7 @@ class _EditClientReturnDocumentScreenState
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id,
-        documentGoods: _items
-            .map((item) => {
-                  'good_id': item['variantId'],
-                  'quantity': num.tryParse(item['quantity'].toString()),
-                  'price': _parsePriceAsNumber(item['price']),
-                  "unit_id": item["unit_id"]
-                })
-            .toList(),
+        documentGoods: _items.map(_mapItemToDocumentGood).toList(),
         organizationId: widget.document.organizationId ?? 1,
         salesFunnelId: 1,
         exchangeRate: _exchangeRateValue,
@@ -1349,12 +1358,47 @@ class _EditClientReturnDocumentScreenState
                         ]),
                   ),
                 ]),
+                if (_showExpirationDate) ...[
+                  const SizedBox(height: 8),
+                  CompactExpirationDateField(
+                    value: item['expiration_date']?.toString(),
+                    onChanged: (date) =>
+                        _updateItemExpiration(variantId, date),
+                  ),
+                ],
               ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _updateItemExpiration(int variantId, String date) {
+    setState(() {
+      final index =
+          _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index == -1) return;
+      if (date.isEmpty) {
+        _items[index].remove('expiration_date');
+      } else {
+        _items[index]['expiration_date'] = date;
+      }
+    });
+  }
+
+  Map<String, dynamic> _mapItemToDocumentGood(Map<String, dynamic> item) {
+    final expirationDate =
+        CompactExpirationDateField.toApiDate(item['expiration_date']);
+
+    return {
+      'good_id': item['variantId'],
+      'quantity': num.tryParse(item['quantity'].toString()),
+      'price': _parsePriceAsNumber(item['price']),
+      'unit_id': item['unit_id'],
+      if (_showExpirationDate && expirationDate != null)
+        'expiration_date': expirationDate,
+    };
   }
 
   Widget _buildActionButtons(AppLocalizations? localizations) {

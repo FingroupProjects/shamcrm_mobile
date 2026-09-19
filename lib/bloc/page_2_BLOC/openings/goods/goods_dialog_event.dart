@@ -4,12 +4,14 @@ abstract class GoodsDialogEvent {}
 
 class LoadGoodVariantsForDialog extends GoodsDialogEvent {
   final String? search;
-  LoadGoodVariantsForDialog({this.search});
+  final int? categoryId;
+  LoadGoodVariantsForDialog({this.search, this.categoryId});
 }
 
 class SearchGoodVariantsForDialog extends GoodsDialogEvent {
   final String? search;
-  SearchGoodVariantsForDialog({this.search});
+  final int? categoryId;
+  SearchGoodVariantsForDialog({this.search, this.categoryId});
 }
 
 class RefreshGoodVariantsForDialog extends GoodsDialogEvent {}

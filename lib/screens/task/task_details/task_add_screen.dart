@@ -26,6 +26,8 @@ import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_bloc.dart';
+import 'package:crm_task_manager/bloc/calendar/calendar_event.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
@@ -50,12 +52,17 @@ class TaskAddScreen extends StatefulWidget {
   final int statusId;
   final int? initialProjectId;
   final bool lockProject;
+  /// Из календаря: тот же UI, но статус всегда виден.
+  final bool fromCalendar;
+  final DateTime? initialEndDate;
 
   const TaskAddScreen({
     Key? key,
     required this.statusId,
     this.initialProjectId,
     this.lockProject = false,
+    this.fromCalendar = false,
+    this.initialEndDate,
   }) : super(key: key);
 
   @override
@@ -96,6 +103,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
   // Стартовые значения формы — чтобы отличить ввод пользователя от значений по умолчанию.
   late final String _initialStartDate;
+  late final String _initialEndDate;
   late final String? _initialProject;
   late final String? _initialStatus;
   late final int? _initialPriority;
@@ -135,11 +143,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     selectedPriority = 1;
     final now = DateTime.now();
     startDateController.text = DateFormat('dd/MM/yyyy').format(now);
-    selectedStatus = widget.statusId.toString();
+    // Из календаря статус выбирает пользователь, колонки нет.
+    selectedStatus = widget.statusId > 0 ? widget.statusId.toString() : null;
+    if (widget.fromCalendar && widget.initialEndDate != null) {
+      endDateController.text =
+          DateFormat('dd/MM/yyyy').format(widget.initialEndDate!);
+    }
     if (widget.initialProjectId != null) {
       selectedProject = widget.initialProjectId.toString();
     }
     _initialStartDate = startDateController.text;
+    _initialEndDate = endDateController.text;
     _initialProject = selectedProject;
     _initialStatus = selectedStatus;
     _initialPriority = selectedPriority;
@@ -369,34 +383,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         );
 
       case 'task_status_id':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TaskStatusEditWidget(
-              selectedStatus: selectedStatus?.toString(),
-              onSelectStatus: (TaskStatus selectedStatusData) {
-                setState(() {
-                  selectedStatus = selectedStatusData.id.toString();
-                  isStatusInvalid = false;
-                });
-              },
-              hasError: isStatusInvalid,
-            ),
-            if (isStatusInvalid)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 4),
-                child: Text(
-                  AppLocalizations.of(context)!.translate('field_required'),
-                  style: TextStyle(
-                    color: context.appColors.error,
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-          ],
-        );
+        return _buildStatusField();
 
       default:
         return const SizedBox.shrink();
@@ -479,11 +466,65 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     final sorted = fieldConfigurations.where((c) => c.isActive).toList()
       ..sort((a, b) => a.position.compareTo(b.position));
 
-    return sorted
-        .map((c) => _buildFieldWidget(c))
-        .whereType<Widget>()
-        .map((w) => Column(children: [w, const SizedBox(height: 16)]))
-        .toList();
+    // Из календаря статус всегда первый, даже если поле выключено.
+    if (widget.fromCalendar) {
+      final statusIndex =
+          sorted.indexWhere((c) => c.fieldName == 'task_status_id');
+      if (statusIndex > 0) {
+        final statusField = sorted.removeAt(statusIndex);
+        sorted.insert(0, statusField);
+      }
+    }
+
+    final widgets = <Widget>[];
+    if (widget.fromCalendar &&
+        !sorted.any((c) => c.fieldName == 'task_status_id')) {
+      widgets.add(Column(
+        children: [
+          _buildStatusField(),
+          const SizedBox(height: 16),
+        ],
+      ));
+    }
+
+    widgets.addAll(
+      sorted
+          .map((c) => _buildFieldWidget(c))
+          .whereType<Widget>()
+          .map((w) => Column(children: [w, const SizedBox(height: 16)])),
+    );
+    return widgets;
+  }
+
+  Widget _buildStatusField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TaskStatusEditWidget(
+          selectedStatus: selectedStatus?.toString(),
+          onSelectStatus: (TaskStatus selectedStatusData) {
+            setState(() {
+              selectedStatus = selectedStatusData.id.toString();
+              isStatusInvalid = false;
+            });
+          },
+          hasError: isStatusInvalid,
+        ),
+        if (isStatusInvalid)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4),
+            child: Text(
+              AppLocalizations.of(context)!.translate('field_required'),
+              style: TextStyle(
+                color: context.appColors.error,
+                fontSize: 12,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   void _showErrorSnackBar(String message) {
@@ -694,7 +735,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   bool _hasUnsavedTaskInput() {
     if (nameController.text.trim().isNotEmpty) return true;
     if (descriptionController.text.trim().isNotEmpty) return true;
-    if (endDateController.text.trim().isNotEmpty) return true;
+    if (endDateController.text.trim() != _initialEndDate) return true;
     if (startDateController.text.trim() != _initialStartDate) return true;
     if (selectedUsers != null && selectedUsers!.isNotEmpty) return true;
     if (files.isNotEmpty) return true;
@@ -1444,6 +1485,13 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                           isSuccess: true,
                         );
                         if (context.mounted) {
+                          if (widget.fromCalendar) {
+                            final date =
+                                widget.initialEndDate ?? DateTime.now();
+                            context.read<CalendarBloc>().add(
+                                  FetchCalendarEvents(date.month, date.year),
+                                );
+                          }
                           Navigator.pop(context, widget.statusId);
                           context.read<TaskBloc>().add(FetchTaskStatuses());
                         }
@@ -1655,10 +1703,16 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Image.asset(
-                            addFileIconAsset,
-                            width: 54,
-                            height: 54,
+                          ColorFiltered(
+                            colorFilter: ColorFilter.mode(
+                              fileTextColor,
+                              BlendMode.srcIn,
+                            ),
+                            child: Image.asset(
+                              addFileIconAsset,
+                              width: 54,
+                              height: 54,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Flexible(
@@ -1974,10 +2028,11 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
       userIds = selectedUsers?.map((id) => int.parse(id)).toList();
     }
 
+    final resolvedStatusId = int.parse(selectedStatus!);
     context.read<TaskBloc>().add(CreateTask(
           name: name,
-          statusId: widget.statusId,
-          taskStatusId: int.parse(selectedStatus!),
+          statusId: widget.statusId > 0 ? widget.statusId : resolvedStatusId,
+          taskStatusId: resolvedStatusId,
           startDate: startDate,
           endDate: endDate,
           projectId:

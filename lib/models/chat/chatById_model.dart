@@ -17,6 +17,9 @@ class ChatProfile {
   final String createdAt;
   final ManagerChatProfile? manager;
   final LeadStatus? leadStatus;
+  final Source? source;
+  final Author? author;
+  final int? salesFunnelId;
 
   ChatProfile({
     required this.id,
@@ -32,7 +35,17 @@ class ChatProfile {
     required this.createdAt,
     this.manager,
     this.leadStatus,
+    this.source,
+    this.author,
+    this.salesFunnelId,
   });
+
+  /// Имя источника для профиля. green_api показываем как WhatsApp.
+  String get sourceDisplayName {
+    final raw = source?.name.trim() ?? '';
+    if (raw.isEmpty) return '';
+    return raw.toLowerCase() == 'green_api' ? 'WhatsApp' : raw;
+  }
 
   factory ChatProfile.fromJson(Map<String, dynamic> json) {
     return ChatProfile(
@@ -53,6 +66,21 @@ class ChatProfile {
       leadStatus: SafeConverters.toMapOrNull(json['leadStatus']) != null
           ? LeadStatus.fromJson(SafeConverters.toMap(json['leadStatus']))
           : null,
+      source: SafeConverters.toMapOrNull(json['source']) != null
+          ? Source.fromJson(SafeConverters.toMap(json['source']))
+          : SafeConverters.toMapOrNull(json['source_lead']) != null
+              ? Source.fromJson(SafeConverters.toMap(json['source_lead']))
+              : null,
+      author: SafeConverters.toMapOrNull(json['author']) != null
+          ? Author.fromJson(SafeConverters.toMap(json['author']))
+          : null,
+      salesFunnelId: SafeConverters.toIntOrNull(json['sales_funnel_id']) ??
+          SafeConverters.toIntOrNull(
+            SafeConverters.toMapOrNull(json['sales_funnel'])?['id'],
+          ) ??
+          SafeConverters.toIntOrNull(
+            SafeConverters.toMapOrNull(json['salesFunnel'])?['id'],
+          ),
     );
   }
 }

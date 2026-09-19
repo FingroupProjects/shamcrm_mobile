@@ -42,12 +42,12 @@ class CallLogItem extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _getCallTypeColor(context).withOpacity(0.12),
+                    color: _getCallTypeColor().withOpacity(0.12),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: Icon(
                     _getCallTypeIcon(),
-                    color: _getCallTypeColor(context),
+                    color: _getCallTypeColor(),
                     size: 24,
                   ),
                 ),
@@ -175,21 +175,12 @@ class CallLogItem extends StatelessWidget {
       case CallType.missed:
         return Icons.call_missed;
       case CallType.outgoingMissed:
-        return Icons.call_made;
+        return Icons.call_missed_outgoing;
     }
   }
 
-  Color _getCallTypeColor(BuildContext context) {
-    switch (callEntry.callType) {
-      case CallType.incoming:
-        return context.appColors.success;
-      case CallType.outgoing:
-        return context.appColors.buttonPrimaryBg;
-      case CallType.missed:
-        return context.appColors.error;
-      case CallType.outgoingMissed:
-        return context.appColors.error;
-    }
+  Color _getCallTypeColor() {
+    return CallTypeColors.of(callEntry.callType);
   }
 
   String _formatDate(DateTime date) {

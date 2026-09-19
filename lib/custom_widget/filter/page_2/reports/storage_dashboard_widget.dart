@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/storage_dashboard/storage_dashboard_state.dart';
@@ -95,20 +96,7 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
                 searchHintText: AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: true,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: context.appColors.fieldBg,
-                  expandedFillColor: context.appColors.surfacePrimary,
-                  closedBorder: Border.all(
-                    color: context.appColors.fieldBg,
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: context.appColors.fieldBg,
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
+                decoration: AppFieldStyle.dropdownDecoration(context),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Text(
                     item.name,

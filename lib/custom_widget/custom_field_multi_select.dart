@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -106,67 +107,9 @@ class _CustomFieldMultiSelectState extends State<CustomFieldMultiSelect> {
                     AppLocalizations.of(context)!.translate('nothing_found'),
                 overlayHeight: widget.overlayHeight ?? 400,
                 enabled: !widget.isLoading,
-                decoration: CustomDropdownDecoration(
-                  closedFillColor:
-                      colors.surfacePrimary.withValues(alpha: 0.78),
-                  expandedFillColor: colors.surfacePrimary,
-                  closedBorder: Border.all(
-                    color: hasError ? colors.error : colors.borderSubtle,
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: hasError ? colors.error : colors.borderSubtle,
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                  hintStyle: textStyles.bodyMd.copyWith(
-                    fontSize: 14,
-                    color: colors.textSecondary,
-                  ),
-                  headerStyle: textStyles.bodyMd.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  listItemStyle: textStyles.bodyMd.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  listItemDecoration: ListItemDecoration(
-                    selectedColor:
-                        colors.buttonPrimaryBg.withValues(alpha: 0.14),
-                    highlightColor:
-                        colors.buttonPrimaryBg.withValues(alpha: 0.08),
-                    splashColor: Colors.transparent,
-                  ),
-                  searchFieldDecoration: SearchFieldDecoration(
-                    fillColor: colors.surfacePrimary.withValues(alpha: 0.82),
-                    textStyle: textStyles.bodyMd.copyWith(
-                      fontSize: 14,
-                      color: colors.textPrimary,
-                    ),
-                    hintStyle: textStyles.bodyMd.copyWith(
-                      fontSize: 14,
-                      color: colors.textSecondary,
-                    ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: colors.textSecondary,
-                    ),
-                    suffixIcon: (onClear) => IconButton(
-                      onPressed: onClear,
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: colors.borderSubtle),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: colors.buttonPrimaryBg),
-                    ),
-                  ),
+                decoration: AppFieldStyle.dropdownDecoration(
+                  context,
+                  hasError: hasError,
                 ),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   final isFirstOriginal = widget.items.indexOf(item) == 0;

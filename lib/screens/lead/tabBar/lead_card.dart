@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
+import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
@@ -110,35 +112,15 @@ class _LeadCardState extends State<LeadCard>
     return DateFormat('dd.MM.yyyy').format(dateTime);
   }
 
-  final Map<String, String> sourceIcons = {
-    'Телеграм Аккаунт': 'assets/icons/leads/telegram.png',
-    'Телеграм Бот': 'assets/icons/leads/telegram.png',
-    'WhatsApp': 'assets/icons/leads/whatsapp.png',
-    'green_api': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/messenger.png',
-    'Инстаграм': 'assets/icons/leads/instagram.png',
-    'Телефон': 'assets/icons/leads/telefon.png',
-    'Электронная почта': 'assets/icons/leads/email.png',
-    'Messenger': 'assets/icons/leads/messenger.png',
-  };
-
-  // Цвета для источников
-  final Map<String, Color> sourceColors = {
-    'Телеграм Аккаунт': Color(0xFF0088CC), // Telegram голубой
-    'Телеграм Бот': Color(0xFF0088CC), // Telegram голубой
-    'WhatsApp': Color(0xFF25D366), // WhatsApp зеленый
-    'green_api': Color(0xFF25D366),
-    'Facebook': Color(0xFF4267B2), // Facebook синий
-    'Инстаграм': Color(0xFFE1306C), // Instagram розово-красный
-    'Телефон': Color(0xFF4CAF50), // Зеленый для телефона
-    'Электронная почта': Color(0xFFFF5722), // Оранжево-красный для почты
-    'Messenger': Color.fromARGB(255, 217, 31,
-        205), // Messenger фиолетово-синий (соответствует цвету иконки)
-  };
+  // Иконки и цвета источников теперь в ChannelSourceIcon.
+  // Там же светлая/тёмная тема и разные стили каналов.
 
   Color getBorderColor(String? sourceName) {
-    return sourceColors[sourceName] ??
-        context.appColors.borderPrimary; // Универсальный theme fallback
+    final kind = resolveChannelSourceKind(sourceName);
+    if (kind == ChannelSourceKind.unknown) {
+      return context.appColors.borderPrimary;
+    }
+    return channelBrandColor(sourceName);
   }
 
   Widget _buildHourglassIcon() {
@@ -363,8 +345,6 @@ class _LeadCardState extends State<LeadCard>
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    String iconPath =
-        sourceIcons[widget.lead.source?.name] ?? 'assets/images/AvatarChat.png';
 
     // Проверяем, нужно ли мигание на основе messageStatus
     bool shouldBlink = widget.lead.messageStatus == 'newLead' ||
@@ -529,13 +509,10 @@ class _LeadCardState extends State<LeadCard>
                         Expanded(
                           child: Row(
                             children: [
-                              ClipOval(
-                                child: Image.asset(
-                                  iconPath,
-                                  width: 28,
-                                  height: 28,
-                                  fit: BoxFit.cover,
-                                ),
+                              ChannelSourceIcon(
+                                sourceName: widget.lead.source?.name,
+                                size: 28,
+                                background: colors.surfacePrimary,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -654,10 +631,10 @@ class _LeadCardState extends State<LeadCard>
                             _buildHourglassIcon(),
                             Row(
                               children: [
-                                Image.asset(
-                                  'assets/icons/tabBar/date.png',
-                                  width: 18,
-                                  height: 18,
+                                ThemedDateIcon(
+                                  size: 18,
+                                  color: colors.textSecondary,
+                                  background: colors.surfacePrimary,
                                 ),
                                 Text(
                                   ' ${formatDate(widget.lead.createdAt ?? AppLocalizations.of(context)!.translate('unknow'))}',

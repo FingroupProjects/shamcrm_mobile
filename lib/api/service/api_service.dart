@@ -110,6 +110,7 @@ import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehou
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/goods_expiration_report.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_register_details_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_top.dart';
@@ -289,8 +290,16 @@ class ApiService extends ApiServiceBase {
   static const Set<String> _fingroupcrmSubdomains = {
     'fingroupcrm',
     'fingroupcrm-back',
-    'fingroupcrm-new-back',
+    'fingroupcrm-new-back', 
     'fingroupcrm-new',
+  };
+
+  // Отчёт «Товары по сроку годности» только на этом тенанте.
+  static const Set<String> _adminbiovecotjSubdomains = {
+    'adminbiovecotj',
+    'adminbiovecotj-back',
+    'adminbiovecotj-new',
+    'adminbiovecotj-new-back',
   };
 
   static final GlobalKey<NavigatorState> navigatorKey =

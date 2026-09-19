@@ -1382,10 +1382,15 @@ extension ApiWarehouseOrdersX on ApiService {
     int page = 1,
     int perPage = 20,
     String? search,
+    int? categoryId,
   }) async {
     String path = '/good/get/variant?page=$page&per_page=$perPage';
     if (search != null && search.isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search)}';
+    }
+    // Same category filter as getVariants / order and incoming pickers.
+    if (categoryId != null) {
+      path += '&category_id=$categoryId';
     }
 
     path += '&is_service=0';

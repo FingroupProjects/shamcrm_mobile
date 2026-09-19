@@ -1,11 +1,11 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
-import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
+// import 'package:crm_task_manager/models/page_2/call_analytics_model.dart';
 import 'package:crm_task_manager/models/page_2/call_statistics1_model.dart';
 import 'package:crm_task_manager/page_2/call_center/call_log_item.dart';
-import 'package:crm_task_manager/page_2/call_center/pie_chart_not_called.dart';
-import 'package:crm_task_manager/page_2/call_center/pie_chart_called.dart';
-import 'package:crm_task_manager/page_2/call_center/pie_chart_waiting.dart';
+// import 'package:crm_task_manager/page_2/call_center/pie_chart_not_called.dart';
+// import 'package:crm_task_manager/page_2/call_center/pie_chart_called.dart';
+// import 'package:crm_task_manager/page_2/call_center/pie_chart_waiting.dart';
 import 'package:crm_task_manager/page_2/call_center/statistic_chart_1.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
@@ -160,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: FutureBuilder<List<dynamic>>(
           future: Future.wait([
             _apiService.getCallStatistics(),
-            _apiService.getCallAnalytics(),
+            // _apiService.getCallAnalytics(),
           ]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -190,11 +190,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             } else if (snapshot.hasData) {
               // Данные загружены успешно
               final callStatistics = snapshot.data![0] as CallStatistics;
-              final callAnalytics = snapshot.data![1] as CallAnalytics;
+              // final callAnalytics = snapshot.data![1] as CallAnalytics;
 
               // Проверка на наличие данных
-              if (callStatistics.result.isEmpty &&
-                  !callAnalytics.result.isNotEmpty) {
+              if (callStatistics.result.isEmpty) {
                 return  Center(
                   child: Text(
                       AppLocalizations.of(context)!
@@ -209,18 +208,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                 );
               }
 
-              // Отображаем все графики одновременно
+              // Три круговых графика колл-центра скрыты.
+              // if (callAnalytics.result.isNotEmpty) ...[
+              //   PieChartNotCalled(statistics: callAnalytics.result),
+              //   Divider(thickness: 1, color: context.appColors.borderSubtle),
+              //   PieChartAllCalls(statistics: callAnalytics.result),
+              //   Divider(thickness: 1, color: context.appColors.borderSubtle),
+              //   PieChartCalled(statistics: callAnalytics.result),
+              //   Divider(thickness: 1, color: context.appColors.borderSubtle),
+              // ],
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (callAnalytics.result.isNotEmpty) ...[
-                    PieChartNotCalled(statistics: callAnalytics.result),
-                    Divider(thickness: 1, color: context.appColors.borderSubtle),
-                    PieChartAllCalls(statistics: callAnalytics.result),
-                    Divider(thickness: 1, color: context.appColors.borderSubtle),
-                    PieChartCalled(statistics: callAnalytics.result),
-                    Divider(thickness: 1, color: context.appColors.borderSubtle),
-                  ],
                   if (callStatistics.result.isNotEmpty)
                     StatisticChart1(statistics: callStatistics),
                 ],

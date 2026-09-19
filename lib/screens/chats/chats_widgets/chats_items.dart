@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -200,24 +201,12 @@ class ChatListItem extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: chatItem.icon == '' // Для site используется Flutter иконка
-              ? Icon(
-                  Icons.language,
-                  size: 32,
-                  color: context.appColors.textPrimary,
-                )
-              : Image.asset(
-                  chatItem.icon,
-                  width: 52,
-                  height: 52,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.person,
-                      size: 32,
-                      color: context.appColors.iconSecondary,
-                    );
-                  },
-                ),
+          // Для site и остальных каналов рисуем тему-зависимый бейдж.
+          child: ChannelSourceIcon(
+            sourceName: chatItem.icon.isEmpty ? 'site' : chatItem.icon,
+            size: 40,
+            background: context.appColors.backgroundSecondary,
+          ),
         ),
       );
     }

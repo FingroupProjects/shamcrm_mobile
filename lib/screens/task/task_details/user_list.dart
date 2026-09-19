@@ -11,6 +11,9 @@ class UserMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedUsers;
   final Function(List<UserData>) onSelectUsers;
   final String? customLabelText;
+  // Текст внутри поля, когда никто не выбран.
+  // Если не задан — остаётся «Выберите исполнителей».
+  final String? hintText;
   final bool hasError;
   final bool isRequired;
   final Color? backgroundColor;
@@ -20,6 +23,7 @@ class UserMultiSelectWidget extends StatefulWidget {
     required this.onSelectUsers,
     this.selectedUsers,
     this.customLabelText,
+    this.hintText,
     this.hasError = false,
     this.isRequired = true,
     this.backgroundColor,
@@ -208,9 +212,14 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     return mergedById.values.toList();
   }
 
+  String _emptyHint(AppLocalizations localizations) {
+    return widget.hintText ??
+        localizations.translate('select_assignees_list');
+  }
+
   String _selectedLabel(AppLocalizations localizations) {
     if (selectedUsersData.isEmpty) {
-      return localizations.translate('select_assignees_list');
+      return _emptyHint(localizations);
     }
 
     return selectedUsersData
@@ -429,7 +438,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                         );
                       },
                       hintBuilder: (context, hint, enabled) => Text(
-                        localizations.translate('select_assignees_list'),
+                        _emptyHint(localizations),
                         style: userTextStyle.copyWith(
                           fontSize: 14,
                           color: colors.textSecondary,

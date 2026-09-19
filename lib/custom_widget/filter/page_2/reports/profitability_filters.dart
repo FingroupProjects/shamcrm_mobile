@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/category_dashboard_warehouse/category_dashboard_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/good_dashboard_warehouse/good_dashboard_warehouse_bloc.dart';
@@ -181,16 +182,7 @@ class _ProfitabilityFilterScreenState extends State<ProfitabilityFilterScreen> {
               searchHintText: AppLocalizations.of(context)!.translate('search') ?? 'Поиск',
               overlayHeight: 300,
               closeDropDownOnClearFilterSearch: true,
-              decoration: CustomDropdownDecoration(
-                closedFillColor: context.appColors.fieldBg,
-                expandedFillColor: context.appColors.surfacePrimary,
-                closedBorder:
-                    Border.all(color: context.appColors.fieldBg, width: 1.5),
-                closedBorderRadius: BorderRadius.circular(12),
-                expandedBorder:
-                    Border.all(color: context.appColors.fieldBg, width: 1.5),
-                expandedBorderRadius: BorderRadius.circular(12),
-              ),
+              decoration: AppFieldStyle.dropdownDecoration(context),
               listItemBuilder: (context, item, isSelected, onItemSelect) {
                 return Text(
                   item.year.toString(),

@@ -22,7 +22,9 @@ class CategoryTypeSelector extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.fieldBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        // Same thin outline as other create-category fields.
+        border: Border.all(color: colors.borderSubtle, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,6 +58,8 @@ class CategoryTypeSelector extends StatelessWidget {
                     if (value != null) onTypeChanged(value);
                   },
             activeColor: colors.buttonPrimaryBg,
+            dense: true,
+            visualDensity: VisualDensity.compact,
             title: Text(
               AppLocalizations.of(context)!.translate('product'),
               style: TextStyle(
@@ -74,6 +78,8 @@ class CategoryTypeSelector extends StatelessWidget {
               if (value != null) onTypeChanged(value);
             },
             activeColor: colors.buttonPrimaryBg,
+            dense: true,
+            visualDensity: VisualDensity.compact,
             title: Text(
               AppLocalizations.of(context)!.translate('characteristic'),
               style: TextStyle(

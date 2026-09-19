@@ -29,8 +29,8 @@ class CalendarUtils {
     switch (type) {
       case 'task':
         return Colors.blue;
-      case 'my_task':
-        return Colors.purpleAccent;
+      // case 'my_task':
+      //   return Colors.purpleAccent;
       case 'notice':
         return Colors.orange;
       default:

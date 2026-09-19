@@ -1000,11 +1000,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!
                           .translate('search_appbar'),
-                      border: InputBorder.none,
                       hintStyle: context.appTextStyles.bodyMd.copyWith(
                         color: context.appColors.fieldHint,
                       ),
+                      isDense: true,
+                      filled: false,
+                      fillColor: Colors.transparent,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                     ),
+                    cursorColor: context.appColors.buttonPrimaryBg,
                     style: context.appTextStyles.bodyLg.copyWith(
                       color: context.appColors.textPrimary,
                     ),

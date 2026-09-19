@@ -73,7 +73,8 @@ class _ManagerMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 18),
             decoration: BoxDecoration(
-              color: context.appColors.surfaceElevated,
+              // Как у Тема / Клиент: fieldBg, не surfaceElevated.
+              color: context.appColors.fieldBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: context.appColors.borderSubtle,

@@ -19,7 +19,9 @@ class PriceAffectSwitcher extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
         color: colors.fieldBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        // Same thin outline as other create-category fields.
+        border: Border.all(color: colors.borderSubtle, width: 1),
       ),
       child: Row(
         children: [

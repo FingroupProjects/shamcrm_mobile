@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/filter/calendar/user_calendar_multi_list.dart';
 import 'package:crm_task_manager/models/user/author_data_response.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -24,7 +23,7 @@ class CalendarFilterScreen extends StatefulWidget {
 
 class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
   bool _hasTask = false;
-  bool _hasMyTask = false;
+  // bool _hasMyTask = false;
   bool _hasNotice = false;
   List<String> _selectedUsers = [];
   final ApiService _apiService = ApiService();
@@ -48,7 +47,7 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
      _checkPermissions();
     if (widget.initialTypes != null) {
       _hasTask = widget.initialTypes!.contains('task');
-      _hasMyTask = widget.initialTypes!.contains('my_task');
+      // _hasMyTask = widget.initialTypes!.contains('my_task');
       _hasNotice = widget.initialTypes!.contains('notice');
     }
     if (widget.initialUsers != null) {
@@ -79,7 +78,7 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
   List<String> _getSelectedTypes() {
     List<String> types = [];
     if (_hasTask) types.add('task');
-    if (_hasMyTask) types.add('my_task');
+    // if (_hasMyTask) types.add('my_task');
     if (_hasNotice) types.add('notice');
     return types;
   }
@@ -127,7 +126,7 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
             onPressed: () {
               setState(() {
                 _hasTask = false;
-                _hasMyTask = false;
+                // _hasMyTask = false;
                 _hasNotice = false;
                 _selectedUsers = []; 
               });
@@ -201,12 +200,13 @@ class _CalendarFilterScreenState extends State<CalendarFilterScreen> {
                             _hasTask,
                             (value) => setState(() => _hasTask = value),
                           ),
-                          _buildSwitchTile(
-                            context,
-                            AppLocalizations.of(context)!.translate('my_task'),
-                            _hasMyTask,
-                            (value) => setState(() => _hasMyTask = value),
-                          ),
+                          // Мои задачи в календаре скрыты.
+                          // _buildSwitchTile(
+                          //   context,
+                          //   AppLocalizations.of(context)!.translate('my_task'),
+                          //   _hasMyTask,
+                          //   (value) => setState(() => _hasMyTask = value),
+                          // ),
                           _buildSwitchTile(
                             context,
                             AppLocalizations.of(context)!.translate('notice'),

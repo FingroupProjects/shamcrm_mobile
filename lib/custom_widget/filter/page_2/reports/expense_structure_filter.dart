@@ -235,8 +235,9 @@ class _ExpenseStructureFilterScreenState extends State<ExpenseStructureFilterScr
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: context.appColors.surfacePrimary,
+            color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.appColors.borderSubtle),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

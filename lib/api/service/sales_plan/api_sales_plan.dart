@@ -240,4 +240,32 @@ extension ApiSalesPlanX on ApiService {
       rethrow;
     }
   }
+
+  /// Поля фильтров конструктора плана: как в вебе, /v3/field-position.
+  Future<List<Map<String, dynamic>>> getSalesPlanFieldPositions(
+    String table,
+  ) async {
+    final path = await _appendQueryParams('/v3/field-position?table=$table');
+    final response = await _getRequest(path);
+    if (response.statusCode == 200) {
+      return _extractFieldPositionRows(json.decode(response.body));
+    }
+
+    final fallbackPath =
+        await _appendQueryParams('/field-position?table=$table');
+    final fallback = await _getRequest(fallbackPath);
+    if (fallback.statusCode == 200) {
+      return _extractFieldPositionRows(json.decode(fallback.body));
+    }
+    throw Exception(
+        'Ошибка загрузки полей фильтра: ${response.statusCode}');
+  }
+
+  List<Map<String, dynamic>> _extractFieldPositionRows(dynamic decoded) {
+    if (decoded is! Map) return const [];
+    return SafeConverters.toList(decoded['result'])
+        .map(SafeConverters.toMap)
+        .where((row) => row.isNotEmpty)
+        .toList();
+  }
 }

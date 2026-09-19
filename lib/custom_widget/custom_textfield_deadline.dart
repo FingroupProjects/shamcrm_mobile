@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -186,13 +187,10 @@ class CustomTextFieldDate extends StatelessWidget {
                 ),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: Image.asset(
-                      'assets/icons/tabBar/date.png',
-                      fit: BoxFit.contain,
-                    ),
+                  child: ThemedDateIcon(
+                    size: 18,
+                    color: primaryText,
+                    background: fieldFill,
                   ),
                 ),
                 border: OutlineInputBorder(

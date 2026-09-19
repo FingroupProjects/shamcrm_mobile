@@ -1223,8 +1223,10 @@ class _ChatsScreenState extends State<ChatsScreen>
                   }
                 });
               },
-              textEditingController: TextEditingController(),
-              focusNode: FocusNode(),
+              // Keep the same controller/focus. A new one each rebuild
+              // wipes the search text as the user types.
+              textEditingController: searchController,
+              focusNode: focusNode,
               showFilterIcon: false,
               showFilterTaskIcon: false,
               showMyTaskIcon: false,
@@ -1667,6 +1669,8 @@ class _ChatsScreenState extends State<ChatsScreen>
     }
     _pagingControllers.forEach((_, controller) => controller.dispose());
     _chatsBlocs.forEach((_, bloc) => bloc.close());
+    searchController.dispose();
+    focusNode.dispose();
     super.dispose();
   }
 }

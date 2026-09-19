@@ -24,6 +24,7 @@ import 'package:intl/intl.dart';
 
 import '../incoming/variant_selection_bottom_sheet.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/compact_expiration_date_field.dart';
 
 class CreateClientReturnDocumentScreen extends StatefulWidget {
   final int? organizationId;
@@ -64,6 +65,8 @@ class CreateClientReturnDocumentScreenState
 
   // ✅ НОВОЕ: Флаг разрешения на проведение документа
   bool _hasApprovePermission = false;
+  // Срок годности в товаре — только adminbiovecotj.
+  bool _showExpirationDate = false;
   final ApiService _apiService = ApiService();
   int? _organizationCurrencyId;
   String? _exchangeRateErrorText;
@@ -76,6 +79,15 @@ class CreateClientReturnDocumentScreenState
     _tabController = TabController(length: 2, vsync: this);
     _checkApprovePermission();
     _loadOrganizationCurrency();
+    _loadExpirationDateVisibility();
+  }
+
+  Future<void> _loadExpirationDateVisibility() async {
+    final visible = await _apiService.isAdminbiovecotjTenant();
+    if (!mounted) return;
+    setState(() {
+      _showExpirationDate = visible;
+    });
   }
 
   Future<void> _loadOrganizationCurrency() async {
@@ -589,17 +601,7 @@ class CreateClientReturnDocumentScreenState
         storageId: int.parse(_selectedStorage!),
         comment: _commentController.text.trim(),
         counterpartyId: _selectedLead!.id!,
-        documentGoods: _items.map((item) {
-          final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
-          final hasUnits = availableUnits.isNotEmpty;
-
-          return {
-            'good_id': item['variantId'],
-            'quantity': num.tryParse(item['quantity'].toString()),
-            'price': _parsePriceAsNumber(item['price']),
-            if (hasUnits) 'unit_id': item['unit_id'],
-          };
-        }).toList(),
+        documentGoods: _items.map(_mapItemToDocumentGood).toList(),
         organizationId: await _apiService.resolveSelectedOrganizationId(
           fallback: widget.organizationId,
         ),
@@ -1294,12 +1296,48 @@ class CreateClientReturnDocumentScreenState
                         ]),
                   ),
                 ]),
+                if (_showExpirationDate) ...[
+                  const SizedBox(height: 8),
+                  CompactExpirationDateField(
+                    value: item['expiration_date']?.toString(),
+                    onChanged: (date) =>
+                        _updateItemExpiration(variantId, date),
+                  ),
+                ],
               ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _updateItemExpiration(int variantId, String date) {
+    setState(() {
+      final index =
+          _items.indexWhere((item) => item['variantId'] == variantId);
+      if (index == -1) return;
+      if (date.isEmpty) {
+        _items[index].remove('expiration_date');
+      } else {
+        _items[index]['expiration_date'] = date;
+      }
+    });
+  }
+
+  Map<String, dynamic> _mapItemToDocumentGood(Map<String, dynamic> item) {
+    final availableUnits = item['availableUnits'] as List<Unit>? ?? [];
+    final expirationDate =
+        CompactExpirationDateField.toApiDate(item['expiration_date']);
+
+    return {
+      'good_id': item['variantId'],
+      'quantity': num.tryParse(item['quantity'].toString()),
+      'price': _parsePriceAsNumber(item['price']),
+      if (availableUnits.isNotEmpty) 'unit_id': item['unit_id'],
+      if (_showExpirationDate && expirationDate != null)
+        'expiration_date': expirationDate,
+    };
   }
 
   Widget _buildActionButtons(AppLocalizations localizations) {

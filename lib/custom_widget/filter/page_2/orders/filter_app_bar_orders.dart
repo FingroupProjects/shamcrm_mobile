@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/custom_field_multi_select.dart';
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/lead_manager_list.dart';
@@ -618,15 +619,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   }
 
   CustomDropdownDecoration _buildDropdownDecoration() {
-    final colors = context.appColors;
-    return CustomDropdownDecoration(
-      closedFillColor: colors.fieldBg,
-      expandedFillColor: colors.surfacePrimary,
-      closedBorder: Border.all(color: colors.fieldBorder, width: 1),
-      expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
-      closedBorderRadius: BorderRadius.circular(12),
-      expandedBorderRadius: BorderRadius.circular(12),
-    );
+    return AppFieldStyle.dropdownDecoration(context);
   }
 
   Widget _buildDeliveryTypeDropdown() {

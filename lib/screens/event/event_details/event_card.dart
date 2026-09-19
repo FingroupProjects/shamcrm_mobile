@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/models/event/event_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -271,10 +272,10 @@ class _EventCardState extends State<EventCard> {
             const SizedBox(height: 5),
             Row(
               children: [
-                Image.asset(
-                  'assets/icons/tabBar/date.png',
-                  width: 17,
-                  height: 17,
+                ThemedDateIcon(
+                  size: 17,
+                  color: colors.textSecondary,
+                  background: colors.surfacePrimary,
                 ),
                 const SizedBox(width: 4),
                 Text(

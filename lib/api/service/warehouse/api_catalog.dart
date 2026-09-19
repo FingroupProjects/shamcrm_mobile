@@ -1113,8 +1113,12 @@ extension ApiWarehouseCatalogX on ApiService {
     required int perPage,
     String? searchQuery,
     Map<String, dynamic>? filters,
+    bool unanswered = false,
   }) async {
-    String path = '/calls?incoming=0&page=$page&per_page=$perPage';
+    // Исходящие и исходящие без ответа — разные вкладки.
+    final missedFlag = unanswered ? 1 : 0;
+    String path =
+        '/calls?incoming=0&missed=$missedFlag&page=$page&per_page=$perPage';
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       path += '&search=${Uri.encodeQueryComponent(searchQuery)}';
@@ -1216,7 +1220,7 @@ extension ApiWarehouseCatalogX on ApiService {
     String? searchQuery,
     Map<String, dynamic>? filters,
   }) async {
-    String path = '/calls?missed=1&page=$page&per_page=$perPage';
+    String path = '/calls?missed=1&incoming=1&page=$page&per_page=$perPage';
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
       path += '&search=${Uri.encodeQueryComponent(searchQuery)}';

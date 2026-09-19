@@ -460,7 +460,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
   String _getCallTypeText(bool incoming, bool missed) {
     if (missed) {
       if (!incoming) {
-        return 'Исходящий звонок без ответа';
+        return AppLocalizations.of(context)!.translate('outgoing_call_unanswered');
       }
       return AppLocalizations.of(context)!.translate('missed_call');
     } else if (incoming) {
@@ -479,7 +479,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
       case CallType.missed:
         return AppLocalizations.of(context)!.translate('missed_call');
       case CallType.outgoingMissed:
-        return 'Исходящий звонок без ответа';
+        return AppLocalizations.of(context)!.translate('outgoing_call_unanswered');
     }
   }
 
@@ -514,9 +514,12 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
     if (label == 'call_details') {
       bool isMissed = call.missed;
       bool isIncoming = call.incoming;
-      Color statusColor = isMissed
-          ? context.appColors.error.withValues(alpha: 0.12)
-          : context.appColors.buttonPrimaryBg.withValues(alpha: 0.12);
+      final typeColor = CallTypeColors.of(
+        isMissed
+            ? (isIncoming ? CallType.missed : CallType.outgoingMissed)
+            : (isIncoming ? CallType.incoming : CallType.outgoing),
+      );
+      Color statusColor = typeColor.withValues(alpha: 0.12);
       String statusText = _getCallTypeText(call.incoming, call.missed);
 
       return Container(
@@ -619,9 +622,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed
-                        ? context.appColors.error
-                        : context.appColors.success,
+                    color: typeColor,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -631,9 +632,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed
-                          ? context.appColors.error
-                          : context.appColors.success,
+                      color: typeColor,
                     ),
                   ),
                 ],
@@ -743,10 +742,8 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
     }
 
     if (label == 'call_details') {
-      bool isMissed = call.callType == CallType.missed;
-      Color statusColor = isMissed
-          ? context.appColors.error.withValues(alpha: 0.12)
-          : context.appColors.buttonPrimaryBg.withValues(alpha: 0.12);
+      final typeColor = CallTypeColors.of(call.callType);
+      Color statusColor = typeColor.withValues(alpha: 0.12);
       String statusText = _getCallTypeTextFromEntry(call.callType);
 
       return Container(
@@ -851,9 +848,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
                 children: [
                   Icon(
                     Icons.info,
-                    color: isMissed
-                        ? context.appColors.error
-                        : context.appColors.success,
+                    color: typeColor,
                     size: 16,
                   ),
                   const SizedBox(width: 4),
@@ -863,9 +858,7 @@ class _CallDetailsScreenState extends State<CallDetailsScreen> {
                       fontSize: 16,
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w500,
-                      color: isMissed
-                          ? context.appColors.error
-                          : context.appColors.success,
+                      color: typeColor,
                     ),
                   ),
                 ],

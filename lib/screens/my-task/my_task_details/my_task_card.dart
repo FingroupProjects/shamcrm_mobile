@@ -2,6 +2,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_my-tasks_tabBar.dart'
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/models/my_task/my-task_model.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_dropdown_bottom_dialog.dart';
@@ -193,16 +194,10 @@ class _MyTaskCardState extends State<MyTaskCard> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        ColorFiltered(
-                          colorFilter: ColorFilter.mode(
-                            isOverdue ? overdueColor : mutedText,
-                            BlendMode.srcIn,
-                          ),
-                          child: Image.asset(
-                            'assets/icons/tabBar/date.png',
-                            width: 24,
-                            height: 36,
-                          ),
+                        ThemedDateIcon(
+                          size: 22,
+                          color: isOverdue ? overdueColor : mutedText,
+                          background: colors.surfacePrimary,
                         ),
                         const SizedBox(width: 4),
                         Text(

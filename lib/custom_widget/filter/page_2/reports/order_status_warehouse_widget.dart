@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/order_status_warehouse/order_status_warehouse_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/order_status_warehouse/order_status_warehouse_event.dart';
@@ -126,20 +127,7 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
                 searchHintText: AppLocalizations.of(context)!.translate('search'),
                 overlayHeight: 400,
                 enabled: true,  // Всегда enabled
-                decoration: CustomDropdownDecoration(
-                  closedFillColor: context.appColors.fieldBg,
-                  expandedFillColor: context.appColors.surfacePrimary,
-                  closedBorder: Border.all(
-                    color: context.appColors.fieldBg,
-                    width: 1,
-                  ),
-                  closedBorderRadius: BorderRadius.circular(12),
-                  expandedBorder: Border.all(
-                    color: context.appColors.fieldBg,
-                    width: 1,
-                  ),
-                  expandedBorderRadius: BorderRadius.circular(12),
-                ),
+                decoration: AppFieldStyle.dropdownDecoration(context),
                 listItemBuilder: (context, item, isSelected, onItemSelect) {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

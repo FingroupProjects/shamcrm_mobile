@@ -3,7 +3,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
-import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/page_2/category/category_add_character.dart';
 import 'package:crm_task_manager/page_2/category/category_details/category_add_character.dart';
@@ -84,7 +83,7 @@ class CategoryAddBottomSheet {
                         color: colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Form(
@@ -103,77 +102,77 @@ class CategoryAddBottomSheet {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context)!.translate('parent_category'),
+                              const SizedBox(height: 16),
+                              // Root category switch. Same card look as the other blocks.
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    isActive = !isActive;
+                                    if (isActive) {
+                                      subSelectedCategory = null;
+                                      customFields = [];
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.fieldBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: colors.borderSubtle,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          AppLocalizations.of(context)!
+                                              .translate('parent_category'),
                                           style: TextStyle(
                                             fontSize: 16,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w600,
                                             fontFamily: 'Gilroy',
                                             color: colors.textPrimary,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              isActive = !isActive;
-                                              if (isActive) {
-                                                subSelectedCategory = null;
-                                                customFields = [];
-                                              }
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                            decoration: BoxDecoration(
-                                              color: colors.fieldBg,
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Switch(
-                                                  value: isActive,
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      isActive = value;
-                                                      if (isActive) {
-                                                        subSelectedCategory = null;
-                                                        customFields = [];
-                                                      }
-                                                    });
-                                                  },
-                                                  activeColor: colors.surfacePrimary,
-                                                  inactiveTrackColor: colors.textMuted.withValues(alpha: 0.5),
-                                                  activeTrackColor: colors.buttonPrimaryBg,
-                                                  inactiveThumbColor: colors.surfacePrimary,
-                                                ),
-                                                const SizedBox(width: 10),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      Switch(
+                                        value: isActive,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            isActive = value;
+                                            if (isActive) {
+                                              subSelectedCategory = null;
+                                              customFields = [];
+                                            }
+                                          });
+                                        },
+                                        activeColor: colors.surfacePrimary,
+                                        inactiveTrackColor:
+                                            colors.textMuted.withValues(alpha: 0.5),
+                                        activeTrackColor: colors.buttonPrimaryBg,
+                                        inactiveThumbColor: colors.surfacePrimary,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                              const SizedBox(height: 8),
-                              SubCategoryDropdownWidget(
-                                subSelectedCategory: subSelectedCategory,
-                                onSelectCategory: (category) {
-                                  setState(() {
-                                    subSelectedCategory = category;
-                                  });
-                                },
-                              ),
-                              if (!isActive) const SizedBox(height: 8),
+                              if (!isActive) const SizedBox(height: 16),
+                              if (!isActive)
+                                SubCategoryDropdownWidget(
+                                  subSelectedCategory: subSelectedCategory,
+                                  onSelectCategory: (category) {
+                                    setState(() {
+                                      subSelectedCategory = category;
+                                    });
+                                  },
+                                ),
+                              if (!isActive) const SizedBox(height: 16),
                               if (!isActive)
                                 PriceAffectSwitcher(
                                   isActive: isAffectingPrice,
@@ -187,7 +186,7 @@ class CategoryAddBottomSheet {
                                     });
                                   },
                                 ),
-                              if (!isActive) const SizedBox(height: 8),
+                              if (!isActive) const SizedBox(height: 16),
                               if (!isActive)
                                 CategoryTypeSelector(
                                   selectedType: selectedType,
@@ -200,7 +199,7 @@ class CategoryAddBottomSheet {
                                   },
                                   isAffectingPrice: isAffectingPrice,
                                 ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               CategoryImageField(
                                 image: _image,
                                 onChanged: (file) {
@@ -209,7 +208,7 @@ class CategoryAddBottomSheet {
                                   });
                                 },
                               ),
-                              if (!isActive) const SizedBox(height: 10),
+                              if (!isActive) const SizedBox(height: 16),
                               if (!isActive)
                                 CustomButton(
                                   buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
@@ -217,13 +216,20 @@ class CategoryAddBottomSheet {
                                   textColor: colors.buttonPrimaryFg,
                                   onPressed: _showAddCharacterCustomFieldDialog,
                                 ),
-                              if (!isActive) const SizedBox(height: 5),
+                              if (!isActive) const SizedBox(height: 8),
                               if (!isActive)
                                 Column(
                                   children: customFields.map((field) {
                                     return Card(
                                       color: colors.fieldBg,
                                       margin: const EdgeInsets.symmetric(vertical: 4),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: colors.borderSubtle,
+                                          width: 1,
+                                        ),
+                                      ),
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.only(left: 16, right: 16),
                                         title: Text(

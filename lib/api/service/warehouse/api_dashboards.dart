@@ -1226,4 +1226,39 @@ extension ApiWarehouseDashboardsX on ApiService {
       throw Exception('Ошибка загрузки статей расхода');
     }
   }
+
+  /// Товары по сроку годности. Только adminbiovecotj.
+  Future<ResultGoodsExpirationReport> getGoodsReportByExpirationDate({
+    int page = 1,
+    int perPage = 20,
+    Map<String, dynamic>? filters,
+    String? search,
+  }) async {
+    final params = _buildDetailedDashboardCommonParams(
+      page: page,
+      perPage: perPage,
+      filters: filters,
+      search: search,
+    );
+    final query = params.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final path = await _appendQueryParams(
+      '/dashboard/goods-report-by-expiration-date?$query',
+    );
+
+    final response = await _getRequest(path);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final rawData = SafeConverters.toMap(json.decode(response.body));
+      return ResultGoodsExpirationReport.fromJson(
+        SafeConverters.toMap(rawData['result']),
+      );
+    }
+
+    final message = _extractErrorMessageFromResponse(response);
+    throw ApiException(
+      message ?? 'Ошибка при получении отчёта по сроку годности!',
+      response.statusCode,
+    );
+  }
 }

@@ -10,6 +10,7 @@ import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen
 import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_delete.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_edit.dart';
+import 'package:crm_task_manager/page_2/warehouse/widgets/compact_expiration_date_field.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/styled_action_button.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -57,6 +58,8 @@ class _ClientReturnDocumentDetailsScreenState
 
   // ✅ НОВОЕ: Флаг разрешения на проведение документа
   bool _hasApprovePermission = false;
+  // Срок годности в товаре — только adminbiovecotj.
+  bool _showExpirationDate = false;
 
   final Map<int, String> _unitMap = {
     // Оставляем, но используем availableUnits ниже
@@ -70,6 +73,15 @@ class _ClientReturnDocumentDetailsScreenState
     _fetchDocumentDetails();
     _loadGoodMeasurementSetting();
     _checkApprovePermission();
+    _loadExpirationDateVisibility();
+  }
+
+  Future<void> _loadExpirationDateVisibility() async {
+    final visible = await _apiService.isAdminbiovecotjTenant();
+    if (!mounted) return;
+    setState(() {
+      _showExpirationDate = visible;
+    });
   }
 
   // ✅ НОВОЕ: Проверка разрешения на проведение документа
@@ -982,6 +994,21 @@ class _ClientReturnDocumentDetailsScreenState
                           ),
                         ],
                       ),
+                      if (_showExpirationDate &&
+                          CompactExpirationDateField.toUiDate(
+                                  good.expirationDate)
+                              .isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '${AppLocalizations.of(context)!.translate('goods_expiration_date') ?? 'Срок годности'}: ${CompactExpirationDateField.toUiDate(good.expirationDate)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w500,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(

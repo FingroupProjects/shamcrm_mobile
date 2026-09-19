@@ -105,6 +105,20 @@ class CategoryData {
       'subcategories': subcategories,
     };
   }
+
+  // Dropdown header uses toString when headerBuilder is missing.
+  // Show the name instead of "Instance of CategoryData".
+  @override
+  String toString() => name;
+
+  // CustomDropdown matches initialItem by ==.
+  // Compare by id so a new instance from search still counts as selected.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is CategoryData && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class CategoryDetail {

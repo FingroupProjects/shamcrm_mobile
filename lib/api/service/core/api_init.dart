@@ -252,6 +252,12 @@ extension ApiInitX on ApiService {
         ApiService._fingroupcrmSubdomains.contains(subdomain);
   }
 
+  Future<bool> isAdminbiovecotjTenant() async {
+    final subdomain = await getCurrentTenantSubdomain();
+    return subdomain != null &&
+        ApiService._adminbiovecotjSubdomains.contains(subdomain);
+  }
+
   Future<Set<String>> _currentUserRoles() async {
     final prefs = await SharedPreferences.getInstance();
     final roles = <String>{};

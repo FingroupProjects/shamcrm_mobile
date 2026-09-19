@@ -16,52 +16,25 @@ class AddCustomCharacterFieldDialog extends StatefulWidget {
 
 class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldDialog> {
   String? selectedCharacter;
-  bool _isDropdownVisible = false;
-  bool _isKeyboardVisible = false;
   bool isCommonActive = true;
   bool isUniqueActive = false;
   bool showOnWebsite = false;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewInsets = MediaQuery.of(context).viewInsets;
-      setState(() {
-        _isKeyboardVisible = viewInsets.bottom > 0;
-      });
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final viewInsets = MediaQuery.of(context).viewInsets;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _isKeyboardVisible = viewInsets.bottom > 0;
-        });
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final double dialogHeight = _isDropdownVisible
-        ? MediaQuery.of(context).size.height * 0.60
-        : MediaQuery.of(context).size.height * 0.40;
 
+    // Height follows content. A fixed 40%/60% sheet left a large empty gap.
     return Dialog(
-      insetPadding: EdgeInsets.zero,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      backgroundColor: Colors.transparent,
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
-        height: dialogHeight,
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colors.surfacePrimary,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.borderSubtle, width: 1),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -76,7 +49,7 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                   color: colors.textPrimary,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 12),
               CharacteristicSelectionWidget(
                 selectedCharacteristic: selectedCharacter,
                 onSelectCharacteristic: (String character) {
@@ -84,13 +57,10 @@ class _AddCustomCharacterFieldDialogState extends State<AddCustomCharacterFieldD
                     selectedCharacter = character;
                   });
                 },
-                onDropdownVisibilityChanged: (bool isVisible) {
-                  setState(() {
-                    _isDropdownVisible = isVisible;
-                  });
-                },
+                // Rebuild so the dialog can grow with the list.
+                onDropdownVisibilityChanged: (_) => setState(() {}),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [

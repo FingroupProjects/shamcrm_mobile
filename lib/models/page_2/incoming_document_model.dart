@@ -545,6 +545,8 @@ class DocumentGood {
   final Unit? unit;
   final GoodVariant? goodVariant;
   final List<DocumentGoodMaterial>? materials;
+  // Срок годности товара. Есть только у возврата от клиента на adminbiovecotj.
+  final String? expirationDate;
 
   Unit get selectedUnit {
     if (unit?.id != null && good?.units != null) {
@@ -580,6 +582,7 @@ class DocumentGood {
     this.unit,
     this.goodVariant,
     this.materials,
+    this.expirationDate,
   });
 
   factory DocumentGood.fromJson(Map<String, dynamic> json) {
@@ -618,6 +621,7 @@ class DocumentGood {
               .map((i) => DocumentGoodMaterial.fromJson(SafeConverters.toMap(i)))
               .toList()
           : null,
+      expirationDate: SafeConverters.toStringOrNull(json['expiration_date']),
     );
   }
 
@@ -636,6 +640,7 @@ class DocumentGood {
       'unit_id': unitId,
       'cost_price': costPrice,
       'materials': materials?.map((e) => e.toJson()).toList(),
+      'expiration_date': expirationDate,
     };
   }
 }

@@ -10,6 +10,7 @@ import '../../../../bloc/page_2_BLOC/openings/goods/goods_dialog_state.dart';
 import '../../../../bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import 'add_goods_opening_screen.dart';
+import 'goods_opening_category_picker.dart';
 
 class CreateGoodsOpeningDialog extends StatelessWidget {
   const CreateGoodsOpeningDialog({super.key});
@@ -33,6 +34,8 @@ class GoodVariantsDialog extends StatefulWidget {
 class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
+  int? _categoryId;
+  String? _categoryName;
 
   @override
   void dispose() {
@@ -46,9 +49,52 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
 
   void _onSearch(String input) {
     final query = input.trim().isEmpty ? null : input.trim();
-    context
-        .read<GoodsDialogBloc>()
-        .add(SearchGoodVariantsForDialog(search: query));
+    context.read<GoodsDialogBloc>().add(
+          SearchGoodVariantsForDialog(
+            search: query,
+            categoryId: _categoryId,
+          ),
+        );
+  }
+
+  void _reloadGoods({String? search}) {
+    context.read<GoodsDialogBloc>().add(
+          LoadGoodVariantsForDialog(
+            search: search,
+            categoryId: _categoryId,
+          ),
+        );
+  }
+
+  Future<void> _pickCategory() async {
+    final picked = await GoodsOpeningCategoryPicker.show(
+      context,
+      selectedId: _categoryId,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      if (picked.isClear) {
+        _categoryId = null;
+        _categoryName = null;
+      } else {
+        _categoryId = picked.id;
+        _categoryName = picked.name;
+      }
+    });
+
+    final query = _isSearching ? _searchController.text.trim() : '';
+    _reloadGoods(search: query.isEmpty ? null : query);
+  }
+
+  void _clearCategory() {
+    if (_categoryId == null && _categoryName == null) return;
+    setState(() {
+      _categoryId = null;
+      _categoryName = null;
+    });
+    final query = _isSearching ? _searchController.text.trim() : '';
+    _reloadGoods(search: query.isEmpty ? null : query);
   }
 
   Widget _buildVariantsList(
@@ -258,6 +304,21 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                       ),
                       IconButton(
                         icon: Icon(
+                          _categoryId == null
+                              ? Icons.filter_alt_outlined
+                              : Icons.filter_alt,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        tooltip: _translate(
+                          context,
+                          'select_category',
+                          'Выберите категорию',
+                        ),
+                        onPressed: _pickCategory,
+                      ),
+                      IconButton(
+                        icon: Icon(
                           _isSearching ? Icons.close : Icons.search,
                           color: Colors.white,
                           size: 24,
@@ -267,15 +328,66 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                             _isSearching = !_isSearching;
                             if (!_isSearching) {
                               _searchController.clear();
-                              context
-                                  .read<GoodsDialogBloc>()
-                                  .add(LoadGoodVariantsForDialog(search: null));
+                              _reloadGoods();
                             }
                           });
                         },
                       ),
                     ],
                   ),
+                  if (_categoryName != null && _categoryName!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 10, right: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: _pickCategory,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Text(
+                                    _categoryName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Clear the selected category and show all goods again.
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              tooltip: _translate(context, 'clear', 'Очистить'),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              onPressed: _clearCategory,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_isSearching) ...[
                     const SizedBox(height: 12),
                     TextField(
@@ -372,9 +484,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () {
-                                context
-                                    .read<GoodsDialogBloc>()
-                                    .add(LoadGoodVariantsForDialog());
+                                _reloadGoods();
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.buttonPrimaryBg,

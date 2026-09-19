@@ -22,6 +22,7 @@ import 'package:crm_task_manager/page_2/dashboard/detailed_report/contents/order
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods/sales_dashboard_goods_bloc.dart';
+import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_expiration/sales_dashboard_goods_expiration_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/cash_balance/sales_dashboard_cash_balance_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/creditors/sales_dashboard_creditors_bloc.dart';
 import '../../../bloc/page_2_BLOC/dashboard/debtors/sales_dashboard_debtors_bloc.dart';
@@ -37,6 +38,7 @@ import '../../../screens/profile/profile_screen.dart';
 import 'contents/creditors_content.dart';
 import 'contents/debtors_content.dart';
 import 'contents/goods_content.dart';
+import 'contents/goods_expiration_content.dart';
 import 'contents/salary_report_content.dart';
 import 'contents/top_selling_goods_content.dart';
 
@@ -108,6 +110,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     'id': 12,
     'titleKey': 'tab_salary_debt',
   };
+  static const Map<String, dynamic> _expirationTab = {
+    'id': 15,
+    'titleKey': 'tab_goods_expiration',
+  };
   List<Map<String, dynamic>> _tabTitles = [];
   late List<GlobalKey> _tabKeys;
   late int _currentTabIndex;
@@ -134,7 +140,9 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   late SalesDashboardOrderQuantityBloc _orderQuantityBloc;
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
   late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
+  late SalesDashboardGoodsExpirationBloc _goodsExpirationBloc;
   bool _hasManufacture = false;
+  bool _hasExpirationReport = false;
   bool _tabControllerInitialized = false;
 
   @override
@@ -169,10 +177,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _reconciliationActBloc = SalesDashboardReconciliationActBloc();
     _goodsMovementBloc = SalesDashboardGoodsMovementBloc()
       ..add(LoadGoodsMovementReport());
+    _goodsExpirationBloc = SalesDashboardGoodsExpirationBloc();
 
     _scrollController = ScrollController();
     _rebuildTabs(initialIndex: widget.currentTabIndex);
     _loadManufactureSettings();
+    _loadExpirationTabVisibility();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveTab();
@@ -202,6 +212,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _orderQuantityBloc.close();
     _reconciliationActBloc.close();
     _goodsMovementBloc.close();
+    _goodsExpirationBloc.close();
 
     super.dispose();
   }
@@ -275,6 +286,10 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     } else if (id == 10) {
       _orderQuantityBloc
           .add(LoadOrderQuantityReport(filter: filter, search: search));
+    } else if (id == 15) {
+      _goodsExpirationBloc.add(
+        LoadGoodsExpirationReport(filter: filter, search: search),
+      );
     }
   }
 
@@ -292,6 +307,17 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       _filters[_currentTabIndex] = {};
     });
     _reloadCurrentTabData();
+  }
+
+  Future<void> _loadExpirationTabVisibility() async {
+    try {
+      final visible = await _apiService.isAdminbiovecotjTenant();
+      if (!mounted || _hasExpirationReport == visible) return;
+      setState(() {
+        _hasExpirationReport = visible;
+        _rebuildTabs(preserveCurrentSelection: true);
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadManufactureSettings() async {
@@ -320,15 +346,19 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
         ? _tabTitles[_currentTabIndex]['id'] as int
         : null;
 
+    // Срок годности — вторым, сразу после «Товары».
     _tabTitles = [
-      ..._baseTabTitles,
+      _baseTabTitles.first,
+      if (_hasExpirationReport) _expirationTab,
+      ..._baseTabTitles.skip(1),
       _salaryTab,
       if (_hasManufacture) ..._manufactureTabTitles,
     ];
 
-    final nextIndex = preserveCurrentSelection && currentTabId != null
-        ? _tabTitles.indexWhere((tab) => tab['id'] == currentTabId)
+    final requestedId = preserveCurrentSelection && currentTabId != null
+        ? currentTabId
         : (initialIndex ?? widget.currentTabIndex);
+    final nextIndex = _tabTitles.indexWhere((tab) => tab['id'] == requestedId);
     _currentTabIndex =
         nextIndex >= 0 && nextIndex < _tabTitles.length ? nextIndex : 0;
 
@@ -400,6 +430,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
               value: _reconciliationActBloc),
           BlocProvider<SalesDashboardGoodsMovementBloc>.value(
               value: _goodsMovementBloc),
+          BlocProvider<SalesDashboardGoodsExpirationBloc>.value(
+              value: _goodsExpirationBloc),
         ],
         child: Scaffold(
           backgroundColor: context.appColors.backgroundPrimary,
@@ -565,6 +597,8 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
       return const ManufactureMaterialsContent();
     } else if (id == 10) {
       return const OrderQuantityContent();
+    } else if (id == 15) {
+      return const GoodsExpirationContent();
     } else {
       return Container();
     }

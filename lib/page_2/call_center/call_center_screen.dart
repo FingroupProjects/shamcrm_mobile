@@ -45,13 +45,8 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     null,
     CallType.incoming,
     CallType.outgoing,
-    CallType.missed
-  ];
-  final List<String> _filterLabels = [
-    'Все',
-    'Входящие',
-    'Исходящие',
-    'Пропущенные'
+    CallType.outgoingMissed,
+    CallType.missed,
   ];
 
   List<CallTypeData> _selectedCallTypes = [];
@@ -275,7 +270,11 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             ),
           );
         } else if (state is CallCenterLoaded) {
-          final items = _buildListWithHeaders(state.calls);
+          final visibleCalls = state.calls.where((call) {
+            if (_selectedFilter == null) return true;
+            return call.callType == _selectedFilter;
+          }).toList();
+          final items = _buildListWithHeaders(visibleCalls);
           if (items.isEmpty) {
             return _buildEmptyState();
           }
@@ -515,12 +514,14 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                children: List.generate(_filterLabels.length, (index) {
+                children: List.generate(_filterTypes.length, (index) {
                   return Padding(
                     padding: EdgeInsets.only(
-                        right: index < _filterLabels.length - 1 ? 8 : 0),
+                        right: index < _filterTypes.length - 1 ? 8 : 0),
                     child: _buildFilterChip(
-                        _filterLabels[index], _filterTypes[index], index),
+                        _filterLabel(_filterTypes[index]),
+                        _filterTypes[index],
+                        index),
                   );
                 }),
               ),
@@ -545,16 +546,35 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
     );
   }
 
+  String _filterLabel(CallType? type) {
+    final loc = AppLocalizations.of(context)!;
+    switch (type) {
+      case CallType.incoming:
+        return loc.translate('incoming');
+      case CallType.outgoing:
+        return loc.translate('outgoing');
+      case CallType.outgoingMissed:
+        return loc.translate('outgoing_unanswered');
+      case CallType.missed:
+        return loc.translate('missed');
+      default:
+        return loc.translate('all');
+    }
+  }
+
   Widget _buildFilterChip(String label, CallType? type, int index) {
     final isSelected = _currentPageIndex == index;
+    // Все — как раньше. Остальные чипы в цветах типа звонка.
+    final typeColor =
+        type == null ? context.appColors.buttonPrimaryBg : CallTypeColors.of(type);
     return GestureDetector(
       onTap: () => _navigateToPage(index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? context.appColors.buttonPrimaryBg
-              : context.appColors.backgroundSecondary,
+              ? typeColor
+              : typeColor.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -563,9 +583,7 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: isSelected
-                ? context.appColors.buttonPrimaryFg
-                : context.appColors.textPrimary,
+            color: isSelected ? Colors.white : typeColor,
           ),
         ),
       ),

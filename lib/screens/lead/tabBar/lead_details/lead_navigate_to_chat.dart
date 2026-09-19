@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
 Future<void> openLeadChatDirect(
@@ -113,16 +114,6 @@ Future<void> openLeadChatDirect(
   showDialog(
     context: context,
     builder: (dialogContext) {
-      final Map<String, String> sourceIcons = {
-        'telegram_account': 'assets/icons/leads/telegram.png',
-        'telegram_bot': 'assets/icons/leads/telegram.png',
-        'mini_app': 'assets/icons/leads/telegram.png',
-        'whatsapp': 'assets/icons/leads/whatsapp.png',
-        'green_api': 'assets/icons/leads/whatsapp.png',
-        'facebook': 'assets/icons/leads/messenger.png',
-        'instagram': 'assets/icons/leads/instagram.png',
-        'site': '',
-      };
       final Map<String, String> customChannelNames = {
         'telegram_account': 'Telegram',
         'telegram_bot': 'Telegram бот',
@@ -161,8 +152,6 @@ Future<void> openLeadChatDirect(
                 itemCount: channels.length,
                 itemBuilder: (context, index) {
                   final channelName = channels[index];
-                  final iconPath = sourceIcons[channelName] ??
-                      'assets/icons/leads/default.png';
                   final displayName =
                       channelName.toLowerCase() == 'support'
                           ? AppLocalizations.of(dialogContext)!
@@ -190,17 +179,11 @@ Future<void> openLeadChatDirect(
                         ),
                       ),
                       child: ListTile(
-                        leading: channelName == 'site'
-                            ? Icon(
-                                Icons.language,
-                                size: 30,
-                                color: dialogContext.appColors.buttonPrimaryBg,
-                              )
-                            : Image.asset(
-                                iconPath,
-                                width: 30,
-                                height: 30,
-                              ),
+                        leading: ChannelSourceIcon(
+                          sourceName: channelName,
+                          size: 30,
+                          background: dialogContext.appColors.surfacePrimary,
+                        ),
                         title: Text(
                           displayName,
                           style: TextStyle(
@@ -346,16 +329,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     context.read<LeadToChatBloc>().add(FetchLeadToChat(widget.leadId));
   }
 
-  final Map<String, String> sourceIcons = {
-    'telegram_account': 'assets/icons/leads/telegram.png',
-    'telegram_bot': 'assets/icons/leads/telegram.png',
-    'mini_app': 'assets/icons/leads/telegram.png',
-    'whatsapp': 'assets/icons/leads/whatsapp.png',
-    'green_api': 'assets/icons/leads/whatsapp.png',
-    'facebook': 'assets/icons/leads/messenger.png',
-    'instagram': 'assets/icons/leads/instagram.png',
-    'site': '', // Будет использоваться Flutter иконка
-  };
+  // Иконки каналов рисует ChannelSourceIcon — светлые и тёмные сами.
 
   final Map<String, String> customChannelNames = {
     'telegram_account': 'Telegram',
@@ -533,8 +507,6 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                           itemCount: channels.length,
                           itemBuilder: (context, index) {
                             final channelName = channels[index];
-                            final iconPath = sourceIcons[channelName] ??
-                                'assets/icons/leads/default.png';
                             final displayName =
                                 channelName.toLowerCase() == 'support'
                                     ? AppLocalizations.of(context)!
@@ -559,18 +531,12 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                   ),
                                 ),
                                 child: ListTile(
-                                  leading: channelName == 'site'
-                                      ? Icon(
-                                          Icons.language,
-                                          size: 30,
-                                          color:
-                                              context.appColors.buttonPrimaryBg,
-                                        )
-                                      : Image.asset(
-                                          iconPath,
-                                          width: 30,
-                                          height: 30,
-                                        ),
+                                  leading: ChannelSourceIcon(
+                                    sourceName: channelName,
+                                    size: 30,
+                                    background:
+                                        context.appColors.surfacePrimary,
+                                  ),
                                   title: Text(
                                     displayName,
                                     style: TextStyle(

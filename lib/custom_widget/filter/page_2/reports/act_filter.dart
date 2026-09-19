@@ -1,4 +1,5 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -453,8 +454,9 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: context.appColors.surfacePrimary,
+                      color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appColors.borderSubtle),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -608,6 +610,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     decoration: BoxDecoration(
                       color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appColors.borderSubtle),
                     ),
                     child: Text(
                       AppLocalizations.of(context)!
@@ -629,20 +632,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           'Поиск',
                   overlayHeight: 300,
                   enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: context.appColors.fieldBg,
-                    expandedFillColor: context.appColors.surfacePrimary,
-                    closedBorder: Border.all(
-                      color: context.appColors.fieldBg,
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: context.appColors.fieldBg,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,
@@ -764,6 +754,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                     decoration: BoxDecoration(
                       color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appColors.borderSubtle),
                     ),
                     child: Text(
                       AppLocalizations.of(context)!
@@ -785,20 +776,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           'Поиск',
                   overlayHeight: 300,
                   enabled: true,
-                  decoration: CustomDropdownDecoration(
-                    closedFillColor: context.appColors.fieldBg,
-                    expandedFillColor: context.appColors.surfacePrimary,
-                    closedBorder: Border.all(
-                      color: context.appColors.fieldBg,
-                      width: 1,
-                    ),
-                    closedBorderRadius: BorderRadius.circular(12),
-                    expandedBorder: Border.all(
-                      color: context.appColors.fieldBg,
-                      width: 1,
-                    ),
-                    expandedBorderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: AppFieldStyle.dropdownDecoration(context),
                   listItemBuilder: (context, item, isSelected, onItemSelect) {
                     return Text(
                       item.name,

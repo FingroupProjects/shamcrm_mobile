@@ -1,6 +1,7 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/region_list/region_bloc.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -57,10 +58,7 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
     final hintStyle = regionTextStyle.copyWith(
       color: context.appColors.textSecondary,
     );
-    final surfaceColor =
-        context.appColors.surfacePrimary.withValues(alpha: 0.78);
-    final borderColor = context.appColors.borderSubtle.withValues(alpha: 0.36);
-    final overlayColor = context.appColors.surfacePrimary;
+    final borderColor = context.appColors.borderSubtle;
 
     return FormField<List<RegionData>>(
       // Изменено: Обёрнуто в FormField для валидации
@@ -110,60 +108,9 @@ class _RegionsMultiSelectWidgetState extends State<RegionsMultiSelectWidget> {
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     overlayHeight: 400,
-                    decoration: CustomDropdownDecoration(
-                      // Изменено: Унифицированы стили декорации
-                      closedFillColor: surfaceColor,
-                      expandedFillColor: overlayColor,
-                      closedBorder: Border.all(
-                        color: field.hasError
-                            ? context.appColors.error
-                            : borderColor,
-                        width: 1,
-                      ),
-                      closedBorderRadius: BorderRadius.circular(18),
-                      expandedBorder: Border.all(
-                        color: field.hasError
-                            ? context.appColors.error
-                            : borderColor,
-                        width: 1,
-                      ),
-                      expandedBorderRadius: BorderRadius.circular(18),
-                      hintStyle: hintStyle,
-                      headerStyle: regionTextStyle,
-                      listItemStyle: regionTextStyle,
-                      listItemDecoration: ListItemDecoration(
-                        selectedColor: context.appColors.buttonPrimaryBg
-                            .withValues(alpha: 0.14),
-                        highlightColor: context.appColors.buttonPrimaryBg
-                            .withValues(alpha: 0.08),
-                        splashColor: Colors.transparent,
-                      ),
-                      searchFieldDecoration: SearchFieldDecoration(
-                        fillColor: context.appColors.fieldBg,
-                        textStyle: regionTextStyle,
-                        hintStyle: hintStyle,
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: context.appColors.textSecondary,
-                        ),
-                        suffixIcon: (onClear) => IconButton(
-                          onPressed: onClear,
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: context.appColors.textSecondary,
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: borderColor),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: context.appColors.buttonPrimaryBg,
-                          ),
-                        ),
-                      ),
+                    decoration: AppFieldStyle.dropdownDecoration(
+                      context,
+                      hasError: field.hasError,
                     ),
                     listItemBuilder: (context, item, isSelected, onItemSelect) {
                       // Добавлено: Опция "Выделить всех" как первый элемент

@@ -227,8 +227,9 @@ class _ManufactureReportsFilterScreenState
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: context.appColors.surfacePrimary,
+                      color: context.appColors.fieldBg,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appColors.borderSubtle),
                     ),
                     child: Row(
                       children: [

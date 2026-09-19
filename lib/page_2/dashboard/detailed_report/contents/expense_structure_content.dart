@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../models/page_2/dashboard/expense_structure_content.dart';
@@ -37,17 +38,18 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
 
   Widget _buildEmptyState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.account_balance_wallet_outlined,
               size: 64,
-              color: Color(0xff99A4BA),
+              color: colors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
@@ -56,7 +58,7 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
                 fontFamily: 'Gilroy',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xff1E2E52),
+                color: colors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -65,7 +67,7 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 14,
-                color: const Color(0xff99A4BA),
+                color: colors.textSecondary,
               ),
             ),
           ],
@@ -76,13 +78,14 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
 
   Widget _buildLoadingState() {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            color: Color(0xff1E2E52),
+          CircularProgressIndicator(
+            color: colors.buttonPrimaryBg,
           ),
           const SizedBox(height: 16),
           Text(
@@ -90,7 +93,7 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
-              color: const Color(0xff64748B),
+              color: colors.textSecondary,
             ),
           ),
         ],
@@ -100,7 +103,8 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
 
   Widget _buildErrorState(String message) {
     final localizations = AppLocalizations.of(context)!;
-    
+    final colors = context.appColors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -108,20 +112,20 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xffFEF2F2),
+            color: colors.surfacePrimary,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xffFECACA),
+              color: colors.borderSubtle,
               width: 1,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 48,
-                color: Color(0xffEF4444),
+                color: colors.error,
               ),
               const SizedBox(height: 16),
               Text(
@@ -130,7 +134,7 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
                   fontFamily: 'Gilroy',
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xff1E2E52),
+                  color: colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -140,26 +144,29 @@ class _ExpenseStructureContentState extends State<ExpenseStructureContent> {
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontSize: 14,
-                  color: const Color(0xff64748B),
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  context.read<SalesDashboardExpenseStructureBloc>().add(const LoadExpenseStructureReport());
+                  context
+                      .read<SalesDashboardExpenseStructureBloc>()
+                      .add(const LoadExpenseStructureReport());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff1E2E52),
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.buttonPrimaryBg,
+                  foregroundColor: colors.buttonPrimaryFg,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   localizations.translate('retry'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
                   ),

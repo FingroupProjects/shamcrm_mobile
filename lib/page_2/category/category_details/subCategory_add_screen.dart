@@ -99,7 +99,7 @@ class SubCategoryAddBottomSheet {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               PriceAffectSwitcher(
                                 isActive: isAffectingPrice,
                                 onChanged: (value) {
@@ -108,7 +108,7 @@ class SubCategoryAddBottomSheet {
                                   });
                                 },
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               CategoryTypeSelector(
                                 selectedType: selectedType,
                                 onTypeChanged: (type) {
@@ -117,7 +117,7 @@ class SubCategoryAddBottomSheet {
                                   });
                                 },isAffectingPrice: isAffectingPrice,
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 16),
                               CategoryImageField(
                                 image: _image,
                                 onChanged: (file) {
@@ -126,14 +126,14 @@ class SubCategoryAddBottomSheet {
                                   });
                                 },
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 16),
                               CustomButton(
                                 buttonText: AppLocalizations.of(context)!.translate('add_characteristic'),
                                 buttonColor: colors.buttonPrimaryBg,
                                 textColor: colors.buttonPrimaryFg,
                                 onPressed: _showAddCharacterCustomFieldDialog,
                               ),
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 8),
                               Column(
                                 children: customFields.map((field) {
                                   return Card(
