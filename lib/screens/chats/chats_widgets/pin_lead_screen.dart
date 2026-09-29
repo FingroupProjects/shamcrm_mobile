@@ -18,8 +18,8 @@ class PinnedLeadMessageWidget extends StatelessWidget {
     this.trailing,
   });
 
-  // Иконка канала теперь рисуется через ChannelSourceIcon.
-  // Она сама становится светлой или тёмной.
+  // Иконка канала — PNG из assets/icons/leads.
+  // В тёмной теме телефон и почта берут файл с суффиксом _dark.
 
   @override
   Widget build(BuildContext context) {

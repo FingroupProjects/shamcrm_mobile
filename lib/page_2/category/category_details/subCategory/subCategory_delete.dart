@@ -3,6 +3,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/category/category_bloc.dart';
@@ -21,50 +22,18 @@ class DeleteSubCategoryDialog extends StatelessWidget {
     return BlocListener<CategoryBloc, CategoryState>(
       listener: (context, state) {
         if (state is CategoryDeleted) {
-          Navigator.of(context).pop(true); 
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: colors.surfacePrimary,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: colors.success,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
+          Navigator.of(context).pop(true);
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)!.translate(state.message),
+            isSuccess: true,
           );
         } else if (state is CategoryError) {
           Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(
-                AppLocalizations.of(context)!.translate(state.message),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: colors.surfacePrimary,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: colors.buttonDangerBg,
-              elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
-            ),
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)!.translate(state.message),
+            isSuccess: false,
           );
         }
       },

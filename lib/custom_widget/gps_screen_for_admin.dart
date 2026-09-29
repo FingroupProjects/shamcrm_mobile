@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
 class GpsScreenForAdmin extends StatefulWidget {
   @override
@@ -96,8 +97,10 @@ class _GpsScreenForAdminState extends State<GpsScreenForAdmin> {
                     ),
                     onTap: () {
                       // В будущем здесь будет переход на экран с картой или деталями геолокации
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Выбран пользователь: ${user['name']}')),
+                      showCustomSnackBar(
+                        context: context,
+                        message: 'Выбран пользователь: ${user['name']}',
+                        isSuccess: true,
                       );
                     },
                   ),

@@ -191,11 +191,14 @@ class _NotesWidgetState extends State<NotesWidget> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
+                // В тёмной теме заметка светлая, в светлой — обычная.
+                // Цвет не красим: у файлов уже свой рисунок.
                 Image.asset(
-                  'assets/icons/leads/notes.png',
+                  context.isDarkTheme
+                      ? 'assets/icons/leads/notes_dark.png'
+                      : 'assets/icons/leads/notes.png',
                   width: 24,
                   height: 24,
-                  color: context.appColors.buttonPrimaryBg,
                 ),
                 SizedBox(width: 16),
                 Expanded(

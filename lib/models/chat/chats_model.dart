@@ -341,7 +341,7 @@ class Chats {
       unreadCount,
     );
   }
-
+  
   String _mapChannelToIcon(String channel) {
     final normalized = channel.replaceAll('channel-', '');
     const channelIconMap = {
@@ -457,6 +457,15 @@ class Group {
 }
 
 enum MessageDeliveryStatus { pending, sent, failed }
+
+/// Длительность голосового из поля voice_duration.
+/// Если сервер прислал null, длины нет. Нельзя подставлять 20 секунд.
+Duration parseVoiceDuration(dynamic value) {
+  if (value == null) return Duration.zero;
+  final seconds = double.tryParse(value.toString());
+  if (seconds == null || seconds <= 0) return Duration.zero;
+  return Duration(seconds: seconds.round());
+}
 
 class Message {
   static final RegExp _googleMapsQueryRegExp = RegExp(
@@ -857,11 +866,8 @@ class Message {
           json['is_created_by_ai'] != false,
       // Оценка ответа ИИ: 'good' | 'bad' | null.
       rating: json['rating']?.toString(),
-      duration: Duration(
-        seconds: json['voice_duration'] != null
-            ? double.tryParse(json['voice_duration'].toString())?.round() ?? 0
-            : 20,
-      ),
+      // null с сервера — это «длины ещё нет», а не 20 секунд.
+      duration: parseVoiceDuration(json['voice_duration']),
     );
   }
 

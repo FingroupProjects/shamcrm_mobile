@@ -20,6 +20,7 @@ import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/material.dart';
@@ -268,27 +269,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (currentState.notifications.isEmpty) {
         debugPrint('⚠️ Нет уведомлений для удаления');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                AppLocalizations.of(context)!
-                        .translate('no_notifications_to_delete') ??
-                    'Нет уведомлений для удаления',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: context.appColors.info,
-              duration: const Duration(seconds: 2),
-            ),
+          showCustomSnackBar(
+            context: context,
+            message: AppLocalizations.of(context)!
+                    .translate('no_notifications_to_delete') ??
+                'Нет уведомлений для удаления',
+            isSuccess: false,
           );
         }
         return;
@@ -512,126 +498,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final successCodes = [200, 201, 204, 429];
 
           if (state is NotificationSuccess) {
-            if (state.statusCode != null &&
-                successCodes.contains(state.statusCode)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: colors.success,
-                  elevation: 3,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: colors.error,
-                  elevation: 3,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
+            final ok = state.statusCode != null &&
+                successCodes.contains(state.statusCode);
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              isSuccess: ok,
+            );
           } else if (state is NotificationDeleted) {
-            if (state.statusCode != null &&
-                successCodes.contains(state.statusCode)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context)!
-                        .translate('all_notifications_deleted_successfully'),
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: colors.success,
-                  elevation: 3,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    state.message,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: colors.error,
-                  elevation: 3,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
+            final ok = state.statusCode != null &&
+                successCodes.contains(state.statusCode);
+            showCustomSnackBar(
+              context: context,
+              message: ok
+                  ? AppLocalizations.of(context)!
+                      .translate('all_notifications_deleted_successfully')
+                  : state.message,
+              isSuccess: ok,
+            );
           } else if (state is NotificationError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.message,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                backgroundColor: colors.error,
-                elevation: 3,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: const Duration(seconds: 2),
-              ),
+            showCustomSnackBar(
+              context: context,
+              message: state.message,
+              isSuccess: false,
             );
           }
         },
@@ -921,11 +810,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!_isApiServiceInitialized) {
         debugPrint('❌ Failed to initialize ApiService, aborting navigation');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ошибка инициализации. Попробуйте снова.'),
-              backgroundColor: Colors.red,
-            ),
+          showCustomSnackBar(
+            context: context,
+            message: 'Ошибка инициализации. Попробуйте снова.',
+            isSuccess: false,
           );
         }
         return;
@@ -1082,11 +970,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           if (e.toString().contains('404')) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Ресурс не найден.'),
-                  backgroundColor: Colors.red,
-                ),
+              showCustomSnackBar(
+                context: context,
+                message: 'Ресурс не найден.',
+                isSuccess: false,
               );
             }
           }

@@ -134,6 +134,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isBackgroundLoading) {
         ChatUnreadCounterService.instance.initialize();
+        // WhatsApp в лиде смотрит has_green_api_integration из get-user-data.
+        unawaited(context.read<ApiService>().fetchAndCacheUserData());
         // Обновление — второй шаг: сначала Face ID / PIN, потом эта модалка.
         // Она не должна закрываться сама, только по «Позже» или «Обновить».
         unawaited(AppUpdateGate.showAfterUnlock(context));

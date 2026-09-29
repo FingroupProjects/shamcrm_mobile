@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 
 import 'package:crm_task_manager/custom_widget/filter/common/multi_reason_for_refusal_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/deal/deal_NamesMultiSelectWidget.dart';
@@ -349,8 +350,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
+      showCustomSnackBar(
+        context: context,
+        message: 'Ошибка при загрузке справочников: $e',
+        isSuccess: false,
       );
     }
   }

@@ -194,7 +194,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final copied = await _copyDial();
     if (!copied) return false;
     if (selection.isValid && !selection.isCollapsed) {
-      final newText = value.text.replaceRange(selection.start, selection.end, '');
+      final newText =
+          value.text.replaceRange(selection.start, selection.end, '');
       _sipIdController.value = TextEditingValue(
         text: newText,
         selection: TextSelection.collapsed(offset: selection.start),
@@ -226,9 +227,8 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final text = value.text;
     final hasText = text.isNotEmpty;
     final hasSelection = selection.isValid && !selection.isCollapsed;
-    final isAllSelected = hasText &&
-        selection.start == 0 &&
-        selection.end == text.length;
+    final isAllSelected =
+        hasText && selection.start == 0 && selection.end == text.length;
     _dialEditableTextState = editableTextState;
     final anchors = editableTextState.contextMenuAnchors;
 
@@ -512,25 +512,29 @@ extension _SipScreenDialerExtension on _SipScreenState {
       return;
     }
 
-    final granted = await FlutterContacts.requestPermission(readonly: false);
+    final permission =
+        await FlutterContacts.permissions.request(PermissionType.readWrite);
+    final granted = permission == PermissionStatus.granted ||
+        permission == PermissionStatus.limited;
     if (!granted) {
       _showSipSnackBar('Нет доступа к контактам', isError: true);
       return;
     }
 
     try {
-      final newContact = Contact()
-        ..name.first = (suggestedName ?? '').trim()
-        ..phones = [Phone(resolvedPhone)];
+      final newContact = Contact(
+        name: Name(first: (suggestedName ?? '').trim()),
+        phones: [Phone(number: resolvedPhone)],
+      );
 
-      final createdContact = await FlutterContacts.openExternalInsert(
-        newContact,
+      final createdContactId = await FlutterContacts.native.showCreator(
+        contact: newContact,
       );
       _contactsLoaded = false;
       await _loadContacts();
       if (!mounted) return;
       _updateView(() {});
-      if (createdContact != null) {
+      if (createdContactId != null) {
         _showSipSnackBar('Контакт сохранён');
       }
     } catch (_) {
@@ -542,21 +546,23 @@ extension _SipScreenDialerExtension on _SipScreenState {
     final resolvedPhone = await _resolveFullDialPhone(rawNumber: rawNumber);
     if (resolvedPhone == null) return;
 
-    final granted = await FlutterContacts.requestPermission(readonly: false);
+    final permission =
+        await FlutterContacts.permissions.request(PermissionType.readWrite);
+    final granted = permission == PermissionStatus.granted ||
+        permission == PermissionStatus.limited;
     if (!granted) {
       _showSipSnackBar('Нет доступа к контактам', isError: true);
       return;
     }
 
     try {
-      final picked = await FlutterContacts.openExternalPick();
-      if (picked == null || picked.id.isEmpty) return;
+      final picked = await FlutterContacts.native.showPicker();
+      final pickedId = picked?.id;
+      if (pickedId == null || pickedId.isEmpty) return;
 
-      final contact = await FlutterContacts.getContact(
-        picked.id,
-        withProperties: true,
-        withPhoto: true,
-        withAccounts: true,
+      final contact = await FlutterContacts.get(
+        pickedId,
+        properties: const {ContactProperty.phone},
       );
       if (contact == null) {
         _showSipSnackBar('Контакт не найден', isError: true);
@@ -568,14 +574,17 @@ extension _SipScreenDialerExtension on _SipScreenState {
         (phone) => _digitsOnly(phone.number) == normalizedPhone,
       );
       if (!hasPhone) {
-        contact.phones = [
-          ...contact.phones,
-          Phone(resolvedPhone),
-        ];
-        final updated = await FlutterContacts.updateContact(contact);
-        await FlutterContacts.openExternalEdit(updated.id);
-      } else {
-        await FlutterContacts.openExternalEdit(contact.id);
+        final updated = contact.copyWith(
+          phones: [
+            ...contact.phones,
+            Phone(number: resolvedPhone),
+          ],
+        );
+        await FlutterContacts.update(updated);
+      }
+      final contactId = contact.id;
+      if (contactId != null) {
+        await FlutterContacts.native.showEditor(contactId);
       }
 
       _contactsLoaded = false;

@@ -17,6 +17,7 @@ import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/models/lead/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/page_2/money/widgets/author_multi_select_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
@@ -490,8 +491,10 @@ class _UserFilterScreenState extends State<UserFilterScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
+      showCustomSnackBar(
+        context: context,
+        message: 'Ошибка при загрузке справочников: $e',
+        isSuccess: false,
       );
     }
   }

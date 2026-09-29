@@ -3,6 +3,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/workday/timesheet_models.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -446,8 +447,10 @@ class _MapTile extends StatelessWidget {
     );
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось открыть карту')),
+      showCustomSnackBar(
+        context: context,
+        message: 'Не удалось открыть карту',
+        isSuccess: false,
       );
     }
   }

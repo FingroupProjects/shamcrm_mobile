@@ -7,6 +7,7 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/chat_media_persistent_cache.dart';
 import 'package:crm_task_manager/services/chat_voice_player_service.dart';
+import 'package:crm_task_manager/services/voice_duration_resolver.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -55,6 +56,11 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
   bool _isLoading = false;
   bool _hasError = false;
   int _loadGeneration = 0;
+  int _durationGeneration = 0;
+
+  /// Настоящая длина файла. Пока её нет, не показываем выдуманные 00:20.
+  Duration? _fileDuration;
+  bool _gaveUpOnFileDuration = false;
 
   String get _filePath => widget.message.filePath ?? '';
 
@@ -68,6 +74,74 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
   void initState() {
     super.initState();
     _player.addListener(_onPlayerChanged);
+    _applyKnownDuration();
+    _requestFileDuration();
+  }
+
+  @override
+  void didUpdateWidget(VoiceMessageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final changed = oldWidget.message.id != widget.message.id ||
+        oldWidget.message.filePath != widget.message.filePath;
+    if (!changed && _fileDuration != null) return;
+    if (changed) {
+      _fileDuration = null;
+      _gaveUpOnFileDuration = false;
+    }
+    _applyKnownDuration();
+    _requestFileDuration();
+  }
+
+  void _applyKnownDuration() {
+    final cached = VoiceDurationResolver.instance.peek(_getAudioSource());
+    if (cached == null || cached <= Duration.zero) return;
+    _fileDuration = cached;
+    widget.message.duration = cached;
+  }
+
+  void _requestFileDuration() {
+    final source = _getAudioSource();
+    if (source.isEmpty) return;
+    final generation = ++_durationGeneration;
+    _readFileDuration(source, generation);
+  }
+
+  Future<void> _readFileDuration(String source, int generation) async {
+    // Если файл уже скачан, длину берём с диска. Иначе читаем по ссылке.
+    final local = await ChatMediaPersistentCache.instance.peekAnyFile(source);
+    if (!mounted || generation != _durationGeneration) return;
+
+    final probeSource = (local != null && local.path.isNotEmpty)
+        ? local.path
+        : source;
+    final duration = await VoiceDurationResolver.instance.resolve(probeSource);
+    if (!mounted || generation != _durationGeneration) return;
+    if (duration == null || duration <= Duration.zero) {
+      setState(() => _gaveUpOnFileDuration = true);
+      return;
+    }
+
+    VoiceDurationResolver.instance.remember(source, duration);
+    setState(() {
+      _fileDuration = duration;
+      widget.message.duration = duration;
+    });
+  }
+
+  Duration get _totalDuration {
+    // Плеер и уже прочитанный файл точнее всего.
+    if (_isCurrent && _player.duration > Duration.zero) {
+      return _player.duration;
+    }
+    if (_fileDuration != null && _fileDuration! > Duration.zero) {
+      return _fileDuration!;
+    }
+    // voice_duration с сервера показываем сразу, без прочерков.
+    // Пустое поле сюда не попадает: parseVoiceDuration(null) даёт ноль.
+    if (widget.message.duration > Duration.zero) {
+      return widget.message.duration;
+    }
+    return Duration.zero;
   }
 
   @override
@@ -77,6 +151,14 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
   }
 
   void _onPlayerChanged() {
+    if (_isCurrent && _player.duration > Duration.zero) {
+      _fileDuration = _player.duration;
+      widget.message.duration = _player.duration;
+      VoiceDurationResolver.instance.remember(
+        _getAudioSource(),
+        _player.duration,
+      );
+    }
     if (!mounted) return;
     if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
@@ -148,7 +230,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
           localPath: playable,
           senderName: widget.message.senderName,
           sentAtLabel: formatChatVoiceSentAt(widget.message.createMessateTime),
-          duration: widget.message.duration,
+          duration: _totalDuration,
           chatItem: widget.chatItem,
           endPointInTab: widget.endPointInTab,
           canSendMessage: widget.canSendMessage,
@@ -176,9 +258,13 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
         ? appearance.outgoingForeground(context)
         : appearance.incomingForeground(context);
     final progress = _isCurrent ? _player.progress : 0.0;
+    final totalDuration = _totalDuration;
+    // До нажатия play показываем длину файла.
+    // Во время play — сколько осталось. Чужую цифру не подставляем.
     final displayDuration = _isCurrent && _player.isPlaying
-        ? _player.duration - _player.position
-        : (_isCurrent ? _player.duration : widget.message.duration);
+        ? totalDuration - _player.position
+        : totalDuration;
+    final hasDuration = totalDuration > Duration.zero;
 
     return Container(
       margin: EdgeInsets.only(
@@ -239,11 +325,9 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
                                 ? (AppLocalizations.of(context)
                                         ?.translate('retry') ??
                                     'Retry')
-                                : formatVoiceClock(
-                                    displayDuration > Duration.zero
-                                        ? displayDuration
-                                        : widget.message.duration,
-                                  ),
+                                : (hasDuration
+                                    ? formatVoiceClock(displayDuration)
+                                    : ''),
                             style: TextStyle(
                               color: foreground.withValues(alpha: 0.86),
                               fontSize: 12,

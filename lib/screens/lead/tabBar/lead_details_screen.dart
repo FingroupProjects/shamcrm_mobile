@@ -39,6 +39,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/contact_person
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/dropdown_notes.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_deal_screen.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_green_api_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_unite_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_sms_modal.dart';
@@ -331,7 +332,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   Future<void> _loadContactsToCache() async {
     try {
-      if (!await FlutterContacts.requestPermission()) {
+      // Limited access is valid on iOS 18+ and returns the selected contacts.
+      final permission =
+          await FlutterContacts.permissions.request(PermissionType.read);
+      final isAllowed = permission == PermissionStatus.granted ||
+          permission == PermissionStatus.limited;
+      if (!isAllowed) {
         if (!mounted) return;
         setState(() {
           _isLoadingContacts = false;
@@ -339,9 +345,8 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return;
       }
 
-      final List<Contact> contacts = await FlutterContacts.getContacts(
-        withProperties: true,
-        withPhoto: false,
+      final List<Contact> contacts = await FlutterContacts.getAll(
+        properties: const {ContactProperty.phone},
       );
 
       if (!mounted) return;
@@ -1285,6 +1290,11 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                                 key: keyLeadNavigateChat,
                                 leadId: int.parse(widget.leadId),
                                 leadName: widget.leadName,
+                                leadPhone: firstLeadPhone([
+                                  state.lead.phone,
+                                  state.lead.whatsApp,
+                                  widget.phone,
+                                ]),
                                 chats: state.lead.chats
                                     .map((chat) => {
                                           'id': chat.id,

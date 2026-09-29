@@ -1,12 +1,10 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_event.dart';
-import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
-import 'package:crm_task_manager/main.dart';
-import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/lead/lead_navigate_to_chat.dart';
-import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/integration_list_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_green_api_chat.dart';
+import 'package:crm_task_manager/utils/green_api_integration_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/lead_navigate_to_chat/lead_navigate_to_chat_bloc.dart';
@@ -19,8 +17,14 @@ Future<void> openLeadChatDirect(
   BuildContext context, {
   required int leadId,
   required String leadName,
+  String? leadPhone,
   List<Map<String, dynamic>>? chats,
 }) async {
+  // Флаг мог не попасть в кэш после PIN — берём свежий get-user-data.
+  try {
+    await refreshGreenApiAccess(context.read<ApiService>());
+  } catch (_) {}
+  if (!context.mounted) return;
   final chatBloc = context.read<LeadToChatBloc>();
   chatBloc.add(FetchLeadToChat(leadId));
 
@@ -56,7 +60,12 @@ Future<void> openLeadChatDirect(
   final loadedState = state as LeadToChatLoaded;
   final leadChats = loadedState.leadtochat;
 
+  // Нет чатов, но есть телефон и Green API — сразу пустой WhatsApp.
   if (leadChats.isEmpty) {
+    if (canOfferGreenApiWhatsApp(leadPhone)) {
+      openPendingGreenApiLeadChat(leadId: leadId, leadName: leadName);
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -79,14 +88,20 @@ Future<void> openLeadChatDirect(
     return;
   }
 
-  final channels = leadChats.map((chat) => chat.channel.name).toSet().toList();
+  final channels = visibleLeadChatChannels(leadChats, leadPhone);
   if (channels.length == 1) {
     final channelName = channels.first;
-    final chatsForChannel =
-        leadChats.where((chat) => chat.channel.name == channelName).toList();
+    final chatsForChannel = leadChats
+        .where((chat) => chat.channel.name == channelName)
+        .toList();
+
+    if (chatsForChannel.isEmpty && isWhatsAppChannelName(channelName)) {
+      openPendingGreenApiLeadChat(leadId: leadId, leadName: leadName);
+      return;
+    }
 
     if (chatsForChannel.length == 1) {
-      _navigateToLeadChatScreen(
+      openExistingLeadChatScreen(
         leadName: leadName,
         chatId: chatsForChannel.first.id,
         canSendMessage: chatsForChannel.first.canSendMessage,
@@ -195,8 +210,16 @@ Future<void> openLeadChatDirect(
                         ),
                         onTap: () {
                           Navigator.pop(dialogContext);
+                          if (chatsForChannel.isEmpty &&
+                              isWhatsAppChannelName(channelName)) {
+                            openPendingGreenApiLeadChat(
+                              leadId: leadId,
+                              leadName: leadName,
+                            );
+                            return;
+                          }
                           if (chatsForChannel.length == 1) {
-                            _navigateToLeadChatScreen(
+                            openExistingLeadChatScreen(
                               leadName: leadName,
                               chatId: chatsForChannel.first.id,
                               canSendMessage:
@@ -257,45 +280,10 @@ List<Map<String, dynamic>> _buildLeadIntegrations(
   }).toList();
 }
 
-void _navigateToLeadChatScreen({
-  required String leadName,
-  required int chatId,
-  required bool canSendMessage,
-  required String initialChannelName,
-}) {
-  navigatorKey.currentState?.push(
-    MaterialPageRoute(
-      builder: (context) => BlocProvider(
-        create: (context) => MessagingCubit(ApiService()),
-        child: ChatSmsScreen(
-          chatItem: Chats(
-            id: chatId,
-            image: '',
-            name: leadName,
-            taskFrom: "",
-            taskTo: "",
-            description: "",
-            channel: "",
-            lastMessage: "",
-            messageType: "",
-            createDate: "",
-            unreadCount: 0,
-            canSendMessage: canSendMessage,
-            chatUsers: [],
-          ).toChatItem(),
-          chatId: chatId,
-          endPointInTab: 'lead',
-          canSendMessage: canSendMessage,
-          initialChannelName: initialChannelName,
-        ),
-      ),
-    ),
-  );
-}
-
 class LeadNavigateToChat extends StatefulWidget {
   final int leadId;
   final String leadName;
+  final String? leadPhone;
   final List<Map<String, dynamic>>? chats;
   final bool autoOpen;
 
@@ -303,6 +291,7 @@ class LeadNavigateToChat extends StatefulWidget {
     Key? key,
     required this.leadId,
     required this.leadName,
+    this.leadPhone,
     this.chats,
     this.autoOpen = false,
   }) : super(key: key);
@@ -327,9 +316,21 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     super.initState();
     //print('LeadNavigateToChat: Initializing with leadId: ${widget.leadId}');
     context.read<LeadToChatBloc>().add(FetchLeadToChat(widget.leadId));
+    _refreshGreenApiFlag();
   }
 
-  // Иконки каналов рисует ChannelSourceIcon — светлые и тёмные сами.
+  /// Пока флаг не подтянулся, список чатов пустой. После запроса появится WhatsApp.
+  Future<void> _refreshGreenApiFlag() async {
+    try {
+      await refreshGreenApiAccess(context.read<ApiService>());
+    } catch (error) {
+      debugPrint('LeadNavigateToChat: green api flag error: $error');
+    }
+    if (mounted) setState(() {});
+  }
+
+  // Иконки каналов — PNG из assets/icons/leads.
+  // Сайт рисуется иконкой языка, у него нет своего файла.
 
   final Map<String, String> customChannelNames = {
     'telegram_account': 'Telegram',
@@ -391,7 +392,9 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     children: [
                       CustomButton(
                         buttonText: '',
-                        onPressed: () {
+                        onPressed: () async {
+                          await _refreshGreenApiFlag();
+                          if (!mounted) return;
                           _showChatListDialog(context);
                         },
                         buttonColor: context.appColors.buttonPrimaryBg,
@@ -424,17 +427,21 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
 
   void _openChatsFromState(LeadToChatLoaded state) {
     final leadtochat = state.leadtochat;
+    final channels = visibleLeadChatChannels(leadtochat, widget.leadPhone);
+    if (leadtochat.isEmpty && channels.length == 1) {
+      _handleChannelTap(context, channels.first, const [], closeDialog: false);
+      return;
+    }
     if (leadtochat.isEmpty) {
       _showChatListDialog(context);
       return;
     }
 
-    final channels = leadtochat.map((chat) => chat.channel.name).toSet().toList();
     if (channels.length == 1) {
       final channelName = channels.first;
       final chatsForChannel =
           leadtochat.where((chat) => chat.channel.name == channelName).toList();
-      _handleChannelTap(context, channelName, chatsForChannel);
+      _handleChannelTap(context, channelName, chatsForChannel, closeDialog: false);
       return;
     }
 
@@ -470,7 +477,10 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
               ),
               SizedBox(
                 height: 300,
-                child: BlocBuilder<LeadToChatBloc, LeadToChatState>(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: GreenApiIntegrationStore.enabled,
+                  builder: (context, _, __) {
+                    return BlocBuilder<LeadToChatBloc, LeadToChatState>(
                   builder: (context, state) {
                     //print('LeadNavigateToChat: Building chat list dialog with state: $state');
                     if (state is LeadToChatLoading) {
@@ -483,7 +493,11 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                     } else if (state is LeadToChatLoaded) {
                       final leadtochat = state.leadtochat;
                       //print('LeadNavigateToChat: Loaded ${leadtochat.length} chats: $leadtochat');
-                      if (leadtochat.isEmpty) {
+                      final channels = visibleLeadChatChannels(
+                        leadtochat,
+                        widget.leadPhone,
+                      );
+                      if (channels.isEmpty) {
                         //print('LeadNavigateToChat: No chats available');
                         return Center(
                           child: Text(
@@ -498,11 +512,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                           ),
                         );
                       } else {
-                        // Группируем чаты по каналам
-                        final channels = leadtochat
-                            .map((chat) => chat.channel.name)
-                            .toSet()
-                            .toList();
+                        // Группируем чаты по каналам. WhatsApp может быть без чата.
                         return ListView.builder(
                           itemCount: channels.length,
                           itemBuilder: (context, index) {
@@ -580,6 +590,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                       );
                     }
                   },
+                    );
+                  },
                 ),
               ),
               Padding(
@@ -604,14 +616,28 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
   void _handleChannelTap(
     BuildContext context,
     String channelName,
-    List<dynamic> chatsForChannel,
-  ) {
+    List<dynamic> chatsForChannel, {
+    bool closeDialog = true,
+  }) {
+    // Нет WhatsApp-чата — открываем пустой и шлём первое сообщение через Green API.
+    if (chatsForChannel.isEmpty && isWhatsAppChannelName(channelName)) {
+      if (closeDialog && Navigator.of(context).canPop()) {
+        Navigator.pop(context);
+      }
+      openPendingGreenApiLeadChat(
+        leadId: widget.leadId,
+        leadName: widget.leadName,
+      );
+      return;
+    }
+
     if (chatsForChannel.length == 1) {
       navigateToScreen(
         context,
         chatsForChannel[0].id,
         chatsForChannel[0].canSendMessage,
         chatsForChannel[0].channel.name,
+        closeDialog: closeDialog,
       );
       return;
     }
@@ -631,7 +657,9 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
       };
     }).toList();
 
-    Navigator.pop(context);
+    if (closeDialog && Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    }
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -650,37 +678,18 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     BuildContext context,
     int id,
     bool canSendMessage,
-    String initialChannelName,
-  ) {
+    String initialChannelName, {
+    bool closeDialog = true,
+  }) {
     //print('LeadNavigateToChat: Navigating to chat screen with ID: $id, canSendMessage: $canSendMessage');
-    Navigator.pop(context);
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) => MessagingCubit(ApiService()),
-          child: ChatSmsScreen(
-            chatItem: Chats(
-              id: id,
-              image: '',
-              name: widget.leadName,
-              taskFrom: "",
-              taskTo: "",
-              description: "",
-              channel: "",
-              lastMessage: "",
-              messageType: "",
-              createDate: "",
-              unreadCount: 0,
-              canSendMessage: canSendMessage,
-              chatUsers: [],
-            ).toChatItem(),
-            chatId: id,
-            endPointInTab: 'lead',
-            canSendMessage: canSendMessage,
-            initialChannelName: initialChannelName,
-          ),
-        ),
-      ),
+    if (closeDialog && Navigator.of(context).canPop()) {
+      Navigator.pop(context);
+    }
+    openExistingLeadChatScreen(
+      leadName: widget.leadName,
+      chatId: id,
+      canSendMessage: canSendMessage,
+      initialChannelName: initialChannelName,
     );
   }
 }

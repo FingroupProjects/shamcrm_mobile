@@ -4,6 +4,9 @@ import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/storage_model.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
@@ -18,7 +21,6 @@ import 'package:crm_task_manager/page_2/warehouse/supplier/add_supplier_screen.d
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 const _fastIncomingLoading = Center(
@@ -53,7 +55,6 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
   bool _isLoadingStorages = false;
   bool _hasCompletedInitialLoad = false;
   bool _isSearching = false;
-  bool _hasApprovePermission = false;
   bool _isCartReady = false;
   String _currencyTitle = 'TJS';
 
@@ -64,7 +65,6 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
     unawaited(_resetCartSession());
     unawaited(_loadCurrency());
     unawaited(_loadStoragesAndSync());
-    unawaited(_checkApprovePermission());
   }
 
   Future<void> _resetCartSession() async {
@@ -105,18 +105,6 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
               ? currency!.name!.trim()
               : _currencyTitle);
     });
-  }
-
-  Future<void> _checkApprovePermission() async {
-    try {
-      final hasPermission =
-          await _apiService.hasPermission('income_document.approve');
-      if (!mounted) return;
-      setState(() => _hasApprovePermission = hasPermission);
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _hasApprovePermission = false);
-    }
   }
 
   Future<void> _runSync({bool resetCatalogCache = false}) async {
@@ -181,7 +169,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
     if (_query.isNotEmpty || _categoryId != null) {
       return 'Ничего не найдено';
     }
-    return 'Нет товаров на выбранном складе';
+    return 'Нет товаров';
   }
 
   Future<void> _selectStorage(WareHouse storage) async {
@@ -429,52 +417,62 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
     );
     if (!mounted || finish == null) return;
 
-    final storage = finish.storage ?? _selectedStorage;
-    if (storage == null) {
-      showCustomSnackBar(
-        context: context,
-        message: 'Выберите склад',
-        isSuccess: false,
-      );
-      return;
-    }
+    final storage = finish.storage;
+    final supplier = finish.supplier;
 
     setState(() => _isSubmitting = true);
     try {
+
+      // Строка как в приходе: товар, количество, цена, единица.
+      // Цена берётся из суммы, которую пользователь подтвердил на экране.
+      // Документ создаётся через /income-documents, поэтому склад
+      // увеличивается. Старый /rmk-income-documents списывал остаток.
       final goodsPayload = <Map<String, dynamic>>[];
       for (final item in items) {
         final unitId = await _repository.requiredUnitIdForCartItem(item);
+        final quantity = item.quantity;
+        final lineTotal = item.customTotal ?? quantity * item.price;
+        final rawPrice = quantity == 0 ? item.price : lineTotal / quantity;
+        final price = rawPrice == rawPrice.roundToDouble()
+            ? rawPrice.round()
+            : double.parse(rawPrice.toStringAsFixed(2));
         goodsPayload.add({
           'good_id': item.goodId,
-          'quantity': item.quantity,
-          'price': item.price,
+          'quantity': quantity,
+          'price': price,
           'unit_id': unitId,
-          'sum': item.customTotal ?? item.quantity * item.price,
         });
       }
 
-      final isoDate =
-          DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(DateTime.now());
+      final salesFunnelId = int.tryParse(
+            await _apiService.getSelectedSalesFunnel() ?? '',
+          ) ??
+          1;
 
-      await _apiService.createPurchaseDocument(
-        date: isoDate,
+      await _apiService.createIncomingDocument(
+        date: finish.dateIso,
         storageId: storage.id,
-        supplierId: finish.supplier?.id,
-        comment: 'PURCHASE',
-        paidAmount: finish.paidAmount,
-        debtAmount: finish.debtAmount,
+        comment: finish.comment,
+        counterpartyId: supplier.id,
         documentGoods: goodsPayload,
         organizationId: await _apiService.resolveSelectedOrganizationId(),
-        salesFunnelId: 1,
-        approve: _hasApprovePermission,
+        salesFunnelId: salesFunnelId,
+        approve: finish.approve,
+        exchangeRate: finish.exchangeRate,
       );
 
+      // Проведённый приход сразу виден в остатке на карточке.
+      // Черновик склад не меняет, пока его не проведут.
+      if (finish.approve) {
+        await _repository.addReceivedGoodsToCache(items);
+      }
       await _repository.clearCart();
+      unawaited(_runSync());
       if (!mounted) return;
 
       showCustomSnackBar(
         context: context,
-        message: 'Покупка товаров создана',
+        message: 'Покупка создана',
         isSuccess: true,
       );
     } catch (error) {
@@ -499,6 +497,7 @@ class _FastIncomingScreenState extends State<FastIncomingScreen> {
           good: good,
           repository: _repository,
           enforceStockLimit: false,
+          enterPurchasePrice: true,
         ),
       ),
     );
@@ -973,65 +972,55 @@ class FastIncomingFinishScreen extends StatefulWidget {
 }
 
 class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
-  late final TextEditingController _paidAmountController;
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _exchangeRateController = TextEditingController();
   Supplier? _selectedSupplier;
   WareHouse? _selectedStorage;
   String? _supplierErrorText;
   String? _storageErrorText;
+  String? _exchangeRateErrorText;
+  int? _organizationCurrencyId;
 
-  double get _paidAmount {
-    final parsed = double.tryParse(
-      _paidAmountController.text.replaceAll(',', '.'),
-    );
-    return (parsed ?? 0).clamp(0, widget.total).toDouble();
+  int? get _supplierCurrencyId =>
+      _selectedSupplier?.currency?.id ?? _selectedSupplier?.currencyId;
+
+  bool get _isExchangeRateRequired {
+    final organizationCurrencyId = _organizationCurrencyId;
+    final supplierCurrencyId = _supplierCurrencyId;
+    if (organizationCurrencyId == null || supplierCurrencyId == null) {
+      return false;
+    }
+    return organizationCurrencyId != supplierCurrencyId;
   }
 
-  double get _debtAmount => (widget.total - _paidAmount).clamp(0, widget.total);
+  double? get _exchangeRateValue =>
+      double.tryParse(_exchangeRateController.text.replaceAll(',', '.'));
 
-  bool get _requiresSupplier => _debtAmount > 0;
+  double get _totalByCurrency => widget.total * (_exchangeRateValue ?? 0);
 
   @override
   void initState() {
     super.initState();
     _selectedStorage = widget.selectedStorage ??
         (widget.storages.length == 1 ? widget.storages.first : null);
-    _paidAmountController =
-        TextEditingController(text: _compactNumber(widget.total));
-    _paidAmountController.addListener(_normalizePaidAmountInput);
+    _dateController.text =
+        DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    unawaited(_loadOrganizationCurrency());
+  }
+
+  Future<void> _loadOrganizationCurrency() async {
+    final currencyId = await LocalizationService.getCurrencyId();
+    if (!mounted) return;
+    setState(() => _organizationCurrencyId = currencyId);
   }
 
   @override
   void dispose() {
-    _paidAmountController.removeListener(_normalizePaidAmountInput);
-    _paidAmountController.dispose();
+    _dateController.dispose();
+    _commentController.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
-  }
-
-  void _normalizePaidAmountInput() {
-    final text = _paidAmountController.text;
-    final normalized = _normalizeCalculatorInput(text);
-    if (text == normalized) return;
-
-    _paidAmountController.value = TextEditingValue(
-      text: normalized,
-      selection: TextSelection.collapsed(offset: normalized.length),
-    );
-  }
-
-  String _normalizeCalculatorInput(String value) {
-    if (value.isEmpty) return value;
-    if (value == '.') return '0.';
-    if (value.startsWith('.')) return '0$value';
-
-    if (value.contains('.')) {
-      final parts = value.split('.');
-      final integerPart = parts.first.replaceFirst(RegExp(r'^0+(?=\d)'), '');
-      final normalizedIntegerPart = integerPart.isEmpty ? '0' : integerPart;
-      return '$normalizedIntegerPart.${parts.sublist(1).join()}';
-    }
-
-    final normalized = value.replaceFirst(RegExp(r'^0+(?=\d)'), '');
-    return normalized.isEmpty ? '0' : normalized;
   }
 
   Future<void> _pickStorage() async {
@@ -1133,22 +1122,45 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
   }
 
   void _submit() {
-    if (widget.storages.length > 1 && _selectedStorage == null) {
+    final storage = _selectedStorage;
+    if (storage == null) {
       setState(() => _storageErrorText = 'Выберите склад');
       return;
     }
-    if (_requiresSupplier && _selectedSupplier == null) {
+    final supplier = _selectedSupplier;
+    if (supplier == null) {
       setState(() => _supplierErrorText = 'Поле обязательно для заполнения');
+      return;
+    }
+    if (_isExchangeRateRequired) {
+      final rate = _exchangeRateValue;
+      if (rate == null || rate <= 0) {
+        setState(() => _exchangeRateErrorText = 'Заполните курс валюты');
+        return;
+      }
+    }
+
+    late final DateTime parsedDate;
+    try {
+      parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(_dateController.text);
+    } catch (_) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Укажите дату',
+        isSuccess: false,
+      );
       return;
     }
 
     Navigator.pop(
       context,
       _FastIncomingFinishResult(
-        paidAmount: _paidAmount,
-        debtAmount: _debtAmount,
-        supplier: _selectedSupplier,
-        storage: _selectedStorage,
+        dateIso: DateFormat("yyyy-MM-ddTHH:mm:ss.SSS'Z'").format(parsedDate),
+        comment: _commentController.text.trim(),
+        exchangeRate: _isExchangeRateRequired ? _exchangeRateValue : null,
+        approve: true,
+        supplier: supplier,
+        storage: storage,
       ),
     );
   }
@@ -1181,52 +1193,16 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   children: [
-                    _FinishSummaryRow(
-                      title: 'Всего:',
-                      value:
-                          '${_compactNumber(widget.total)} ${widget.currencyTitle}',
-                      isPrimary: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _FinishSummaryRow(
-                      title: 'Долг:',
-                      value:
-                          '${_compactNumber(_debtAmount)} ${widget.currencyTitle}',
-                    ),
-                    const SizedBox(height: 18),
-                    _FinishAmountField(
-                      controller: _paidAmountController,
-                      currencyTitle: widget.currencyTitle,
-                      onChanged: () {
-                        setState(() {
-                          if (!_requiresSupplier) {
-                            _supplierErrorText = null;
-                          }
-                        });
+                    CustomTextFieldDate(
+                      controller: _dateController,
+                      label: 'Дата',
+                      withTime: true,
+                      onDateSelected: (date) {
+                        if (!mounted) return;
+                        setState(() => _dateController.text = date);
                       },
                     ),
-                    const SizedBox(height: 14),
-                    if (widget.storages.length > 1) ...[
-                      _FinishSelectField(
-                        label: 'Склад',
-                        value: _selectedStorage?.name,
-                        hint: 'Выберите склад',
-                        onTap: _pickStorage,
-                      ),
-                      if (_storageErrorText != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          _storageErrorText!,
-                          style: TextStyle(
-                            color: context.appColors.error,
-                            fontFamily: 'Gilroy',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 14),
-                    ],
+                    const SizedBox(height: 16),
                     _FastSupplierSelector(
                       selectedSupplier: _selectedSupplier,
                       showError: _supplierErrorText != null,
@@ -1235,9 +1211,72 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                         setState(() {
                           _selectedSupplier = supplier;
                           _supplierErrorText = null;
+                          _exchangeRateErrorText = null;
+                          if (!_isExchangeRateRequired) {
+                            _exchangeRateController.clear();
+                          }
                         });
                       },
                     ),
+                    const SizedBox(height: 16),
+                    _FinishSelectField(
+                      label: 'Склад',
+                      value: _selectedStorage?.name,
+                      hint: 'Выберите склад',
+                      onTap: _pickStorage,
+                    ),
+                    if (_storageErrorText != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _storageErrorText!,
+                        style: TextStyle(
+                          color: context.appColors.error,
+                          fontFamily: 'Gilroy',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                    if (_isExchangeRateRequired) ...[
+                      const SizedBox(height: 16),
+                      CustomTextField(
+                        controller: _exchangeRateController,
+                        label: 'Курс валюты',
+                        hintText: 'Введите курс',
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [PriceInputFormatter()],
+                        errorText: _exchangeRateErrorText,
+                        onChanged: (_) {
+                          setState(() => _exchangeRateErrorText = null);
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    CustomTextField(
+                      controller: _commentController,
+                      label: 'Примечание',
+                      hintText: 'Введите примечание',
+                      maxLines: 3,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                    const SizedBox(height: 16),
+                    _FinishSummaryRow(
+                      title: 'Сумма',
+                      value:
+                          '${_compactNumber(widget.total)} ${widget.currencyTitle}',
+                      isPrimary: true,
+                    ),
+                    if (_isExchangeRateRequired) ...[
+                      const SizedBox(height: 12),
+                      _FinishSummaryRow(
+                        title: _selectedSupplier?.currency?.name == null
+                            ? 'Итого по валюте'
+                            : 'Итого по валюте: ${_selectedSupplier!.currency!.name}',
+                        value: _compactNumber(_totalByCurrency),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1262,7 +1301,7 @@ class _FastIncomingFinishScreenState extends State<FastIncomingFinishScreen> {
                     ),
                     onPressed: _submit,
                     child: Text(
-                      'Создать приход',
+                      'Создать покупку',
                       style: TextStyle(
                         color: colors.buttonPrimaryFg,
                         fontFamily: 'Gilroy',
@@ -1389,8 +1428,10 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось создать поставщика')),
+        showCustomSnackBar(
+          context: context,
+          message: 'Не удалось создать поставщика',
+          isSuccess: false,
         );
       }
     } finally {
@@ -1422,8 +1463,10 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
         Stack(
           alignment: Alignment.centerRight,
           children: [
+            // Do not put a ValueKey on this dropdown. It shares
+            // [_overlayController]. A new key mounts a second OverlayPortal
+            // while the old one is still active, and Flutter asserts.
             CustomDropdown<Supplier>.searchRequestPaginated(
-              key: ValueKey(selected?.id),
               overlayController: _overlayController,
               paginatedRequest: _searchSuppliers,
               futureRequestDelay: const Duration(milliseconds: 300),
@@ -1596,16 +1639,20 @@ class _FastSupplierSelectorState extends State<_FastSupplierSelector> {
 
 class _FastIncomingFinishResult {
   const _FastIncomingFinishResult({
-    required this.paidAmount,
-    required this.debtAmount,
-    this.supplier,
-    this.storage,
+    required this.dateIso,
+    required this.comment,
+    required this.approve,
+    required this.supplier,
+    required this.storage,
+    this.exchangeRate,
   });
 
-  final double paidAmount;
-  final double debtAmount;
-  final Supplier? supplier;
-  final WareHouse? storage;
+  final String dateIso;
+  final String comment;
+  final bool approve;
+  final double? exchangeRate;
+  final Supplier supplier;
+  final WareHouse storage;
 }
 
 class _StoragePickerTile extends StatelessWidget {
@@ -2252,80 +2299,6 @@ class _FinishSummaryRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _FinishAmountField extends StatelessWidget {
-  const _FinishAmountField({
-    required this.controller,
-    required this.currencyTitle,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final String currencyTitle;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 60),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.borderSubtle),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              'Оплачено',
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 210,
-            child: TextField(
-              controller: controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-              ],
-              textAlign: TextAlign.right,
-              onChanged: (_) => onChanged(),
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                alignLabelWithHint: true,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                suffixText: currencyTitle,
-                suffixStyle: TextStyle(
-                  color: colors.textPrimary,
-                  fontFamily: 'Gilroy',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

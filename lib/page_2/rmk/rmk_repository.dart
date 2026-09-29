@@ -210,6 +210,35 @@ class RmkRepository {
     return _apiService.getStorage();
   }
 
+  /// Покупка приходует товар на склад. Карточки каталога читают
+  /// локальный остаток, поэтому после проведённого прихода его нужно
+  /// увеличить, а не списать как при продаже РМК.
+  Future<void> addReceivedGoodsToCache(List<RmkCartItem> items) async {
+    if (items.isEmpty) return;
+
+    final now = DateTime.now();
+    await _db.transaction(() async {
+      for (final item in items) {
+        final good = await (_db.select(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(item.goodId)))
+            .getSingleOrNull();
+        if (good == null) continue;
+
+        final newQuantity = good.quantity + item.quantity;
+        await (_db.update(_db.rmkGoods)
+              ..where((tbl) => tbl.id.equals(item.goodId)))
+            .write(
+          RmkGoodsCompanion(
+            quantity: Value(newQuantity),
+            payload:
+                Value(_goodsPayloadWithQuantity(good.payload, newQuantity)),
+            localUpdatedAt: Value(now),
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> _deductSoldGoodsFromCache(List<RmkCartItem> items) async {
     if (items.isEmpty) return;
 

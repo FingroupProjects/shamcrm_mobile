@@ -28,6 +28,25 @@ void main() {
       );
     });
 
+    test('does not invent 20 seconds when voice_duration is missing', () {
+      final message = Message.fromJson({
+        'id': 48002,
+        'type': 'voice',
+        'text': null,
+        'file_path':
+            'https://file-api.shamcrm.com/tenants/x/chat/files/voice.ogg',
+        'voice_duration': null,
+        'created_at': '2026-07-07T15:52:16.000000Z',
+        'sender': {'id': 5748, 'name': 'Доктор', 'type': 'lead'},
+      });
+
+      expect(message.type, 'voice');
+      expect(message.duration, Duration.zero);
+      expect(parseVoiceDuration(null), Duration.zero);
+      expect(parseVoiceDuration(8), const Duration(seconds: 8));
+      expect(parseVoiceDuration('8.4'), const Duration(seconds: 8));
+    });
+
     test('treats messages with voice_duration as voice', () {
       final message = Message.fromJson({
         'id': 1,

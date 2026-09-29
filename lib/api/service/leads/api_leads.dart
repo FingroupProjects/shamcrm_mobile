@@ -1963,6 +1963,92 @@ extension ApiLeadsX on ApiService {
     }
   }
 
+  /// Первое WhatsApp-сообщение лиду, когда чата ещё нет.
+  /// POST /api/v3/lead/{leadId}/send-green-api-message
+  /// Дальше пишем в уже созданный чат обычным sendMessage.
+  Future<int> sendGreenApiLeadMessage({
+    required int leadId,
+    required String message,
+    String? forwardedMessageId,
+    String? responseType,
+  }) async {
+    final path = await _appendQueryParams(
+      '/v3/lead/$leadId/send-green-api-message',
+    );
+    final response = await _postRequest(path, {
+      'message': _wrapGreenApiMessageHtml(message),
+      'forwarded_message_id': forwardedMessageId,
+      'response_type': responseType,
+    });
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(
+        _extractGreenApiSendError(response.body, response.statusCode),
+      );
+    }
+
+    final decoded = json.decode(response.body);
+    if (decoded is! Map) {
+      throw Exception('Пустой ответ send-green-api-message');
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+    if (data['errors'] != null) {
+      throw Exception(data['errors'].toString());
+    }
+
+    final result = data['result'];
+    if (result is! Map) {
+      throw Exception('В ответе нет чата WhatsApp');
+    }
+
+    final chat = result['chat'];
+    final chatId = chat is Map ? SafeConverters.toInt(chat['id']) : 0;
+    if (chatId <= 0) {
+      throw Exception('Сервер не вернул id чата WhatsApp');
+    }
+    return chatId;
+  }
+
+  /// Веб шлёт HTML с <p>. Если уже HTML — не трогаем.
+  String _wrapGreenApiMessageHtml(String message) {
+    final trimmed = message.trim();
+    if (trimmed.isEmpty) return '<p></p>';
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('<p') || lower.contains('<div') || lower.contains('<br')) {
+      return trimmed;
+    }
+
+    return trimmed
+        .split(RegExp(r'\n+'))
+        .map((line) => '<p>${_escapeGreenApiHtml(line)}</p>')
+        .join();
+  }
+
+  String _escapeGreenApiHtml(String value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+  }
+
+  String _extractGreenApiSendError(String body, int statusCode) {
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map) {
+        final errors = decoded['errors'];
+        if (errors != null && errors.toString().trim().isNotEmpty) {
+          return errors.toString();
+        }
+        final message = decoded['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message;
+        }
+      }
+    } catch (_) {}
+    return 'Ошибка отправки WhatsApp $statusCode';
+  }
+
   Future<List<SourceLead>> getSourceLead({String? search}) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     String path = await _appendQueryParams('/source');

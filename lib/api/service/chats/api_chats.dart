@@ -1632,6 +1632,16 @@ extension ApiChatsX on ApiService {
   /// Генерирует черновик ответа для чата: POST `/v3/chat/{id}/ai-draft`.
   /// Каждый вызов идёт на сервер отдельно — повторное нажатие даёт новый текст.
   Future<String> generateChatAiDraft(int chatId) async {
+    return _requestAiDraft('/v3/chat/$chatId/ai-draft');
+  }
+
+  /// Первое WhatsApp-сообщение, когда чата ещё нет.
+  /// POST `/v3/lead/{id}/ai-draft` — тот же ИИ, но по карточке лида.
+  Future<String> generateLeadAiDraft(int leadId) async {
+    return _requestAiDraft('/v3/lead/$leadId/ai-draft');
+  }
+
+  Future<String> _requestAiDraft(String rawPath) async {
     final token = await getToken();
     if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
       await initialize();
@@ -1640,11 +1650,11 @@ extension ApiChatsX on ApiService {
       throw Exception('Base URL не может быть инициализирован');
     }
 
-    final path = await _appendQueryParams('/v3/chat/$chatId/ai-draft');
+    final path = await _appendQueryParams(rawPath);
     final fullUrl = '$baseUrl$path';
 
     if (kDebugMode) {
-      debugPrint('ApiService: generateChatAiDraft $fullUrl');
+      debugPrint('ApiService: requestAiDraft $fullUrl');
     }
 
     final response = await http

@@ -13,11 +13,16 @@ class RmkQuantityScreen extends StatefulWidget {
     required this.good,
     required this.repository,
     this.enforceStockLimit = true,
+    this.enterPurchasePrice = false,
   });
 
   final RmkGood good;
   final RmkRepository repository;
   final bool enforceStockLimit;
+
+  /// Приход: пользователь вводит цену закупки. Сумма считается как
+  /// количество × цена. Продажная цена РМК сюда не подставляется.
+  final bool enterPurchasePrice;
 
   @override
   State<RmkQuantityScreen> createState() => _RmkQuantityScreenState();
@@ -26,8 +31,10 @@ class RmkQuantityScreen extends StatefulWidget {
 class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _totalController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   final FocusNode _quantityFocusNode = FocusNode();
   final FocusNode _totalFocusNode = FocusNode();
+  final FocusNode _priceFocusNode = FocusNode();
   _EditField _activeField = _EditField.quantity;
   _EditField _panelField = _EditField.quantity;
   late RmkGood _good;
@@ -39,11 +46,16 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
 
   double get _quantity => double.tryParse(_quantityController.text) ?? 0;
 
+  double get _purchasePrice => double.tryParse(_priceController.text) ?? 0;
+
   double get _baseTotal => _quantity * _good.price;
 
-  double get _calculatedTotal => _baseTotal;
+  double get _calculatedTotal => widget.enterPurchasePrice
+      ? _quantity * _purchasePrice
+      : _baseTotal;
 
   double get _total {
+    if (widget.enterPurchasePrice) return _calculatedTotal;
     final manualTotal = double.tryParse(_totalController.text);
     if (_totalController.text.isNotEmpty && manualTotal != null) {
       return manualTotal;
@@ -62,6 +74,11 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       if (!mounted || item == null) return;
       setState(() {
         _setText(_quantityController, _formatInput(item.quantity));
+        if (widget.enterPurchasePrice) {
+          // В приходе в корзине лежит введённая цена, не продажная.
+          _setText(_priceController, _formatInput(item.price));
+          return;
+        }
         final customTotal = item.customTotal;
         if (customTotal != null) {
           _setText(_totalController, _formatInput(customTotal));
@@ -75,8 +92,10 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   void dispose() {
     _quantityController.dispose();
     _totalController.dispose();
+    _priceController.dispose();
     _quantityFocusNode.dispose();
     _totalFocusNode.dispose();
+    _priceFocusNode.dispose();
     super.dispose();
   }
 
@@ -107,14 +126,35 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       );
       return;
     }
+    if (widget.enterPurchasePrice) {
+      if (_quantity <= 0) {
+        _showFieldError('Введите количество');
+        return;
+      }
+                if (_priceController.text.trim().isEmpty) {
+        _showFieldError('Введите цену закупки');
+        return;
+      }
+    }
     _isSaving = true;
     await widget.repository.upsertCartItem(
       good: _good,
       quantity: _quantity,
-      price: _good.price,
-      customTotal: _totalController.text.isNotEmpty ? _total : null,
+      price: widget.enterPurchasePrice ? _purchasePrice : _good.price,
+      customTotal: widget.enterPurchasePrice
+          ? null
+          : (_totalController.text.isNotEmpty ? _total : null),
     );
     if (mounted) Navigator.pop(context);
+  }
+
+  void _showFieldError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _deleteAndPop() async {
@@ -153,6 +193,8 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
     switch (_activeField) {
       case _EditField.quantity:
         return _quantityController;
+      case _EditField.price:
+        return _priceController;
       case _EditField.total:
         return _totalController;
     }
@@ -237,6 +279,9 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
       case _EditField.quantity:
         _quantityFocusNode.requestFocus();
         return;
+      case _EditField.price:
+        _priceFocusNode.requestFocus();
+        return;
       case _EditField.total:
         if (_totalController.text.isEmpty && !_totalClearedByUser) {
           _setText(_totalController, _formatInput(_calculatedTotal));
@@ -305,28 +350,61 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
                 unitLabel: RmkRepository.unitLabelForGood(_good),
                 currencyTitle:
                     _isFuzaylovazamTenant ? r'$' : _currencyTitle,
+                showSalePrice: !widget.enterPurchasePrice,
               ),
-              _TotalRow(
-                total: _total,
-                currencyTitle: _currencyTitle,
-                selected: _activeField == _EditField.total,
-                keepEmpty: _totalClearedByUser && _totalController.text.isEmpty,
-                controller: _totalController,
-                focusNode: _totalFocusNode,
-                onTap: () => _selectField(_EditField.total),
-                onChanged: () => _handleFieldChanged(_EditField.total),
-              ),
-              _ActiveFieldPanel(
-                activeField: _panelField,
-                quantityController: _quantityController,
-                totalController: _totalController,
-                quantityFocusNode: _quantityFocusNode,
-                totalFocusNode: _totalFocusNode,
-                unitLabel: RmkRepository.unitLabelForGood(_good),
-                currencyTitle: _currencyTitle,
-                onSelect: _selectField,
-                onChanged: _handleFieldChanged,
-              ),
+              if (widget.enterPurchasePrice) ...[
+                _TotalRow(
+                  label: 'Количество',
+                  total: _quantity,
+                  currencyTitle: RmkRepository.unitLabelForGood(_good),
+                  selected: _activeField == _EditField.quantity,
+                  keepEmpty: _quantityController.text.isEmpty,
+                  controller: _quantityController,
+                  focusNode: _quantityFocusNode,
+                  onTap: () => _selectField(_EditField.quantity),
+                  onChanged: () => _handleFieldChanged(_EditField.quantity),
+                ),
+                _TotalRow(
+                  label: 'Цена',
+                  total: _purchasePrice,
+                  currencyTitle: _currencyTitle,
+                  selected: _activeField == _EditField.price,
+                  keepEmpty: _priceController.text.isEmpty,
+                  emptyHint: 'Введите цену',
+                  outlined: true,
+                  controller: _priceController,
+                  focusNode: _priceFocusNode,
+                  onTap: () => _selectField(_EditField.price),
+                  onChanged: () => _handleFieldChanged(_EditField.price),
+                ),
+                _PurchaseSumRow(
+                  total: _total,
+                  currencyTitle: _currencyTitle,
+                ),
+              ] else ...[
+                _TotalRow(
+                  total: _total,
+                  currencyTitle: _currencyTitle,
+                  selected: _activeField == _EditField.total,
+                  keepEmpty:
+                      _totalClearedByUser && _totalController.text.isEmpty,
+                  controller: _totalController,
+                  focusNode: _totalFocusNode,
+                  onTap: () => _selectField(_EditField.total),
+                  onChanged: () => _handleFieldChanged(_EditField.total),
+                ),
+                _ActiveFieldPanel(
+                  activeField: _panelField,
+                  quantityController: _quantityController,
+                  totalController: _totalController,
+                  quantityFocusNode: _quantityFocusNode,
+                  totalFocusNode: _totalFocusNode,
+                  unitLabel: RmkRepository.unitLabelForGood(_good),
+                  currencyTitle: _currencyTitle,
+                  onSelect: _selectField,
+                  onChanged: _handleFieldChanged,
+                ),
+              ],
               Expanded(
                 child: _NumberPad(
                   onTap: _tapKey,
@@ -367,18 +445,20 @@ class _RmkQuantityScreenState extends State<RmkQuantityScreen> {
   }
 }
 
-enum _EditField { quantity, total }
+enum _EditField { quantity, price, total }
 
 class _ProductHeader extends StatelessWidget {
   const _ProductHeader({
     required this.good,
     required this.unitLabel,
     required this.currencyTitle,
+    this.showSalePrice = true,
   });
 
   final RmkGood good;
   final String unitLabel;
   final String currencyTitle;
+  final bool showSalePrice;
 
   @override
   Widget build(BuildContext context) {
@@ -420,10 +500,13 @@ class _ProductHeader extends StatelessWidget {
                   'Остаток',
                   '${_formatQuantity(good.quantity)} $unitLabel',
                 ),
-                _InfoLine(
-                  'Продажная цена',
-                  '${_formatMoney(good.price)} $currencyTitle',
-                ),
+                if (showSalePrice)
+                  _InfoLine(
+                    'Продажная цена',
+                    '${_formatMoney(good.price)} $currencyTitle',
+                  )
+                else
+                  _InfoLine('Ед. изм.', unitLabel),
               ],
             ),
           ),
@@ -506,6 +589,50 @@ class _ProductImage extends StatelessWidget {
   }
 }
 
+class _PurchaseSumRow extends StatelessWidget {
+  const _PurchaseSumRow({
+    required this.total,
+    required this.currencyTitle,
+  });
+
+  final double total;
+  final String currencyTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final hasValue = total > 0;
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          Text(
+            'Сумма',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontFamily: 'Gilroy',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            hasValue ? '${_formatMoney(total)} $currencyTitle' : '0',
+            style: TextStyle(
+              color: colors.buttonPrimaryBg,
+              fontFamily: 'Gilroy',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TotalRow extends StatelessWidget {
   const _TotalRow({
     required this.total,
@@ -516,10 +643,16 @@ class _TotalRow extends StatelessWidget {
     required this.focusNode,
     required this.onTap,
     required this.onChanged,
+    this.label = 'Всего:',
+    this.emptyHint,
+    this.outlined = false,
   });
 
   final double total;
   final String currencyTitle;
+  final String label;
+  final String? emptyHint;
+  final bool outlined;
   final bool selected;
   final bool keepEmpty;
   final TextEditingController controller;
@@ -548,7 +681,7 @@ class _TotalRow extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'Всего:',
+                label,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontFamily: 'Gilroy',
@@ -559,12 +692,15 @@ class _TotalRow extends StatelessWidget {
               const Spacer(),
               SizedBox(
                 width: 180,
-                child: selected
+                child: selected || outlined
                     ? _NumberField(
                         controller: controller,
                         focusNode: focusNode,
-                        selected: true,
-                        hint: keepEmpty ? '' : _formatMoney(total),
+                        selected: selected,
+                        highlight: outlined && keepEmpty,
+                        hint: keepEmpty
+                            ? (emptyHint ?? '')
+                            : _formatMoney(total),
                         suffix: currencyTitle,
                         textAlign: TextAlign.right,
                         onTap: onTap,
@@ -572,16 +708,19 @@ class _TotalRow extends StatelessWidget {
                       )
                     : Text(
                         keepEmpty
-                            ? ''
+                            ? (emptyHint ?? '')
                             : '${_formatMoney(total)} $currencyTitle',
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                          color: colors.textPrimary,
+                          color: keepEmpty
+                              ? colors.textSecondary
+                              : colors.textPrimary,
                           fontFamily: 'Gilroy',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                          fontSize: keepEmpty ? 13 : 18,
+                          fontWeight:
+                              keepEmpty ? FontWeight.w500 : FontWeight.w700,
                         ),
                       ),
               ),
@@ -639,6 +778,15 @@ class _ActiveFieldPanel extends StatelessWidget {
               suffix: unitLabel,
               onTap: () => onSelect(_EditField.quantity),
               onChanged: () => onChanged(_EditField.quantity),
+            ),
+          _EditField.price => _PanelNumberField(
+              key: const ValueKey('price'),
+              label: 'Цена',
+              controller: quantityController,
+              focusNode: quantityFocusNode,
+              suffix: currencyTitle,
+              onTap: () => onSelect(_EditField.price),
+              onChanged: () => onChanged(_EditField.price),
             ),
           _EditField.total => _PanelNumberField(
               key: const ValueKey('total'),
@@ -716,11 +864,13 @@ class _NumberField extends StatelessWidget {
     required this.onChanged,
     this.suffix,
     this.textAlign = TextAlign.center,
+    this.highlight = false,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool selected;
+  final bool highlight;
   final String hint;
   final String? suffix;
   final TextAlign textAlign;
@@ -755,11 +905,17 @@ class _NumberField extends StatelessWidget {
         isDense: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.borderSubtle),
+          borderSide: BorderSide(
+            color: highlight ? colors.buttonPrimaryBg : colors.borderSubtle,
+            width: highlight ? 1.5 : 1,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.borderSubtle),
+          borderSide: BorderSide(
+            color: highlight ? colors.buttonPrimaryBg : colors.borderSubtle,
+            width: highlight ? 1.5 : 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

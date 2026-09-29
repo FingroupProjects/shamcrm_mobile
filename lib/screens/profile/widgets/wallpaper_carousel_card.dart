@@ -7,6 +7,7 @@ import 'package:crm_task_manager/core/theme/background/wallpaper_rotation_mode.d
 import 'package:crm_task_manager/core/theme/background/wallpaper_source.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -44,11 +45,13 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
             : AppLocalizations.of(context)!
                 .translate('appearance_import_ok')
                 .replaceAll('{n}', '$imported'),
+        isSuccess: imported > 0,
       );
     } catch (_) {
       if (mounted) {
         _showMessage(
           AppLocalizations.of(context)!.translate('appearance_gallery_fail'),
+          isSuccess: false,
         );
       }
     } finally {
@@ -63,6 +66,7 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
         AppLocalizations.of(context)!
             .translate('appearance_carousel_max')
             .replaceAll('{n}', '${AppThemeController.maxCarouselCount}'),
+        isSuccess: false,
       );
     }
   }
@@ -92,9 +96,11 @@ class _WallpaperCarouselCardState extends State<WallpaperCarouselCard> {
     await widget.controller.removeImportedSource(path);
   }
 
-  void _showMessage(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
+  void _showMessage(String text, {bool isSuccess = true}) {
+    showCustomSnackBar(
+      context: context,
+      message: text,
+      isSuccess: isSuccess,
     );
   }
 

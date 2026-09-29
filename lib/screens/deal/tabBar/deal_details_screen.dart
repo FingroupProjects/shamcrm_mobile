@@ -926,6 +926,7 @@ class _DealDetailsScreenState extends State<DealDetailsScreen> {
                             LeadNavigateToChat(
                               leadId: currentDeal!.lead!.id,
                               leadName: currentDeal!.lead!.name,
+                              leadPhone: currentDeal!.lead!.phone,
                               chats: (currentDeal!.lead!.chats ?? [])
                                   .map((chat) => {
                                         'id': chat['id'],

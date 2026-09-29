@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_photo_crop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -140,8 +141,10 @@ class _ProfilePhotoEditorPageState extends State<ProfilePhotoEditorPage> {
       if (!mounted) return;
       setState(() => _exporting = false);
       final t = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('profile_photo_edit_error'))),
+      showCustomSnackBar(
+        context: context,
+        message: t.translate('profile_photo_edit_error'),
+        isSuccess: false,
       );
     }
   }

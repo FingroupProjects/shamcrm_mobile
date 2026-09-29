@@ -5,6 +5,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/price_input_formatter.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -767,8 +768,10 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
       final statuses = await _apiService.getLeadStatuses();
       if (!mounted || statuses.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Не удалось открыть создание лида')),
+          showCustomSnackBar(
+            context: context,
+            message: 'Не удалось открыть создание лида',
+            isSuccess: false,
           );
         }
         return;
@@ -811,8 +814,10 @@ class _RmkFreshLeadSelectorState extends State<_RmkFreshLeadSelector> {
         debugPrint('RMK Lead Selector: create lead error=$error');
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось создать лида')),
+        showCustomSnackBar(
+          context: context,
+          message: 'Не удалось создать лида',
+          isSuccess: false,
         );
       }
     } finally {

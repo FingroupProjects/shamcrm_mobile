@@ -883,14 +883,16 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private var suppressRegistrationLifecycleEvents = false
     private var isApplyingRegistrationConfig = false
 
-    init(controller: FlutterViewController) {
+    /// Accept the engine messenger directly.
+    /// UIScene creates the Flutter view controller after AppDelegate startup.
+    init(messenger: FlutterBinaryMessenger) {
         methodChannel = FlutterMethodChannel(
             name: Constants.methodChannelName,
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
         eventChannel = FlutterEventChannel(
             name: Constants.eventChannelName,
-            binaryMessenger: controller.binaryMessenger
+            binaryMessenger: messenger
         )
         snapshot = IOSNativeSipManager.loadSnapshot(from: UserDefaults.standard)
 

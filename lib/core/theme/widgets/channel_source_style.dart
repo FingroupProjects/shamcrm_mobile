@@ -79,7 +79,12 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
       name.contains('telephony')) {
     return ChannelSourceKind.phone;
   }
-  if (name.contains('site') || name.contains('сайт') || name.contains('web')) {
+  // «Интернет магазин» — это канал site. Для него нет PNG.
+  if (name.contains('site') ||
+      name.contains('сайт') ||
+      name.contains('web') ||
+      name.contains('internet') ||
+      name.contains('интернет')) {
     return ChannelSourceKind.site;
   }
   return ChannelSourceKind.unknown;

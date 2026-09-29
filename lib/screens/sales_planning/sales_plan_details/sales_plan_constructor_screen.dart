@@ -11,6 +11,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/sales_planning/sales_plan_filter_field_loader.dart';
 import 'package:crm_task_manager/screens/sales_planning/sales_plan_labels.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -339,22 +340,28 @@ class _SalesPlanConstructorScreenState
     );
     if (!mounted) return;
     if (!allowed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('sp_save_error'))),
+      showCustomSnackBar(
+        context: context,
+        message: t.translate('sp_save_error'),
+        isSuccess: false,
       );
       return;
     }
     if (_object == null || !_aggReady || _nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('sp_fill_required'))),
+      showCustomSnackBar(
+        context: context,
+        message: t.translate('sp_fill_required'),
+        isSuccess: false,
       );
       return;
     }
     final value = double.tryParse(
         _valueController.text.replaceAll(' ', '').replaceAll(',', '.'));
     if (value == null || value <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('sp_invalid_target'))),
+      showCustomSnackBar(
+        context: context,
+        message: t.translate('sp_invalid_target'),
+        isSuccess: false,
       );
       return;
     }
@@ -364,8 +371,10 @@ class _SalesPlanConstructorScreenState
     _periodEnd = end;
 
     if (_selectedUserIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.translate('sp_select_owners'))),
+      showCustomSnackBar(
+        context: context,
+        message: t.translate('sp_select_owners'),
+        isSuccess: false,
       );
       return;
     }
@@ -408,12 +417,10 @@ class _SalesPlanConstructorScreenState
     if (result['success'] == true) {
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result['message']?.toString() ?? t.translate('sp_save_error'),
-          ),
-        ),
+      showCustomSnackBar(
+        context: context,
+        message: result['message']?.toString() ?? t.translate('sp_save_error'),
+        isSuccess: false,
       );
     }
   }

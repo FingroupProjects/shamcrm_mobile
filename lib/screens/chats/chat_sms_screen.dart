@@ -88,6 +88,9 @@ class ChatSmsScreen extends StatefulWidget {
   final String endPointInTab;
   final bool canSendMessage;
   final String? initialChannelName;
+  /// Лид для первого WhatsApp через Green API, когда чата ещё нет.
+  final int? leadId;
+  final bool isPendingGreenApiChat;
   final ApiService apiService = ApiService();
   final ApiServiceDownload apiServiceDownload = ApiServiceDownload();
 
@@ -99,6 +102,8 @@ class ChatSmsScreen extends StatefulWidget {
     required this.endPointInTab,
     required this.canSendMessage,
     this.initialChannelName,
+    this.leadId,
+    this.isPendingGreenApiChat = false,
   });
 
   @override
@@ -182,6 +187,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   bool get _isInstagramCommentChannel {
     final name = channelName ?? '';
     return name.contains('instagram_comment');
+  }
+
+  /// Пустой WhatsApp: чата нет, первое сообщение создаст его на сервере.
+  bool get _isPendingGreenApiChat {
+    return widget.isPendingGreenApiChat &&
+        (widget.leadId ?? 0) > 0 &&
+        widget.chatId <= 0;
   }
 
   Future<void> _showInstagramResponseTypePicker(Message? message) async {
@@ -1008,7 +1020,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   void _handleVisiblePositionsChanged() {
-    if (!mounted) return;
+    if (!mounted || _isDisposing || _isPendingGreenApiChat || widget.chatId <= 0) {
+      return;
+    }
 
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
@@ -1046,7 +1060,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   Future<void> _loadOlderMessagesFromScroll() async {
-    final currentState = context.read<MessagingCubit>().state;
+    if (!mounted || _isDisposing || _isPendingGreenApiChat || widget.chatId <= 0) {
+      return;
+    }
+    final cubit = context.read<MessagingCubit>();
+    if (cubit.isClosed) return;
+    final currentState = cubit.state;
     if (currentState is! MessagesCollectionState ||
         _isLoadingOlderFromScroll ||
         currentState.isLoadingInitial ||
@@ -1058,10 +1077,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
     _isLoadingOlderFromScroll = true;
     try {
-      await context.read<MessagingCubit>().loadOlderPage(
-            widget.chatId,
-            chatType: widget.endPointInTab,
-          );
+      await cubit.loadOlderPage(
+        widget.chatId,
+        chatType: widget.endPointInTab,
+      );
     } finally {
       _isLoadingOlderFromScroll = false;
     }
@@ -1103,6 +1122,31 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _markMessagesAsRead();
   }
 
+  bool get _shouldShowLeadChannelBanner {
+    return widget.endPointInTab == 'lead' &&
+        (integrationUsername != null || _isPendingGreenApiChat);
+  }
+
+  Widget _buildLeadChannelBanner() {
+    return Material(
+      color: context.appColors.overlay.withValues(alpha: 0.0),
+      child: PinnedLeadMessageWidget(
+        message: '@${integrationUsername ?? 'WhatsApp'}',
+        channelType: channelName,
+        onTap: null,
+        // Кнопка настроек ИИ появляется только при активной
+        // интеграции (флаг из get-user-data).
+        trailing: ValueListenableBuilder<bool>(
+          valueListenable: AiIntegrationStore.enabled,
+          builder: (context, hasAi, _) {
+            if (!hasAi) return const SizedBox.shrink();
+            return _buildAiSettingsButton();
+          },
+        ),
+      ),
+    );
+  }
+
   // Кнопка «настройки ИИ» в конце баннера «Обращение на канал».
   Widget _buildAiSettingsButton() {
     final accent = context.appColors.buttonPrimaryBg;
@@ -1132,6 +1176,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   // Тянет актуальное состояние ИИ (is_ai_paused / is_ai_followup_paused)
   // из /chat/{id} и обновляет локальные флаги.
   Future<void> _refreshAiState() async {
+    if (_isPendingGreenApiChat || widget.chatId <= 0) return;
     try {
       final state = await widget.apiService.getChatAiState(widget.chatId);
       if (!mounted) return;
@@ -1148,6 +1193,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   // Открывает шторку с переключателями «ИИ в чате» и «Дожим».
   // enabled = !paused: сервер хранит паузу, а пользователю показываем «включено».
   Future<void> _openAiSettingsSheet() async {
+    if (_isPendingGreenApiChat || widget.chatId <= 0) {
+      return;
+    }
     // Состояние уже свежее (обновляется при входе в чат), открываем сразу.
     await showChatAiSettingsSheet(
       context: context,
@@ -1275,6 +1323,37 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _loadChatAppearance();
     _checkPermissions();
     _getMyDisplayName();
+    if (widget.initialChannelName != null &&
+        widget.initialChannelName!.isNotEmpty) {
+      channelName = widget.initialChannelName;
+    } else if (_isPendingGreenApiChat) {
+      // Поле ввода у лида скрыто без channelName.
+      channelName = 'green_api';
+    }
+
+    _chatsBloc = context.read<ChatsBloc>();
+    _messagingCubit = context
+        .read<MessagingCubit>(); // Сохраняем ссылку для использования в dispose
+
+    context.read<ListenSenderFileCubit>().updateValue(false);
+    context.read<ListenSenderVoiceCubit>().updateValue(false);
+    context.read<ListenSenderTextCubit>().updateValue(false);
+
+    // Пустой WhatsApp: не ходим в API с chatId=0 и не слушаем скролл.
+    if (_isPendingGreenApiChat) {
+      integrationUsername = 'WhatsApp';
+      channelName = 'green_api';
+      AiIntegrationStore.hydrateFromPrefs();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<MessagingCubit>().showEmptyChat();
+      });
+      return;
+    }
+
+    _itemPositionsListener.itemPositions
+        .addListener(_handleVisiblePositionsChanged);
+
     ChatUnreadCounterService.instance.markChatOpened(
       unreadCount: widget.chatItem.unreadCount,
       type: widget.endPointInTab,
@@ -1284,16 +1363,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       if (!mounted) return;
       ChatVoicePlayerService.instance.setForegroundChatId(widget.chatId);
     });
-    if (widget.initialChannelName != null &&
-        widget.initialChannelName!.isNotEmpty) {
-      channelName = widget.initialChannelName;
-    }
-
-    _chatsBloc = context.read<ChatsBloc>();
-    _messagingCubit = context
-        .read<MessagingCubit>(); // Сохраняем ссылку для использования в dispose
-    _itemPositionsListener.itemPositions
-        .addListener(_handleVisiblePositionsChanged);
 
     // ✅ КРИТИЧНО: Устанавливаем этот чат как активный
     // Это нужно, чтобы при обновлении через сокет не инкрементировать счетчик
@@ -1302,10 +1371,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _chatTracker.setActiveChat(widget.chatUniqueId, chatId: widget.chatId);
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
     unawaited(_cacheService.markChatMessagesRead(widget.chatId));
-
-    context.read<ListenSenderFileCubit>().updateValue(false);
-    context.read<ListenSenderVoiceCubit>().updateValue(false);
-    context.read<ListenSenderTextCubit>().updateValue(false);
 
     // ✅ КРИТИЧНО: Используем addPostFrameCallback для оптимистичной параллельной загрузки
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1384,6 +1449,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   Future<void> _persistCurrentChatMessages() async {
+    if (_isPendingGreenApiChat) return;
     final currentState = _messagingCubit?.state;
     if (currentState is MessagesCollectionState) {
       await _cacheService.cacheMessages(widget.chatId, currentState.messages);
@@ -1834,6 +1900,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   Future<void> _markMessagesAsRead() async {
+    if (_isPendingGreenApiChat) return;
     final state = context.read<MessagingCubit>().state;
     if (state is! MessagesCollectionState || !_isNearBottom) return;
 
@@ -2424,7 +2491,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
               searchFocusNode: _searchFocusNode,
               onBack: () => Navigator.pop(context),
               onAppearanceTap: _openChatAppearanceSheet,
-              onProfileTap: isSupportChat
+              onProfileTap: isSupportChat || _isPendingGreenApiChat
                   ? null
                   : () async {
                       if (_isRequestInProgress) return;
@@ -2529,6 +2596,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                       }
                     },
               onSearchToggle: () {
+                if (_isPendingGreenApiChat) return;
                 setState(() {
                   _isSearching = !_isSearching;
                   if (!_isSearching) {
@@ -2816,16 +2884,26 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           final messages = state.messages;
           debugPrint('messageListUi: Rendering ${messages.length} messages');
           final pinnedMessages = state.pinnedMessages;
-          final hasLeadPinnedHeader =
-              widget.endPointInTab == 'lead' && integrationUsername != null;
+          final hasLeadPinnedHeader = _shouldShowLeadChannelBanner;
           final topOverlayOffset = hasLeadPinnedHeader ? 88.0 : 0.0;
 
           if (messages.isEmpty) {
-            return Center(
-              child: Text(
-                AppLocalizations.of(context)!.translate('not_sms'),
-                style: TextStyle(color: context.appColors.textPrimary),
-              ),
+            return Stack(
+              children: [
+                Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('not_sms'),
+                    style: TextStyle(color: context.appColors.textPrimary),
+                  ),
+                ),
+                if (_shouldShowLeadChannelBanner)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildLeadChannelBanner(),
+                  ),
+              ],
             );
           }
 
@@ -3054,25 +3132,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                 right: 0,
                 child: Column(
                   children: [
-                    if (widget.endPointInTab == 'lead' &&
-                        integrationUsername != null)
-                      Material(
-                        color: context.appColors.overlay.withValues(alpha: 0.0),
-                        child: PinnedLeadMessageWidget(
-                          message: '@$integrationUsername',
-                          channelType: channelName,
-                          onTap: null,
-                          // Кнопка настроек ИИ появляется только при активной
-                          // интеграции (флаг из get-user-data).
-                          trailing: ValueListenableBuilder<bool>(
-                            valueListenable: AiIntegrationStore.enabled,
-                            builder: (context, hasAi, _) {
-                              if (!hasAi) return const SizedBox.shrink();
-                              return _buildAiSettingsButton();
-                            },
-                          ),
-                        ),
-                      ),
+                    if (_shouldShowLeadChannelBanner) _buildLeadChannelBanner(),
                     if (pinnedMessages.isNotEmpty)
                       Material(
                         color: context.appColors.overlay.withValues(alpha: 0.0),
@@ -3165,15 +3225,18 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             onAttachFile: _onPickFilePressed,
             focusNode: _focusNode,
             isLeadChat: widget.endPointInTab == 'lead',
-            onGenerateAiDraft: () {
-              // Черновик ответа приходит в поле ввода, не в историю чата.
-              return widget.apiService.generateChatAiDraft(widget.chatId);
-            },
+            onGenerateAiDraft: _isPendingGreenApiChat
+                ? null
+                : () {
+                    // Черновик только когда чат уже есть — ИИ отвечает по истории.
+                    return widget.apiService.generateChatAiDraft(widget.chatId);
+                  },
             onRecordVoice: () {
               debugPrint('Record voice triggered');
             },
             messageController: _messageController,
             sendRequestFunction: (File soundFile, String time) async {
+              if (_guardPendingGreenApiNonText()) return;
               final myName = await _getMyDisplayName();
               Duration calculateDuration(String time) {
                 List<String> parts = time.split(':');
@@ -3675,13 +3738,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           filePath: messageData['file_path']?.toString(),
           latitude: resolvedLatitude,
           longitude: resolvedLongitude,
-          duration: messageData['voice_duration'] != null
-              ? Duration(
-                  seconds:
-                      double.tryParse(messageData['voice_duration'].toString())
-                              ?.round() ??
-                          0)
-              : Duration.zero,
+          duration: parseVoiceDuration(messageData['voice_duration']),
           forwardedMessage: forwardedMessage,
         );
 
@@ -4171,6 +4228,28 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     );
 
     try {
+      if (_isPendingGreenApiChat) {
+        // Первое сообщение создаёт WhatsApp-чат. Остальные уже по chatId.
+        final leadId = widget.leadId!;
+        final createdChatId = await widget.apiService
+            .sendGreenApiLeadMessage(
+              leadId: leadId,
+              message: message.text,
+              forwardedMessageId: message.localReplyMessageId,
+              responseType: message.localResponseType,
+            )
+            .timeout(const Duration(seconds: 30));
+
+        if (!_canMutateMessagingCubit(cubit)) return;
+        final currentMessage = cubit.findMessageById(message.id) ?? message;
+        cubit.mergeMessageUpdate(
+          currentMessage.copyWith(deliveryStatus: MessageDeliveryStatus.sent),
+        );
+        context.read<ListenSenderTextCubit>().updateValue(false);
+        _replaceWithCreatedGreenApiChat(createdChatId);
+        return;
+      }
+
       await widget.apiService
           .sendMessage(
             widget.chatId,
@@ -4196,7 +4275,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         ),
       );
       unawaited(_persistCurrentChatMessages());
-      _schedulePendingMessageReconciliation(<Message>[currentMessage]);
+      if (!_isPendingGreenApiChat) {
+        _schedulePendingMessageReconciliation(<Message>[currentMessage]);
+      }
     } catch (error) {
       debugPrint('Ошибка отправки сообщения через API: $error');
       if (!_canMutateMessagingCubit(cubit)) return;
@@ -4290,7 +4371,44 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     );
   }
 
+  bool _guardPendingGreenApiNonText() {
+    if (!_isPendingGreenApiChat) return false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.translate('green_api_first_text_only'),
+        ),
+        backgroundColor: context.appColors.error,
+      ),
+    );
+    return true;
+  }
+
+  void _replaceWithCreatedGreenApiChat(int chatId) {
+    if (!mounted || chatId <= 0) return;
+    // Снимаем скролл со старого экрана, чтобы не ушёл getMessages/0.
+    _itemPositionsListener.itemPositions
+        .removeListener(_handleVisiblePositionsChanged);
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, _, __) => BlocProvider(
+          create: (_) => MessagingCubit(ApiService()),
+          child: ChatSmsScreen(
+            chatItem: widget.chatItem,
+            chatId: chatId,
+            endPointInTab: widget.endPointInTab,
+            canSendMessage: true,
+            initialChannelName: widget.initialChannelName ?? 'green_api',
+          ),
+        ),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+  }
+
   void _onPickFilePressed() async {
+    if (_guardPendingGreenApiNonText()) return;
     if (_isAttachmentPickerOpen) return;
 
     _isAttachmentPickerOpen = true;
@@ -4601,6 +4719,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _isDisposing = true;
 
     debugPrint('🗑️ ChatSmsScreen.dispose START for chat ${widget.chatId}');
+
+    if (_isPendingGreenApiChat) {
+      _searchDebounce?.cancel();
+      _itemPositionsListener.itemPositions
+          .removeListener(_handleVisiblePositionsChanged);
+      _messageController.dispose();
+      _searchController.dispose();
+      _focusNode.dispose();
+      _searchFocusNode.dispose();
+      WidgetsBinding.instance.removeObserver(this);
+      super.dispose();
+      return;
+    }
 
     // ✅ ШАГ 1: Убираем флаг активности (ВАЖНО: передаём chatId для проверки)
     // Это нужно сделать ДО пометки сообщений как прочитанных,
@@ -4991,6 +5122,7 @@ class MessageItemWidget extends StatelessWidget {
         if (Message.looksLikeVoice(message.filePath) ||
             Message.looksLikeVoice(message.text)) {
           content = VoiceMessageWidget(
+            key: ValueKey('voice-${message.id}-${message.filePath}'),
             message: message,
             baseUrl: baseUrl,
             chatId: chatId,
@@ -5058,6 +5190,7 @@ class MessageItemWidget extends StatelessWidget {
       case 'ptt':
       case 'voice_message':
         content = VoiceMessageWidget(
+          key: ValueKey('voice-${message.id}-${message.filePath}'),
           message: message,
           baseUrl: baseUrl,
           chatId: chatId,

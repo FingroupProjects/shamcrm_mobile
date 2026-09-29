@@ -24,6 +24,12 @@ class MessagingCubit extends Cubit<MessagingState> {
     String? search,
     String? chatType,
   }) async {
+    if (isClosed || chatId <= 0) {
+      if (!isClosed && chatId <= 0) {
+        showEmptyChat();
+      }
+      return;
+    }
     final normalizedSearch = _normalizeSearch(search);
     final currentCollection = _currentCollectionOrNull();
 
@@ -58,6 +64,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
     } catch (e) {
       debugPrint('MessagingCubit.loadInitialPage error: $e');
+      if (isClosed) return;
 
       if (currentCollection != null && currentCollection.messages.isNotEmpty) {
         _emitCollection(
@@ -87,6 +94,7 @@ class MessagingCubit extends Cubit<MessagingState> {
     int chatId, {
     String? chatType,
   }) async {
+    if (isClosed || chatId <= 0) return;
     final currentCollection = _currentCollectionOrNull();
     if (currentCollection == null ||
         currentCollection.isFromCache ||
@@ -134,6 +142,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
     } catch (e) {
       debugPrint('MessagingCubit.loadOlderPage error: $e');
+      if (isClosed) return;
       _emitCollection(currentCollection.copyWith(isLoadingMore: false));
     }
   }
@@ -142,6 +151,7 @@ class MessagingCubit extends Cubit<MessagingState> {
     int chatId, {
     String? chatType,
   }) async {
+    if (isClosed || chatId <= 0) return;
     final currentCollection = _currentCollectionOrNull();
 
     try {
@@ -253,7 +263,8 @@ class MessagingCubit extends Cubit<MessagingState> {
   }
 
   void showEmptyChat() {
-    _emitCollection(const MessagesCollection());
+    // hasReachedMax: больше страниц нет, скролл не дергает getMessages/0.
+    _emitCollection(const MessagesCollection(hasReachedMax: true));
     debugPrint('MessagingCubit: Showing empty chat interface');
   }
 
@@ -766,6 +777,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   }
 
   void _emitCollection(MessagesCollection collection) {
+    if (isClosed) return;
     final normalizedCollection = collection.copyWith(
       messages:
           _sanitizeStalePendingUploads(_normalizeMessages(collection.messages)),
@@ -813,7 +825,7 @@ class MessagingCubit extends Cubit<MessagingState> {
       );
       return;
     }
-
+      
     if (normalizedCollection.pinnedMessages.isNotEmpty) {
       emit(PinnedMessagesState(collection: normalizedCollection));
       return;
@@ -823,6 +835,7 @@ class MessagingCubit extends Cubit<MessagingState> {
   }
 
   void _emitBaseCollectionState(MessagesCollection collection) {
+    if (isClosed) return;
     final normalizedCollection = collection.copyWith(
       messages:
           _sanitizeStalePendingUploads(_normalizeMessages(collection.messages)),

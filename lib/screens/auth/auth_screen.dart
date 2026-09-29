@@ -6,6 +6,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,19 +83,19 @@ class _AuthScreenState extends State<AuthScreen> {
           });
           context.read<DomainBloc>().add(CheckEmail(scanResult));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizations.translate('invalid_email_in_qr')),
-            ),
+          showCustomSnackBar(
+            context: context,
+            message: localizations.translate('invalid_email_in_qr'),
+            isSuccess: false,
           );
         }
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.translate('qr_scan_error')),
-          ),
+        showCustomSnackBar(
+          context: context,
+          message: localizations.translate('qr_scan_error'),
+          isSuccess: false,
         );
       }
     }
@@ -331,28 +332,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         BlocConsumer<DomainBloc, DomainState>(
                           listener: (context, state) async {
                             if (state is DomainError) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    AppLocalizations.of(context)!
-                                        .translate(state.message),
-                                    style: const TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
+                              showCustomSnackBar(
+                                context: context,
+                                message: AppLocalizations.of(context)!
+                                    .translate(state.message),
+                                isSuccess: false,
                               );
                             } else if (state is EmailVerified) {
                               setState(() {
@@ -363,26 +347,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                   .read<ApiService>()
                                   .initializeWithEmailFlow();
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          localizations.translate(
-                                            'email_verified_success',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 3),
+                                showCustomSnackBar(
+                                  context: context,
+                                  message: localizations.translate(
+                                    'email_verified_success',
                                   ),
+                                  isSuccess: true,
                                 );
                               }
                             }
@@ -406,22 +376,18 @@ class _AuthScreenState extends State<AuthScreen> {
                                 onPressed: () {
                                   final email = emailController.text.trim();
                                   if (email.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          localizations
-                                              .translate('enter_email'),
-                                        ),
-                                      ),
+                                    showCustomSnackBar(
+                                      context: context,
+                                      message:
+                                          localizations.translate('enter_email'),
+                                      isSuccess: false,
                                     );
                                   } else if (!_isValidEmail(email)) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          localizations
-                                              .translate('invalid_email'),
-                                        ),
-                                      ),
+                                    showCustomSnackBar(
+                                      context: context,
+                                      message: localizations
+                                          .translate('invalid_email'),
+                                      isSuccess: false,
                                     );
                                   } else {
                                     context
@@ -465,28 +431,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                     await _checkPinSetupStatus(context);
                                   }
                                 } else if (loginState is LoginError) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        AppLocalizations.of(context)!
-                                            .translate(loginState.message),
-                                        style: const TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      backgroundColor: Colors.red,
-                                    ),
+                                  showCustomSnackBar(
+                                    context: context,
+                                    message: AppLocalizations.of(context)!
+                                        .translate(loginState.message),
+                                    isSuccess: false,
                                   );
                                 }
                               },
@@ -517,15 +466,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                             ),
                                           );
                                     } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            localizations.translate(
-                                              'login_password_hint',
-                                            ),
-                                          ),
+                                      showCustomSnackBar(
+                                        context: context,
+                                        message: localizations.translate(
+                                          'login_password_hint',
                                         ),
+                                        isSuccess: false,
                                       );
                                     }
                                   },

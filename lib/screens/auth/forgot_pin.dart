@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/auth/pin_setup_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/bloc/auth_bloc_pin/forgot_auth_bloc.dart';
@@ -106,24 +107,10 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
                       }
                     });
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            Icon(Icons.warning_amber_rounded, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              localizations.translate('enter_login_error'),
-                              style: TextStyle(fontFamily: 'Gilroy'),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Colors.orange[700],
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                    showCustomSnackBar(
+                      context: context,
+                      message: localizations.translate('enter_login_error'),
+                      isSuccess: false,
                     );
                   }
                 },
@@ -256,27 +243,10 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                 });
               } else if (state is ForgotPinFailure) {
                 // 👇 УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.white),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            state.error.replaceAll('Exception: ', ''),
-                            style: TextStyle(fontFamily: 'Gilroy'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: Colors.red[700],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    duration: Duration(seconds: 4),
-                  ),
+                showCustomSnackBar(
+                  context: context,
+                  message: state.error.replaceAll('Exception: ', ''),
+                  isSuccess: false,
                 );
               }
             },
@@ -416,26 +386,11 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                         if (_pinController.text == _receivedPin) {
                           _navigateToPinSetup();
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.white),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      localizations.translate('wrong_confirmation_code'),
-                                      style: TextStyle(fontFamily: 'Gilroy'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              backgroundColor: Colors.red,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                          showCustomSnackBar(
+                            context: context,
+                            message: localizations
+                                .translate('wrong_confirmation_code'),
+                            isSuccess: false,
                           );
                         }
                       },

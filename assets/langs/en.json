@@ -508,6 +508,7 @@
   "select_deal_status": "Select Deal Status",
   "list_chat": "Chat List",
   "no_chat_in_list": "No chats for the current lead",
+  "green_api_first_text_only": "Send a text message to WhatsApp first",
   "no_name_chat": "No Name",
   "send_to_1c": "Send to 1C",
   "send_data": "Send Data",

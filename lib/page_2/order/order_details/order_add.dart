@@ -47,6 +47,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_m
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
@@ -1496,6 +1497,51 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     return showOnSiteFields.contains(config.fieldName);
   }
 
+  /// Есть ли уже введённые данные заказа. Тогда назад спрашивает подтверждение.
+  bool _hasUnsavedOrderInput() {
+    if (_items.isNotEmpty) return true;
+    if (files.isNotEmpty) return true;
+    if (_commentController.text.trim().isNotEmpty) return true;
+    if (_deliveryAddressController.text.trim().isNotEmpty) return true;
+    if (_selectedDeliveryAddress != null) return true;
+    if (_selectedBranch != null) return true;
+    if (_deliveryMethod != null && _deliveryMethod!.trim().isNotEmpty) {
+      return true;
+    }
+    if (selectedManager != null && selectedManager!.isNotEmpty) return true;
+    if (_selectedIntegrationId != null) return true;
+    if (_isTotalEdited) return true;
+
+    final cameWithLead = widget.leadId != null || widget.dealId != null;
+    if (selectedLead != null && selectedLead!.isNotEmpty && !cameWithLead) {
+      return true;
+    }
+
+    final cameWithPhone =
+        (widget.clientPhone ?? '').trim().isNotEmpty || widget.order != null;
+    if (_phoneController.text.trim().isNotEmpty && !cameWithPhone) {
+      return true;
+    }
+
+    for (final field in customFields) {
+      if (field.controller.text.trim().isNotEmpty) return true;
+      if (field.entryIds.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  /// Назад и Отмена: не теряем уже заполненный заказ без подтверждения.
+  Future<void> _handleLeaveCreateOrder() async {
+    if (!_hasUnsavedOrderInput()) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    final shouldExit = await ConfirmExitDialog.show(context);
+    if (shouldExit && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   Future<bool> _showExitSettingsDialog() async {
     return await showDialog<bool>(
           context: context,
@@ -2694,7 +2740,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         BlocProvider<BranchBloc>.value(value: _branchBloc),
         BlocProvider<DeliveryAddressBloc>.value(value: _deliveryAddressBloc),
       ],
-      child: Listener(
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await _handleLeaveCreateOrder();
+        },
+        child: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (event) => _unfocusIfOutside(event.position),
         child: Scaffold(
@@ -2889,6 +2941,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         ),
       ),
       ),
+      ),
     );
   }
 
@@ -2899,7 +2952,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       elevation: 0,
       leading: IconButton(
         icon: Icon(Icons.arrow_back_ios, color: colors.textPrimary, size: 24),
-        onPressed: () => Navigator.pop(context),
+        onPressed: _handleLeaveCreateOrder,
       ),
       title: Text(
         AppLocalizations.of(context)!.translate('new_order'),
@@ -3415,7 +3468,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _handleLeaveCreateOrder,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 foregroundColor: colors.textPrimary,

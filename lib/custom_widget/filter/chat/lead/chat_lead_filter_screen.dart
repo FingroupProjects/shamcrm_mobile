@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/sales_funnel_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -444,8 +445,10 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка при загрузке справочников: $e')),
+      showCustomSnackBar(
+        context: context,
+        message: 'Ошибка при загрузке справочников: $e',
+        isSuccess: false,
       );
     }
   }

@@ -5,7 +5,7 @@ import UserNotifications
 import WidgetKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
 
     private var widgetMethodChannel: FlutterMethodChannel?
     private var networkEventChannel: FlutterEventChannel?
@@ -26,43 +26,62 @@ import WidgetKit
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        GeneratedPluginRegistrant.register(with: self)
         let launched = super.application(application, didFinishLaunchingWithOptions: launchOptions)
 
-        // Window / FlutterViewController is often still nil before super returns.
-        // Register channels from the engine messenger, then retry if needed.
-        attachCustomChannels()
         registerChatReplyNotificationCategory()
         startNetworkMonitoring()
 
         return launched
     }
 
+    /// Flutter creates the implicit engine while connecting the UIScene.
+    /// Register plugins and custom channels only after that engine is ready.
+    func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+        GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+        attachCustomChannels(messenger: engineBridge.applicationRegistrar.messenger())
+    }
+
     override func applicationDidBecomeActive(_ application: UIApplication) {
         super.applicationDidBecomeActive(application)
+        handleSceneDidBecomeActive()
+    }
+
+    func handleSceneDidBecomeActive() {
         // Safe to restore here: native skips REGISTER if the line is already up.
         nativeSipManager?.updateAppVisibility(isForeground: true, restoreRegistration: true)
     }
 
     override func applicationDidEnterBackground(_ application: UIApplication) {
-        nativeSipManager?.applicationDidEnterBackground()
+        handleSceneDidEnterBackground()
         super.applicationDidEnterBackground(application)
     }
 
+    func handleSceneDidEnterBackground() {
+        nativeSipManager?.applicationDidEnterBackground()
+    }
+
     override func applicationWillEnterForeground(_ application: UIApplication) {
-        nativeSipManager?.applicationWillEnterForeground()
+        handleSceneWillEnterForeground()
         super.applicationWillEnterForeground(application)
     }
 
+    func handleSceneWillEnterForeground() {
+        nativeSipManager?.applicationWillEnterForeground()
+    }
+
     override func applicationWillResignActive(_ application: UIApplication) {
-        // Control Center, banners and system alerts fire this. Do not recreate
-        // Linphone here — a REGISTER in Progress was being killed every time.
-        nativeSipManager?.updateAppVisibility(isForeground: false, restoreRegistration: false)
+        handleSceneWillResignActive()
         super.applicationWillResignActive(application)
     }
 
-    private func attachCustomChannels() {
-        guard let messenger = flutterMessenger() else {
+    func handleSceneWillResignActive() {
+        // Control Center, banners and system alerts fire this. Do not recreate
+        // Linphone here — a REGISTER in Progress was being killed every time.
+        nativeSipManager?.updateAppVisibility(isForeground: false, restoreRegistration: false)
+    }
+
+    private func attachCustomChannels(messenger providedMessenger: FlutterBinaryMessenger? = nil) {
+        guard let messenger = providedMessenger ?? flutterMessenger() else {
             channelAttachAttempts += 1
             guard channelAttachAttempts < 10 else { return }
             DispatchQueue.main.async { [weak self] in
@@ -76,15 +95,8 @@ import WidgetKit
         setupNetworkMethodChannel(messenger: messenger)
 
         if nativeSipManager == nil {
-            if let controller = flutterViewController() {
-                nativeSipManager = IOSNativeSipManager(controller: controller)
-                nativeSipManager?.initializeRuntimeIfNeeded()
-            } else if channelAttachAttempts < 10 {
-                channelAttachAttempts += 1
-                DispatchQueue.main.async { [weak self] in
-                    self?.attachCustomChannels()
-                }
-            }
+            nativeSipManager = IOSNativeSipManager(messenger: messenger)
+            nativeSipManager?.initializeRuntimeIfNeeded()
         }
     }
 
@@ -483,6 +495,10 @@ import WidgetKit
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey: Any] = [:]
     ) -> Bool {
+        handleOpenURL(url)
+    }
+
+    func handleOpenURL(_ url: URL) -> Bool {
         guard
             url.scheme == "shamcrm",
             url.host == "widget",

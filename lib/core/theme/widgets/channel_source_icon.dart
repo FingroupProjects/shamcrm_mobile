@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 export 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 
-/// Круглая иконка источника.
-/// На тёмной карточке — светлая. На светлой — тёмная.
-/// У брендов (Telegram, WhatsApp) свой цвет, чтобы список не был одинаковым.
+/// Иконка источника лида или чата.
+/// Берём PNG из assets/icons/leads, как раньше.
+/// Сайт рисуем иконкой Icons.language — отдельного файла нет.
 class ChannelSourceIcon extends StatelessWidget {
   const ChannelSourceIcon({
     super.key,
@@ -15,74 +15,74 @@ class ChannelSourceIcon extends StatelessWidget {
     this.background,
   });
 
+  /// Имя канала, перевод или путь к картинке.
   final String? sourceName;
   final double size;
 
-  /// Фон карточки. От него считаем, светлую или тёмную иконку рисовать.
+  /// Фон карточки. Оставлен, чтобы старые вызовы не ломались.
+  /// Сам файл выбираем по теме приложения, не по цвету карточки.
   final Color? background;
 
   @override
   Widget build(BuildContext context) {
-    final surface = background ?? context.appColors.surfacePrimary;
-    final onDark = context.useLightForeground(surface);
-    final look = lookForChannel(resolveChannelSourceKind(sourceName));
-    final iconSize = size * 0.54;
+    final kind = resolveChannelSourceKind(sourceName);
+    final isDark = context.isDarkTheme;
 
-    late final Color fill;
-    late final Color glyph;
-    Gradient? gradient;
-    Color? border;
-
-    switch (look.style) {
-      case ChannelBadgeStyle.solid:
-        fill = look.brand;
-        glyph = Colors.white;
-        break;
-      case ChannelBadgeStyle.adaptive:
-        // Тёмная карточка — светлый кружок и тёмная иконка.
-        // Светлая карточка — тёмный кружок и светлая иконка.
-        fill = onDark ? const Color(0xFFE8EEF5) : const Color(0xFF1A2332);
-        glyph = onDark ? const Color(0xFF1A2332) : const Color(0xFFF8FAFC);
-        border = onDark
-            ? Colors.white.withValues(alpha: 0.18)
-            : Colors.black.withValues(alpha: 0.08);
-        break;
-      case ChannelBadgeStyle.soft:
-        fill = look.brand.withValues(alpha: onDark ? 0.24 : 0.12);
-        glyph = look.brand;
-        border = look.brand.withValues(alpha: onDark ? 0.42 : 0.22);
-        break;
-      case ChannelBadgeStyle.gradient:
-        fill = look.brand;
-        glyph = Colors.white;
-        gradient = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: look.gradient ?? [look.brand, look.brand],
-        );
-        break;
+    // Сайт без своей картинки. Раньше здесь была иконка языка.
+    if (kind == ChannelSourceKind.site) {
+      return Icon(
+        Icons.language,
+        size: size,
+        color: context.appColors.textPrimary,
+      );
     }
 
-    return Container(
+    final path = leadSourceAsset(kind, isDark: isDark);
+    return Image.asset(
+      path,
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: gradient == null ? fill : null,
-        gradient: gradient,
-        border: Border.all(
-          color: border ?? Colors.white.withValues(alpha: 0.16),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: look.brand.withValues(alpha: onDark ? 0.28 : 0.16),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Icon(look.icon, size: iconSize, color: glyph),
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Если тёмный файл не подхватился, показываем обычную заглушку.
+        return Icon(
+          Icons.person,
+          size: size * 0.7,
+          color: context.appColors.iconSecondary,
+        );
+      },
     );
+  }
+}
+
+/// Путь к PNG канала.
+/// Тёмные копии есть только у телефона, почты и заглушки.
+/// Бренды (Telegram, WhatsApp и остальные) одни и те же в обеих темах.
+String leadSourceAsset(ChannelSourceKind kind, {required bool isDark}) {
+  switch (kind) {
+    case ChannelSourceKind.telegram:
+      return 'assets/icons/leads/telegram.png';
+    case ChannelSourceKind.whatsapp:
+      return 'assets/icons/leads/whatsapp.png';
+    case ChannelSourceKind.instagram:
+      return 'assets/icons/leads/instagram.png';
+    case ChannelSourceKind.messenger:
+    case ChannelSourceKind.facebook:
+      // Facebook-канал раньше тоже показывал messenger.png.
+      return 'assets/icons/leads/messenger.png';
+    case ChannelSourceKind.phone:
+      return isDark
+          ? 'assets/icons/leads/telefon_dark.png'
+          : 'assets/icons/leads/telefon.png';
+    case ChannelSourceKind.email:
+      return isDark
+          ? 'assets/icons/leads/email_dark.png'
+          : 'assets/icons/leads/email.png';
+    case ChannelSourceKind.site:
+      return '';
+    case ChannelSourceKind.unknown:
+      return isDark
+          ? 'assets/icons/leads/default_dark.png'
+          : 'assets/icons/leads/default.png';
   }
 }

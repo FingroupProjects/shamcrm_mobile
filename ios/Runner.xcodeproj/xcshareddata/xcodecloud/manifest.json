@@ -1,0 +1,9 @@
+{
+  "id" : "9b5fcb64-5adc-4ed7-8345-64a251f8f931",
+  "targets" : [
+    {
+      "id" : "41653EB0-D5F0-41B5-9462-685A90967FD0",
+      "name" : "crm_task_manager"
+    }
+  ]
+}

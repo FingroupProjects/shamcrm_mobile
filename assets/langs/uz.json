@@ -506,6 +506,7 @@
   "select_deal_status": "Bitim holatini tanlang",
   "list_chat": "Chatlar ro'yxati",
   "no_chat_in_list": "Joriy lid uchun chatlar mavjud emas",
+  "green_api_first_text_only": "Avval WhatsAppga matnli xabar yuboring",
   "no_name_chat": "Nomsiz",
   "send_to_1c": "1C ga yuborish",
   "send_data": "Ma'lumotlarni yuborish",

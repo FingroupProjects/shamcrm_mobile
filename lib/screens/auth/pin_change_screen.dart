@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -232,15 +233,11 @@ class _PinChangeScreenState extends State<PinChangeScreen>
     if (mounted) {
       // Показываем сообщение об успехе
       final localizations = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            localizations?.translate('pin_changed_successfully') ??
-                'PIN успешно изменён',
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
+      showCustomSnackBar(
+        context: context,
+        message: localizations?.translate('pin_changed_successfully') ??
+            'PIN успешно изменён',
+        isSuccess: true,
       );
 
       // Возвращаемся назад через небольшую задержку

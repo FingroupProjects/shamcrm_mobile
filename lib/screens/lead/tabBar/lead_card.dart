@@ -6,7 +6,9 @@ import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_green_api_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
+import 'package:crm_task_manager/utils/green_api_integration_store.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -112,8 +114,8 @@ class _LeadCardState extends State<LeadCard>
     return DateFormat('dd.MM.yyyy').format(dateTime);
   }
 
-  // Иконки и цвета источников теперь в ChannelSourceIcon.
-  // Там же светлая/тёмная тема и разные стили каналов.
+  // Картинка источника — PNG из assets/icons/leads.
+  // Цвет рамки карточки по-прежнему берём из бренда канала.
 
   Color getBorderColor(String? sourceName) {
     final kind = resolveChannelSourceKind(sourceName);
@@ -169,6 +171,8 @@ class _LeadCardState extends State<LeadCard>
   }
 
   Future<void> _handlePhoneTap(String phoneNumber) async {
+    await GreenApiIntegrationStore.hydrateFromPrefs();
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -204,7 +208,9 @@ class _LeadCardState extends State<LeadCard>
                       await _makeSystemPhoneCall(phoneNumber);
                     },
                   ),
-                  if (widget.lead.chats != null && widget.lead.chats!.isNotEmpty)
+                  if ((widget.lead.chats != null &&
+                          widget.lead.chats!.isNotEmpty) ||
+                      canOfferGreenApiWhatsApp(widget.lead.phone))
                     ...[
                       const SizedBox(height: 12),
                       _buildPhoneActionTile(
@@ -218,6 +224,7 @@ class _LeadCardState extends State<LeadCard>
                             context,
                             leadId: widget.lead.id,
                             leadName: widget.lead.name,
+                            leadPhone: widget.lead.phone,
                             chats: widget.lead.chats,
                           );
                         },

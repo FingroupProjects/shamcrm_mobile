@@ -107,6 +107,24 @@ class ChatMediaPersistentCache {
 
   String _videoExtension(String url) => _fileExtension(url, '.mp4');
 
+  /// Уже скачанный файл, без новой загрузки.
+  /// Нужен, чтобы длину голосового прочитать сразу с диска.
+  Future<File?> peekAnyFile(String url) async {
+    if (url.startsWith('/') || url.startsWith('file:')) {
+      return _localFileIfExists(url);
+    }
+
+    final key = _safeKey(url);
+    final cachedPath = await _readPath('$_filePrefix$key');
+    if (cachedPath == null) return null;
+
+    final cachedFile = File(cachedPath);
+    if (await cachedFile.exists() && await cachedFile.length() > 0) {
+      return cachedFile;
+    }
+    return null;
+  }
+
   Future<File?> getAnyFile(
     String url, {
     String? fileName,

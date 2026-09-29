@@ -101,7 +101,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Future<void> _requestPermissionAndLoadContacts() async {
-    if (await FlutterContacts.requestPermission()) {
+    final permission =
+        await FlutterContacts.permissions.request(PermissionType.read);
+    final isAllowed = permission == PermissionStatus.granted ||
+        permission == PermissionStatus.limited;
+    if (isAllowed) {
       _getContacts();
     } else {
       _showSnackBar(
@@ -113,8 +117,15 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   Future<void> _getContacts() async {
     try {
-      List<Contact> fetchedContacts = await FlutterContacts.getContacts(
-          withProperties: true, withPhoto: true);
+      List<Contact> fetchedContacts = await FlutterContacts.getAll(
+        properties: const {
+          ContactProperty.name,
+          ContactProperty.phone,
+          ContactProperty.email,
+          ContactProperty.address,
+          ContactProperty.photoThumbnail,
+        },
+      );
       fetchedContacts = fetchedContacts.where((contact) {
         return (contact.displayName != null &&
                 contact.displayName!.isNotEmpty) &&
@@ -137,135 +148,139 @@ class _ContactsScreenState extends State<ContactsScreen> {
       builder: (context) {
         return SafeArea(
           child: Container(
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: _screenSurfaceBackground(context),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: _screenBorder(context)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  backgroundColor: _screenSurfaceElevated(context),
-                  radius: 50,
-                  backgroundImage: contact.photo != null
-                      ? MemoryImage(contact.photo!)
-                      : null,
-                  child: contact.photo == null
-                      ? Icon(
-                          Icons.person,
-                          size: 50,
-                          color: _screenPrimaryText(context),
-                        )
-                      : null,
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _screenSurfaceBackground(context),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _screenBorder(context)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Center(
+                  child: CircleAvatar(
+                    backgroundColor: _screenSurfaceElevated(context),
+                    radius: 50,
+                    backgroundImage: contact.photo?.thumbnail != null
+                        ? MemoryImage(contact.photo!.thumbnail!)
+                        : null,
+                    child: contact.photo?.thumbnail == null
+                        ? Icon(
+                            Icons.person,
+                            size: 50,
+                            color: _screenPrimaryText(context),
+                          )
+                        : null,
+                  ),
                 ),
-              ),
-              SizedBox(height: 16),
-              Center(
-                child: Text(
-                  contact.displayName,
+                SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    contact.displayName ?? '',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gilroy',
+                      color: _screenPrimaryText(context),
+                    ),
+                  ),
+                ),
+                Divider(color: _screenBorder(context)),
+                SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.translate('phones'),
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                     fontFamily: 'Gilroy',
                     color: _screenPrimaryText(context),
                   ),
                 ),
-              ),
-              Divider(color: _screenBorder(context)),
-              SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.translate('phones'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: _screenPrimaryText(context),
-                ),
-              ),
-              ...contact.phones.map((phone) {
-                final uniquePhone = phone.number.replaceAll(RegExp(r'\s+'), '');
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.phone,
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        uniquePhone,
-                        style: TextStyle(color: _screenSecondaryText(context)),
-                      ),
-                    ],
-                  ),
-                );
-              }).toSet(),
-              SizedBox(height: 16),
-              Text(
-                'Emails:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: _screenPrimaryText(context),
-                ),
-              ),
-              ...contact.emails.map((email) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.email,
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        email.address,
-                        style: TextStyle(color: _screenSecondaryText(context)),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.translate('address'),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Gilroy',
-                  color: _screenPrimaryText(context),
-                ),
-              ),
-              ...contact.addresses.map((address) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: context.appColors.buttonPrimaryBg,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          address.street,
-                          style: TextStyle(color: _screenSecondaryText(context)),
+                ...contact.phones.map((phone) {
+                  final uniquePhone =
+                      phone.number.replaceAll(RegExp(r'\s+'), '');
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          color: context.appColors.buttonPrimaryBg,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 8),
+                        Text(
+                          uniquePhone,
+                          style:
+                              TextStyle(color: _screenSecondaryText(context)),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toSet(),
+                SizedBox(height: 16),
+                Text(
+                  'Emails:',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: _screenPrimaryText(context),
                   ),
-                );
-              }).toList(),
-            ],
+                ),
+                ...contact.emails.map((email) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.email,
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          email.address,
+                          style:
+                              TextStyle(color: _screenSecondaryText(context)),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.translate('address'),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Gilroy',
+                    color: _screenPrimaryText(context),
+                  ),
+                ),
+                ...contact.addresses.map((address) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: context.appColors.buttonPrimaryBg,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            address.street ?? '',
+                            style:
+                                TextStyle(color: _screenSecondaryText(context)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
           ),
-        ),
         );
       },
     );
@@ -320,333 +335,361 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
-void _showFailedContactsDialog(
-    List<Map<String, dynamic>> failedContacts, int totalContacts) {
-  int successfulContacts = totalContacts - failedContacts.length;
+  void _showFailedContactsDialog(
+      List<Map<String, dynamic>> failedContacts, int totalContacts) {
+    int successfulContacts = totalContacts - failedContacts.length;
 
-  showDialog(
-    context: context,
-    barrierColor: context.appColors.overlay.withValues(alpha: 0.45),
-    builder: (BuildContext context) {
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          constraints:
-              BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-          decoration: BoxDecoration(
-            color: _screenSurfaceBackground(context),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _screenBorder(context)),
-            boxShadow: [
-              BoxShadow(
-                color: context.appColors.shadow.withValues(alpha: 0.16),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: _screenSurfaceElevated(context),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
+    showDialog(
+      context: context,
+      barrierColor: context.appColors.overlay.withValues(alpha: 0.45),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7),
+            decoration: BoxDecoration(
+              color: _screenSurfaceBackground(context),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: _screenBorder(context)),
+              boxShadow: [
+                BoxShadow(
+                  color: context.appColors.shadow.withValues(alpha: 0.16),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
                 ),
-                width: double.infinity,
-                child: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.translate('failed_contacts_title') ??
-                        'Failed Contacts',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: _screenPrimaryText(context),
-                      letterSpacing: 0.3,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _screenSurfaceElevated(context),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  width: double.infinity,
+                  child: Center(
+                    child: Text(
+                      AppLocalizations.of(context)!
+                              .translate('failed_contacts_title') ??
+                          'Failed Contacts',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: _screenPrimaryText(context),
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Statistics card
-                      Container(
-                        margin: EdgeInsets.only(bottom: 20),
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _screenSurfaceElevated(context),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.appColors.shadow.withValues(alpha: 0.05),
-                              spreadRadius: 1,
-                              blurRadius: 5,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            _buildStatRow(
-                              context,
-                              AppLocalizations.of(context)!.translate('total_contacts') ?? 'Total contacts',
-                              totalContacts.toString(),
-                              _screenPrimaryText(context),
-                              Icons.people_alt_rounded,
-                            ),
-                            Divider(height: 20, thickness: 1, color: _screenBorder(context)),
-                            _buildStatRow(
-                              context,
-                              AppLocalizations.of(context)!.translate('successfully_added') ?? 'Successfully added',
-                              successfulContacts.toString(),
-                              context.appColors.success,
-                              Icons.check_circle_rounded,
-                            ),
-                            Divider(height: 20, thickness: 1, color: _screenBorder(context)),
-                            _buildStatRow(
-                              context,
-                              AppLocalizations.of(context)!.translate('failed_to_add') ?? 'Failed to add',
-                              failedContacts.length.toString(),
-                              context.appColors.error,
-                              Icons.error_rounded,
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      // Failed contacts section
-                      if (failedContacts.isNotEmpty) ...[
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 12, left: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                color: context.appColors.warning,
-                                size: 20,
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Statistics card
+                        Container(
+                          margin: EdgeInsets.only(bottom: 20),
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _screenSurfaceElevated(context),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.appColors.shadow
+                                    .withValues(alpha: 0.05),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: Offset(0, 2),
                               ),
-                              SizedBox(width: 8),
-                              Text(
-                                AppLocalizations.of(context)!.translate('contacts_with_errors') ??
-                                    'Contacts with errors:',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w700,
-                                  color: _screenPrimaryText(context),
-                                  fontSize: 16,
-                                ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              _buildStatRow(
+                                context,
+                                AppLocalizations.of(context)!
+                                        .translate('total_contacts') ??
+                                    'Total contacts',
+                                totalContacts.toString(),
+                                _screenPrimaryText(context),
+                                Icons.people_alt_rounded,
+                              ),
+                              Divider(
+                                  height: 20,
+                                  thickness: 1,
+                                  color: _screenBorder(context)),
+                              _buildStatRow(
+                                context,
+                                AppLocalizations.of(context)!
+                                        .translate('successfully_added') ??
+                                    'Successfully added',
+                                successfulContacts.toString(),
+                                context.appColors.success,
+                                Icons.check_circle_rounded,
+                              ),
+                              Divider(
+                                  height: 20,
+                                  thickness: 1,
+                                  color: _screenBorder(context)),
+                              _buildStatRow(
+                                context,
+                                AppLocalizations.of(context)!
+                                        .translate('failed_to_add') ??
+                                    'Failed to add',
+                                failedContacts.length.toString(),
+                                context.appColors.error,
+                                Icons.error_rounded,
                               ),
                             ],
                           ),
                         ),
-                        
-                        // Failed contacts list
-                        ListView.separated(
-                          physics: NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          itemCount: failedContacts.length,
-                          separatorBuilder: (context, index) => SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final contact = failedContacts[index];
-                            final name = contact['name'] ?? '';
-                            final errors = (contact['errors'] as List);
 
-                            return Container(
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: _screenFieldBackground(context),
-                                border: Border.all(
-                                  color: context.appColors.error.withValues(alpha: 0.24),
+                        // Failed contacts section
+                        if (failedContacts.isNotEmpty) ...[
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 12, left: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: context.appColors.warning,
+                                  size: 20,
                                 ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: _screenSurfaceElevated(context),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '${index + 1}',
-                                            style: TextStyle(
-                                              fontFamily: 'Gilroy',
-                                              fontWeight: FontWeight.w700,
-                                              color: _screenPrimaryText(context),
+                                SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)!
+                                          .translate('contacts_with_errors') ??
+                                      'Contacts with errors:',
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w700,
+                                    color: _screenPrimaryText(context),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Failed contacts list
+                          ListView.separated(
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: failedContacts.length,
+                            separatorBuilder: (context, index) =>
+                                SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final contact = failedContacts[index];
+                              final name = contact['name'] ?? '';
+                              final errors = (contact['errors'] as List);
+
+                              return Container(
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: _screenFieldBackground(context),
+                                  border: Border.all(
+                                    color: context.appColors.error
+                                        .withValues(alpha: 0.24),
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                _screenSurfaceElevated(context),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              '${index + 1}',
+                                              style: TextStyle(
+                                                fontFamily: 'Gilroy',
+                                                fontWeight: FontWeight.w700,
+                                                color:
+                                                    _screenPrimaryText(context),
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          name,
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15,
-                                            color: _screenPrimaryText(context),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12),
-                                  ...errors.map((error) => Padding(
-                                    padding: EdgeInsets.only(bottom: 6),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          Icons.error_outline_rounded,
-                                          color: context.appColors.error,
-                                          size: 16,
-                                        ),
-                                        SizedBox(width: 8),
+                                        SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                            error.toString(),
+                                            name,
                                             style: TextStyle(
-                                              color: context.appColors.error,
                                               fontFamily: 'Gilroy',
-                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                              color:
+                                                  _screenPrimaryText(context),
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )).toList(),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                    SizedBox(height: 12),
+                                    ...errors
+                                        .map((error) => Padding(
+                                              padding:
+                                                  EdgeInsets.only(bottom: 6),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Icon(
+                                                    Icons.error_outline_rounded,
+                                                    color:
+                                                        context.appColors.error,
+                                                    size: 16,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      error.toString(),
+                                                      style: TextStyle(
+                                                        color: context
+                                                            .appColors.error,
+                                                        fontFamily: 'Gilroy',
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ))
+                                        .toList(),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
+                    ),
+                  ),
+                ),
+
+                // Action buttons
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _screenSurfaceBackground(context),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.appColors.shadow.withValues(alpha: 0.05),
+                        spreadRadius: 0,
+                        blurRadius: 10,
+                        offset: Offset(0, -4),
+                      ),
                     ],
                   ),
-                ),
-              ),
-              
-              // Action buttons
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: _screenSurfaceBackground(context),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.appColors.shadow.withValues(alpha: 0.05),
-                      spreadRadius: 0,
-                      blurRadius: 10,
-                      offset: Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          // If at least one contact was added successfully, close the contacts screen
-                          if (successfulContacts > 0) {
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
                             Navigator.of(context).pop();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.appColors.buttonPrimaryBg,
-                          foregroundColor: context.appColors.buttonPrimaryFg,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            // If at least one contact was added successfully, close the contacts screen
+                            if (successfulContacts > 0) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.appColors.buttonPrimaryBg,
+                            foregroundColor: context.appColors.buttonPrimaryFg,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context)!.translate('ok') ?? 'OK',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                          child: Text(
+                            AppLocalizations.of(context)!.translate('ok') ??
+                                'OK',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
 // Helper method to create statistic rows
-Widget _buildStatRow(BuildContext context, String label, String value, Color color, IconData icon) {
-  return Row(
-    children: [
-      Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
+  Widget _buildStatRow(BuildContext context, String label, String value,
+      Color color, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
           ),
         ),
-      ),
-      SizedBox(width: 12),
-      Expanded(
-        child: Text(
-          label,
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              color: context.appColors.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          value,
           style: TextStyle(
             fontFamily: 'Gilroy',
-            fontSize: 14,
-            color: context.appColors.textSecondary,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+            color: color,
           ),
         ),
-      ),
-      Text(
-        value,
-        style: TextStyle(
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-          color: color,
-        ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -741,7 +784,8 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
                     )
                   : Center(
                       child: Text(
-                        AppLocalizations.of(context)!.translate('phone_contacts'),
+                        AppLocalizations.of(context)!
+                            .translate('phone_contacts'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -822,193 +866,210 @@ Widget _buildStatRow(BuildContext context, String label, String value, Color col
           ),
           SafeArea(
             child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    isFiltersExpanded = !isFiltersExpanded;
-                  });
-                },
-                child: Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: _cardDecoration(context),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)
-                                ?.translate('specify_lead_data') ??
-                            'Filters',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: primaryText,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Icon(
-                        isFiltersExpanded
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                        color: primaryText,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              height: isFiltersExpanded ? null : 0,
-              child: isFiltersExpanded
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Container(
-                        decoration: _cardDecoration(context),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        isFiltersExpanded = !isFiltersExpanded;
+                      });
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: _cardDecoration(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          RegionRadioGroupWidget(
-                            selectedRegion: selectedRegion,
-                            onSelectRegion: (RegionData selectedRegionData) {
-                              setState(() {
-                                selectedRegion =
-                                    selectedRegionData.id.toString();
-                              });
-                            },
+                          Text(
+                            AppLocalizations.of(context)
+                                    ?.translate('specify_lead_data') ??
+                                'Filters',
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w600,
+                              color: primaryText,
+                              fontSize: 16,
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          ManagerRadioGroupWidget(
-                            selectedManager: selectedManager,
-                            currentUserId:
-                                currentUserId, // Передаем currentUserId
-                            onSelectManager: (ManagerData selectedManagerData) {
-                              setState(() {
-                                selectedManager =
-                                    selectedManagerData.id.toString();
-                              });
-                            },
+                          Icon(
+                            isFiltersExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            color: primaryText,
                           ),
-                          const SizedBox(height: 8),
-                          SourceLeadWidget(
-                            selectedSourceLead: selectedSourceLead,
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                selectedSourceLead = newValue;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 8),
                         ],
                       ),
-                      ),
-                    )
-                  : SizedBox(),
-            ),
-            Expanded(
-              child: contacts.isEmpty
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: colors.buttonPrimaryBg,
-                      ))
-                  : filteredContacts.isEmpty
-                      ? Center(
+                    ),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  height: isFiltersExpanded ? null : 0,
+                  child: isFiltersExpanded
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            padding: const EdgeInsets.all(24),
                             decoration: _cardDecoration(context),
-                            child: Text(
-                              AppLocalizations.of(context)!
-                                  .translate('no_result'),
-                              style: context.appTextStyles.bodyMd.copyWith(
-                                color: _screenSecondaryText(context),
-                              ),
-                              textAlign: TextAlign.center,
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                RegionRadioGroupWidget(
+                                  selectedRegion: selectedRegion,
+                                  onSelectRegion:
+                                      (RegionData selectedRegionData) {
+                                    setState(() {
+                                      selectedRegion =
+                                          selectedRegionData.id.toString();
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                ManagerRadioGroupWidget(
+                                  selectedManager: selectedManager,
+                                  currentUserId:
+                                      currentUserId, // Передаем currentUserId
+                                  onSelectManager:
+                                      (ManagerData selectedManagerData) {
+                                    setState(() {
+                                      selectedManager =
+                                          selectedManagerData.id.toString();
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                SourceLeadWidget(
+                                  selectedSourceLead: selectedSourceLead,
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      selectedSourceLead = newValue;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                              ],
                             ),
-                          ))
-                      : ListView.builder(
-                          itemCount: filteredContacts.length,
-                          itemBuilder: (context, index) {
-                            Contact contact = filteredContacts[index];
-                            return Container(
-                              margin: EdgeInsets.symmetric(
-                                  vertical: 6, horizontal: 16),
+                          ),
+                        )
+                      : SizedBox(),
+                ),
+                Expanded(
+                  child: contacts.isEmpty
+                      ? Center(
+                          child: CircularProgressIndicator(
+                          color: colors.buttonPrimaryBg,
+                        ))
+                      : filteredContacts.isEmpty
+                          ? Center(
+                              child: Container(
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.all(24),
                               decoration: _cardDecoration(context),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(20),
-                                  onTap: () => _showContactDetails(contact),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundColor:
-                                              _screenSurfaceElevated(context),
-                                          backgroundImage: contact.photo != null
-                                              ? MemoryImage(contact.photo!)
-                                              : null,
-                                          child: contact.photo == null
-                                              ? Icon(
-                                                  Icons.person,
-                                                  color: primaryText,
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                contact.displayName,
-                                                style: TextStyle(
-                                                  color: primaryText,
-                                                  fontFamily: 'Gilroy',
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                contact.phones.isNotEmpty
-                                                    ? contact.phones.first.number
-                                                    : AppLocalizations.of(context)!
-                                                        .translate('no_number'),
-                                                style: TextStyle(
-                                                  color: _screenSecondaryText(
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .translate('no_result'),
+                                style: context.appTextStyles.bodyMd.copyWith(
+                                  color: _screenSecondaryText(context),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ))
+                          : ListView.builder(
+                              itemCount: filteredContacts.length,
+                              itemBuilder: (context, index) {
+                                Contact contact = filteredContacts[index];
+                                return Container(
+                                  margin: EdgeInsets.symmetric(
+                                      vertical: 6, horizontal: 16),
+                                  decoration: _cardDecoration(context),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(20),
+                                      onTap: () => _showContactDetails(contact),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(14),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor:
+                                                  _screenSurfaceElevated(
                                                       context),
-                                                  fontFamily: 'Gilroy',
-                                                ),
+                                              backgroundImage: contact
+                                                          .photo?.thumbnail !=
+                                                      null
+                                                  ? MemoryImage(
+                                                      contact.photo!.thumbnail!,
+                                                    )
+                                                  : null,
+                                              child: contact.photo?.thumbnail ==
+                                                      null
+                                                  ? Icon(
+                                                      Icons.person,
+                                                      color: primaryText,
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    contact.displayName ?? '',
+                                                    style: TextStyle(
+                                                      color: primaryText,
+                                                      fontFamily: 'Gilroy',
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    contact.phones.isNotEmpty
+                                                        ? contact
+                                                            .phones.first.number
+                                                        : AppLocalizations.of(
+                                                                context)!
+                                                            .translate(
+                                                                'no_number'),
+                                                    style: TextStyle(
+                                                      color:
+                                                          _screenSecondaryText(
+                                                              context),
+                                                      fontFamily: 'Gilroy',
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                            Checkbox(
+                                              activeColor:
+                                                  colors.buttonPrimaryBg,
+                                              checkColor:
+                                                  colors.buttonPrimaryFg,
+                                              side: BorderSide(color: border),
+                                              value: selectedContacts
+                                                  .contains(contact),
+                                              onChanged: (bool? value) {
+                                                _toggleContactSelection(
+                                                    contact);
+                                              },
+                                            ),
+                                          ],
                                         ),
-                                        Checkbox(
-                                          activeColor: colors.buttonPrimaryBg,
-                                          checkColor: colors.buttonPrimaryFg,
-                                          side: BorderSide(color: border),
-                                          value:
-                                              selectedContacts.contains(contact),
-                                          onChanged: (bool? value) {
-                                            _toggleContactSelection(contact);
-                                          },
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                );
+                              },
+                            ),
+                ),
+              ],
             ),
-          ],
-        ),
           ),
         ],
       ),

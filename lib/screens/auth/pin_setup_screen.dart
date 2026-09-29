@@ -24,6 +24,7 @@ import 'package:crm_task_manager/widgets/adaptive_pin_layout.dart';
 import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
@@ -980,11 +981,10 @@ class _PinSetupScreenState extends State<PinSetupScreen>
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Биометрический вход включен'),
-          backgroundColor: Color(0xFF1E9E63),
-        ),
+      showCustomSnackBar(
+        context: context,
+        message: 'Биометрический вход включен',
+        isSuccess: true,
       );
     } catch (e) {
       debugPrint('PinSetupScreen: Ошибка предложения биометрии: $e');

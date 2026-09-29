@@ -8,7 +8,8 @@ class ExportContactDialog extends StatelessWidget {
   final String leadName;
   final String phoneNumber;
 
-  const ExportContactDialog({required this.leadName, required this.phoneNumber});
+  const ExportContactDialog(
+      {required this.leadName, required this.phoneNumber});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,8 @@ class ExportContactDialog extends StatelessWidget {
               child: CustomButton(
                 buttonText: AppLocalizations.of(context)!.translate('no'),
                 onPressed: () {
-                  Navigator.of(context).pop(false); // Возвращаем false при отмене
+                  Navigator.of(context)
+                      .pop(false); // Возвращаем false при отмене
                 },
                 buttonColor: context.appColors.buttonDangerBg,
                 textColor: context.appColors.buttonDangerFg,
@@ -60,12 +62,18 @@ class ExportContactDialog extends StatelessWidget {
                 buttonText: AppLocalizations.of(context)!.translate('yes'),
                 onPressed: () async {
                   try {
-                    if (await FlutterContacts.requestPermission()) {
-                      final newContact = Contact()
-                        ..name.first = leadName
-                        ..phones = [Phone(phoneNumber)];
+                    // Request both permissions because this action creates a contact.
+                    final permission = await FlutterContacts.permissions
+                        .request(PermissionType.readWrite);
+                    final isAllowed = permission == PermissionStatus.granted ||
+                        permission == PermissionStatus.limited;
+                    if (isAllowed) {
+                      final newContact = Contact(
+                        name: Name(first: leadName),
+                        phones: [Phone(number: phoneNumber)],
+                      );
 
-                      await newContact.insert();
+                      await FlutterContacts.create(newContact);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -80,8 +88,8 @@ class ExportContactDialog extends StatelessWidget {
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -92,7 +100,8 @@ class ExportContactDialog extends StatelessWidget {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.of(context).pop(true); // Возвращаем true при успехе
+                      Navigator.of(context)
+                          .pop(true); // Возвращаем true при успехе
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -107,7 +116,8 @@ class ExportContactDialog extends StatelessWidget {
                             ),
                           ),
                           behavior: SnackBarBehavior.floating,
-                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -118,7 +128,8 @@ class ExportContactDialog extends StatelessWidget {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.of(context).pop(false); // Возвращаем false при отказе в доступе
+                      Navigator.of(context)
+                          .pop(false); // Возвращаем false при отказе в доступе
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -134,18 +145,20 @@ class ExportContactDialog extends StatelessWidget {
                           ),
                         ),
                         behavior: SnackBarBehavior.floating,
-                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: context.appColors.error,
                         elevation: 3,
-                        padding: EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                         duration: Duration(seconds: 3),
                       ),
                     );
-                    Navigator.of(context).pop(false); // Возвращаем false при ошибке
+                    Navigator.of(context)
+                        .pop(false); // Возвращаем false при ошибке
                   }
                 },
                 buttonColor: context.appColors.buttonPrimaryBg,

@@ -186,9 +186,11 @@ class ChatListItem extends StatelessWidget {
       );
     }
 
-    if (isLeadsSection &&
-        chatItem.icon.isNotEmpty &&
-        chatItem.icon != 'assets/icons/leads/default.png') {
+    // Пустая иконка — это site. Рисуем Icons.language.
+    // Остальные каналы — PNG из assets/icons/leads.
+    // Заглушку default.png здесь не показываем: ниже будет аватар чата.
+    if (isLeadsSection && chatItem.icon != 'assets/icons/leads/default.png') {
+      final isSite = chatItem.icon.isEmpty;
       return Container(
         width: 52,
         height: 52,
@@ -201,10 +203,9 @@ class ChatListItem extends StatelessWidget {
           ),
         ),
         child: Center(
-          // Для site и остальных каналов рисуем тему-зависимый бейдж.
           child: ChannelSourceIcon(
-            sourceName: chatItem.icon.isEmpty ? 'site' : chatItem.icon,
-            size: 40,
+            sourceName: isSite ? 'site' : chatItem.icon,
+            size: isSite ? 32 : 52,
             background: context.appColors.backgroundSecondary,
           ),
         ),

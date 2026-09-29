@@ -11,6 +11,7 @@ import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/widgets/forgot_password.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,28 +90,11 @@ class LoginScreen extends StatelessWidget {
 
                         await _checkPinSetupStatus(context);
                       } else if (state is LoginError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              AppLocalizations.of(context)!
-                                  .translate(state.message),
-                              style: const TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: Colors.red,
-                          ),
+                        showCustomSnackBar(
+                          context: context,
+                          message: AppLocalizations.of(context)!
+                              .translate(state.message),
+                          isSuccess: false,
                         );
                       }
                     },
@@ -199,13 +183,11 @@ class LoginScreen extends StatelessWidget {
                                   final password =
                                       passwordController.text.trim();
                                   if (login.isEmpty || password.isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          localizations
-                                              .translate('fill_all_fields'),
-                                        ),
-                                      ),
+                                    showCustomSnackBar(
+                                      context: context,
+                                      message: localizations
+                                          .translate('fill_all_fields'),
+                                      isSuccess: false,
                                     );
                                     return;
                                   }

@@ -514,6 +514,7 @@
   "select_deal_status": "Выберите статус сделки",
   "list_chat": "Список чатов",
   "no_chat_in_list": "Нет чатов для текущего лида",
+  "green_api_first_text_only": "Сначала отправьте текстовое сообщение в WhatsApp",
   "no_name_chat": "Без названия",
   "send_to_1c": "Отправить в 1С",
   "send_data": "Отправить данные",

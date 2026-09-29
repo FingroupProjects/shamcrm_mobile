@@ -62,7 +62,10 @@ extension _SipScreenContactsExtension on _SipScreenState {
     try {
       await _restoreCachedContacts();
 
-      final granted = await FlutterContacts.requestPermission();
+      final permission =
+          await FlutterContacts.permissions.request(PermissionType.read);
+      final granted = permission == PermissionStatus.granted ||
+          permission == PermissionStatus.limited;
       if (!granted) {
         _contactsPermissionDenied = true;
         _contactsTotalCount = 0;
@@ -74,16 +77,18 @@ extension _SipScreenContactsExtension on _SipScreenState {
         return;
       }
 
-      final contacts = await FlutterContacts.getContacts(
-        withProperties: true,
-        withPhoto: false,
+      final contacts = await FlutterContacts.getAll(
+        properties: const {
+          ContactProperty.name,
+          ContactProperty.phone,
+        },
       );
       final filteredContacts = contacts
           .where((contact) =>
-              contact.displayName.trim().isNotEmpty &&
+              (contact.displayName ?? '').trim().isNotEmpty &&
               contact.phones.isNotEmpty)
           .toList(growable: true)
-        ..sort((a, b) => a.displayName.compareTo(b.displayName));
+        ..sort((a, b) => (a.displayName ?? '').compareTo(b.displayName ?? ''));
       _contactsTotalCount = filteredContacts.length;
 
       final visibleContacts = <_SipContactSuggestion>[];
@@ -143,13 +148,13 @@ extension _SipScreenContactsExtension on _SipScreenState {
 
   (_SipContactSuggestion, List<_SipIndexedContact>)? _mapContact(
       Contact contact) {
-    final displayName = sanitizeUtf16(contact.displayName).trim();
+    final displayName = sanitizeUtf16(contact.displayName ?? '').trim();
     if (displayName.isEmpty || contact.phones.isEmpty) return null;
 
     final primaryPhone = sanitizeUtf16(contact.phones.first.number);
     final lowerName = displayName.toLowerCase();
     final t9Name = _nameToT9Digits(lowerName);
-    final photo = contact.photo;
+    final photo = contact.photo?.thumbnail ?? contact.photo?.fullSize;
     final indexedPhones = contact.phones
         .map(
           (phone) => _SipIndexedContact(

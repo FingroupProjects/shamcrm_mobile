@@ -90,7 +90,10 @@ class ChatMessageCacheRepository {
       'is_my_message': message.isMyMessage,
       'created_at': message.createMessateTime,
       'sender': {'name': message.senderName},
-      'voice_duration': message.duration.inSeconds,
+      // Ноль не сохраняем: раньше из-за этого в кэш попадали выдуманные 20 секунд.
+      'voice_duration': message.duration > Duration.zero
+          ? message.duration.inSeconds
+          : null,
       'is_pinned': message.isPinned,
       'is_changed': message.isChanged,
       'is_read': message.isRead,

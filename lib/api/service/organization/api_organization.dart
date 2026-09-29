@@ -273,10 +273,11 @@ extension ApiOrganizationX on ApiService {
     }
   }
 
-  /// Загружает `/get-user-data` и кэширует `has_ai_integration`.
-  /// Нужен на PIN и установке PIN, чтобы чат знал, показывать ли ИИ-кнопку.
+  /// Загружает `/get-user-data` и кэширует флаги интеграций.
+  /// Нужен на PIN: чат знает про ИИ, лид — про WhatsApp (Green API).
   Future<void> fetchAndCacheUserData() async {
     await AiIntegrationStore.hydrateFromPrefs();
+    await GreenApiIntegrationStore.hydrateFromPrefs();
 
     try {
       final response = await _getRequest('/get-user-data');
@@ -298,9 +299,13 @@ extension ApiOrganizationX on ApiService {
           : data;
 
       final hasAi = SafeConverters.toBool(source['has_ai_integration']);
+      final hasGreenApi =
+          SafeConverters.toBool(source['has_green_api_integration']);
       await AiIntegrationStore.save(hasAi);
+      await GreenApiIntegrationStore.save(hasGreenApi);
 
-      debugPrint('ApiService: has_ai_integration=$hasAi');
+      debugPrint(
+          'ApiService: has_ai_integration=$hasAi has_green_api_integration=$hasGreenApi');
     } catch (error) {
       debugPrint('ApiService: fetchAndCacheUserData error: $error');
     }

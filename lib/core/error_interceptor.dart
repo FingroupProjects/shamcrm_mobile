@@ -1,6 +1,7 @@
 // error_interceptor.dart
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
 class ErrorInterceptor {
@@ -83,22 +84,10 @@ class ErrorInterceptor {
   static void _showErrorMessage(String message) {
     final context = _navigatorKey.currentContext;
     if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Expanded(child: Text(message)),
-            ],
-          ),
-          backgroundColor: Colors.red.shade600,
-          duration: Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
+      showCustomSnackBar(
+        context: context,
+        message: message,
+        isSuccess: false,
       );
     }
   }

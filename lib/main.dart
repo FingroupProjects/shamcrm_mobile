@@ -30,7 +30,7 @@ void main() {
       await safeInitializeFirebase();
 
       final sessionValidation = await validateApplicationSession(apiService);
-        
+    
       String? token;
       String? pin;
       bool isDomainChecked = false;
@@ -47,7 +47,7 @@ void main() {
       } else {
         await clearAllApplicationData(apiService, authService);
       }
-
+      
       final initialMessage = await safeLoadInitialMessage();
       await AppThemeController.instance.initialize();
       await AppThemeController.instance.precacheBackground();

@@ -92,6 +92,29 @@
 	<string>Для загрузки изображения с QR-кодом.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Мы запрашиваем разрешение, чтобы показывать персонализированные функции и корректно измерять эффективность рекламы и аналитики.</string>
+	<!-- iOS 27 requires a static UIScene configuration at launch. -->
+	<!-- UIScene is available on every supported version because the app requires iOS 15+. -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
