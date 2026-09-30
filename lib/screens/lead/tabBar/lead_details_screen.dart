@@ -923,7 +923,12 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
         return lead.cityId ?? '';
 
       case 'source_id':
-        return lead.source?.name ?? '';
+        final sourceName = lead.source?.name ?? '';
+        final sourceKey = sourceName.trim().toLowerCase();
+        if (sourceKey.contains('youtube') || sourceKey.contains('ютуб')) {
+          return 'YouTube';
+        }
+        return sourceName;
 
       case 'wa_phone':
         return lead.whatsApp ?? '';

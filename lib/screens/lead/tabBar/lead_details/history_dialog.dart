@@ -601,6 +601,8 @@ class _HistoryDialogState extends State<HistoryDialog> {
     'description': 'Описание',
     'insta_login': 'Instagram',
     'facebook_login': 'Facebook',
+    'youtube': 'YouTube',
+    'youtube_login': 'YouTube',
   };
 
   static const Map<String, String> _noticeFieldNames = {

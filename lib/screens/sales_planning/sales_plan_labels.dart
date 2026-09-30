@@ -201,6 +201,9 @@ class SalesPlanLabels {
         return t.translate('sp_opt_overdue');
       case 'Instagram':
         return t.translate('sp_opt_instagram');
+      case 'YouTube':
+      case 'youtube':
+        return t.translate('youtube');
       case 'Telegram':
         return t.translate('sp_opt_telegram');
       case 'Site':

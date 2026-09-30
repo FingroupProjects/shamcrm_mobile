@@ -20,6 +20,8 @@ class ChatTitleResolver {
     'green_api',
     'instagram',
     'instagram_comment',
+    'youtube',
+    'youtube_comment',
     'facebook',
     'messenger',
     'phone',

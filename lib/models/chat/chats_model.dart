@@ -343,7 +343,12 @@ class Chats {
   }
   
   String _mapChannelToIcon(String channel) {
-    final normalized = channel.replaceAll('channel-', '');
+    final normalized = channel
+        .replaceAll('channel-', '')
+        .trim()
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
     const channelIconMap = {
       'mini_app': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
@@ -352,13 +357,21 @@ class Chats {
       'green_api': 'assets/icons/leads/whatsapp.png',
       'instagram': 'assets/icons/leads/instagram.png',
       'instagram_comment': 'assets/icons/leads/instagram.png',
+      'youtube': 'assets/icons/leads/youtube.png',
+      'youtube_comment': 'assets/icons/leads/youtube.png',
       'facebook': 'assets/icons/leads/messenger.png',
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
       'email': 'assets/icons/leads/email.png',
       'site': '', // Используется Flutter иконка Icons.language
     };
-    return channelIconMap[normalized] ?? 'assets/icons/leads/default.png';
+    final exact = channelIconMap[normalized];
+    if (exact != null) return exact;
+    // Имя может прийти как «YouTube» или с лишним текстом.
+    if (normalized.contains('youtube') || normalized.contains('ютуб')) {
+      return 'assets/icons/leads/youtube.png';
+    }
+    return 'assets/icons/leads/default.png';
   }
 }
 

@@ -268,6 +268,8 @@ class _ActionHistoryWidgetState extends State<ActionHistoryWidget> {
       'description' => 'Описание',
       'insta_login' => 'Instagram',
       'facebook_login' => 'Facebook',
+      'youtube' => 'YouTube',
+      'youtube_login' => 'YouTube',
       'Телефон' => 'Телефон',
       _ => HistoryLabels.fieldName(AppLocalizations.of(context)!, key),
     };

@@ -137,6 +137,8 @@ Future<void> openLeadChatDirect(
         'green_api': 'WhatsApp',
         'facebook': 'Facebook',
         'instagram': 'Instagram',
+        'youtube': 'YouTube',
+        'youtube_comment': 'YouTube',
         'site': 'Интернет магазин',
       };
 
@@ -171,7 +173,10 @@ Future<void> openLeadChatDirect(
                       channelName.toLowerCase() == 'support'
                           ? AppLocalizations.of(dialogContext)!
                               .translate('support_chat_name')
-                          : customChannelNames[channelName] ??
+                          : customChannelNames[channelName
+                                  .replaceAll('channel-', '')
+                                  .trim()
+                                  .toLowerCase()] ??
                               (channelName.isNotEmpty
                                   ? channelName
                                   : AppLocalizations.of(dialogContext)!
@@ -340,6 +345,8 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     'green_api': 'WhatsApp',
     'facebook': 'Facebook',
     'instagram': 'Instagram',
+    'youtube': 'YouTube',
+    'youtube_comment': 'YouTube',
     'site': 'Интернет магазин',
   };
 
@@ -521,7 +528,10 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                                 channelName.toLowerCase() == 'support'
                                     ? AppLocalizations.of(context)!
                                         .translate('support_chat_name')
-                                    : customChannelNames[channelName] ??
+                                    : customChannelNames[channelName
+                                            .replaceAll('channel-', '')
+                                            .trim()
+                                            .toLowerCase()] ??
                                         (channelName.isNotEmpty
                                             ? channelName
                                             : AppLocalizations.of(context)!

@@ -248,10 +248,12 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   }
 
   Widget _channelIcon(String type) {
-    final (IconData icon, Color color) = switch (type) {
+    final key = type.trim().toLowerCase();
+    final (IconData icon, Color color) = switch (key) {
       'whatsapp' || 'green_api' => (Icons.chat_bubble, Color(0xff25D366)),
       'telegram' || 'telephone' => (Icons.send, Color(0xff0088CC)),
       'instagram' => (Icons.camera_alt, Color(0xffE1306C)),
+      'youtube' || 'youtube_comment' => (Icons.smart_display, Color(0xffFF0000)),
       'messenger' => (Icons.message, Color(0xff1877F2)),
       'sms' => (Icons.sms, Color(0xff8BC34A)),
       'site' => (Icons.language, Color(0xff94A3B8)),
@@ -263,11 +265,13 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   }
 
   String _channelLabel(String type) {
-    return switch (type) {
+    final key = type.trim().toLowerCase();
+    return switch (key) {
       'whatsapp' || 'green_api' => 'WhatsApp',
       'telegram' => 'Telegram',
       'telephone' => analyticsText(context, 'phone', fallback: 'Phone'),
       'instagram' => 'Instagram',
+      'youtube' || 'youtube_comment' => 'YouTube',
       'messenger' => 'Messenger',
       'sms' => 'SMS',
       'site' => analyticsText(context, 'source_website', fallback: 'Website'),

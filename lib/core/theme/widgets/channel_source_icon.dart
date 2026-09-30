@@ -66,6 +66,8 @@ String leadSourceAsset(ChannelSourceKind kind, {required bool isDark}) {
       return 'assets/icons/leads/whatsapp.png';
     case ChannelSourceKind.instagram:
       return 'assets/icons/leads/instagram.png';
+    case ChannelSourceKind.youtube:
+      return 'assets/icons/leads/youtube.png';
     case ChannelSourceKind.messenger:
     case ChannelSourceKind.facebook:
       // Facebook-канал раньше тоже показывал messenger.png.

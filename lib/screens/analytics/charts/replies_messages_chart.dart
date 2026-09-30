@@ -20,9 +20,12 @@ class RepliesMessagesChart extends StatefulWidget {
 
 class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   String _displayChannelName(String channelName) {
-    return channelName.trim().toLowerCase() == 'green_api'
-        ? 'WhatsApp'
-        : channelName;
+    final normalized = channelName.trim().toLowerCase();
+    if (normalized == 'green_api') return 'WhatsApp';
+    if (normalized.contains('youtube') || normalized.contains('ютуб')) {
+      return 'YouTube';
+    }
+    return channelName;
   }
 
   bool _isLoading = true;

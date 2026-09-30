@@ -62,7 +62,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     if (raw.isEmpty) {
       return AppLocalizations.of(context)!.translate('');
     }
-    return raw.toLowerCase() == 'green_api' ? 'WhatsApp' : raw;
+    final normalized = raw.toLowerCase();
+    if (normalized == 'green_api') return 'WhatsApp';
+    if (normalized.contains('youtube') || normalized.contains('ютуб')) {
+      return 'YouTube';
+    }
+    return raw;
   }
 
   /// Имя автора лида. Как в просмотре лида: имя или «Система».

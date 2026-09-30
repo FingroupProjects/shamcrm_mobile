@@ -265,8 +265,10 @@ class _TargetedAdsChartState extends State<TargetedAdsChart> {
   }
 
   Widget _adSourceIcon(String source) {
-    final (IconData icon, Color color) = switch (source) {
+    final key = source.trim().toLowerCase();
+    final (IconData icon, Color color) = switch (key) {
       'instagram' => (Icons.camera_alt, Color(0xffE1306C)),
+      'youtube' => (Icons.smart_display, Color(0xffFF0000)),
       'facebook' => (Icons.thumb_up, Color(0xff1877F2)),
       'google' => (Icons.search, Color(0xff4285F4)),
       'tiktok' => (Icons.music_note, Color(0xff000000)),

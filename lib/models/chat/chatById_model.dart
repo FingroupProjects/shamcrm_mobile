@@ -44,7 +44,12 @@ class ChatProfile {
   String get sourceDisplayName {
     final raw = source?.name.trim() ?? '';
     if (raw.isEmpty) return '';
-    return raw.toLowerCase() == 'green_api' ? 'WhatsApp' : raw;
+    final normalized = raw.toLowerCase();
+    if (normalized == 'green_api') return 'WhatsApp';
+    if (normalized.contains('youtube') || normalized.contains('ютуб')) {
+      return 'YouTube';
+    }
+    return raw;
   }
 
   factory ChatProfile.fromJson(Map<String, dynamic> json) {

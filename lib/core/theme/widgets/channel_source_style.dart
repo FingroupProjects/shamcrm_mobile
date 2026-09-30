@@ -7,6 +7,7 @@ enum ChannelSourceKind {
   phone,
   email,
   instagram,
+  youtube,
   messenger,
   facebook,
   site,
@@ -63,6 +64,10 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
   }
   if (name.contains('instagram') || name.contains('инстаграм')) {
     return ChannelSourceKind.instagram;
+  }
+  // YouTube-интеграция: канал, комментарий или русское имя.
+  if (name.contains('youtube') || name.contains('ютуб')) {
+    return ChannelSourceKind.youtube;
   }
   if (name.contains('messenger') || name.contains('мессенджер')) {
     return ChannelSourceKind.messenger;
@@ -128,6 +133,13 @@ ChannelSourceLook lookForChannel(ChannelSourceKind kind) {
         brand: Color(0xFFE1306C),
         style: ChannelBadgeStyle.gradient,
         gradient: [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)],
+      );
+    case ChannelSourceKind.youtube:
+      return const ChannelSourceLook(
+        kind: ChannelSourceKind.youtube,
+        icon: Icons.smart_display_rounded,
+        brand: Color(0xFFFF0000),
+        style: ChannelBadgeStyle.solid,
       );
     case ChannelSourceKind.messenger:
       return const ChannelSourceLook(

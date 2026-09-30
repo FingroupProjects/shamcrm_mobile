@@ -84,6 +84,8 @@ class EmojiData {
     'green_api': _defaultReactionIds,
     'instagram': _defaultReactionIds,
     'instagram_comment': _defaultReactionIds,
+    'youtube': _defaultReactionIds,
+    'youtube_comment': _defaultReactionIds,
     'facebook': _defaultReactionIds,
     'messenger': _defaultReactionIds,
     'phone': _defaultReactionIds,

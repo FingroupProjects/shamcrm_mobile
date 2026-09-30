@@ -109,6 +109,8 @@ class _DealCardState extends State<DealCard>
     'green_api': 'assets/icons/leads/whatsapp.png',
     'facebook': 'assets/icons/leads/messenger.png',
     'instagram': 'assets/icons/leads/instagram.png',
+    'youtube': 'assets/icons/leads/youtube.png',
+    'youtube_comment': 'assets/icons/leads/youtube.png',
   };
 
   // Метод для получения стиля границы кнопки статуса

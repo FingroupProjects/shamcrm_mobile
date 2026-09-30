@@ -2041,6 +2041,19 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   String? _determineChannelType(IntegrationForLead integration) {
+    // Тип и имя канала с сервера важнее логина.
+    // Иначе YouTube с обычным username становился «messenger».
+    final hints = [
+      integration.type,
+      integration.channel?.name,
+      integration.username,
+      integration.name,
+    ].map((value) => (value ?? '').toLowerCase()).join(' ');
+
+    if (hints.contains('youtube') || hints.contains('ютуб')) {
+      return 'youtube';
+    }
+
     if (integration.username != null) {
       final username = integration.username!.toLowerCase();
 
@@ -2059,6 +2072,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       } else if (username.contains('web') || username.contains('site')) {
         return 'site';
       }
+    }
+
+    final channelFromServer = integration.channel?.name?.trim();
+    if (channelFromServer != null && channelFromServer.isNotEmpty) {
+      return channelFromServer;
     }
 
     return 'messenger';
@@ -5288,9 +5306,13 @@ class MessageItemWidget extends StatelessWidget {
     final localizations = AppLocalizations.of(context)!;
     final appearance = ChatAppearanceScope.of(context);
     final caption = post.caption.trim();
+    final isYoutubeChannel = _normalizedChannelName.contains('youtube') ||
+        _normalizedChannelName.contains('ютуб');
     final text = caption.isNotEmpty
         ? caption
-        : localizations.translate('instagram_post');
+        : localizations.translate(
+            isYoutubeChannel ? 'youtube_post' : 'instagram_post',
+          );
 
     return GestureDetector(
       onTap: onTogglePost,
@@ -5323,7 +5345,9 @@ class MessageItemWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.asset(
-                  'assets/icons/leads/instagram.png',
+                  isYoutubeChannel
+                      ? 'assets/icons/leads/youtube.png'
+                      : 'assets/icons/leads/instagram.png',
                   width: 14,
                   height: 14,
                 ),

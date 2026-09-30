@@ -94,6 +94,9 @@ class _SourcesChartState extends State<SourcesChart> {
     if (key.contains('инстаграм') || key.contains('instagram')) {
       return const Color(0xffE1306C);
     }
+    if (key.contains('youtube') || key.contains('ютуб')) {
+      return const Color(0xffFF0000);
+    }
     if (key.contains('телеграм') || key.contains('telegram')) {
       return const Color(0xff0088CC);
     }
@@ -124,6 +127,10 @@ class _SourcesChartState extends State<SourcesChart> {
       case 'phone':
       case 'telephone':
         return analyticsText(context, 'phone', fallback: 'Phone');
+      case 'youtube':
+      case 'youtube_comment':
+      case 'ютуб':
+        return 'YouTube';
       case 'прочее':
       case 'other':
         return analyticsText(
