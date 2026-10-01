@@ -922,20 +922,30 @@ class MainActivity : FlutterFragmentActivity() {
         ) {
             return null
         }
-        val id = firstNonEmptyExtra(
-            intent,
-            "chat_id",
-            "chatId",
-            "id",
-            "task_id",
-            "lead_id",
-            "event_id",
-            "deal_id",
-        ) ?: return null
+        // Напоминание о событии должно открывать событие, а не лид.
+        val isEvent = type.equals("notice", ignoreCase = true) ||
+            type.equals("event", ignoreCase = true) ||
+            type.equals("eventId", ignoreCase = true)
+        val id = if (isEvent) {
+            firstNonEmptyExtra(intent, "event_id", "notice_id", "id")
+        } else {
+            firstNonEmptyExtra(
+                intent,
+                "chat_id",
+                "chatId",
+                "id",
+                "task_id",
+                "lead_id",
+                "event_id",
+                "deal_id",
+            )
+        } ?: return null
 
         return hashMapOf(
             "type" to type,
             "id" to id,
+            "event_id" to (firstNonEmptyExtra(intent, "event_id", "notice_id") ?: if (isEvent) id else ""),
+            "notice_id" to (firstNonEmptyExtra(intent, "notice_id", "event_id") ?: if (isEvent) id else ""),
             "chat_id" to (firstNonEmptyExtra(intent, "chat_id", "chatId") ?: id),
             "sender_name" to (firstNonEmptyExtra(intent, "sender_name", "senderName") ?: ""),
             "title" to (firstNonEmptyExtra(intent, "title", "sender_name") ?: ""),

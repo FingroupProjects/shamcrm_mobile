@@ -49,6 +49,19 @@ class DeleteChat extends ChatsEvent {
 
 class ClearChats extends ChatsEvent {}
 
+class PatchChatChannelName extends ChatsEvent {
+  final int chatId;
+  final String channelName;
+
+  const PatchChatChannelName({
+    required this.chatId,
+    required this.channelName,
+  });
+
+  @override
+  List<Object> get props => [chatId, channelName];
+}
+
 class ResetUnreadCount extends ChatsEvent {
   final int chatId;
 

@@ -38,6 +38,7 @@ import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -56,8 +57,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/chats/api_service_chats.dart';
-import 'package:crm_task_manager/api/service/http/http_log_model.dart';
-import 'package:crm_task_manager/api/service/http/http_logger.dart';
 import 'package:crm_task_manager/api/service/chats/message_reaction_api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
@@ -527,29 +526,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
   }
 
-  void _logSocketEventToInspector({
-    required String eventName,
-    required String channel,
-    required String payload,
-    String? error,
-  }) {
-    final id = '${DateTime.now().microsecondsSinceEpoch}_$eventName';
-    HttpLogger().addLog(
-      HttpLogModel(
-        id: id,
-        timestamp: DateTime.now(),
-        method: 'WS',
-        url: '/socket/$channel/$eventName',
-        requestHeaders: const {'Transport': 'WebSocket'},
-        requestBody: payload,
-        statusCode: error == null ? 200 : 500,
-        responseBody: error == null ? 'Socket event received' : null,
-        error: error,
-        duration: Duration.zero,
-      ),
-    );
-  }
-
   bool _shouldSkipDuplicateReactionEvent({
     required String eventName,
     required String payload,
@@ -602,11 +578,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
 
     debugPrint('🔔 [SOCKET] $logPrefix $eventName RECEIVED');
-    _logSocketEventToInspector(
-      eventName: eventName,
-      channel: channel,
-      payload: payload,
-    );
 
     try {
       if (payload.trim().isEmpty) {
@@ -632,12 +603,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       _handleMessageReactedEvent(normalizedPayload);
     } catch (e) {
       debugPrint('❌ [SOCKET] $logPrefix $eventName parse error: $e');
-      _logSocketEventToInspector(
-        eventName: '$eventName.error',
-        channel: channel,
-        payload: payload,
-        error: e.toString(),
-      );
       context
           .read<MessagingCubit>()
           .refreshLatestPage(widget.chatId, chatType: widget.endPointInTab);
@@ -905,11 +870,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     required String logPrefix,
   }) async {
     debugPrint('✏️ [SOCKET] $logPrefix $eventName RECEIVED');
-    _logSocketEventToInspector(
-      eventName: eventName,
-      channel: channel,
-      payload: payload,
-    );
 
     try {
       if (payload.trim().isEmpty) {
@@ -926,12 +886,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       _handleMessageEditedEvent(Map<String, dynamic>.from(decoded));
     } catch (e) {
       debugPrint('❌ [SOCKET] $logPrefix $eventName parse error: $e');
-      _logSocketEventToInspector(
-        eventName: '$eventName.error',
-        channel: channel,
-        payload: payload,
-        error: e.toString(),
-      );
     }
   }
 
@@ -3448,7 +3402,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final client = PusherChannelsClient.websocket(
+    final client = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint(
@@ -3578,11 +3532,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     myPresenceChannel.bind('chat.updated').listen((event) async {
       debugPrint(
           '=================-=== 🔔 CHAT_SMS (ChatUpdated): ===== RECEIVED EVENT =====');
-      _logSocketEventToInspector(
-        eventName: 'chat.updated',
-        channel: channelName,
-        payload: event.data,
-      );
 
       try {
         final rawData = json.decode(event.data);
@@ -3603,12 +3552,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
             '=================-=== ℹ️ CHAT_SMS: chat.updated received for active chat, skipping history reload');
       } catch (e) {
         debugPrint('=================-=== ❌ CHAT_SMS (ChatUpdated): ERROR: $e');
-        _logSocketEventToInspector(
-          eventName: 'chat.updated.error',
-          channel: channelName,
-          payload: event.data,
-          error: e.toString(),
-        );
       }
     });
     debugPrint(
@@ -3622,11 +3565,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint('\n\n');
       debugPrint(
           '======================================================================');
-      _logSocketEventToInspector(
-        eventName: 'chat.message',
-        channel: channelName,
-        payload: event.data,
-      );
       debugPrint('🚀 [SOCKET] chat.message RECEIVED!');
       debugPrint(
           '======================================================================');
@@ -3796,12 +3734,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       } catch (e, stackTrace) {
         debugPrint('❌ [SOCKET] FATAL ERROR in chat.message listener: $e');
         debugPrint('$stackTrace');
-        _logSocketEventToInspector(
-          eventName: 'chat.message.error',
-          channel: channelName,
-          payload: event.data,
-          error: e.toString(),
-        );
         debugPrint(
             '======================================================================');
       }
@@ -3954,11 +3886,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 // ✅ ИСПРАВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (в файле chat_sms_screen.dart)
       userPresenceChannel.bind('chat.updated').listen((event) async {
         debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
-        _logSocketEventToInspector(
-          eventName: 'chat.updated',
-          channel: userChannelName,
-          payload: event.data,
-        );
 
         try {
           final chatData = json.decode(event.data);
@@ -4031,12 +3958,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
           // chat.updated здесь нужен для имени/метаданных чата и списка чатов.
         } catch (e) {
           debugPrint('❌ Ошибка парсинга chat.updated: $e');
-          _logSocketEventToInspector(
-            eventName: 'chat.updated.error',
-            channel: userChannelName,
-            payload: event.data,
-            error: e.toString(),
-          );
         }
       });
       _bindMessageEditedAliasesToChannel(

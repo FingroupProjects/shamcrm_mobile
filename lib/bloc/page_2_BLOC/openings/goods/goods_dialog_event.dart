@@ -19,8 +19,14 @@ class RefreshGoodVariantsForDialog extends GoodsDialogEvent {}
 // Внутреннее событие для обновления данных в фоне
 class UpdateGoodVariantsInBackground extends GoodsDialogEvent {
   final List<GoodVariantItem> data;
+  final int currentPage;
   final int totalPages;
   final int loadId;
 
-  UpdateGoodVariantsInBackground(this.data, this.totalPages, this.loadId);
+  UpdateGoodVariantsInBackground(
+    this.data,
+    this.totalPages,
+    this.loadId, {
+    required this.currentPage,
+  });
 }

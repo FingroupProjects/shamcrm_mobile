@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/utils/active_chat_tracker.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -282,7 +283,7 @@ class ChatUnreadCounterService {
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final socketClient = PusherChannelsClient.websocket(
+    final socketClient = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint('ChatUnreadCounterService socket error: $exception');

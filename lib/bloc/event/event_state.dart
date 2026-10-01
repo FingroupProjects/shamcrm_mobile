@@ -16,12 +16,21 @@ class EventDataLoaded extends EventState {
   final int currentPage;
   final bool hasReachedEnd;
   final Map<int, int> eventCounts;
+  /// Сколько событий в текущем интервале, не только на этой странице.
+  final int total;
+  /// past | today | tomorrow | upcoming
+  final String dateType;
+  /// Числа на всех вкладках. Ключ — date_type.
+  final Map<String, int> dateTotals;
 
   EventDataLoaded({
     required this.events,
     required this.currentPage,
     required this.hasReachedEnd,
     this.eventCounts = const {},
+    this.total = 0,
+    this.dateType = EventDateType.today,
+    this.dateTotals = const {},
   });
 
   EventDataLoaded copyWith({
@@ -29,12 +38,18 @@ class EventDataLoaded extends EventState {
     int? currentPage,
     bool? hasReachedEnd,
     Map<int, int>? eventCounts,
+    int? total,
+    String? dateType,
+    Map<String, int>? dateTotals,
   }) {
     return EventDataLoaded(
       events: events ?? this.events,
       currentPage: currentPage ?? this.currentPage,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
       eventCounts: eventCounts ?? this.eventCounts,
+      total: total ?? this.total,
+      dateType: dateType ?? this.dateType,
+      dateTotals: dateTotals ?? this.dateTotals,
     );
   }
 }

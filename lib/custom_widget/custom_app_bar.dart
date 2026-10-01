@@ -24,6 +24,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -648,7 +649,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final client = PusherChannelsClient.websocket(
+    final client = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {},
       minimumReconnectDelayDuration: const Duration(seconds: 3),

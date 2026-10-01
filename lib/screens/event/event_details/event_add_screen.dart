@@ -16,6 +16,7 @@ import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_schedule_fields.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -24,8 +25,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Добавляем для File
-import '../../../custom_widget/custom_textfield_deadline.dart';
-
 class NoticeAddScreen extends StatefulWidget {
   @override
   _NoticeAddScreenState createState() => _NoticeAddScreenState();
@@ -40,7 +39,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   String? selectedSubject;
   List<int> selectedManagers = [];
   String body = '';
-  String date = '';
+  String? timeFrom;
+  String? timeTo;
   bool sendNotification = false;
   bool sendSms = false;
   bool smsNoticeNotificationEnabled = false;
@@ -77,6 +77,10 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
     super.initState();
     _bodyController = TextEditingController();
     _dateController = TextEditingController();
+    final now = DateTime.now();
+    final later = now.add(const Duration(minutes: 30));
+    timeFrom = DateFormat('HH:mm').format(now);
+    timeTo = DateFormat('HH:mm').format(later);
     context.read<GetAllLeadBloc>().add(GetAllLeadEv());
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
     selectedSmsTemplate = smsTemplates.first;
@@ -676,17 +680,15 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                                     },
                                   ),
                                   const SizedBox(height: 16),
-                                  // Date field
-                                  CustomTextFieldDate(
-                                    controller: _dateController,
-                                    label: AppLocalizations.of(context)!
-                                        .translate('reminder_date'),
-                                    withTime: true,
-                                    onDateSelected: (value) {
-                                      setState(() {
-                                        date = value;
-                                        _dateController.text = value;
-                                      });
+                                  NoticeScheduleFields(
+                                    dateController: _dateController,
+                                    initialTimeFrom: timeFrom,
+                                    initialTimeTo: timeTo,
+                                    onTimeFromChanged: (value) {
+                                      timeFrom = value;
+                                    },
+                                    onTimeToChanged: (value) {
+                                      timeTo = value;
                                     },
                                   ),
                                   const SizedBox(height: 16),
@@ -793,7 +795,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
       final dateValue = _dateController.text.trim();
       if (dateValue.isNotEmpty) {
         try {
-          parsedDate = DateFormat('dd/MM/yyyy HH:mm').parse(dateValue);
+          parsedDate = DateFormat('dd/MM/yyyy').parseStrict(dateValue);
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -856,6 +858,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
               body: _bodyController.text.trim(),
               leadId: int.parse(selectedLead!),
               date: parsedDate,
+              timeFrom: timeFrom,
+              timeTo: timeTo,
               sendNotification: sendNotification ? 1 : 0,
               sendSms: sendSms ? 1 : 0,
               users: selectedManagers,

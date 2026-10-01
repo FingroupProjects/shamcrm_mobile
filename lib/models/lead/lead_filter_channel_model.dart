@@ -4,6 +4,8 @@ class LeadFilterChannelData {
   final String name;
   final String username;
   final bool isActive;
+  // Отдельный id канала, если сервер прислал его рядом с интеграцией.
+  final int? channelId;
 
   LeadFilterChannelData({
     required this.id,
@@ -11,15 +13,21 @@ class LeadFilterChannelData {
     required this.name,
     required this.username,
     required this.isActive,
+    this.channelId,
   });
 
   factory LeadFilterChannelData.fromJson(Map<String, dynamic> json) {
+    final channel = json['channel'];
+    final nestedChannelId = channel is Map ? channel['id'] : null;
     return LeadFilterChannelData(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       type: json['type']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       isActive: json['is_active'] == true,
+      channelId: int.tryParse(
+        (json['channel_id'] ?? nestedChannelId)?.toString() ?? '',
+      ),
     );
   }
 

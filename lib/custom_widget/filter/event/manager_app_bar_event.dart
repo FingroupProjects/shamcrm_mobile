@@ -1,5 +1,4 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/filter/event/event_status_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/event/multi_manager_list.dart';
 import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -255,6 +254,8 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    // Статусы «в процессе / завершено» здесь больше не выбираются.
+                    // Раздел режется по времени вкладками: прошедшие, сегодня, завтра, предстоящие.
                     _buildFilterCard(
                       child: EventManagerMultiSelectWidget(
                         selectedManagers: _selectedManagers
@@ -264,18 +265,6 @@ class _EventManagerFilterScreenState extends State<EventManagerFilterScreen> {
                             (List<ManagerData> selectedUsersData) {
                           setState(() {
                             _selectedManagers = selectedUsersData;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFilterCard(
-                      child: EventStatusRadioGroupWidget(
-                        key: ValueKey(_selectedStatuses),
-                        selectedStatus: _selectedStatuses?.toString(),
-                        onSelectStatus: (int selectedStatusId) {
-                          setState(() {
-                            _selectedStatuses = selectedStatusId;
                           });
                         },
                       ),

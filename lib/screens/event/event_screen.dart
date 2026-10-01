@@ -38,7 +38,8 @@ class _EventScreenState extends State<EventScreen>
   late ScrollController _tabScrollController;
   late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
-  int _currentTabIndex = 0;
+  // Сегодня — рабочий экран при открытии. Прошедшие и предстоящие рядом.
+  int _currentTabIndex = 1;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   bool isClickAvatarIcon = false;
@@ -97,8 +98,12 @@ class _EventScreenState extends State<EventScreen>
 
     _tabScrollController = ScrollController();
     _listScrollController = ScrollController();
-    _tabKeys = List.generate(2, (_) => GlobalKey());
-    _tabController = TabController(length: 2, vsync: this);
+    _tabKeys = List.generate(EventDateType.values.length, (_) => GlobalKey());
+    _tabController = TabController(
+      length: EventDateType.values.length,
+      vsync: this,
+      initialIndex: _currentTabIndex,
+    );
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -116,6 +121,9 @@ class _EventScreenState extends State<EventScreen>
         setState(() {
           _currentTabIndex = _tabController.index;
         });
+        if (_listScrollController.hasClients) {
+          _listScrollController.jumpTo(0);
+        }
         if (_tabScrollController.hasClients) {
           _scrollToActiveTab();
         }
@@ -130,7 +138,10 @@ class _EventScreenState extends State<EventScreen>
           _eventBloc.add(FetchMoreEvents(
             _currentTabIndex + 1,
             query: _lastSearchQuery,
-            managerIds: _selectedManagerIds,
+            managerIds: _selectedManagers.isNotEmpty
+                ? _selectedManagers.map((manager) => manager.id).toList()
+                : _selectedManagerIds,
+            dateType: _currentDateType,
           ));
         }
       }
@@ -595,14 +606,24 @@ class _EventScreenState extends State<EventScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final localizations = AppLocalizations.of(context);
+    // Четыре интервала, как на вебе. Это не справочник статусов:
+    // бэк режет список параметром date_type.
     _tabTitles = [
       {
-        'id': 1,
-        'title': localizations?.translate('in_progress') ?? 'В работе',
+        'dateType': EventDateType.past,
+        'title': localizations?.translate('event_past') ?? 'Прошедшие',
       },
       {
-        'id': 2,
-        'title': localizations?.translate('finished_status') ?? 'Завершенные',
+        'dateType': EventDateType.today,
+        'title': localizations?.translate('today') ?? 'Сегодня',
+      },
+      {
+        'dateType': EventDateType.tomorrow,
+        'title': localizations?.translate('event_tomorrow') ?? 'Завтра',
+      },
+      {
+        'dateType': EventDateType.upcoming,
+        'title': localizations?.translate('event_upcoming') ?? 'Предстоящие',
       },
     ];
 
@@ -614,6 +635,12 @@ class _EventScreenState extends State<EventScreen>
     _loadEvents();
   }
 
+  String get _currentDateType {
+    if (_tabTitles.isEmpty) return EventDateType.today;
+    final index = _currentTabIndex.clamp(0, _tabTitles.length - 1);
+    return _tabTitles[index]['dateType'] as String? ?? EventDateType.today;
+  }
+
   void _loadEvents() {
     // Не отправляем первый запрос без выбранной воронки: didChangeDependencies
     // вызывается раньше, чем SalesFunnelBloc успевает восстановить её из API.
@@ -621,14 +648,21 @@ class _EventScreenState extends State<EventScreen>
     // из-за уже выполняющегося запроса.
     if (_selectedFunnel == null) return;
 
-    final bool isCompleted = _currentTabIndex == 1;
     context.read<EventBloc>().add(FetchEvents(
-          statusIds: isCompleted ? 2 : 1,
-          salesFunnelId: _selectedFunnel?.id, // Передаем ID воронки
+          dateType: _currentDateType,
+          query: _lastSearchQuery.isEmpty ? null : _lastSearchQuery,
+          managerIds: _selectedManagers.isNotEmpty
+              ? _selectedManagers.map((manager) => manager.id).toList()
+              : null,
+          fromDate: _fromDate,
+          toDate: _toDate,
+          noticefromDate: _NoticefromDate,
+          noticetoDate: _NoticetoDate,
+          salesFunnelId: _selectedFunnel?.id,
         ));
   }
 
-  Future<void> _searchEvents(String query, int currentStatusId) async {
+  Future<void> _searchEvents(String query) async {
     if (mounted) {
       setState(() {
         _isFilterLoading = true;
@@ -636,14 +670,14 @@ class _EventScreenState extends State<EventScreen>
       });
     }
 
-    await EventCache.clearEventsForStatus(currentStatusId);
+    await EventCache.clearEventsForStatus(_currentDateType);
 
     context.read<EventBloc>().add(FetchEvents(
           query: query,
           managerIds: _selectedManagers.isNotEmpty
               ? _selectedManagers.map((manager) => manager.id).toList()
               : null,
-          statusIds: _selectedStatuses ?? currentStatusId,
+          dateType: _currentDateType,
           fromDate: _fromDate,
           toDate: _toDate,
           noticefromDate: _NoticefromDate,
@@ -710,10 +744,8 @@ class _EventScreenState extends State<EventScreen>
       final eventBloc = context.read<EventBloc>();
       await eventBloc.clearAllCountsAndCache();
 
-      // Загружаем события для текущей вкладки
-      final bool isCompleted = _currentTabIndex == 1;
       eventBloc.add(FetchEvents(
-        statusIds: isCompleted ? 2 : 1,
+        dateType: _currentDateType,
         salesFunnelId: _selectedFunnel?.id,
         forceRefresh: true,
       ));
@@ -723,9 +755,8 @@ class _EventScreenState extends State<EventScreen>
 
       if (mounted) {
         final eventBloc = context.read<EventBloc>();
-        final bool isCompleted = _currentTabIndex == 1;
         eventBloc.add(FetchEvents(
-          statusIds: isCompleted ? 2 : 1,
+          dateType: _currentDateType,
           salesFunnelId: _selectedFunnel?.id,
           forceRefresh: false,
         ));
@@ -780,7 +811,7 @@ class _EventScreenState extends State<EventScreen>
           managerIds: _selectedManagers.isNotEmpty
               ? _selectedManagers.map((manager) => manager.id).toList()
               : null,
-          statusIds: _selectedStatuses ?? (_currentTabIndex == 1 ? 2 : 1),
+          dateType: _currentDateType,
           fromDate: _fromDate,
           toDate: _toDate,
           noticefromDate: _NoticefromDate,
@@ -794,12 +825,7 @@ class _EventScreenState extends State<EventScreen>
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
-    final currentStatusId = _tabTitles[_currentTabIndex]['id'];
-    _searchEvents(query, currentStatusId);
-  }
-
-  List<NoticeEvent> _filterEvents(List<NoticeEvent> events, bool isCompleted) {
-    return events.where((event) => event.isFinished == isCompleted).toList();
+    _searchEvents(query);
   }
 
   @override
@@ -1020,6 +1046,7 @@ class _EventScreenState extends State<EventScreen>
             child: EventCard(
               key: index == 0 ? keyEventCard : null,
               event: events[index],
+              dateType: _currentDateType,
               onStatusUpdated: () {
                 _loadEvents();
               },
@@ -1029,9 +1056,7 @@ class _EventScreenState extends State<EventScreen>
       );
     }
 
-    final filteredEvents = _filterEvents(events, _currentTabIndex == 1);
-
-    if (filteredEvents.isEmpty) {
+    if (events.isEmpty) {
       return HelpfulEmptyState.section(
         l10n: localizations!,
         icon: Icons.event_available_outlined,
@@ -1053,13 +1078,14 @@ class _EventScreenState extends State<EventScreen>
       controller: _listScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: filteredEvents.length,
+      itemCount: events.length,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: EventCard(
             key: index == 0 ? keyEventCard : null,
-            event: filteredEvents[index],
+            event: events[index],
+            dateType: _currentDateType,
             onStatusUpdated: () {
               _loadEvents();
             },

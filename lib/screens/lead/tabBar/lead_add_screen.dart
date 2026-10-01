@@ -30,6 +30,7 @@ import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/manager_list.dart';
+import 'package:crm_task_manager/utils/change_lead_manager_store.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/region_list.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -163,11 +164,23 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     if (widget.isWarehouseReferenceClient) {
       _loadCurrencies();
     }
+    // Право менять менеджера лида. Без него поле закроется само.
+    _loadLeadManagerAccess();
 
     // ВАЖНО: Добавляем небольшую задержку чтобы context был готов
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFieldConfiguration();
     });
+  }
+
+  /// Читаем кэш и сразу обновляем `/get-user-data`, чтобы право было свежим.
+  Future<void> _loadLeadManagerAccess() async {
+    await ChangeLeadManagerStore.hydrateFromPrefs();
+    try {
+      await _apiService.fetchAndCacheUserData();
+    } catch (error) {
+      debugPrint('LeadAddScreen: change_lead_manager: $error');
+    }
   }
 
   Future<void> _loadCurrencies() async {
@@ -351,12 +364,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         );
 
       case 'manager_id':
-        return ManagerRadioGroupWidget(
-          selectedManager: selectedManager,
-          onSelectManager: (ManagerData selectedManagerData) {
-            setState(() {
-              selectedManager = selectedManagerData.id.toString();
-            });
+        // Только эта форма создания лида. Сделка и остальные экраны не слушают флаг.
+        return ValueListenableBuilder<bool?>(
+          valueListenable: ChangeLeadManagerStore.canChange,
+          builder: (context, canChange, _) {
+            return ManagerRadioGroupWidget(
+              selectedManager: selectedManager,
+              canChange: canChange,
+              assignCurrentUser: true,
+              onSelectManager: (ManagerData selectedManagerData) {
+                setState(() {
+                  selectedManager = selectedManagerData.id.toString();
+                });
+              },
+            );
           },
         );
 

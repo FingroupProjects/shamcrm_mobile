@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/models/page_2/good_variants_model.dart'
@@ -36,9 +38,11 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
   bool _isSearching = false;
   int? _categoryId;
   String? _categoryName;
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -48,13 +52,18 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
   }
 
   void _onSearch(String input) {
-    final query = input.trim().isEmpty ? null : input.trim();
-    context.read<GoodsDialogBloc>().add(
-          SearchGoodVariantsForDialog(
-            search: query,
-            categoryId: _categoryId,
-          ),
-        );
+    // Ждём паузу в наборе, чтобы не запускать пагинацию на каждую букву.
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      final query = input.trim().isEmpty ? null : input.trim();
+      context.read<GoodsDialogBloc>().add(
+            SearchGoodVariantsForDialog(
+              search: query,
+              categoryId: _categoryId,
+            ),
+          );
+    });
   }
 
   void _reloadGoods({String? search}) {
@@ -83,6 +92,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
       }
     });
 
+    _searchDebounce?.cancel();
     final query = _isSearching ? _searchController.text.trim() : '';
     _reloadGoods(search: query.isEmpty ? null : query);
   }
@@ -93,6 +103,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
       _categoryId = null;
       _categoryName = null;
     });
+    _searchDebounce?.cancel();
     final query = _isSearching ? _searchController.text.trim() : '';
     _reloadGoods(search: query.isEmpty ? null : query);
   }
@@ -327,6 +338,7 @@ class _GoodVariantsDialogState extends State<GoodVariantsDialog> {
                           setState(() {
                             _isSearching = !_isSearching;
                             if (!_isSearching) {
+                              _searchDebounce?.cancel();
                               _searchController.clear();
                               _reloadGoods();
                             }

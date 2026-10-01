@@ -25,6 +25,9 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
   String? _activeSearch;
   int? _activeCategoryId;
 
+  // Размер страницы совпадает с запросом к /good/get/variant.
+  static const int _perPage = 20;
+
   GoodsDialogBloc() : super(GoodsDialogInitial()) {
     on<LoadGoodVariantsForDialog>(_onLoadGoodVariantsForDialog);
     on<RefreshGoodVariantsForDialog>(_onRefreshGoodVariants);
@@ -147,7 +150,7 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
       // Загружаем только первую страницу
       var firstPageResponse = await _apiService.getGoodVariantsForDropdown(
         page: 1,
-        perPage: 20,
+        perPage: _perPage,
         search: search,
         categoryId: categoryId,
       );
@@ -158,7 +161,8 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
         //print('GoodsDialogBloc: First page loaded with ${firstPageVariants.length} variants');
       }
 
-      // Используем данные пагинации из ответа
+      // Используем данные пагинации из ответа. Число товаров на странице
+      // не режем: сервер сам говорит, есть ли ещё страницы.
       _currentPage = firstPageResponse.result?.pagination?.currentPage ?? 1;
       _totalPages = firstPageResponse.result?.pagination?.totalPages ?? 1;
 
@@ -167,22 +171,26 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
         _cachedVariants = firstPageVariants;
         _lastLoadTime = DateTime.now();
       }
+
+      final hasMorePages = _currentPage < _totalPages;
       emit(GoodsDialogLoaded(
         variants: firstPageVariants,
         currentPage: _currentPage,
         totalPages: _totalPages,
+        isLoadingMore: hasMorePages,
       ));
 
-      // Проверяем, есть ли еще страницы из пагинации
-      final hasMorePages = _currentPage < _totalPages;
-
-      // Search stays on the first page. Category still loads the rest in the background.
-      if (hasMorePages && !_isBackgroundLoading && search == null) {
+      // Полный список, поиск и фильтр категории догружают страницы одинаково.
+      if (hasMorePages && !_isBackgroundLoading) {
         if (kDebugMode) {
           //print('GoodsDialogBloc: Starting background loading of remaining pages...');
         }
-        // Загружаем остальные страницы в фоне
-        _loadRemainingPagesInBackground(loadId, firstPageVariants);
+        _loadRemainingPagesInBackground(
+          loadId,
+          firstPageVariants,
+          search: search,
+          categoryId: categoryId,
+        );
       }
 
     } catch (e) {
@@ -196,12 +204,21 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
   void _loadRemainingPagesInBackground(
     int loadId,
-    List<GoodVariantItem> seed,
-  ) {
+    List<GoodVariantItem> seed, {
+    String? search,
+    int? categoryId,
+  }) {
     _isBackgroundLoading = true;
 
-    // Запускаем асинхронную загрузку без await
-    _fetchRemainingPages(loadId, seed).then((_) {
+    // Запускаем асинхронную загрузку без await.
+    // search и categoryId зафиксированы на момент старта, чтобы следующая
+    // страница не ушла уже с другим запросом.
+    _fetchRemainingPages(
+      loadId,
+      seed,
+      search: search,
+      categoryId: categoryId,
+    ).then((_) {
       if (kDebugMode) {
         //print('GoodsDialogBloc: Background loading completed. Total variants: ${_cachedVariants?.length ?? 0}');
       }
@@ -220,15 +237,18 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
   Future<void> _fetchRemainingPages(
     int loadId,
-    List<GoodVariantItem> seed,
-  ) async {
+    List<GoodVariantItem> seed, {
+    String? search,
+    int? categoryId,
+  }) async {
     try {
-      List<GoodVariantItem> allVariants = List.from(seed);
-      int currentPage = 2;
-      bool hasMorePages = true;
+      final allVariants = List<GoodVariantItem>.from(seed);
+      var currentPage = 2;
+      var hasMorePages = true;
 
       while (hasMorePages) {
-        if (!_isCurrentLoad(loadId) || _activeSearch != null) {
+        // Новый поиск или фильтр сменяет loadId — старую догрузку останавливаем.
+        if (!_isCurrentLoad(loadId)) {
           return;
         }
 
@@ -239,11 +259,11 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
 
           final pageResponse = await _apiService.getGoodVariantsForDropdown(
             page: currentPage,
-            perPage: 20,
-            search: null,
-            categoryId: _activeCategoryId,
+            perPage: _perPage,
+            search: search,
+            categoryId: categoryId,
           );
-          if (!_isCurrentLoad(loadId) || _activeSearch != null) {
+          if (!_isCurrentLoad(loadId)) {
             return;
           }
           final pageVariants = pageResponse.result?.data ?? [];
@@ -252,15 +272,16 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
           if (pageVariants.isNotEmpty) {
             allVariants.addAll(pageVariants);
 
-            if (_activeCategoryId == null) {
-              _cachedVariants = allVariants;
+            // В кэш попадает только полный список без поиска и категории.
+            if (search == null && categoryId == null) {
+              _cachedVariants = List<GoodVariantItem>.from(allVariants);
             }
             _currentPage = pagination?.currentPage ?? currentPage;
             _totalPages = pagination?.totalPages ?? currentPage;
 
-            // Проверяем есть ли еще страницы из пагинации
-            if (pagination != null && 
-                pagination.currentPage != null && 
+            // Конец только когда сервер сказал, что текущая страница последняя.
+            if (pagination != null &&
+                pagination.currentPage != null &&
                 pagination.totalPages != null &&
                 pagination.currentPage! >= pagination.totalPages!) {
               hasMorePages = false;
@@ -268,9 +289,13 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
               currentPage++;
             }
 
-            // Отправляем событие для обновления UI
-            if (_isCurrentLoad(loadId) && _activeSearch == null) {
-              add(UpdateGoodVariantsInBackground(allVariants, _totalPages, loadId));
+            if (_isCurrentLoad(loadId)) {
+              add(UpdateGoodVariantsInBackground(
+                List<GoodVariantItem>.from(allVariants),
+                _totalPages,
+                loadId,
+                currentPage: _currentPage,
+              ));
             }
 
             if (kDebugMode) {
@@ -278,27 +303,25 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
             }
           } else {
             hasMorePages = false;
+            // Пустая страница: товары уже на экране, спиннер «Загрузка страницы…» выключаем.
+            _finishBackgroundLoad(loadId, allVariants);
           }
 
-          // Небольшая задержка между запросами
           if (hasMorePages) {
             await Future.delayed(const Duration(milliseconds: 100));
           }
-
         } catch (e) {
           if (kDebugMode) {
             //print('GoodsDialogBloc: Error loading page $currentPage in background: $e');
           }
           hasMorePages = false;
+          _finishBackgroundLoad(loadId, allVariants);
         }
       }
 
-      if (_isCurrentLoad(loadId) &&
-          _activeSearch == null &&
-          _activeCategoryId == null) {
+      if (_isCurrentLoad(loadId) && search == null && categoryId == null) {
         _lastLoadTime = DateTime.now();
       }
-
     } catch (e) {
       if (kDebugMode) {
         //print('GoodsDialogBloc: Error in _fetchRemainingPages: $e');
@@ -306,19 +329,34 @@ class GoodsDialogBloc extends Bloc<GoodsDialogEvent, GoodsDialogState> {
     }
   }
 
+  // Сообщает списку, что догрузка этой выборки закончилась.
+  void _finishBackgroundLoad(int loadId, List<GoodVariantItem> variants) {
+    if (!_isCurrentLoad(loadId)) return;
+    final lastPage = _totalPages < 1 ? 1 : _totalPages;
+    _currentPage = lastPage;
+    add(UpdateGoodVariantsInBackground(
+      List<GoodVariantItem>.from(variants),
+      lastPage,
+      loadId,
+      currentPage: lastPage,
+    ));
+  }
+
   Future<void> _updateVariantsInBackground(
     UpdateGoodVariantsInBackground event,
     Emitter<GoodsDialogState> emit,
   ) async {
-    if (!_isCurrentLoad(event.loadId) || _activeSearch != null) {
+    if (!_isCurrentLoad(event.loadId)) {
       return;
     }
-    // Обновляем состояние без показа загрузки
+    // Обновляем список без полноэкранной загрузки.
+    // currentPage берём из события, чтобы поздний обработчик не увидел уже финальную страницу.
+    final stillLoading = event.currentPage < event.totalPages;
     emit(GoodsDialogLoaded(
       variants: event.data,
-      currentPage: _currentPage,
+      currentPage: event.currentPage,
       totalPages: event.totalPages,
-      isLoadingMore: false,
+      isLoadingMore: stillLoading,
     ));
   }
 

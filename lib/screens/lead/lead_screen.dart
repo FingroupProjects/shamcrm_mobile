@@ -36,6 +36,7 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -416,7 +417,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final socketClient = PusherChannelsClient.websocket(
+    final socketClient = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint('LeadScreen: socket connection error: $exception');

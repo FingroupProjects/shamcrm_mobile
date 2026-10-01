@@ -55,10 +55,10 @@ class EventCache {
     await prefs.remove(_persistentEventCountsKey);
   }
 
-  /// Очистить события для конкретного статуса
-  static Future<void> clearEventsForStatus(int statusId) async {
+  /// Очистить кэш списка для интервала (past, today, tomorrow, upcoming).
+  static Future<void> clearEventsForStatus(String bucket) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('cachedEvents_$statusId');
+    await prefs.remove('cachedEvents_$bucket');
   }
 
   /// Очистить все кэшированные события

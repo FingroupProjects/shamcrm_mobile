@@ -14,12 +14,22 @@ class ManagerRadioGroupWidget extends StatefulWidget {
   final String? currentUserId;
   final bool hasError;
 
+  /// null — право ещё грузится, список не открываем.
+  /// false — менеджера нельзя сменить. Только формы лида передают это.
+  /// true — обычный выбор, как в сделке и остальных местах.
+  final bool? canChange;
+
+  /// Только создание лида. Без права менеджером становится текущий пользователь.
+  final bool assignCurrentUser;
+
   const ManagerRadioGroupWidget({
     super.key,
     required this.onSelectManager,
     this.selectedManager,
     this.currentUserId,
     this.hasError = false,
+    this.canChange = true,
+    this.assignCurrentUser = false,
   });
 
   @override
@@ -34,6 +44,10 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   ManagerData? selectedManagerData;
   String? currentUserId;
   bool isInitialized = false;
+  bool _resolvingLockedManager = false;
+  int? _pinnedManagerId;
+
+  bool get _isLocked => widget.canChange == false;
 
   @override
   void initState() {
@@ -51,6 +65,93 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
       _loadCurrentUserId();
     }
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
+  }
+
+  @override
+  void didUpdateWidget(covariant ManagerRadioGroupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final accessChanged = oldWidget.canChange != widget.canChange;
+    final selectionChanged = oldWidget.selectedManager != widget.selectedManager;
+    if (accessChanged || selectionChanged) {
+      _scheduleLockedResolve();
+    }
+  }
+
+  /// Без права поле не открывается. На создании лида подставляем себя.
+  void _scheduleLockedResolve() {
+    if (!_isLocked) return;
+    if (!isInitialized) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resolveLockedManager();
+    });
+  }
+
+  Future<void> _resolveLockedManager() async {
+    if (!_isLocked || _resolvingLockedManager || !mounted) return;
+    _resolvingLockedManager = true;
+    try {
+      int? targetId;
+      if (widget.assignCurrentUser) {
+        final prefs = await SharedPreferences.getInstance();
+        targetId = int.tryParse(prefs.getString('userID') ?? '');
+      } else {
+        targetId = int.tryParse(widget.selectedManager ?? '');
+      }
+      // id 0 — это «Система», её без права не подставляем.
+      if (targetId == null || targetId <= 0 || !mounted || !_isLocked) return;
+
+      // На создании id нужен сразу, даже если имя ещё грузится.
+      if (widget.assignCurrentUser) {
+        _publishAssignedManager(
+          ManagerData(id: targetId, name: '', lastname: ''),
+        );
+      }
+
+      if (_pinnedManagerId == targetId && selectedManagerData?.id == targetId) {
+        return;
+      }
+
+      var manager = _managerById(targetId);
+      if (manager == null) {
+        final profile = await _apiService.getUserById(targetId);
+        final profileId = profile.id > 0 ? profile.id : targetId;
+        manager = ManagerData(
+          id: profileId,
+          name: profile.name,
+          lastname: profile.lastname,
+        );
+      }
+      if (!mounted || !_isLocked) return;
+
+      final pinned = manager;
+      setState(() {
+        if (_managerById(pinned.id) == null) {
+          managersList = [pinned, ...managersList];
+        }
+        selectedManagerData = _managerById(pinned.id);
+        _pinnedManagerId = pinned.id;
+      });
+      _publishAssignedManager(selectedManagerData);
+    } catch (error) {
+      debugPrint(
+          'ManagerRadioGroupWidget: locked manager resolve failed: $error');
+    } finally {
+      _resolvingLockedManager = false;
+    }
+  }
+
+  /// Создание лида без права: форма должна уйти с id текущего пользователя.
+  void _publishAssignedManager(ManagerData? manager) {
+    if (!widget.assignCurrentUser || manager == null) return;
+    if (widget.selectedManager == manager.id.toString()) return;
+    widget.onSelectManager(manager);
+  }
+
+  ManagerData? _managerById(int id) {
+    for (final manager in managersList) {
+      if (manager.id == id) return manager;
+    }
+    return null;
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -151,13 +252,21 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                 ...?state.dataManager.result,
               ];
 
-              if (widget.selectedManager != null && managersList.isNotEmpty) {
-                selectedManagerData = managersList.firstWhere(
+              if (widget.selectedManager != null &&
+                  widget.selectedManager!.isNotEmpty &&
+                  managersList.isNotEmpty) {
+                final matches = managersList.where(
                   (manager) => manager.id.toString() == widget.selectedManager,
-                  orElse: () => managersList[0],
                 );
+                if (matches.isNotEmpty) {
+                  selectedManagerData = matches.first;
+                } else if (widget.canChange == true) {
+                  // Старое поведение выбора: если id нет на первой странице.
+                  selectedManagerData = managersList.first;
+                }
               }
               isInitialized = true;
+              _scheduleLockedResolve();
             }
 
             debugPrint("ManagerList managerList dropdown : $managersList");
@@ -183,7 +292,32 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
-                  enabled: true,
+                  // false и null: список не открывается, значение только смотрим.
+                  enabled: widget.canChange == true,
+                  disabledDecoration: CustomDropdownDisabledDecoration(
+                    fillColor: fieldFill,
+                    border: Border.all(
+                      color: widget.hasError ? colors.error : fieldBorder,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    suffixIcon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: dropdownIcon.withValues(alpha: 0.45),
+                    ),
+                    headerStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: primaryText,
+                    ),
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Gilroy',
+                      color: hintTextColor,
+                    ),
+                  ),
                   decoration: CustomDropdownDecoration(
                     closedFillColor: fieldFill,
                     expandedFillColor: dropdownFill,

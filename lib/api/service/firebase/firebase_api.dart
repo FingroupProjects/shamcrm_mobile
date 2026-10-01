@@ -677,9 +677,29 @@ class FirebaseApi {
     }
   }
 
+  bool _isEventPushType(String type) {
+    switch (type.toLowerCase()) {
+      case 'notice':
+      case 'event':
+      case 'eventid':
+        return true;
+      default:
+        return false;
+    }
+  }
+
   String? _normalizePushId(String type, Map<String, dynamic> data) {
     if (type == 'message') {
       return _pickPushValue(data, <String>['chat_id', 'chatId', 'id']);
+    }
+    // Напоминание о событии: берём id события, а не id лида.
+    // Иначе пуш открывает карточку лида и показывает «Лид был удален».
+    if (_isEventPushType(type)) {
+      return _pickPushValue(data, <String>[
+        'event_id',
+        'notice_id',
+        'id',
+      ]);
     }
     return _pickPushValue(data, <String>[
       'id',
@@ -770,13 +790,15 @@ class FirebaseApi {
           await navigateToTaskScreen(id, data);
           break;
         case 'lead':
-        case 'notice':
         case 'updateLeadStatus':
           await navigateToLeadScreen(id, data);
           break;
         case 'myTaskOutDated':
           await navigateToMyTaskScreen(id, data);
           break;
+        // notice — напоминание о событии. Открываем карточку события.
+        case 'notice':
+        case 'event':
         case 'eventId':
           await navigateToEventScreen(id, data);
           break;
@@ -1304,8 +1326,9 @@ class FirebaseApi {
 
   Future<void> navigateToEventScreen(String id, Map<String, dynamic> data) async {
     try {
+      // Сначала event_id / notice_id. Поле id может оказаться id лида.
       final eventId = int.tryParse(
-        _pickPushValue(data, <String>['id', 'event_id']) ?? id,
+        _pickPushValue(data, <String>['event_id', 'notice_id', 'id']) ?? id,
       );
       if (eventId != null && navigatorKey.currentState != null) {
         await navigatorKey.currentState!.push(

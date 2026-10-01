@@ -22,6 +22,7 @@ import 'package:crm_task_manager/models/event/event_by_Id_model.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_delete.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_edit_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_schedule_fields.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_dropdown_history.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -1095,9 +1096,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       if (notice.date != null)
         {
           'label': AppLocalizations.of(context)!.translate('date_reminder'),
-          'value': notice.date != null
-              ? formatDate(notice.date.toString())
-              : AppLocalizations.of(context)!.translate(''),
+          'value': formatNoticeSchedule(
+            notice.date,
+            notice.timeFrom,
+            notice.timeTo,
+            fromLabel: AppLocalizations.of(context)!.translate('notice_from'),
+            toLabel: AppLocalizations.of(context)!.translate('notice_to'),
+          ),
         },
       {
         'label': AppLocalizations.of(context)!.translate('assignee'),

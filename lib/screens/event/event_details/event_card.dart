@@ -3,6 +3,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/models/event/event_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_schedule_fields.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,10 +12,15 @@ class EventCard extends StatefulWidget {
   final NoticeEvent event;
   final VoidCallback? onStatusUpdated;
 
+  /// Интервал вкладки: past, today, tomorrow, upcoming.
+  /// Нужен, чтобы незакрытое событие во «Прошедших» сразу было «Просрочено».
+  final String? dateType;
+
   const EventCard({
     Key? key,
     required this.event,
     this.onStatusUpdated,
+    this.dateType,
   }) : super(key: key);
 
   @override
@@ -22,6 +28,24 @@ class EventCard extends StatefulWidget {
 }
 
 class _EventCardState extends State<EventCard> {
+  /// Момент события: дата плюс «время до», иначе «время от».
+  /// Полночь без часов не считаем просрочкой — это просто день.
+  DateTime? _eventMoment() {
+    final local = widget.event.date?.toLocal();
+    if (local == null) return null;
+    final clock = widget.event.timeTo ?? widget.event.timeFrom;
+    if (clock != null && clock.contains(':')) {
+      final parts = clock.split(':');
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour != null && minute != null) {
+        return DateTime(local.year, local.month, local.day, hour, minute);
+      }
+    }
+    if (local.hour == 0 && local.minute == 0) return null;
+    return local;
+  }
+
   String formatDate(String? dateString) {
     if (dateString == null) {
       return AppLocalizations.of(context)!.translate('date_not');
@@ -34,20 +58,40 @@ class _EventCardState extends State<EventCard> {
     }
   }
 
+  /// Плашка на карточке — не вкладка.
+  /// Завершено закрывает всё. Иначе прошедшее время — просрочка, остальное в процессе.
+  _EventBadge _badge(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.appColors;
+
+    if (widget.event.isFinished) {
+      return _EventBadge(
+        label: l10n.translate('finished'),
+        color: colors.success,
+      );
+    }
+
+    final reminder = _eventMoment();
+    final timePassed = reminder != null && reminder.isBefore(DateTime.now());
+    final inPastBucket = widget.dateType == EventDateType.past;
+    if (timePassed || inPastBucket) {
+      return _EventBadge(
+        label: l10n.translate('event_overdue'),
+        color: colors.error,
+      );
+    }
+
+    return _EventBadge(
+      label: l10n.translate('in_progress'),
+      color: colors.buttonPrimaryBg,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    Color getStatusBackgroundColor() {
-      return widget.event.isFinished
-          ? colors.success.withValues(alpha: 0.12)
-          : colors.buttonPrimaryBg.withValues(alpha: 0.12);
-    }
-
-    Color getStatusTextColor() {
-      return widget.event.isFinished
-          ? colors.success
-          : colors.buttonPrimaryBg;
-    }
+    final badge = _badge(context);
+    final body = widget.event.body.trim();
 
     String? extractImageUrlFromSvg(String svg) {
       if (svg.contains('href="')) {
@@ -123,7 +167,6 @@ class _EventCardState extends State<EventCard> {
 
     return GestureDetector(
       onTap: () {
-        // Переход на экран EventDetailsScreen с передачей noticeId
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -132,204 +175,217 @@ class _EventCardState extends State<EventCard> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
           color: colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(12),
+          // На светлом фоне карточка совпадает со страницей, без рамки края не видно.
+          border: Border.all(
+            color: colors.borderPrimary,
+            width: 1,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Container(width: 3, color: badge.color),
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      text: widget.event.title ??
-                          AppLocalizations.of(context)!.translate('no_name'),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
-                      ),
-                      children: const <TextSpan>[
-                        // TextSpan(
-                        //   text:
-                        //       '\n\u200B', // Невидимый пробел (Zero Width Space)
-                        //   style: TaskCardStyles.titleStyle(context),
-                        // ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    '${AppLocalizations.of(context)!.translate('lead_deal_card')} ${widget.event.lead.name}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  ),
-                ),
-                Text(
-                  widget.event.lead.phone,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  maxLines: 1,
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                widget.event.users.isNotEmpty // Проверяем, есть ли пользователи
-                    ? Stack(
-                        children: [
-                          if (widget.event.users.isNotEmpty &&
-                              widget.event.users[0].image != null &&
-                              widget.event.users[0].image!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 20),
-                              child: widget.event.users[0].image!
-                                      .startsWith('<svg')
-                                  ? buildSvgAvatar(widget.event.users[0].image!)
-                                  : Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: DecorationImage(
-                                          image: NetworkImage(
-                                              widget.event.users[0].image!),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          if (widget.event.users.length > 1 &&
-                              widget.event.users[1].image != null &&
-                              widget.event.users[1].image!.isNotEmpty)
-                            Positioned(
-                              left: 20,
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: widget.event.users[1].image!
-                                        .startsWith('<svg')
-                                    ? buildSvgAvatar(
-                                        widget.event.users[1].image!)
-                                    : Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          image: DecorationImage(
-                                            image: NetworkImage(
-                                                widget.event.users[1].image!),
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(13, 14, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.event.title.isEmpty
+                                    ? AppLocalizations.of(context)!
+                                        .translate('no_name')
+                                    : widget.event.title,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.textPrimary,
+                                ),
                               ),
                             ),
-                        ],
-                      )
-                    : const SizedBox(
-                        width: 32, height: 32), // Оставляем место пустым
-                if (widget.event.users.length > 2)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Text(
-                      '+${widget.event.users.length - 2}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w500,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                ThemedDateIcon(
-                  size: 17,
-                  color: colors.textSecondary,
-                  background: colors.surfacePrimary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  ' ${formatDate(widget.event.createdAt.toString())}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            if (widget.event.date != null)  const SizedBox(height: 5),
-            if (widget.event.date != null) Row(
-              children: [
-                // Image.asset(
-                //   'assets/icons/tabBar/date.png',
-                //   width: 17,
-                //   height: 17,
-                // ),
-                // const SizedBox(width: 4),
-                Text(
-                  '${AppLocalizations.of(context)?.translate('reminder_date') ?? 'Напоминание'}: ${formatDate(widget.event.date?.toString())}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)!
-                            .translate('author_contact'),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: colors.textPrimary,
+                            const SizedBox(width: 8),
+                            _StatusChip(badge: badge),
+                          ],
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          widget.event.author.name,
+                        const SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${AppLocalizations.of(context)!.translate('lead_deal_card')} ${widget.event.lead.name}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.textSecondary,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                maxLines: 1,
+                              ),
+                            ),
+                            Text(
+                              widget.event.lead.phone,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: colors.textSecondary,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                        if (body.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            body,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: colors.textSecondary,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            widget.event.users.isNotEmpty
+                                ? Stack(
+                                    children: [
+                                      if (widget.event.users.isNotEmpty &&
+                                          widget.event.users[0].image != null &&
+                                          widget.event.users[0].image!.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 20),
+                                          child: widget.event.users[0].image!
+                                                  .startsWith('<svg')
+                                              ? buildSvgAvatar(
+                                                  widget.event.users[0].image!)
+                                              : Container(
+                                                  width: 32,
+                                                  height: 32,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    image: DecorationImage(
+                                                      image: NetworkImage(widget
+                                                          .event.users[0].image!),
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                ),
+                                        ),
+                                      if (widget.event.users.length > 1 &&
+                                          widget.event.users[1].image != null &&
+                                          widget.event.users[1].image!.isNotEmpty)
+                                        Positioned(
+                                          left: 20,
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 10),
+                                            child: widget.event.users[1].image!
+                                                    .startsWith('<svg')
+                                                ? buildSvgAvatar(widget
+                                                    .event.users[1].image!)
+                                                : Container(
+                                                    width: 32,
+                                                    height: 32,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      image: DecorationImage(
+                                                        image: NetworkImage(widget
+                                                            .event
+                                                            .users[1]
+                                                            .image!),
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
+                                        ),
+                                    ],
+                                  )
+                                : const SizedBox(width: 32, height: 32),
+                            if (widget.event.users.length > 2)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 2),
+                                child: Text(
+                                  '+${widget.event.users.length - 2}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            ThemedDateIcon(
+                              size: 17,
+                              color: colors.textSecondary,
+                              background: colors.surfacePrimary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              ' ${formatDate(widget.event.createdAt.toString())}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w500,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        if (widget.event.date != null) const SizedBox(height: 5),
+                        if (widget.event.date != null)
+                          Row(
+                            children: [
+                              Text(
+                                '${AppLocalizations.of(context)?.translate('reminder_date') ?? 'Напоминание'}: ${formatNoticeSchedule(
+                                  widget.event.date,
+                                  widget.event.timeFrom,
+                                  widget.event.timeTo,
+                                  fromLabel: AppLocalizations.of(context)!
+                                      .translate('notice_from'),
+                                  toLabel: AppLocalizations.of(context)!
+                                      .translate('notice_to'),
+                                )}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w500,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${AppLocalizations.of(context)!.translate('author_contact')}${widget.event.author.name}',
                           style: TextStyle(
                             fontSize: 14,
                             fontFamily: 'Gilroy',
@@ -338,38 +394,49 @@ class _EventCardState extends State<EventCard> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: getStatusBackgroundColor(),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    widget.event.isFinished
-                        ? AppLocalizations.of(context)!.translate('finished')
-                        : AppLocalizations.of(context)!
-                            .translate('in_progress'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: getStatusTextColor(),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _EventBadge {
+  final String label;
+  final Color color;
+
+  const _EventBadge({required this.label, required this.color});
+}
+
+class _StatusChip extends StatelessWidget {
+  final _EventBadge badge;
+
+  const _StatusChip({required this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badge.color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        badge.label,
+        style: TextStyle(
+          fontSize: 12,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: badge.color,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

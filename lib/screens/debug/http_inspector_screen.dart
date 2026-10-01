@@ -850,6 +850,8 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
         return const Color(0xFF8B5CF6);
       case 'DELETE':
         return const Color(0xFFEF4444);
+      case 'WS':
+        return const Color(0xFF06B6D4);
       default:
         return const Color(0xFF64748B);
     }

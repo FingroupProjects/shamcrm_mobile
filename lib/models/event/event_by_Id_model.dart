@@ -7,6 +7,8 @@ class Notice {
   final String title;
   final String body;
   final DateTime? date;
+  final String? timeFrom;
+  final String? timeTo;
   final NoticeLead? lead;
   final NoticeAuthor? author;
   final List<UserEvent> users;
@@ -24,6 +26,8 @@ class Notice {
     required this.title,
     required this.body,
     this.date,
+    this.timeFrom,
+    this.timeTo,
     this.lead,
     this.author,
     required this.users,
@@ -48,6 +52,8 @@ class Notice {
         title: SafeConverters.toSafeString(json['title']),
         body: SafeConverters.toSafeString(json['body']),
         date: SafeConverters.toDateTimeOrNull(json['date']),
+        timeFrom: noticeClockOrNull(json['time_from']),
+        timeTo: noticeClockOrNull(json['time_to']),
         lead: SafeConverters.toMapOrNull(json['lead']) != null
             ? NoticeLead.fromJson(SafeConverters.toMap(json['lead']))
             : null,

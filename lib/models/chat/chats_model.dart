@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:crm_task_manager/models/common/integration_model.dart';
 import 'package:crm_task_manager/models/task/task_model.dart';
 import 'package:crm_task_manager/models/chat/message_reaction_model.dart'; // Из ветки reaction
@@ -6,6 +8,62 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/utils/global_value.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/main.dart';
+
+/// Имя канала по id. Список чатов приходит с channel.name,
+/// а сокет часто шлёт только channel_id / integration_id.
+class ChatChannelDirectory {
+  static final Map<int, String> _byChannelId = {};
+  static final Map<int, String> _byIntegrationId = {};
+  static Future<void>? _loading;
+  static var _ready = false;
+
+  /// Грузим справочник один раз. Сокет ждёт его, чтобы иконка
+  /// была уже в первой отрисовке, а не после серой заглушки.
+  static void begin(Future<void> Function() loader) {
+    _loading ??= loader().then((_) {
+      _ready = true;
+    }).catchError((Object error) {
+      _ready = true;
+      debugPrint('ChatChannelDirectory: $error');
+    });
+  }
+
+  static Future<void> waitReady() async {
+    final pending = _loading;
+    if (pending == null || _ready) return;
+    try {
+      await pending.timeout(const Duration(milliseconds: 800));
+    } catch (_) {
+      // Справочник не успел. Дальше сработает запасной запрос чата.
+    }
+  }
+
+  static void remember({
+    int? channelId,
+    int? integrationId,
+    String? name,
+  }) {
+    final trimmed = name?.trim() ?? '';
+    if (trimmed.isEmpty || trimmed == 'null') return;
+    if (channelId != null && channelId > 0) {
+      _byChannelId[channelId] = trimmed;
+    }
+    if (integrationId != null && integrationId > 0) {
+      _byIntegrationId[integrationId] = trimmed;
+    }
+  }
+
+  static String? lookup({int? channelId, int? integrationId}) {
+    if (channelId != null && _byChannelId.containsKey(channelId)) {
+      return _byChannelId[channelId];
+    }
+    if (integrationId != null &&
+        _byIntegrationId.containsKey(integrationId)) {
+      return _byIntegrationId[integrationId];
+    }
+    return null;
+  }
+}
 
 class Integration {
   final int? id;
@@ -127,9 +185,7 @@ class Chats {
       description: json['task'] != null
           ? SafeConverters.toSafeString(json['task']['description'])
           : '',
-      channel: json['channel'] != null
-          ? SafeConverters.toSafeString(json['channel']['name'])
-          : '',
+      channel: _channelNameFromJson(json),
       lastMessage: json['lastMessage'] != null
           ? _getLastMessageText(SafeConverters.toMap(json['lastMessage']))
           : '',
@@ -162,6 +218,92 @@ class Chats {
     if (userName.isNotEmpty) return userName;
     if (name.trim().isNotEmpty) return name;
     return _nameFromChatUsers(chatUsers) ?? name;
+  }
+
+  /// Имя канала для иконки.
+  /// Сначала channel.name. Если сокет прислал только id,
+  /// берём имя из справочника интеграций: Telegram, Instagram, YouTube и остальные.
+  static String _channelNameFromJson(Map<String, dynamic> json) {
+    final channelMap = SafeConverters.toMapOrNull(json['channel']);
+    final integrationMap = SafeConverters.toMapOrNull(json['integration']);
+    final channelId = SafeConverters.toIntOrNull(channelMap?['id']) ??
+        SafeConverters.toIntOrNull(json['channel_id']);
+    final integrationId = SafeConverters.toIntOrNull(integrationMap?['id']) ??
+        SafeConverters.toIntOrNull(json['integration_id']);
+
+    final nestedName = SafeConverters.toStringOrNull(channelMap?['name']);
+    final plainName = json['channel'] is String ? json['channel'] as String : null;
+    final directName = (nestedName != null && nestedName.trim().isNotEmpty)
+        ? nestedName.trim()
+        : plainName?.trim();
+
+    if (directName != null && directName.isNotEmpty && directName != 'null') {
+      ChatChannelDirectory.remember(
+        channelId: channelId,
+        integrationId: integrationId,
+        name: directName,
+      );
+      return directName;
+    }
+
+    final cached = ChatChannelDirectory.lookup(
+      channelId: channelId,
+      integrationId: integrationId,
+    );
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    final fromPayload = _channelKeyFromPayload(json['data']);
+    if (fromPayload != null) {
+      ChatChannelDirectory.remember(
+        channelId: channelId,
+        integrationId: integrationId,
+        name: fromPayload,
+      );
+      return fromPayload;
+    }
+
+    // type и name интеграции — короткие подписи канала.
+    // Логин не смотрим: там может быть почта или телефон.
+    final fromIntegration = channelIconKey(integrationMap?['type']?.toString()) ??
+        channelIconKey(integrationMap?['name']?.toString());
+    if (fromIntegration != null) {
+      ChatChannelDirectory.remember(
+        channelId: channelId,
+        integrationId: integrationId,
+        name: fromIntegration,
+      );
+      return fromIntegration;
+    }
+
+    return '';
+  }
+
+  /// Явные метки в data. Общие слова вроде mail и web не используем:
+  /// они встречаются в любом JSON и дадут чужую иконку.
+  static String? _channelKeyFromPayload(dynamic raw) {
+    if (raw == null) return null;
+    final text = raw.toString().toLowerCase();
+    if (text.contains('author_channel_id') || text.contains('video_id')) {
+      return 'youtube';
+    }
+    if (text.contains('instagram') || text.contains('инстаграм')) {
+      return 'instagram';
+    }
+    if (text.contains('telegram') || text.contains('телеграм')) {
+      return 'telegram_account';
+    }
+    if (text.contains('whatsapp') || text.contains('green_api')) {
+      return 'whatsapp';
+    }
+    if (text.contains('facebook') || text.contains('фейсбук')) {
+      return 'facebook';
+    }
+    if (text.contains('messenger') || text.contains('мессенджер')) {
+      return 'messenger';
+    }
+    return null;
   }
 
   static String _cleanName(String? value) {
@@ -367,9 +509,10 @@ class Chats {
     };
     final exact = channelIconMap[normalized];
     if (exact != null) return exact;
-    // Имя может прийти как «YouTube» или с лишним текстом.
-    if (normalized.contains('youtube') || normalized.contains('ютуб')) {
-      return 'assets/icons/leads/youtube.png';
+    // «Telegram», «Instagram», «YouTube» и русские имена.
+    final key = channelIconKey(normalized);
+    if (key != null && channelIconMap.containsKey(key)) {
+      return channelIconMap[key]!;
     }
     return 'assets/icons/leads/default.png';
   }

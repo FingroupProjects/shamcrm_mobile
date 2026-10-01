@@ -18,11 +18,14 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/lead/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -265,6 +268,9 @@ class _ChatsScreenState extends State<ChatsScreen>
 
     // ✅ ДОБАВЛЕНО: Подписываемся на lifecycle events для обработки сворачивания приложения
     WidgetsBinding.instance.addObserver(this);
+    // Справочник каналов нужен до первого сокета,
+    // иначе новый чат на секунду остаётся без иконки.
+    _warmChannelIcons();
 
     //print('ChatsScreen: initState started');
     _checkPermissions().then((_) {
@@ -897,6 +903,25 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
+  /// Все интеграции мессенджеров: id → Telegram, Instagram, YouTube и остальные.
+  /// Сокет присылает integration_id без имени, иконка берётся отсюда.
+  void _warmChannelIcons() {
+    ChatChannelDirectory.begin(() async {
+      final items = await apiService.getLeadFilterChannels();
+      for (final LeadFilterChannelData item in items) {
+        final name = channelIconKey(item.type) ??
+            channelIconKey(item.name) ??
+            item.type.trim();
+        if (name.isEmpty) continue;
+        ChatChannelDirectory.remember(
+          integrationId: item.id,
+          channelId: item.channelId,
+          name: name,
+        );
+      }
+    });
+  }
+
   Future<void> setUpServices() async {
     debugPrint('=================-=== ChatsScreen: Starting socket setup');
     final prefs = await SharedPreferences.getInstance();
@@ -982,7 +1007,7 @@ class _ChatsScreenState extends State<ChatsScreen>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    socketClient = PusherChannelsClient.websocket(
+    socketClient = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint(
@@ -1053,6 +1078,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           final chatData = json.decode(event.data);
           if (chatData.containsKey('chat') &&
               chatData['chat'] is Map<String, dynamic>) {
+            await ChatChannelDirectory.waitReady();
             final chat = Chats.fromJson(chatData['chat']);
             await updateFromSocket(chat: chat);
           } else {
@@ -1074,6 +1100,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           final chatData = json.decode(event.data);
           if (chatData.containsKey('chat') &&
               chatData['chat'] is Map<String, dynamic>) {
+            await ChatChannelDirectory.waitReady();
             final chat = Chats.fromJson(chatData['chat']);
             await updateFromSocket(chat: chat);
           } else {

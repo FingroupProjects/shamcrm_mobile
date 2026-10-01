@@ -11,10 +11,14 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   final ApiService apiService;
   bool allEventsFetched = false;
   bool isFetching = false;
-  Map<int, int> _eventCounts = {}; // 1 = активные, 2 = завершённые
+  Map<int, int> _eventCounts = {};
   String? _currentQuery;
   List<int>? _currentManagerIds;
-  int? _currentStatusIds;
+  // Текущий интервал списка: past, today, tomorrow, upcoming.
+  String _currentDateType = EventDateType.today;
+  int? _currentSalesFunnelId;
+  final Map<String, int> _dateTotals = {};
+  int _fetchGeneration = 0;
   DateTime? _currentFromDate;
   DateTime? _currentToDate;
   DateTime? _currentNoticefromDate;
@@ -38,7 +42,6 @@ class EventBloc extends Bloc<EventEvent, EventState> {
         (_currentManagerIds != null && _currentManagerIds!.isNotEmpty);
 
     final bool flagsOrDates =
-        (_currentStatusIds != null) ||
         (_currentFromDate != null) ||
         (_currentToDate != null) ||
         (_currentNoticefromDate != null) ||
@@ -65,9 +68,14 @@ Future<void> _onFetchEvents(
     }
 
     isFetching = true;
+    final generation = ++_fetchGeneration;
+
+    final dateType = (event.dateType != null && event.dateType!.isNotEmpty)
+        ? event.dateType!
+        : _currentDateType;
 
     debugPrint('🔍 EventBloc: _onFetchEvents - START');
-    debugPrint('🔍 EventBloc: statusIds=${event.statusIds}');
+    debugPrint('🔍 EventBloc: dateType=$dateType');
     debugPrint('🔍 EventBloc: salesFunnelId=${event.salesFunnelId}');
 
     try {
@@ -75,56 +83,48 @@ Future<void> _onFetchEvents(
         emit(EventLoading(isFirstFetch: true));
       }
 
-      // Сохраняем параметры текущего запроса
+      // Сохраняем параметры текущего запроса, чтобы подгрузка страниц
+      // оставалась в том же интервале и с теми же фильтрами.
       _currentQuery = event.query;
       _currentManagerIds = event.managerIds;
-      _currentStatusIds = event.statusIds;
+      _currentDateType = dateType;
+      if (event.salesFunnelId != null) {
+        _currentSalesFunnelId = event.salesFunnelId;
+      }
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
       _currentNoticefromDate = event.noticefromDate;
       _currentNoticetoDate = event.noticetoDate;
 
-      // КРИТИЧНО: Восстанавливаем ВСЕ постоянные счетчики
-      final allPersistentCounts = await EventCache.getPersistentEventCounts();
-      for (String statusIdStr in allPersistentCounts.keys) {
-        int statusId = int.parse(statusIdStr);
-        int count = allPersistentCounts[statusIdStr] ?? 0;
-        _eventCounts[statusId] = count;
-      }
-
-      debugPrint('✅ EventBloc: Restored persistent counts: $_eventCounts');
-
-      List<NoticeEvent> events = [];
-
       if (await _checkInternetConnection()) {
         debugPrint('📡 EventBloc: Internet available, fetching from API');
 
-        events = await apiService.getEvents(
-          page: 1, 
+        final page = await apiService.getEvents(
+          page: 1,
           perPage: _perPage,
           search: event.query,
           managers: event.managerIds,
-          statuses: event.statusIds,
+          dateType: dateType,
           fromDate: event.fromDate,
           toDate: event.toDate,
           noticefromDate: event.noticefromDate,
           noticetoDate: event.noticetoDate,
-          salesFunnelId: event.salesFunnelId,
+          salesFunnelId: event.salesFunnelId ?? _currentSalesFunnelId,
         );
 
-        debugPrint('✅ EventBloc: Fetched ${events.length} events from API for status ${event.statusIds}');
+        debugPrint(
+            '✅ EventBloc: Fetched ${page.events.length}/${page.total} events for $dateType');
 
-        // Сохраняем счётчик
-        if (event.statusIds != null) {
-          _eventCounts[event.statusIds!] = events.length;
-          await EventCache.setPersistentEventCount(event.statusIds!, events.length);
-        }
-
+        _dateTotals[dateType] = page.total;
         emit(EventDataLoaded(
-          events: events,
+          events: page.events,
           currentPage: 1,
-          hasReachedEnd: events.length < _perPage,
+          hasReachedEnd:
+              page.events.length < _perPage || page.events.length >= page.total,
           eventCounts: Map.from(_eventCounts),
+          total: page.total,
+          dateType: dateType,
+          dateTotals: Map.from(_dateTotals),
         ));
       } else {
         debugPrint('❌ EventBloc: No internet connection');
@@ -134,7 +134,10 @@ Future<void> _onFetchEvents(
       debugPrint('❌ EventBloc: _onFetchEvents - Error: $e');
       emit(EventError('Не удалось загрузить события: $e'));
     } finally {
-      isFetching = false;
+      // Не снимаем флаг чужого запроса, если вкладку уже переключили.
+      if (_fetchGeneration == generation) {
+        isFetching = false;
+      }
       debugPrint('🏁 EventBloc: _onFetchEvents - FINISHED');
     }
   }
@@ -148,24 +151,36 @@ Future<void> _onFetchEvents(
       if (currentState is EventDataLoaded) {
         if (currentState.hasReachedEnd) return;
 
-        // Keep existing events visible while loading more
+        // Следующая страница того же интервала и тех же фильтров.
         final nextPage = currentState.currentPage + 1;
-        final newEvents = await apiService.getEvents(
+        final dateType = event.dateType ?? _currentDateType;
+        final page = await apiService.getEvents(
           page: nextPage,
           perPage: _perPage,
-          search: event.query,
-          managers: event.managerIds,
+          search: event.query ?? _currentQuery,
+          managers: event.managerIds ?? _currentManagerIds,
+          dateType: dateType,
+          fromDate: _currentFromDate,
+          toDate: _currentToDate,
+          noticefromDate: _currentNoticefromDate,
+          noticetoDate: _currentNoticetoDate,
+          salesFunnelId: _currentSalesFunnelId,
         );
 
-        if (newEvents.isEmpty) {
+        if (page.events.isEmpty) {
           emit(currentState.copyWith(hasReachedEnd: true));
           return;
         }
 
-        emit(EventDataLoaded(
-          events: [...currentState.events, ...newEvents],
+        final merged = [...currentState.events, ...page.events];
+        emit(currentState.copyWith(
+          events: merged,
           currentPage: nextPage,
-          hasReachedEnd: newEvents.length < _perPage,
+          hasReachedEnd:
+              page.events.length < _perPage || merged.length >= page.total,
+          total: page.total,
+          dateType: dateType,
+          dateTotals: Map.from(_dateTotals),
         ));
       }
     } catch (e) {
@@ -183,6 +198,8 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
       body: event.body,
       leadId: event.leadId,
       date: event.date,
+      timeFrom: event.timeFrom,
+      timeTo: event.timeTo,
       sendNotification: event.sendNotification,
       sendSms: event.sendSms,
       users: event.users,
@@ -192,7 +209,7 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
     if (result['success']) {
       emit(EventSuccess(
           event.localizations.translate('notice_created_successfully')));
-      add(FetchEvents());
+      add(FetchEvents(dateType: _currentDateType));
     } else {
       emit(EventError(event.localizations.translate(result['message'])));
     }
@@ -210,6 +227,8 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
         body: event.body,
         leadId: event.leadId,
         date: event.date,
+        timeFrom: event.timeFrom,
+        timeTo: event.timeTo,
         sendNotification: event.sendNotification,
         sendSms: event.sendSms,
         users: event.users,
@@ -220,7 +239,7 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
       if (result['success']) {
         emit(EventUpdateSuccess(
             event.localizations.translate('')));
-        add(FetchEvents());
+        add(FetchEvents(dateType: _currentDateType));
       } else {
         emit(
             EventUpdateError(event.localizations.translate(result['message'])));
@@ -240,7 +259,7 @@ Future<void> _createNotice(CreateNotice event, Emitter<EventState> emit) async {
       if (response['result'] == 'Success') {
         emit(EventSuccess(
             event.localizations.translate('notice_deleted_successfully')));
-        add(FetchEvents());
+        add(FetchEvents(dateType: _currentDateType));
       } else {
         emit(EventError(event.localizations.translate('error_delete_notice')));
       }
@@ -258,7 +277,7 @@ Future<void> _finishNotice(
     if (response['result'] == 'Success') {
       emit(EventSuccess(
           event.localizations.translate('notice_finished_successfully')));
-      add(FetchEvents());
+      add(FetchEvents(dateType: _currentDateType));
     } else {
       emit(EventError(event.localizations.translate('error_finish_notice')));
     }
@@ -274,70 +293,65 @@ Future<void> _finishNotice(
     Emitter<EventState> emit,
   ) async {
     debugPrint('🔍 EventBloc: _onFetchEventsWithFilters - START');
+    final generation = ++_fetchGeneration;
+    isFetching = true;
 
     emit(EventLoading(isFirstFetch: true));
 
     try {
-      // Сохраняем фильтры
+      final dateType = (event.dateType != null && event.dateType!.isNotEmpty)
+          ? event.dateType!
+          : _currentDateType;
+
+      // Фильтры менеджера и дат накладываются на текущий интервал.
       _currentQuery = null;
       _currentManagerIds = event.managerIds;
-      _currentStatusIds = event.statusIds;
+      _currentDateType = dateType;
+      if (event.salesFunnelId != null) {
+        _currentSalesFunnelId = event.salesFunnelId;
+      }
       _currentFromDate = event.fromDate;
       _currentToDate = event.toDate;
       _currentNoticefromDate = event.noticefromDate;
       _currentNoticetoDate = event.noticetoDate;
 
-      debugPrint('✅ EventBloc: Filters saved to bloc state');
+      debugPrint('✅ EventBloc: Filters saved, dateType=$dateType');
+      _dateTotals.clear();
 
-      // Загружаем события для активных (statusIds = 1)
-      final activeEvents = await apiService.getEvents(
+      final page = await apiService.getEvents(
         page: 1,
         perPage: _perPage,
         managers: event.managerIds,
-        statuses: 1, // Активные
+        dateType: dateType,
         fromDate: event.fromDate,
         toDate: event.toDate,
         noticefromDate: event.noticefromDate,
         noticetoDate: event.noticetoDate,
-        salesFunnelId: event.salesFunnelId,
+        salesFunnelId: event.salesFunnelId ?? _currentSalesFunnelId,
       );
 
-      // Загружаем события для завершённых (statusIds = 2)
-      final completedEvents = await apiService.getEvents(
-        page: 1,
-        perPage: _perPage,
-        managers: event.managerIds,
-        statuses: 2, // Завершённые
-        fromDate: event.fromDate,
-        toDate: event.toDate,
-        noticefromDate: event.noticefromDate,
-        noticetoDate: event.noticetoDate,
-        salesFunnelId: event.salesFunnelId,
-      );
+      debugPrint(
+          '✅ EventBloc: Loaded ${page.events.length}/${page.total} filtered events');
 
-      // Обновляем счётчики
-      _eventCounts[1] = activeEvents.length;
-      _eventCounts[2] = completedEvents.length;
-      
-      await EventCache.setPersistentEventCount(1, activeEvents.length);
-      await EventCache.setPersistentEventCount(2, completedEvents.length);
-
-      debugPrint('✅ EventBloc: Loaded ${activeEvents.length} active and ${completedEvents.length} completed events');
-
-      // Эмитим состояние с событиями для текущего таба (по умолчанию активные)
-      final currentStatusId = event.statusIds ?? 1;
-      final currentEvents = currentStatusId == 1 ? activeEvents : completedEvents;
-
+      _dateTotals[dateType] = page.total;
       emit(EventDataLoaded(
-        events: currentEvents,
+        events: page.events,
         currentPage: 1,
-        hasReachedEnd: currentEvents.length < _perPage,
+        hasReachedEnd:
+            page.events.length < _perPage || page.events.length >= page.total,
         eventCounts: Map.from(_eventCounts),
+        total: page.total,
+        dateType: dateType,
+        dateTotals: Map.from(_dateTotals),
       ));
 
     } catch (e) {
       debugPrint('❌ EventBloc: _onFetchEventsWithFilters - Error: $e');
       emit(EventError('Не удалось загрузить события с фильтрами: $e'));
+    } finally {
+      if (_fetchGeneration == generation) {
+        isFetching = false;
+      }
     }
   }
 
@@ -351,7 +365,9 @@ Future<void> _finishNotice(
     
     _currentQuery = null;
     _currentManagerIds = null;
-    _currentStatusIds = null;
+    _currentDateType = EventDateType.today;
+    _currentSalesFunnelId = null;
+    _dateTotals.clear();
     _currentFromDate = null;
     _currentToDate = null;
     _currentNoticefromDate = null;

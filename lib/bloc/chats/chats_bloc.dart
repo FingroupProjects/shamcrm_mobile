@@ -45,6 +45,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     on<RefreshChats>(_refetchChatsEvent);
     on<GetNextPageChats>(_getNextPageChatsEvent);
     on<UpdateChatsFromSocket>(_updateChatsFromSocketFetch);
+    on<PatchChatChannelName>(_patchChatChannelName);
     on<DeleteChat>(_deleteChat);
     on<ClearChats>(_clearChatsEvent);
     on<ResetUnreadCount>(_resetUnreadCount);
@@ -371,6 +372,43 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     }
   }
 
+  /// Сокет создал чат без имени канала. Берём channel.name с сервера
+  /// и обновляем только иконку, не перезагружая весь список.
+  Future<void> _loadMissingChannelName(int chatId) async {
+    try {
+      final details = await apiService.getChatById(chatId);
+      if (!details.hasServerChannelName) return;
+      final name = details.channelName.trim();
+      if (name.isEmpty) return;
+      add(PatchChatChannelName(chatId: chatId, channelName: name));
+    } catch (e) {
+      debugPrint('ChatsBloc: channel name lookup failed for $chatId: $e');
+    }
+  }
+
+  void _patchChatChannelName(
+    PatchChatChannelName event,
+    Emitter<ChatsState> emit,
+  ) {
+    if (state is! ChatsLoaded || chatsPagination == null) return;
+    final current = chatsPagination!.data;
+    final index = current.indexWhere((chat) => chat.id == event.chatId);
+    if (index == -1) return;
+    if (current[index].channel.trim().isNotEmpty) return;
+
+    final updated = List<Chats>.from(current);
+    updated[index] = current[index].copyWith(channel: event.channelName);
+    chatsPagination = PaginationDTO(
+      data: updated,
+      count: chatsPagination!.count,
+      total: chatsPagination!.total,
+      perPage: chatsPagination!.perPage,
+      currentPage: chatsPagination!.currentPage,
+      totalPage: chatsPagination!.totalPage,
+    );
+    emit(ChatsLoaded(chatsPagination!));
+  }
+
   // 🔹 ИСПРАВЛЕННЫЙ МЕТОД
   Future<void> _updateChatsFromSocketFetch(
       UpdateChatsFromSocket event, Emitter<ChatsState> emit) async {
@@ -517,6 +555,11 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         updatedChats.insert(0, event.chat);
         debugPrint(
             '=================-=== ChatsBloc._updateChatsFromSocketFetch: Added new chat uniqueId: ${event.chat.uniqueId ?? event.chat.id}, unreadCount: ${event.chat.unreadCount}');
+        // Сокет часто не присылает channel.name. Иконка тогда пустая.
+        // Добираем имя канала отдельным запросом и ставим иконку.
+        if (event.chat.channel.trim().isEmpty && event.chat.id > 0) {
+          unawaited(_loadMissingChannelName(event.chat.id));
+        }
       }
 
       // ПРИМЕНЯЕМ УСЛОВНУЮ СОРТИРОВКУ

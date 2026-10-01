@@ -6,8 +6,9 @@ abstract class EventEvent {}
 class FetchEvents extends EventEvent {
   final bool refresh;
   final String? query;
-  final List<int>? managerIds; 
-  final int? statusIds; 
+  final List<int>? managerIds;
+  /// past | today | tomorrow | upcoming. null — берём последний открытый интервал.
+  final String? dateType;
   final DateTime? fromDate; 
   final DateTime? toDate; 
   final DateTime? noticefromDate; 
@@ -19,7 +20,7 @@ class FetchEvents extends EventEvent {
     this.refresh = false,
     this.query,
     this.managerIds,
-    this.statusIds,
+    this.dateType,
     this.fromDate,
     this.toDate,
     this.noticefromDate,
@@ -31,7 +32,7 @@ class FetchEvents extends EventEvent {
 
 class FetchEventsWithFilters extends EventEvent {
   final List<int>? managerIds;
-  final int? statusIds;
+  final String? dateType;
   final DateTime? fromDate;
   final DateTime? toDate;
   final DateTime? noticefromDate;
@@ -40,7 +41,7 @@ class FetchEventsWithFilters extends EventEvent {
 
   FetchEventsWithFilters({
     this.managerIds,
-    this.statusIds,
+    this.dateType,
     this.fromDate,
     this.toDate,
     this.noticefromDate,
@@ -54,14 +55,22 @@ class FetchMoreEvents extends EventEvent {
   final int currentPage;
   final String? query;
   final List<int>? managerIds;
+  final String? dateType;
 
-  FetchMoreEvents(this.currentPage, {this.query, this.managerIds});
+  FetchMoreEvents(
+    this.currentPage, {
+    this.query,
+    this.managerIds,
+    this.dateType,
+  });
 }
 class CreateNotice extends EventEvent {
   final String? title;
   final String body;
   final int leadId;
   final DateTime? date;
+  final String? timeFrom;
+  final String? timeTo;
   final int sendNotification;
   final int sendSms;
   final List<int> users;
@@ -73,6 +82,8 @@ class CreateNotice extends EventEvent {
     required this.body,
     required this.leadId,
     this.date,
+    this.timeFrom,
+    this.timeTo,
     required this.sendNotification,
     required this.sendSms,
     required this.users,
@@ -87,6 +98,8 @@ class UpdateNotice extends EventEvent {
   final String body;
   final int leadId;
   final DateTime? date;
+  final String? timeFrom;
+  final String? timeTo;
   final int sendNotification;
   final int sendSms;
   final List<int> users;
@@ -100,6 +113,8 @@ class UpdateNotice extends EventEvent {
     required this.body,
     required this.leadId,
    this.date,
+    this.timeFrom,
+    this.timeTo,
     required this.sendNotification,
     required this.sendSms,
     required this.users,

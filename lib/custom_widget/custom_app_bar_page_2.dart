@@ -11,6 +11,7 @@ import 'package:crm_task_manager/models/user/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -371,7 +372,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final client = PusherChannelsClient.websocket(
+    final client = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         if (kDebugMode) {

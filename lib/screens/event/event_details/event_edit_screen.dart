@@ -15,11 +15,11 @@ import 'package:crm_task_manager/bloc/notes/notes_bloc.dart';
 import 'package:crm_task_manager/bloc/notes/notes_event.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
-import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
 import 'package:crm_task_manager/models/event/event_by_Id_model.dart';
 import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
+import 'package:crm_task_manager/screens/event/event_details/notice_schedule_fields.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -48,6 +48,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
   List<int> selectedManagers = [];
   bool sendNotification = false;
   bool sendSms = false;
+  String? timeFrom;
+  String? timeTo;
   bool smsNoticeNotificationEnabled = false;
   bool isLoading = false;
   String? selectedSubject;
@@ -87,12 +89,17 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     super.initState();
     titleController = TextEditingController(text: widget.notice.title);
     bodyController = TextEditingController(text: widget.notice.body);
+    final localDate = widget.notice.date?.toLocal();
     dateController = TextEditingController(
-      text: widget.notice.date != null
-          ? DateFormat('dd/MM/yyyy HH:mm')
-              .format(widget.notice.date!.toLocal())
-          : '',
+      text: localDate != null ? DateFormat('dd/MM/yyyy').format(localDate) : '',
     );
+    timeFrom = widget.notice.timeFrom;
+    timeTo = widget.notice.timeTo;
+    if ((timeFrom == null || timeFrom!.isEmpty) &&
+        localDate != null &&
+        (localDate.hour != 0 || localDate.minute != 0)) {
+      timeFrom = DateFormat('HH:mm').format(localDate);
+    }
 
     selectedLead = widget.notice.lead?.id.toString();
     selectedManagers = widget.notice.users.map((user) => user.id).toList();
@@ -717,11 +724,16 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                CustomTextFieldDate(
-                                  controller: dateController,
-                                  label: AppLocalizations.of(context)!
-                                      .translate('reminder_date'),
-                                  withTime: true,
+                                NoticeScheduleFields(
+                                  dateController: dateController,
+                                  initialTimeFrom: timeFrom,
+                                  initialTimeTo: timeTo,
+                                  onTimeFromChanged: (value) {
+                                    timeFrom = value;
+                                  },
+                                  onTimeToChanged: (value) {
+                                    timeTo = value;
+                                  },
                                 ),
                                 const SizedBox(height: 16),
                                 ManagerMultiSelectWidget(
@@ -850,7 +862,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
 
       DateTime? date;
       if (dateController.text.isNotEmpty) {
-        date = DateFormat('dd/MM/yyyy HH:mm').parse(dateController.text);
+        date = DateFormat('dd/MM/yyyy').parseStrict(dateController.text);
       }
 
       context.read<EventBloc>().add(
@@ -860,6 +872,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
               body: bodyController.text,
               leadId: int.parse(selectedLead!),
               date: date,
+              timeFrom: timeFrom,
+              timeTo: timeTo,
               sendNotification: sendNotification ? 1 : 0,
               sendSms: sendSms ? 1 : 0,
               users: selectedManagers,

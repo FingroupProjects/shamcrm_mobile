@@ -32,6 +32,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -632,7 +633,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       metadata: PusherChannelsOptionsMetadata.byDefault(),
     );
 
-    final socketClient = PusherChannelsClient.websocket(
+    final socketClient = createLoggedPusherClient(
       options: customOptions,
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint('DealScreen: socket connection error: $exception');

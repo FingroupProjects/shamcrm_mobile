@@ -95,6 +95,33 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
   return ChannelSourceKind.unknown;
 }
 
+/// Ключ иконки для любого написания канала.
+/// «Telegram», telegram_bot и телеграм дают одну и ту же картинку.
+String? channelIconKey(String? rawName) {
+  switch (resolveChannelSourceKind(rawName)) {
+    case ChannelSourceKind.telegram:
+      return 'telegram_account';
+    case ChannelSourceKind.whatsapp:
+      return 'whatsapp';
+    case ChannelSourceKind.instagram:
+      return 'instagram';
+    case ChannelSourceKind.youtube:
+      return 'youtube';
+    case ChannelSourceKind.messenger:
+      return 'messenger';
+    case ChannelSourceKind.facebook:
+      return 'facebook';
+    case ChannelSourceKind.email:
+      return 'email';
+    case ChannelSourceKind.phone:
+      return 'phone';
+    case ChannelSourceKind.site:
+      return 'site';
+    case ChannelSourceKind.unknown:
+      return null;
+  }
+}
+
 ChannelSourceLook lookForChannel(ChannelSourceKind kind) {
   switch (kind) {
     case ChannelSourceKind.telegram:

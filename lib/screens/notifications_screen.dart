@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
 import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
@@ -22,6 +23,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
+import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -123,7 +125,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         metadata: PusherChannelsOptionsMetadata.byDefault(),
       );
 
-      final tempSocketClient = PusherChannelsClient.websocket(
+      final tempSocketClient = createLoggedPusherClient(
           options: customOptions,
           connectionErrorHandler:
               (exception, StackTrace trace, void Function() refresh) {});
@@ -1049,22 +1051,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             } catch (_) {}
           }
         }
-      } else if (type == 'notice') {
-        debugPrint('📝 Processing NOTICE type notification');
+      } else if (type == 'notice' || type == 'event' || type == 'eventId') {
+        // Напоминание о событии: modelId — это id события, не лида.
+        debugPrint('📅 Processing EVENT notification, noticeId=$chatId');
 
-        debugPrint('🚀 Pushing lead screen to navigator...');
-        await navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(
-              leadId: chatId.toString(),
-              leadName: '',
-              leadStatus: "",
-              statusId: 1,
+        if (chatId == 0) {
+          debugPrint('❌ Invalid notice id, skip navigation');
+        } else {
+          debugPrint('🚀 Pushing event screen to navigator...');
+          await navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => EventDetailsScreen(
+                noticeId: chatId,
+              ),
             ),
-          ),
-        );
+          );
+        }
 
-        debugPrint('✅ Notice navigation completed');
+        debugPrint('✅ Event navigation completed');
 
         if (mounted) {
           debugPrint('🗑️ Removing notification from list');

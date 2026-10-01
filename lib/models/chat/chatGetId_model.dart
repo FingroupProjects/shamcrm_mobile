@@ -21,6 +21,9 @@ class ChatsGetId {
   // когда отдельный запрос /get-integration отдаёт 404.
   final String? integrationUsername;
   final String? integrationName;
+  // true, только если сервер прислал channel.name.
+  // Пустой канал нельзя подменять Telegram: иначе YouTube получит чужую иконку.
+  final bool hasServerChannelName;
 
   ChatsGetId({
     required this.id,
@@ -38,6 +41,7 @@ class ChatsGetId {
     this.isAiFollowupPaused = false,
     this.integrationUsername,
     this.integrationName,
+    this.hasServerChannelName = false,
   });
 
   factory ChatsGetId.fromJson(Map<String, dynamic> json) {
@@ -127,11 +131,26 @@ class ChatsGetId {
     }
 
     String channelName = '';
-    if (data['type'] == 'lead') {
-      channelName = SafeConverters.toSafeString(
-        SafeConverters.toMapOrNull(data['channel'])?['name'],
-        defaultValue: 'telegram_account',
+    var hasServerChannelName = false;
+    final channelMap = SafeConverters.toMapOrNull(data['channel']);
+    final serverChannelName =
+        SafeConverters.toStringOrNull(channelMap?['name'])?.trim();
+    if (serverChannelName != null && serverChannelName.isNotEmpty) {
+      hasServerChannelName = true;
+      channelName = serverChannelName;
+      // Запоминаем id, чтобы следующий сокет без channel.name
+      // сразу показал ту же иконку.
+      ChatChannelDirectory.remember(
+        channelId: SafeConverters.toIntOrNull(channelMap?['id']) ??
+            SafeConverters.toIntOrNull(data['channel_id']),
+        integrationId: SafeConverters.toIntOrNull(
+              SafeConverters.toMapOrNull(data['integration'])?['id'],
+            ) ??
+            SafeConverters.toIntOrNull(data['integration_id']),
+        name: serverChannelName,
       );
+    } else if (data['type'] == 'lead') {
+      channelName = 'telegram_account';
     }
 
     // Встроенная интеграция канала (например {name, username}).
@@ -167,6 +186,7 @@ class ChatsGetId {
       integrationUsername:
           SafeConverters.toStringOrNull(integrationMap?['username']),
       integrationName: SafeConverters.toStringOrNull(integrationMap?['name']),
+      hasServerChannelName: hasServerChannelName,
     );
   }
 }

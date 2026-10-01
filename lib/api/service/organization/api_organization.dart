@@ -278,6 +278,7 @@ extension ApiOrganizationX on ApiService {
   Future<void> fetchAndCacheUserData() async {
     await AiIntegrationStore.hydrateFromPrefs();
     await GreenApiIntegrationStore.hydrateFromPrefs();
+    await ChangeLeadManagerStore.hydrateFromPrefs();
 
     try {
       final response = await _getRequest('/get-user-data');
@@ -301,11 +302,15 @@ extension ApiOrganizationX on ApiService {
       final hasAi = SafeConverters.toBool(source['has_ai_integration']);
       final hasGreenApi =
           SafeConverters.toBool(source['has_green_api_integration']);
+      // Нет ключа — права менять менеджера лида нет.
+      final canChangeLeadManager =
+          SafeConverters.toBool(source['change_lead_manager']);
       await AiIntegrationStore.save(hasAi);
       await GreenApiIntegrationStore.save(hasGreenApi);
+      await ChangeLeadManagerStore.save(canChangeLeadManager);
 
       debugPrint(
-          'ApiService: has_ai_integration=$hasAi has_green_api_integration=$hasGreenApi');
+          'ApiService: has_ai_integration=$hasAi has_green_api_integration=$hasGreenApi change_lead_manager=$canChangeLeadManager');
     } catch (error) {
       debugPrint('ApiService: fetchAndCacheUserData error: $error');
     }

@@ -125,24 +125,27 @@ extension ApiEventsX on ApiService {
     }
   }
 
-  Future<List<NoticeEvent>> getEvents({
+  Future<NoticeListResult> getEvents({
     int page = 1,
     int perPage = 20,
     String? search,
     List<int>? managers,
-    int? statuses,
+    // Интервал списка. Бэк фильтрует им, отдельного API статусов нет.
+    // past | today | tomorrow | upcoming
+    String dateType = EventDateType.today,
     DateTime? fromDate,
     DateTime? toDate,
     DateTime? noticefromDate,
     DateTime? noticetoDate,
-    int? salesFunnelId, // Новый параметр
+    int? salesFunnelId,
   }) async {
     try {
-      // Формируем базовый путь
-      String path = '/notices?page=$page&per_page=$perPage';
+      // v3/notices — тот же список, что на вебе. date_type режет его по времени.
+      String path =
+          '/v3/notices?page=$page&per_page=$perPage&date_type=$dateType';
 
       if (search != null && search.isNotEmpty) {
-        path += '&search=$search';
+        path += '&search=${Uri.encodeQueryComponent(search)}';
       }
 
       if (managers != null && managers.isNotEmpty) {
@@ -151,12 +154,6 @@ extension ApiEventsX on ApiService {
         }
       }
 
-      if (statuses != null) {
-        path += '&event_status_id=$statuses';
-        bool isFinished = statuses == 2;
-        path +=
-            '&isFinished=${isFinished ? '1' : '0'}'; // Передаем 1 или 0 вместо true/false
-      }
       if (salesFunnelId != null) {
         path += '&sales_funnel_id=$salesFunnelId';
       }
@@ -173,28 +170,53 @@ extension ApiEventsX on ApiService {
         path += '&push_from=$formattedFromDate&push_to=$formattedToDate';
       }
 
-      // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
+      // organization_id и выбранная воронка добавляются здесь же.
       path = await _appendQueryParams(path);
-      if (kDebugMode) {
-        //debugPrint('ApiService: getEvents - Generated path: $path');
-      }
 
       final response = await _getRequest(path);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['result'] != null && data['result']['data'] != null) {
-          return (data['result']['data'] as List)
-              .map((json) => NoticeEvent.fromJson(json))
-              .toList();
-        } else {
-          throw ('Нет данных о событиях в ответе');
+        final result = data['result'];
+
+        List<dynamic> rawItems = const [];
+        int? total;
+
+        if (result is List) {
+          rawItems = result;
+        } else if (result is Map) {
+          final nested = result['data'];
+          if (nested is List) {
+            rawItems = nested;
+          }
+          total = _readNoticeTotal(result['total']) ??
+              _readNoticeTotal(result['pagination']);
         }
+
+        final events = rawItems
+            .whereType<Map>()
+            .map((item) => NoticeEvent.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
+
+        return NoticeListResult(
+          events: events,
+          total: total ?? events.length,
+        );
       } else {
         throw ('Ошибка загрузки событий!');
       }
     } catch (e) {
       throw ('Ошибка загрузки событий');
     }
+  }
+
+  /// total в ответе бывает числом, строкой или вложен в pagination.
+  int? _readNoticeTotal(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is Map) {
+      return _readNoticeTotal(value['total']);
+    }
+    return null;
   }
 
   Future<Notice> getNoticeById(int noticeId) async {
@@ -232,6 +254,8 @@ extension ApiEventsX on ApiService {
     required String body,
     required int leadId,
     DateTime? date,
+    String? timeFrom,
+    String? timeTo,
     required int sendNotification,
     required int sendSms,
     required List<int> users,
@@ -253,12 +277,27 @@ extension ApiEventsX on ApiService {
       request.fields['body'] = body;
       request.fields['lead_id'] = leadId.toString();
       if (date != null) {
-        request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+        // Веб шлёт календарный день отдельно от часов.
+        // Если часов нет, оставляем старый формат: им пользуется напоминание из звонка.
+        final hasClock = (timeFrom != null && timeFrom.isNotEmpty) ||
+            (timeTo != null && timeTo.isNotEmpty);
+        request.fields['date'] = DateFormat(
+          hasClock ? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm',
+        ).format(date);
+      }
+      if (timeFrom != null && timeFrom.isNotEmpty) {
+        request.fields['time_from'] = timeFrom;
+      }
+      if (timeTo != null && timeTo.isNotEmpty) {
+        request.fields['time_to'] = timeTo;
       }
       request.fields['send_notification'] = sendNotification.toString();
       request.fields['send_sms'] = sendSms.toString();
 
-      // Добавляем массив users
+      // Кому: первый выбранный и есть manager_id, как в запросе веба.
+      if (users.isNotEmpty) {
+        request.fields['manager_id'] = users.first.toString();
+      }
       for (int i = 0; i < users.length; i++) {
         request.fields['users[$i]'] = users[i].toString();
       }
@@ -303,6 +342,8 @@ extension ApiEventsX on ApiService {
     required int leadId,
     int? dealId,
     DateTime? date,
+    String? timeFrom,
+    String? timeTo,
     required int sendNotification,
     required int sendSms,
     required List<int> users,
@@ -324,13 +365,24 @@ extension ApiEventsX on ApiService {
     if (dealId != null) {
       request.fields['deal_id'] = dealId.toString();
     }
-    if (date != null)
-      request.fields['date'] = DateFormat('yyyy-MM-dd HH:mm').format(date);
+    if (date != null) {
+      final hasClock = (timeFrom != null && timeFrom.isNotEmpty) ||
+          (timeTo != null && timeTo.isNotEmpty);
+      request.fields['date'] = DateFormat(
+        hasClock ? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm',
+      ).format(date);
+    }
+    if (timeFrom != null && timeFrom.isNotEmpty) {
+      request.fields['time_from'] = timeFrom;
+    }
+    if (timeTo != null && timeTo.isNotEmpty) {
+      request.fields['time_to'] = timeTo;
+    }
     request.fields['send_notification'] = sendNotification.toString();
     request.fields['send_sms'] = sendSms.toString();
 
-    // Добавляем пользователей
     if (users.isNotEmpty) {
+      request.fields['manager_id'] = users.first.toString();
       for (int i = 0; i < users.length; i++) {
         request.fields['users[$i]'] = users[i].toString();
       }

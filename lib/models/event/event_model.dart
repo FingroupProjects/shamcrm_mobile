@@ -192,6 +192,9 @@ class NoticeEvent {
   final String title;
   final String body;
   final DateTime? date;
+  /// Часы начала, как на вебе: «14:36». Дата хранится отдельно.
+  final String? timeFrom;
+  final String? timeTo;
   final NoticeLead lead;
   final NoticeAuthor author;
   final List<NoticeUser> users;
@@ -206,6 +209,8 @@ class NoticeEvent {
     required this.title,
     required this.body,
     this.date,
+    this.timeFrom,
+    this.timeTo,
     required this.lead,
     required this.author,
     required this.users,
@@ -222,6 +227,8 @@ class NoticeEvent {
       title: json['title'] ?? '',
       body: json['body'] ?? '',
       date: json['date'] != null ? DateTime.parse(json['date']) : null,
+      timeFrom: noticeClockOrNull(json['time_from']),
+      timeTo: noticeClockOrNull(json['time_to']),
       lead: NoticeLead.fromJson(json['lead'] ?? {}),
       author: NoticeAuthor.fromJson(json['author'] ?? {}),
       users: (json['users'] as List? ?? [])
@@ -235,4 +242,33 @@ class NoticeEvent {
       canFinish: json['can_finish'] ?? false,
     );
   }
+}
+
+/// Страница списка событий.
+/// Бэк не отдаёт справочник статусов: интервал приходит через date_type,
+/// а total — общее число событий в этом интервале.
+String? noticeClockOrNull(dynamic value) {
+  final text = value?.toString().trim() ?? '';
+  if (text.isEmpty || text == 'null') return null;
+  return text;
+}
+
+class NoticeListResult {
+  final List<NoticeEvent> events;
+  final int total;
+
+  const NoticeListResult({
+    required this.events,
+    required this.total,
+  });
+}
+
+/// Интервалы раздела «События». Значения совпадают с query date_type у v3/notices.
+class EventDateType {
+  static const String past = 'past';
+  static const String today = 'today';
+  static const String tomorrow = 'tomorrow';
+  static const String upcoming = 'upcoming';
+
+  static const List<String> values = [past, today, tomorrow, upcoming];
 }
