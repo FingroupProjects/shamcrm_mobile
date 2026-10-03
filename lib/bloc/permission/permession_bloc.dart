@@ -45,70 +45,80 @@ class PermissionsBloc extends Bloc<PermissionsEvent, PermissionsState> {
 
         await apiService.savePermissions(permissions);
 
-        // ✅ ИЗМЕНЕНО: Запрос локализации синхронно (await), чтобы применялось сразу
-        await _fetchAndApplyLocalization();
-
-        // Sync permissions to iOS widget via App Groups
-        await WidgetService.syncPermissionsToWidget(permissions);
-
-        // Sync visibility flags to Android widget
-        final hasWarehouseDocumentAccess =
-            permissions.contains('accounting_of_goods') ||
-                permissions.contains('accounting_money') ||
-                permissions.contains('income_document.read') ||
-                permissions.contains('movement_document.read') ||
-                permissions.contains('manufacture.read') ||
-                permissions.contains('manufacture_document.read') ||
-                permissions.contains('write_off_document.read') ||
-                permissions.contains('expense_document.read') ||
-                permissions.contains('client_return_document.read') ||
-                permissions.contains('supplier_return_document.read') ||
-                permissions.contains('checking_account_pko.read') ||
-                permissions.contains('checking_account_rko.read');
-        final hasWarehouseReferenceAccess =
-            permissions.contains('storage.read') ||
-                permissions.contains('unit.read') ||
-                permissions.contains('supplier.read') ||
-                permissions.contains('product.read') ||
-                permissions.contains('price_type.read') ||
-                permissions.contains('category.read') ||
-                permissions.contains('lead.read') ||
-                permissions.contains('initial_balance.read') ||
-                permissions.contains('cash_register.read') ||
-                permissions.contains('rko_article.read') ||
-                permissions.contains('pko_article.read');
-        final hasWarehouseAccess =
-            hasWarehouseDocumentAccess || hasWarehouseReferenceAccess;
-
-        // Orders - visible when user has any order.* permission and warehouse access
-        final hasAnyOrderAccess =
-            permissions.any((permission) => permission.startsWith('order.'));
-        final hasOrdersAccess = hasAnyOrderAccess && hasWarehouseAccess;
-
-        // Online Store - visible when user has access to categories/products/orders without warehouse access
-        final hasOnlineStoreFeatureAccess =
-            permissions.contains('category.read') ||
-                permissions.contains('product.read') ||
-                hasAnyOrderAccess;
-        final hasOnlineStoreAccess =
-            hasOnlineStoreFeatureAccess && !hasWarehouseAccess;
-
-        await WidgetService.syncWidgetVisibilityToAndroid({
-          'dashboard': permissions.contains('section.dashboard') ||
-              permissions.contains('accounting_dashboard'),
-          'tasks': permissions.contains('task.read'),
-          'leads': permissions.contains('lead.read'),
-          'deals': permissions.contains('deal.read'),
-          'chats': true, // Chats always visible
-          'warehouse': hasWarehouseAccess,
-          'orders': hasOrdersAccess,
-          'online_store': hasOnlineStoreAccess,
-        });
-
-        // Also sync current language to widget
-        await LanguageManager.syncCurrentLanguageToWidget();
-
+        // Меню строится сразу по этим правам.
+        // Локализация и виджеты догружаются следом и не держат вход.
         emit(PermissionsLoaded(permissionModels));
+
+        try {
+          // ✅ ИЗМЕНЕНО: Запрос локализации синхронно (await), чтобы применялось сразу
+          await _fetchAndApplyLocalization();
+
+          // Sync permissions to iOS widget via App Groups
+          await WidgetService.syncPermissionsToWidget(permissions);
+
+          // Sync visibility flags to Android widget
+          final hasWarehouseDocumentAccess =
+              permissions.contains('accounting_of_goods') ||
+                  permissions.contains('accounting_money') ||
+                  permissions.contains('income_document.read') ||
+                  permissions.contains('movement_document.read') ||
+                  permissions.contains('manufacture.read') ||
+                  permissions.contains('manufacture_document.read') ||
+                  permissions.contains('write_off_document.read') ||
+                  permissions.contains('expense_document.read') ||
+                  permissions.contains('client_return_document.read') ||
+                  permissions.contains('supplier_return_document.read') ||
+                  permissions.contains('checking_account_pko.read') ||
+                  permissions.contains('checking_account_rko.read');
+          final hasWarehouseReferenceAccess =
+              permissions.contains('storage.read') ||
+                  permissions.contains('unit.read') ||
+                  permissions.contains('supplier.read') ||
+                  permissions.contains('product.read') ||
+                  permissions.contains('price_type.read') ||
+                  permissions.contains('category.read') ||
+                  permissions.contains('lead.read') ||
+                  permissions.contains('initial_balance.read') ||
+                  permissions.contains('cash_register.read') ||
+                  permissions.contains('rko_article.read') ||
+                  permissions.contains('pko_article.read');
+          final hasWarehouseAccess =
+              hasWarehouseDocumentAccess || hasWarehouseReferenceAccess;
+
+          // Orders - visible when user has any order.* permission and warehouse access
+          final hasAnyOrderAccess =
+              permissions.any((permission) => permission.startsWith('order.'));
+          final hasOrdersAccess = hasAnyOrderAccess && hasWarehouseAccess;
+
+          // Online Store - visible when user has access to categories/products/orders without warehouse access
+          final hasOnlineStoreFeatureAccess =
+              permissions.contains('category.read') ||
+                  permissions.contains('product.read') ||
+                  hasAnyOrderAccess;
+          final hasOnlineStoreAccess =
+              hasOnlineStoreFeatureAccess && !hasWarehouseAccess;
+
+          await WidgetService.syncWidgetVisibilityToAndroid({
+            'dashboard': permissions.contains('section.dashboard') ||
+                permissions.contains('accounting_dashboard'),
+            'tasks': permissions.contains('task.read'),
+            'leads': permissions.contains('lead.read'),
+            'deals': permissions.contains('deal.read'),
+            'chats': true, // Chats always visible
+            'warehouse': hasWarehouseAccess,
+            'orders': hasOrdersAccess,
+            'online_store': hasOnlineStoreAccess,
+          });
+
+          // Also sync current language to widget
+          await LanguageManager.syncCurrentLanguageToWidget();
+        } catch (e) {
+          // Права уже применены. Сбой виджета или локализации не должен
+          // снова показывать ошибку входа.
+          if (kDebugMode) {
+            debugPrint('PermissionsBloc: фоновая синхронизация после прав: $e');
+          }
+        }
         return; // Успешно загружено, выходим
       } catch (e) {
         // Проверяем, является ли это сетевой ошибкой

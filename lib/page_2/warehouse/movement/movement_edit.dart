@@ -632,6 +632,8 @@ class _EditMovementDocumentScreenState extends State<EditMovementDocumentScreen>
           _buildDateField(localizations),
           const SizedBox(height: 16),
           DualStorageWidget(
+            // В перемещении склады берём из api/storage-all.
+            useAllStorages: true,
             selectedSenderStorage: _selectedSenderStorage,
             selectedRecipientStorage: _selectedRecipientStorage,
             hasSenderError: _senderStorageError,

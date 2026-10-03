@@ -32,15 +32,6 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showManualInput = false;
   bool _showPasswordField = false;
   String _verifiedLogin = '';
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkDomainAsync();
-    });
-  }
 
   @override
   void dispose() {
@@ -52,19 +43,6 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isValidEmail(String email) {
     return RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         .hasMatch(email);
-  }
-
-  Future<void> _checkDomainAsync() async {
-    try {
-      await context.read<ApiService>().isDomainChecked();
-    } catch (_) {
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   Future<void> _openQrScanner(AppLocalizations localizations) async {
@@ -146,37 +124,6 @@ class _AuthScreenState extends State<AuthScreen> {
     if (localizations == null) {
       return const Scaffold(
         body: Center(child: Text('Localization not available')),
-      );
-    }
-
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: colors.backgroundPrimary,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            const AppBackgroundOverlay(preset: AppBackgroundPreset.aurora),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    localizations.translate('configuration_check'),
-                    style: textStyles.bodyLg.copyWith(
-                      fontSize: 16,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       );
     }
 
@@ -378,8 +325,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                   if (email.isEmpty) {
                                     showCustomSnackBar(
                                       context: context,
-                                      message:
-                                          localizations.translate('enter_email'),
+                                      message: localizations
+                                          .translate('enter_email'),
                                       isSuccess: false,
                                     );
                                   } else if (!_isValidEmail(email)) {

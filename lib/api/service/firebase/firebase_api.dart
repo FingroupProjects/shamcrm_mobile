@@ -107,9 +107,17 @@ Map<String, dynamic>? _normalizeIncomingCallPushData(
 
 int? _incomingPushIssuedAtMs(Map<String, dynamic> data) {
   const keys = <String>[
-    'call_started_at_ms', 'created_at_ms', 'sent_at_ms', 'issued_at_ms',
-    'timestamp_ms', 'call_started_at', 'created_at', 'sent_at', 'issued_at',
-    'timestamp', 'google.sent_time',
+    'call_started_at_ms',
+    'created_at_ms',
+    'sent_at_ms',
+    'issued_at_ms',
+    'timestamp_ms',
+    'call_started_at',
+    'created_at',
+    'sent_at',
+    'issued_at',
+    'timestamp',
+    'google.sent_time',
   ];
   for (final key in keys) {
     final value = data[key];
@@ -331,6 +339,10 @@ class FirebaseApi {
   Future<void> initPushNotification() async {
     try {
       _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (_initialMessage != null) {
+        // Сообщение, которым открыли приложение, не должно ждать отдельный экран.
+        await handleMessage(_initialMessage);
+      }
       await _recoverPendingIncomingCallPushIfNeeded();
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
@@ -395,7 +407,9 @@ class FirebaseApi {
     final type = message.data['type']?.toString();
     // Android chat already posts a native heads-up from ChatQuickReplyManager.
     if (Platform.isAndroid &&
-        (type == 'message' || type == 'chat_message' || type == 'new_message')) {
+        (type == 'message' ||
+            type == 'chat_message' ||
+            type == 'new_message')) {
       return;
     }
 
@@ -423,7 +437,8 @@ class FirebaseApi {
     }
 
     try {
-      await _pushChannel.invokeMethod<void>('showForegroundPush', <String, dynamic>{
+      await _pushChannel
+          .invokeMethod<void>('showForegroundPush', <String, dynamic>{
         'title': title.isEmpty ? 'shamCRM' : title,
         'body': body,
         'type': type,
@@ -557,7 +572,8 @@ class FirebaseApi {
 
       if (_isIncomingCallPushData(data)) {
         await _handleIncomingCallPushMessage(
-          RemoteMessage(data: data.map((key, value) => MapEntry(key, value.toString()))),
+          RemoteMessage(
+              data: data.map((key, value) => MapEntry(key, value.toString()))),
           source: 'handle_message',
           openSipScreen: true,
         );
@@ -1200,7 +1216,8 @@ class FirebaseApi {
 
   // ✅ АНАЛОГИЧНО для остальных методов навигации - используем _apiService
 
-  Future<void> navigateToTaskScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToTaskScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       debugPrint('📋 NAVIGATE TO TASK SCREEN: id=$id');
 
@@ -1268,7 +1285,8 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToLeadScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToLeadScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       debugPrint('👤 NAVIGATE TO LEAD SCREEN: id=$id');
 
@@ -1298,7 +1316,8 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToMyTaskScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToMyTaskScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       final myTaskId = _pickPushValue(data, <String>['id', 'task_id']) ?? id;
       final taskNumber = int.tryParse(
@@ -1324,7 +1343,8 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToEventScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToEventScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       // Сначала event_id / notice_id. Поле id может оказаться id лида.
       final eventId = int.tryParse(
@@ -1345,7 +1365,8 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToDealScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToDealScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       final dealId = _pickPushValue(data, <String>['id', 'deal_id']) ?? id;
       if (dealId.isNotEmpty && navigatorKey.currentState != null) {
@@ -1367,7 +1388,8 @@ class FirebaseApi {
     }
   }
 
-  Future<void> navigateToOrdersScreen(String id, Map<String, dynamic> data) async {
+  Future<void> navigateToOrdersScreen(
+      String id, Map<String, dynamic> data) async {
     try {
       final orderId = int.tryParse(
         _pickPushValue(data, <String>['id', 'order_id']) ?? id,

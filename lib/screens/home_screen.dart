@@ -698,9 +698,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final cachedProfileImage = userId.isEmpty
         ? ''
         : (prefs.getString('userProfileImage_$userId') ?? '');
-    final userName = prefs.getString('userNameProfile') ??
-        prefs.getString('userName') ??
-        '';
+    final userName =
+        prefs.getString('userNameProfile') ?? prefs.getString('userName') ?? '';
     final userImage = prefs.getString('userImage') ?? cachedProfileImage;
     if (!mounted) return;
     setState(() {
@@ -1003,19 +1002,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Ждем загрузки разрешений из PermissionsBloc
     final permissionsBloc = context.read<PermissionsBloc>();
+    var useCachedPermissions = false;
+    var savedPermissions = <String>[];
 
-    // Если разрешения еще не загружены, загружаем их
+    // Если разрешения еще не загружены, сначала берём прошлый кэш.
+    // Свежий ответ сервера придёт следом и обновит меню, если права изменились.
     if (permissionsBloc.state is! PermissionsLoaded &&
         permissionsBloc.state is! PermissionsNoAccess) {
-      permissionsBloc.add(FetchPermissionsEvent());
-      // Ждем загрузки разрешений (включая новые состояния)
-      await permissionsBloc.stream.firstWhere(
-        (state) =>
-            state is PermissionsLoaded ||
-            state is PermissionsError ||
-            state is PermissionsNoAccess ||
-            state is PermissionsNetworkError,
-      );
+      if (permissionsBloc.state is! PermissionsNetworkError) {
+        savedPermissions = await context.read<ApiService>().getPermissions();
+      }
+      if (savedPermissions.isNotEmpty) {
+        useCachedPermissions = true;
+        permissionsBloc.add(FetchPermissionsEvent());
+      } else {
+        permissionsBloc.add(FetchPermissionsEvent());
+        await permissionsBloc.stream.firstWhere(
+          (state) =>
+              state is PermissionsLoaded ||
+              state is PermissionsError ||
+              state is PermissionsNoAccess ||
+              state is PermissionsNetworkError,
+        );
+        savedPermissions = <String>[];
+      }
     }
 
     if (!mounted) return;
@@ -1042,7 +1052,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // ✅ Если сетевая ошибка - не показываем экран "нет доступа", используем сохраненные permissions
     bool isNetworkError = permissionsBloc.state is PermissionsNetworkError;
-    List<String> savedPermissions = [];
 
     if (isNetworkError) {
       if (kDebugMode) {
@@ -1075,16 +1084,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     // Проверяем разрешения из PermissionsBloc или сохраненные permissions
+    final useSavedPermissions =
+        (isNetworkError || useCachedPermissions) && savedPermissions.isNotEmpty;
+
     bool hasPermission(String permission) {
-      if (isNetworkError && savedPermissions.isNotEmpty) {
-        // При сетевой ошибке используем сохраненные permissions
+      if (useSavedPermissions) {
+        // При сетевой ошибке или быстром входе используем сохраненные permissions
         return savedPermissions.contains(permission);
       }
       return permissionsBloc.hasPermission(permission);
     }
 
     bool hasAnyPermissionWithPrefix(String prefix) {
-      final allPermissions = isNetworkError && savedPermissions.isNotEmpty
+      final allPermissions = useSavedPermissions
           ? savedPermissions
           : permissionsBloc.getAllPermissions();
       return allPermissions.any((permission) => permission.startsWith(prefix));
@@ -1392,8 +1404,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     // чтобы загрузка графика не двигала верхний край панели.
                     height: 60 + MediaQuery.of(context).viewPadding.bottom,
                     child: ValueListenableBuilder<ChatUnreadCounts>(
-                      valueListenable:
-                          ChatUnreadCounterService.instance.counts,
+                      valueListenable: ChatUnreadCounterService.instance.counts,
                       builder: (context, chatCounts, _) {
                         final unreadCountsGroup1 = _navBarTitleKeysGroup1
                             .map((key) =>
@@ -1408,62 +1419,62 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           switchOutCurve: Curves.easeInCubic,
                           child: _isInitialized && hasNavBarItems
                               ? MyNavBar(
-                                key: const ValueKey('main_nav_bar'),
-                                currentIndexGroup1: _selectedIndexGroup1,
-                                currentIndexGroup2: _selectedIndexGroup2,
-                                onItemSelected: (groupIndex, itemIndex) {
-                                  if (_showProfileScreen) {
-                                    showCustomSnackBar(
-                                      context: context,
-                                      message: AppLocalizations.of(context)!
-                                          .translate('workday_start_first'),
-                                      isSuccess: false,
-                                    );
-                                    return;
-                                  }
-
-                                  final now = DateTime.now();
-                                  if (_lastPermissionUpdate == null ||
-                                      now.difference(_lastPermissionUpdate!) >
-                                          const Duration(seconds: 5)) {
-                                    context
-                                        .read<PermissionsBloc>()
-                                        .add(FetchPermissionsEvent());
-                                    _lastPermissionUpdate = now;
-                                  }
-
-                                  _refreshChatUnreadCounters();
-
-                                  setState(() {
-                                    _showProfileScreen = false;
-                                    if (groupIndex == 1) {
-                                      _selectedIndexGroup1 = itemIndex;
-                                      _selectedIndexGroup2 = -1;
-                                    } else if (groupIndex == 2) {
-                                      _selectedIndexGroup2 = itemIndex;
-                                      _selectedIndexGroup1 = -1;
+                                  key: const ValueKey('main_nav_bar'),
+                                  currentIndexGroup1: _selectedIndexGroup1,
+                                  currentIndexGroup2: _selectedIndexGroup2,
+                                  onItemSelected: (groupIndex, itemIndex) {
+                                    if (_showProfileScreen) {
+                                      showCustomSnackBar(
+                                        context: context,
+                                        message: AppLocalizations.of(context)!
+                                            .translate('workday_start_first'),
+                                        isSuccess: false,
+                                      );
+                                      return;
                                     }
-                                  });
-                                },
-                                navBarTitlesGroup1: _navBarTitleKeysGroup1
-                                    .map((key) => key.isEmpty
-                                        ? ''
-                                        : AppLocalizations.of(context)!
-                                            .translate(key))
-                                    .toList(),
-                                navBarTitlesGroup2: _navBarTitleKeysGroup2
-                                    .map((key) => key.isEmpty
-                                        ? ''
-                                        : AppLocalizations.of(context)!
-                                            .translate(key))
-                                    .toList(),
-                                activeIconsGroup1: _activeIconsGroup1,
-                                activeIconsGroup2: _activeIconsGroup2,
-                                inactiveIconsGroup1: _inactiveIconsGroup1,
-                                inactiveIconsGroup2: _inactiveIconsGroup2,
-                                unreadCountsGroup1: unreadCountsGroup1,
-                                unreadCountsGroup2: unreadCountsGroup2,
-                              )
+
+                                    final now = DateTime.now();
+                                    if (_lastPermissionUpdate == null ||
+                                        now.difference(_lastPermissionUpdate!) >
+                                            const Duration(seconds: 5)) {
+                                      context
+                                          .read<PermissionsBloc>()
+                                          .add(FetchPermissionsEvent());
+                                      _lastPermissionUpdate = now;
+                                    }
+
+                                    _refreshChatUnreadCounters();
+
+                                    setState(() {
+                                      _showProfileScreen = false;
+                                      if (groupIndex == 1) {
+                                        _selectedIndexGroup1 = itemIndex;
+                                        _selectedIndexGroup2 = -1;
+                                      } else if (groupIndex == 2) {
+                                        _selectedIndexGroup2 = itemIndex;
+                                        _selectedIndexGroup1 = -1;
+                                      }
+                                    });
+                                  },
+                                  navBarTitlesGroup1: _navBarTitleKeysGroup1
+                                      .map((key) => key.isEmpty
+                                          ? ''
+                                          : AppLocalizations.of(context)!
+                                              .translate(key))
+                                      .toList(),
+                                  navBarTitlesGroup2: _navBarTitleKeysGroup2
+                                      .map((key) => key.isEmpty
+                                          ? ''
+                                          : AppLocalizations.of(context)!
+                                              .translate(key))
+                                      .toList(),
+                                  activeIconsGroup1: _activeIconsGroup1,
+                                  activeIconsGroup2: _activeIconsGroup2,
+                                  inactiveIconsGroup1: _inactiveIconsGroup1,
+                                  inactiveIconsGroup2: _inactiveIconsGroup2,
+                                  unreadCountsGroup1: unreadCountsGroup1,
+                                  unreadCountsGroup2: unreadCountsGroup2,
+                                )
                               : const NavBarShimmerSkeleton(
                                   key: ValueKey('nav_bar_skeleton'),
                                 ),

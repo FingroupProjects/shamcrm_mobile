@@ -1,5 +1,4 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
-import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/storage_bloc/storage_state.dart';
@@ -22,6 +21,11 @@ class DualStorageWidget extends StatefulWidget {
   final String? recipientLabel;
   final String? recipientHint;
 
+  /// true — список складов с api/storage-all.
+  /// Нужен только документу «Перемещение».
+  /// Остальные документы оставляют false и ходят в api/storage.
+  final bool useAllStorages;
+
   const DualStorageWidget({
     Key? key,
     this.selectedSenderStorage,
@@ -34,6 +38,7 @@ class DualStorageWidget extends StatefulWidget {
     this.senderHint,
     this.recipientLabel,
     this.recipientHint,
+    this.useAllStorages = false,
   }) : super(key: key);
 
   @override
@@ -49,13 +54,11 @@ class _DualStorageWidgetState extends State<DualStorageWidget> {
   @override
   void initState() {
     super.initState();
-    _fetchStorages();
-  }
-
-  Future<void> _fetchStorages() async {
-    final useAll = await ApiService().isFuzaylovazamTenant();
-    if (!mounted) return;
-    context.read<StorageBloc>().add(FetchStorage(useAll: useAll));
+    // Перемещение передаёт useAllStorages: true → api/storage-all.
+    // Производство и остальные места остаются на api/storage.
+    context.read<StorageBloc>().add(
+          FetchStorage(useAll: widget.useAllStorages),
+        );
   }
 
   @override

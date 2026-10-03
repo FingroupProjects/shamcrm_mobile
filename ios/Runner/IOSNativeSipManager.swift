@@ -1237,6 +1237,8 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         // off so TTL/Sipuni 183 early-media is not masked.
         linphone_core_enable_native_ringing(createdCore, 1)
         linphone_core_set_ringback(createdCore, nil)
+        // CallKit plays the system ringtone. Linphone must not add a second
+        // melody when Sipuni attaches early media before the user answers.
         linphone_core_set_ring_during_incoming_early_media(createdCore, 0)
 
         let callbacks = linphone_factory_create_core_cbs(factory)
@@ -2847,7 +2849,9 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     private func resolveIncomingCallForAction() -> OpaquePointer? {
         if let currentCall {
             let state = linphone_call_get_state(currentCall)
-            if state == LinphoneCallStateIncomingReceived || state == LinphoneCallStatePushIncomingReceived {
+            if state == LinphoneCallStateIncomingReceived ||
+                state == LinphoneCallStatePushIncomingReceived ||
+                state == LinphoneCallStateIncomingEarlyMedia {
                 return currentCall
             }
         }
@@ -2912,7 +2916,10 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
     }
 
     private func isIncomingCallState(_ state: LinphoneCallState) -> Bool {
-        state == LinphoneCallStateIncomingReceived || state == LinphoneCallStatePushIncomingReceived
+        // Early media is still unanswered. The user must be able to pick it up.
+        state == LinphoneCallStateIncomingReceived ||
+            state == LinphoneCallStatePushIncomingReceived ||
+            state == LinphoneCallStateIncomingEarlyMedia
     }
 
     private func normalizedIdentityForMatching(_ value: String?) -> String? {
@@ -3077,7 +3084,20 @@ final class IOSNativeSipManager: NSObject, FlutterStreamHandler {
         }
 
         switch state {
-        case LinphoneCallStateIncomingReceived, LinphoneCallStatePushIncomingReceived:
+        case LinphoneCallStateIncomingReceived,
+            LinphoneCallStatePushIncomingReceived,
+            LinphoneCallStateIncomingEarlyMedia:
+            if state == LinphoneCallStateIncomingEarlyMedia &&
+                (previousCallState == "incoming" || callKitReportedForCurrentIncoming) {
+                // Sipuni/web callback attaches early media before answer.
+                // The call is already on screen. Do not report it to CallKit
+                // again. If CallKit is already ringing, keep Linphone silent.
+                if callKitReportedForCurrentIncoming, let core = self.core {
+                    linphone_core_enable_native_ringing(core, 0)
+                }
+                appendDiagnosticLog("[VOIP] INCOMING_EARLY_MEDIA", signalDetails)
+                break
+            }
             locallyTerminatedCall = nil
             cancelIncomingInviteTimeout()
             if previousCallState == "idle" ||

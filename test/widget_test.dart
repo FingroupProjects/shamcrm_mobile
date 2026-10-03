@@ -272,7 +272,6 @@
 //         return null;
 //     }
 //   }
-
 //   // Получение лейбла для поля
 //   String _getFieldLabel(FieldConfiguration config) {
 //     // Для кастомных полей и справочников используем их имя

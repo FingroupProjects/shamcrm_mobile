@@ -265,7 +265,11 @@ class NativeSipManager(
         }
         val call = currentCall ?: try {
             core?.getCalls()?.firstOrNull { candidate ->
-                candidate.getState().toString() == "IncomingReceived"
+                val candidateState = candidate.getState().toString()
+                // Early media is still an unanswered incoming call. Sipuni and
+                // the web callback attach it before the user picks up.
+                candidateState == "IncomingReceived" ||
+                    candidateState == "IncomingEarlyMedia"
             }
         } catch (_: Throwable) {
             null
@@ -278,7 +282,9 @@ class NativeSipManager(
                 currentCall = call
                 return true
             }
-            if (stateBeforeAccept != "IncomingReceived") {
+            if (stateBeforeAccept != "IncomingReceived" &&
+                stateBeforeAccept != "IncomingEarlyMedia"
+            ) {
                 Log.w(TAG, "acceptCall ignored for state=$stateBeforeAccept")
                 return false
             }
@@ -718,6 +724,9 @@ class NativeSipManager(
         // Incoming ringtone is owned by NativeSipForegroundService.
         // Keeping Linphone ringing enabled creates a second simultaneous melody.
         createdCore.disableCallRinging(true)
+        // Do not let Linphone play its own ring during early media either.
+        // The foreground service already plays the single system ringtone.
+        createdCore.setRingDuringIncomingEarlyMedia(false)
         // ВАЖНО: не вызывать core.setNetworkReachable(true) вручную.
         // Публичный сеттер НАВСЕГДА отключает встроенный мониторинг сети
         // Linphone (AndroidPlatformHelper + ConnectivityManager). Без него
@@ -1364,7 +1373,9 @@ class NativeSipManager(
 
     private fun mapCallState(value: String?, message: String = ""): String {
         return when (value) {
-            "IncomingReceived" -> "incoming"
+            // IncomingEarlyMedia must stay "incoming". Mapping it to idle
+            // stopped the ringtone and left only the on-screen call UI.
+            "IncomingReceived", "IncomingEarlyMedia" -> "incoming"
             "OutgoingInit" -> "calling"
             "OutgoingProgress", "OutgoingRinging" -> "ringing"
             "OutgoingEarlyMedia" -> "early_media"

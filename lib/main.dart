@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 export 'package:crm_task_manager/app/app_keys.dart';
 export 'package:crm_task_manager/app/my_app.dart';
 
-// Разработка проекта shamCRM начата в августе 2024 года.
+// Разработка проекта shamCRM  начата в августе 2024 года.
 // Разработано компанией Softtech Group.
 // Разработчик: Авезов Д. И.
 
@@ -22,46 +22,55 @@ void main() {
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
-      
+
       final apiService = ApiService();
       final authService = AuthService();
-      await requestTrackingAuthorizationIfNeeded();
-      await safeInitializeOfflineRuntime();
-      await safeInitializeFirebase();
 
-      final sessionValidation = await validateApplicationSession(apiService);
-    
+      // На белом экране с логотипом читаем только локальные данные.
+      // От них зависит первый экран: PIN, установка PIN или авторизация.
+      // Firebase, база, пуш и обои стартуют уже после runApp.
+      final sessionFuture = validateApplicationSession(apiService);
+      final localeFuture = safeLoadLocale();
+      final themeFuture = AppThemeController.instance.initialize();
+
+      final sessionValidation = await sessionFuture;
       String? token;
       String? pin;
-      bool isDomainChecked = false;
+      var isDomainChecked = false;
 
       if (sessionValidation.isValid) {
-        token = await apiService.getToken();
-        pin = await authService.getPin();
-        isDomainChecked = await apiService.isDomainChecked();
-
-        if (isDomainChecked) {
-          await safeInitializeApiService(apiService);
-          safeRegisterOutboxExecutors(apiService);
-        }
-      } else {
-        await clearAllApplicationData(apiService, authService);
+        final sessionParts = await Future.wait<Object?>([
+          apiService.getToken(),
+          authService.getPin(),
+          apiService.isDomainChecked(),
+        ]);
+        token = sessionParts[0] as String?;
+        pin = sessionParts[1] as String?;
+        isDomainChecked = sessionParts[2] as bool;
       }
-      
-      final initialMessage = await safeLoadInitialMessage();
-      await AppThemeController.instance.initialize();
-      await AppThemeController.instance.precacheBackground();
-      safeConfigureSystemUi();
-      final savedLocale = await safeLoadLocale();
+
+      final savedLocale = await localeFuture;
+      await themeFuture;
+      unawaited(safeConfigureSystemUi());
+
+      final domainReady = isDomainChecked && sessionValidation.isValid;
       runApp(MyApp(
         apiService: apiService,
         authService: authService,
-        isDomainChecked: isDomainChecked && sessionValidation.isValid,
+        isDomainChecked: domainReady,
         token: sessionValidation.isValid ? token : null,
         pin: sessionValidation.isValid ? pin : null,
         initialLocale: savedLocale,
-        initialMessage: initialMessage,
+        // Пуш, которым открыли приложение, доставится в фоне.
+        initialMessage: null,
         sessionValid: sessionValidation.isValid,
+      ));
+
+      unawaited(startDeferredStartup(
+        apiService: apiService,
+        authService: authService,
+        sessionValid: sessionValidation.isValid,
+        isDomainChecked: domainReady,
       ));
     } catch (e, stackTrace) {
       await recordFatalError(e, stackTrace, reason: 'startup');

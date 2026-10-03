@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
+import 'package:crm_task_manager/api/service/storage/secure_storage_service.dart';
 import 'package:crm_task_manager/app/crash_reporting/crash_reporter.dart';
 import 'package:crm_task_manager/app/firebase_options.dart';
+import 'package:crm_task_manager/app/session/session_validation.dart';
 import 'package:crm_task_manager/core/platform/app_platform.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/offline/core/core_outbox_executors.dart';
 import 'package:crm_task_manager/offline/core/offline_bootstrap.dart';
 import 'package:crm_task_manager/screens/profile/languages/local_manager_lang.dart';
@@ -19,8 +24,12 @@ Future<void> requestTrackingAuthorizationIfNeeded() async {
   }
 
   try {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    // Статус иногда зависает, если спросить его слишком рано.
+    // Короткий таймаут не даёт этому остановить остальной запуск.
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus
+        .timeout(const Duration(seconds: 2));
     if (status == TrackingStatus.notDetermined) {
+      // Сам диалог не обрываем: пользователь должен успеть ответить.
       await AppTrackingTransparency.requestTrackingAuthorization();
     }
   } catch (e, stackTrace) {
@@ -165,19 +174,66 @@ Future<Locale> safeLoadLocale() async {
   return const Locale('ru');
 }
 
+/// Тяжёлая инициализация после первого кадра.
+/// Экран PIN или входа уже на экране, пока это работает.
+Future<void> startDeferredStartup({
+  required ApiService apiService,
+  required AuthService authService,
+  required bool sessionValid,
+  required bool isDomainChecked,
+}) async {
+  await Future.wait([
+    safeInitializeOfflineRuntime(),
+    _startFirebaseAndDeliverLaunchPush(),
+    _prepareSessionInBackground(
+      apiService: apiService,
+      authService: authService,
+      sessionValid: sessionValid,
+      isDomainChecked: isDomainChecked,
+    ),
+  ]);
+
+  // Регистрация очереди возможна только после открытия локальной базы.
+  if (sessionValid && isDomainChecked) {
+    safeRegisterOutboxExecutors(apiService);
+  }
+
+  // Картинка обоев догружается сама. Прогрев не должен держать запуск.
+  unawaited(AppThemeController.instance.precacheBackground());
+}
+
+Future<void> _prepareSessionInBackground({
+  required ApiService apiService,
+  required AuthService authService,
+  required bool sessionValid,
+  required bool isDomainChecked,
+}) async {
+  if (!sessionValid) {
+    await clearAllApplicationData(apiService, authService);
+    return;
+  }
+
+  if (isDomainChecked) {
+    await safeInitializeApiService(apiService);
+  }
+}
+
+Future<void> _startFirebaseAndDeliverLaunchPush() async {
+  await safeInitializeFirebase();
+  final initialMessage = await safeLoadInitialMessage();
+  if (initialMessage == null) return;
+
+  // Если главный экран ещё не открыт, сообщение сохранится
+  // и откроется после PIN. Если уже открыт — переход будет сразу.
+  await FirebaseApi().handleMessage(initialMessage);
+}
+
 Future<void> initializeFirebase() async {
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      await Future.delayed(const Duration(milliseconds: 500));
-    } else {
-      try {
-        Firebase.app();
-      } catch (e) {
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
     }
 
     try {
@@ -190,7 +246,6 @@ Future<void> initializeFirebase() async {
 
     if (errorString.contains('already exists') ||
         errorString.contains('duplicate app')) {
-      await Future.delayed(const Duration(milliseconds: 500));
       try {
         Firebase.app();
       } catch (checkError) {

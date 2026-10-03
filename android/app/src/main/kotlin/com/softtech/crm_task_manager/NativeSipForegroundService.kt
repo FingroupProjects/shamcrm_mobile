@@ -426,9 +426,12 @@ class NativeSipForegroundService : Service() {
                         if (NativeSipBridge.isIncomingAnswerPending()) {
                             clearIncomingPresentation("incoming-event-answer-pending")
                         } else if (NativeSipBridge.isAppInForeground()) {
+                            // The user is already in the app (telephony screen).
+                            // Do not launch the lock-screen activity, but still
+                            // ring: the in-app incoming UI has no sound of its own.
                             cancelIncomingUiWatchdog()
                             clearIncomingNotification("incoming-event-app-foreground")
-                            stopIncomingCallRingtone()
+                            startIncomingCallRingtone()
                         } else {
                             logIncomingUiDecision("call-event")
                             acquireIncomingCallWakeLock()
@@ -478,9 +481,10 @@ class NativeSipForegroundService : Service() {
             return
         }
         if (event["appForeground"] == true) {
+            // Opening the app must not mute an incoming call that is still ringing.
             cancelIncomingUiWatchdog()
             clearIncomingNotification("app-became-foreground")
-            stopIncomingCallRingtone()
+            startIncomingCallRingtone()
             return
         }
 
@@ -1007,7 +1011,10 @@ class NativeSipForegroundService : Service() {
     }
 
     private fun shouldPlaySystemIncomingRingtone(): Boolean {
-        return !NativeSipBridge.isAppInForeground()
+        // Linphone's own ring is off, and a self-managed Telecom connection
+        // does not play a ringtone. This is the only incoming sound, including
+        // when the telephony screen is already open.
+        return true
     }
 
     private fun shouldLaunchIncomingCallUi(): Boolean {

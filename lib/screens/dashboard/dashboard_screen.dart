@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
@@ -121,24 +122,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _initializeData() async {
     try {
-      // КРИТИЧНО: при первом входе в Dashboard гарантируем сохранённую воронку.
-      await _apiService.ensureSelectedSalesFunnelInitialized();
+      // Права дашборда уже лежат локально. Воронку, роли и обучение
+      // догружаем в фоне, чтобы вместо меню не висела крутилка.
+      await _checkDashboardPermissions();
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
-
+      final prefs = await SharedPreferences.getInstance();
+      final isFirstTime = prefs.getBool('isFirstTime') ?? true;
       if (isFirstTime) {
-        await Future.wait([
-          _loadUserRoles(),
-          _checkDashboardPermissions(),
-        ]);
         await prefs.setBool('isFirstTime', false);
-      } else {
-        await _loadUserRoles();
-        await _checkDashboardPermissions();
       }
 
-      _checkPermissionsAndTutorial();
+      unawaited(_loadUserRoles());
+      unawaited(_apiService.ensureSelectedSalesFunnelInitialized());
+      unawaited(_checkPermissionsAndTutorial());
     } catch (_) {}
   }
 
@@ -737,27 +733,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : _activeDashboard == DashboardType.crm &&
                               _hasCrmDashboardPermission
-                      ? AnalyticsScreen(
-                          key: const ValueKey('dashboard_crm_analytics'),
-                          showAppBar: false,
-                          filterTrigger: _analyticsFilterTrigger,
-                          chartSettingsTrigger: _analyticsChartSettingsTrigger,
-                          showStatistics: userRoles.contains('admin'),
-                          showInitialLoader: false,
-                        )
-                      : RefreshIndicator(
-                          color: const Color(0xff1E2E52),
-                          backgroundColor: context.appColors.surfacePrimary,
-                          onRefresh: _onRefresh,
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: _buildAccountingDashboard(),
+                          ? AnalyticsScreen(
+                              key: const ValueKey('dashboard_crm_analytics'),
+                              showAppBar: false,
+                              filterTrigger: _analyticsFilterTrigger,
+                              chartSettingsTrigger:
+                                  _analyticsChartSettingsTrigger,
+                              showStatistics: userRoles.contains('admin'),
+                              showInitialLoader: false,
+                            )
+                          : RefreshIndicator(
+                              color: const Color(0xff1E2E52),
+                              backgroundColor: context.appColors.surfacePrimary,
+                              onRefresh: _onRefresh,
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: _buildAccountingDashboard(),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
                 ),
               ],
             ),

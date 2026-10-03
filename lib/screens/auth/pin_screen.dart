@@ -174,15 +174,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       // ШАГ 3: Проверка PIN
       await _checkSavedPin();
 
-      final shouldBypassPin = await _shouldBypassPinForActiveSipCall().timeout(
-        const Duration(seconds: 4),
-        onTimeout: () => false,
-      );
-      if (shouldBypassPin && mounted) {
-        await _markPinRequiredAfterSipCall();
-        _didNavigateToSipCall = true;
-        _navigateToSipCallOnly();
-      }
+      // Активный звонок проверяем в фоне, чтобы Face ID не ждал SIP.
+      unawaited(_maybeBypassPinForActiveCall());
     } catch (e) {
       if (mounted) {
         _showErrorDialog(
@@ -241,14 +234,6 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       } catch (e) {
         return;
       }
-
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      try {
-        Firebase.app();
-      } catch (e) {
-        return;
-      }
     } catch (e) {
       debugPrint('PinScreen: FirebaseApi init skipped: $e');
     }
@@ -271,6 +256,17 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     } catch (e) {
       //print('PinScreen: Ошибка проверки PIN: $e');
     }
+  }
+
+  Future<void> _maybeBypassPinForActiveCall() async {
+    final shouldBypassPin = await _shouldBypassPinForActiveSipCall().timeout(
+      const Duration(seconds: 4),
+      onTimeout: () => false,
+    );
+    if (!shouldBypassPin || !mounted || _isPinVerified) return;
+    await _markPinRequiredAfterSipCall();
+    _didNavigateToSipCall = true;
+    _navigateToSipCallOnly();
   }
 
   Future<bool> _shouldBypassPinForActiveSipCall() async {
@@ -351,14 +347,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       );
 
       if (didAuthenticate && mounted) {
-        final hasAccess = await _checkAccountAccess();
-        if (!hasAccess) return;
-
-        // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг верификации
-        setState(() {
-          _isPinVerified = true;
-        });
-        _navigateToHome();
+        _enterApp();
       } else if (mounted) {
         _triggerErrorEffect();
       }
@@ -449,16 +438,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
             debugPrint('PinScreen: PIN корректен');
             unawaited(attachClaritySession());
 
-            final hasAccess = await _checkAccountAccess();
-            if (!hasAccess) return;
-
-            // ✅ ИСПРАВЛЕНИЕ: Устанавливаем флаг ПЕРЕД навигацией
-            setState(() {
-              _isPinVerified = true;
-            });
-
             if (mounted) {
-              _navigateToHome();
+              _enterApp();
             }
           } else {
             debugPrint('PinScreen: PIN некорректен');
@@ -473,7 +454,34 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<bool> _checkAccountAccess() async {
+  void _enterApp() {
+    final api = context.read<ApiService>();
+    setState(() {
+      _isPinVerified = true;
+    });
+    // Блокировку аккаунта проверяем уже после открытия главной.
+    // Сеть больше не стоит между правильным PIN и экраном.
+    unawaited(_logoutIfAccountBlocked(api));
+    _navigateToHome();
+  }
+
+  Future<void> _logoutIfAccountBlocked(ApiService api) async {
+    final hasAccess = await _checkAccountAccess(api);
+    if (hasAccess) return;
+
+    debugPrint('PinScreen: ⛔ Аккаунт пользователя заблокирован');
+    if (mounted) {
+      _showBlockedAccountSnackBar();
+    }
+    await AppLogoutService.logoutAndReset(
+      context: ApiService.navigatorKey.currentContext,
+      restartApp: false,
+      navigateToAuth: true,
+      notifyServer: false,
+    );
+  }
+
+  Future<bool> _checkAccountAccess(ApiService api) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = int.tryParse(
@@ -485,16 +493,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
         return true;
       }
 
-      final hasAccess =
-          await context.read<ApiService>().checkUserAccess(userId);
-      if (hasAccess) return true;
-
-      debugPrint('PinScreen: ⛔ Аккаунт пользователя заблокирован');
-      if (!mounted) return false;
-
-      _showBlockedAccountSnackBar();
-      _triggerErrorEffect();
-      return false;
+      return api.checkUserAccess(userId);
     } catch (e) {
       debugPrint('PinScreen: Ошибка проверки доступа: $e');
       return true;

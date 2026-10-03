@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/bloc/login/login_bloc.dart';
@@ -64,9 +66,9 @@ class LoginScreen extends StatelessWidget {
                             'userName', state.user.name.toString());
                         await prefs.setString(
                             'userID', state.user.id.toString());
-                        await attachClaritySession(
+                        unawaited(attachClaritySession(
                           userId: state.user.id.toString(),
-                        );
+                        ));
                         await prefs.setString(
                             'userLogin', state.user.login.toString());
                         await prefs.setBool('hasMiniApp', state.hasMiniApp);
@@ -80,13 +82,9 @@ class LoginScreen extends StatelessWidget {
                           await prefs.setString('userAllRoles', allRoles);
                         }
 
-                        try {
-                          await FirebaseApi().syncCurrentTokenWithServer();
-                        } catch (e) {
-                          debugPrint(
-                            'LoginScreen: Ошибка синхронизации push токенов после логина: $e',
-                          );
-                        }
+                        // Токен пуша уходит на сервер уже после перехода на PIN.
+                        // Ожидание APNS на iOS раньше держало крутилку после входа.
+                        unawaited(FirebaseApi().syncCurrentTokenWithServer());
 
                         await _checkPinSetupStatus(context);
                       } else if (state is LoginError) {

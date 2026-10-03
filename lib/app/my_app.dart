@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/storage/secure_storage_service.dart
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/app/app_keys.dart';
+import 'package:crm_task_manager/app/bootstrap/app_bootstrap.dart';
 import 'package:crm_task_manager/app/app_providers.dart';
 import 'package:crm_task_manager/core/theme/app_theme.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
@@ -85,7 +86,10 @@ class _MyAppState extends State<MyApp> {
     _platformServicesInitialized = true;
 
     WidgetService.initialize();
-    await NativeInternetMonitor().initialize();
+    // Диалог слежения Apple можно показывать только когда приложение уже на экране.
+    // Раньше он вызывался до runApp и держал белый экран с логотипом.
+    unawaited(requestTrackingAuthorizationIfNeeded());
+    unawaited(NativeInternetMonitor().initialize());
     // Если пользователь уже в сессии, сразу вешаем id в Clarity.
     if (widget.sessionValid) {
       unawaited(attachClaritySession());

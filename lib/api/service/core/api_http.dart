@@ -297,7 +297,8 @@ extension ApiHttpX on ApiService {
 
     final recent = ApiService._recentMutations[key];
     if (recent == null) return null;
-    if (DateTime.now().difference(recent.at) > ApiService._mutationDedupWindow) {
+    if (DateTime.now().difference(recent.at) >
+        ApiService._mutationDedupWindow) {
       ApiService._recentMutations.remove(key);
       return null;
     }
@@ -362,7 +363,8 @@ extension ApiHttpX on ApiService {
   Future<http.Response> _postRequest(
       String path, Map<String, dynamic> body) async {
     // Проверяем сессию только если эндпоинт требует этого
-    if (!ApiService._noSessionCheckEndpoints.any((endpoint) => path.contains(endpoint))) {
+    if (!ApiService._noSessionCheckEndpoints
+        .any((endpoint) => path.contains(endpoint))) {
       if (!await _isSessionValid()) {
         await _forceLogoutAndRedirect();
         throw Exception('Session is invalid');
@@ -407,16 +409,24 @@ extension ApiHttpX on ApiService {
     return _withMutationDedup('POST', fullUrl, body, () async {
       final startTime = DateTime.now();
       try {
-        final response = await http.post(
-          Uri.parse(fullUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            if (token != null) 'Authorization': 'Bearer $token',
-            'Device': 'mobile'
-          },
-          body: json.encode(body),
-        );
+        final response = await http
+            .post(
+              Uri.parse(fullUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                if (token != null) 'Authorization': 'Bearer $token',
+                'Device': 'mobile'
+              },
+              body: json.encode(body),
+            )
+            .timeout(
+              ApiService._defaultRequestTimeout,
+              onTimeout: () => throw TimeoutException(
+                'Превышено время ожидания ответа сервера',
+                ApiService._defaultRequestTimeout,
+              ),
+            );
 
         debugPrint(
             'ApiService: _postRequest response status: ${response.statusCode}');
@@ -466,7 +476,8 @@ extension ApiHttpX on ApiService {
   }) async {
     if (kDebugMode) {
       debugPrint('🔵 _analyticsRequest called with path: $path');
-      debugPrint('   Current ApiService._analyticsFilters: $ApiService._analyticsFilters');
+      debugPrint(
+          '   Current ApiService._analyticsFilters: $ApiService._analyticsFilters');
     }
     final filteredPath = _appendAnalyticsFiltersToPath(path);
     if (kDebugMode) {
