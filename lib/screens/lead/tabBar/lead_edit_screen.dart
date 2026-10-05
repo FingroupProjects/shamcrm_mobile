@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
@@ -1812,7 +1813,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -1835,7 +1837,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () => Navigator.pop(context, null),
+                onPressed: () => LeaveGate.requestPop(context),
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
@@ -2089,8 +2091,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                           duration: Duration(seconds: 3),
                         ),
                       );
-                      Navigator.pop(context,
-                          true); // Возвращаем true при успешном сохранении
+                      LeaveGate.finish(context, true);
                       context.read<LeadBloc>().add(FetchLeadStatuses());
                     }
                   },
@@ -2246,7 +2247,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
                                   textColor: primaryText,
                                   borderColor: subtleBorder,
                                   borderWidth: 1,
-                                  onPressed: () => Navigator.pop(context, null),
+                                  onPressed: () => LeaveGate.requestPop(context),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -2598,6 +2599,7 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

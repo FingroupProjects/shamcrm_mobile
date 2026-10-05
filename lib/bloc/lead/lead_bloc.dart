@@ -743,8 +743,11 @@ class LeadBloc extends Bloc<LeadEvent, LeadState> {
       final result = await apiService.createLeadWithData(requestData);
 
       if (result['success']) {
+        final createdId = result['id'];
         emit(LeadSuccess(
-            event.localizations.translate('lead_created_successfully')));
+          event.localizations.translate('lead_created_successfully'),
+          createdId: createdId is int ? createdId : null,
+        ));
         add(RefreshCurrentStatus(event.leadStatusId));
       } else {
         emit(LeadError(result['message']));

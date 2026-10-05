@@ -481,6 +481,7 @@ class Chats {
       avatar,
       _mapChannelToIcon(channel),
       unreadCount,
+      chatId: id,
     );
   }
   

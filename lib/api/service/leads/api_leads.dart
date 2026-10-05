@@ -1,5 +1,57 @@
 part of '../api_service.dart';
 
+/// Id и номер из ответа создания. Сервер кладёт их в result, data или корень.
+int? _idFromCreateBody(String body) {
+  return _walkCreateBody(body, const ['id']);
+}
+
+String? _numberFromCreateBody(String body) {
+  final raw = _walkCreateValue(
+    body,
+    const ['doc_number', 'document_number', 'number'],
+  );
+  if (raw == null) return null;
+  final text = raw.toString().trim();
+  return text.isEmpty ? null : text;
+}
+
+int? _walkCreateBody(String body, List<String> keys) {
+  final raw = _walkCreateValue(body, keys);
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw);
+  return null;
+}
+
+dynamic _walkCreateValue(String body, List<String> keys) {
+  dynamic decoded;
+  try {
+    decoded = jsonDecode(body);
+  } catch (_) {
+    return null;
+  }
+  return _readCreateValue(decoded, keys, 0);
+}
+
+dynamic _readCreateValue(dynamic node, List<String> keys, int depth) {
+  if (node is! Map || depth > 4) return null;
+  for (final key in keys) {
+    final value = node[key];
+    if (value != null && value is! Map && value is! List) return value;
+  }
+  for (final key in const [
+    'result',
+    'data',
+    'lead',
+    'deal',
+    'document',
+    'income_document',
+  ]) {
+    final nested = _readCreateValue(node[key], keys, depth + 1);
+    if (nested != null) return nested;
+  }
+  return null;
+}
+
 extension ApiLeadsX on ApiService {
   Future<LeadById> getLeadById(int leadId) async {
     try {
@@ -1033,7 +1085,11 @@ extension ApiLeadsX on ApiService {
     }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': 'lead_created_successfully'};
+      return {
+        'success': true,
+        'message': 'lead_created_successfully',
+        'id': _idFromCreateBody(response.body),
+      };
     } else if (response.statusCode == 422) {
       final serverMessage = _extractPrimaryMessageFromResponse(response);
 

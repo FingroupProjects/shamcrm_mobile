@@ -2,12 +2,18 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
+import 'package:crm_task_manager/bloc/deal/deal_bloc.dart';
+import 'package:crm_task_manager/bloc/deal/deal_event.dart';
+import 'package:crm_task_manager/bloc/deal/deal_state.dart';
 import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/neighbor_pager.dart';
+import 'package:crm_task_manager/widgets/return_highlight.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -130,6 +136,34 @@ class _DealCardState extends State<DealCard>
     );
   }
 
+  Future<int> _loadMoreDealNeighbors(DealBloc bloc, List<Deal> items) async {
+    if (!mounted || bloc.allDealsFetched) return items.length;
+    final page = bloc.state is DealDataLoaded
+        ? (bloc.state as DealDataLoaded).currentPage
+        : 1;
+    bloc.add(FetchMoreDeals(widget.statusId, page));
+    try {
+      await bloc.stream
+          .firstWhere(
+            (state) => state is DealDataLoaded && !state.isLoadingMore,
+          )
+          .timeout(const Duration(seconds: 8));
+    } catch (_) {
+      return items.length;
+    }
+    if (bloc.state is! DealDataLoaded) return items.length;
+    final fresh = (bloc.state as DealDataLoaded).deals;
+    final sameColumn =
+        fresh.where((item) => item.statusId == widget.statusId).toList();
+    final merged = sameColumn.isNotEmpty ? sameColumn : fresh;
+    if (merged.length > items.length) {
+      items
+        ..clear()
+        ..addAll(merged);
+    }
+    return items.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -150,27 +184,53 @@ class _DealCardState extends State<DealCard>
       borderColor = colors.warning;
     }
 
-    return GestureDetector(
+    return ReturnHighlightBox(
+      section: 'deals',
+      itemId: widget.deal.id.toString(),
+      child: GestureDetector(
       onTap: () async {
+        final bloc = context.read<DealBloc>();
+        final loaded = bloc.state is DealDataLoaded
+            ? List<Deal>.from((bloc.state as DealDataLoaded).deals)
+            : <Deal>[widget.deal];
+        final column =
+            loaded.where((item) => item.statusId == widget.statusId).toList();
+        final items = column.isNotEmpty
+            ? column
+            : (loaded.isNotEmpty ? loaded : <Deal>[widget.deal]);
+        var index = items.indexWhere((item) => item.id == widget.deal.id);
+        if (index < 0) {
+          items.insert(0, widget.deal);
+          index = 0;
+        }
         final shouldRefresh = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DealDetailsScreen(
-              dealId: widget.deal.id.toString(),
-              dealName: widget.deal.name,
-              startDate: widget.deal.startDate,
-              endDate: widget.deal.endDate,
-              sum: widget.deal.sum,
-              dealStatus: dropdownValue,
-              statusId: widget.statusId,
-              manager: widget.deal.manager?.name,
-              lead: widget.deal.lead?.name,
-              leadId: widget.deal.lead?.id,
-              description: widget.deal.description,
+            builder: (routeContext) => NeighborPager(
+              initialIndex: index,
+              initialCount: items.length,
+              pageBuilder: (_, i) {
+                final deal = items[i];
+                return DealDetailsScreen(
+                  dealId: deal.id.toString(),
+                  dealName: deal.name,
+                  startDate: deal.startDate,
+                  endDate: deal.endDate,
+                  sum: deal.sum,
+                  dealStatus: deal.dealStatus?.title ?? dropdownValue,
+                  statusId: deal.statusId,
+                  manager: deal.manager?.name,
+                  lead: deal.lead?.name,
+                  leadId: deal.lead?.id,
+                  description: deal.description,
+                );
+              },
+              loadMore: () => _loadMoreDealNeighbors(bloc, items),
             ),
           ),
         );
 
+        ReturnHighlight.flash('deals', widget.deal.id.toString());
         if (mounted && shouldRefresh != null) {
           final resultMap = shouldRefresh is Map<String, dynamic>
               ? shouldRefresh
@@ -434,6 +494,7 @@ class _DealCardState extends State<DealCard>
           );
         },
       ),
+    ),
     );
   }
 }

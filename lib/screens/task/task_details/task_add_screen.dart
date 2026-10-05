@@ -17,6 +17,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_m
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/bloc/user/user_bloc.dart';
@@ -88,6 +89,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
   bool isProjectInvalid = false;
   bool isEndDateInvalid = false;
   bool isStatusInvalid = false;
+  String? _focusField;
+  int _fieldErrorPulse = 0;
 
   bool _hasTaskCreatePermission = false;
   bool _hasTaskCreateForMySelfPermission = false;
@@ -251,7 +254,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
     switch (config.fieldName) {
       case 'name':
-        return Column(
+        return _remindTaskField('name', isNameInvalid, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomTextFieldWithPriority(
@@ -296,7 +299,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 ),
               ),
           ],
-        );
+        ));
 
       case 'description':
         return CustomTextField(
@@ -316,7 +319,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
 
       case 'executor':
         if (_hasTaskCreatePermission || !_hasTaskCreateForMySelfPermission) {
-          return UserMultiSelectWidget(
+          return _remindTaskField(
+            'executor',
+            isExecutorInvalid,
+            UserMultiSelectWidget(
             selectedUsers: selectedUsers,
             onSelectUsers: (List<UserData> selectedUsersData) {
               setState(() {
@@ -326,6 +332,7 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
               });
             },
             hasError: isExecutorInvalid,
+          ),
           );
         }
         return const SizedBox.shrink();
@@ -334,7 +341,10 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
         if (widget.lockProject && widget.initialProjectId != null) {
           return const SizedBox.shrink();
         }
-        return Column(
+        return _remindTaskField(
+          'project',
+          isProjectInvalid,
+          Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ProjectTaskGroupWidget(
@@ -350,10 +360,14 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                   : null,
             ),
           ],
+        ),
         );
 
       case 'deadline':
-        return Column(
+        return _remindTaskField(
+          'deadline',
+          isEndDateInvalid,
+          Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomTextFieldDate(
@@ -380,10 +394,15 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                 ),
               ),
           ],
+        ),
         );
 
       case 'task_status_id':
-        return _buildStatusField();
+        return _remindTaskField(
+          'task_status_id',
+          isStatusInvalid,
+          _buildStatusField(),
+        );
 
       default:
         return const SizedBox.shrink();
@@ -1812,6 +1831,17 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     );
   }
 
+  Widget _remindTaskField(String key, bool invalid, Widget child) {
+    return RequiredFieldSlot(
+      invalid: invalid,
+      focus: _focusField == key,
+      pulse: _fieldErrorPulse,
+      showCaption: false,
+      message: AppLocalizations.of(context)!.translate('field_required'),
+      child: child,
+    );
+  }
+
   void _submitForm() {
     setState(() {
       isNameInvalid = false;
@@ -1876,27 +1906,18 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
     }
 
     if (hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.translate('fill_required_fields'),
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: context.appColors.textInverse,
-            ),
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: context.appColors.error,
-          elevation: 3,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      setState(() {
+        _focusField = isNameInvalid
+            ? 'name'
+            : isStatusInvalid
+                ? 'task_status_id'
+                : isExecutorInvalid
+                    ? 'executor'
+                    : isProjectInvalid
+                        ? 'project'
+                        : 'deadline';
+        _fieldErrorPulse++;
+      });
       return;
     }
 

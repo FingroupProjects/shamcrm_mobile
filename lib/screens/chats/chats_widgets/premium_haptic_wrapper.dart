@@ -47,9 +47,10 @@ class _PremiumHapticWrapperState extends State<PremiumHapticWrapper>
   }
 
   void _onTapDown(TapDownDetails details) {
+    _longPressTimer?.cancel();
     _isLongPressed = false;
     _controller.forward();
-    _longPressTimer = Timer(const Duration(milliseconds: 250), () {
+    _longPressTimer = Timer(const Duration(milliseconds: 420), () {
       _isLongPressed = true;
       HapticFeedback.mediumImpact();
       widget.onLongPress();

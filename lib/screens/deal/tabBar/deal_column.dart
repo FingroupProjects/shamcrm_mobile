@@ -10,6 +10,7 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -371,7 +372,10 @@ class _DealColumnState extends State<DealColumn> {
         child: ListView.builder(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
+          padding: paddingAboveNav(
+            context,
+            base: const EdgeInsets.fromLTRB(0, 6, 0, 72),
+          ),
           itemCount: deals.length + (showPaginationLoader ? 1 : 0),
           itemBuilder: (context, index) {
             if (index >= deals.length) {
@@ -482,7 +486,7 @@ Widget build(BuildContext context) {
       ),
       if (_canCreateDeal)
         Positioned(
-          bottom: 16,
+          bottom: 16 + MediaQuery.paddingOf(context).bottom,
           right: 16,
           child: FloatingActionButton(
             key: keyFloatingActionButton,

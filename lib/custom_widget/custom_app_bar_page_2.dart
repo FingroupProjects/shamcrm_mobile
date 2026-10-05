@@ -3,6 +3,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/goods/goods_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/goods/filter_app_bar_goods.dart';
 import 'package:crm_task_manager/custom_widget/filter/page_2/income/filter_app_bar_income.dart';
@@ -11,8 +12,7 @@ import 'package:crm_task_manager/models/user/user_byId_model..dart';
 
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -119,8 +119,7 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   String _lastLoadedImage = '';
   static String _cachedUserImage = '';
   bool _hasNewNotification = false;
-  PusherChannelsClient? socketClient;
-  StreamSubscription<ChannelReadEvent>? notificationSubscription;
+  StreamSubscription<dynamic>? notificationSubscription;
   Timer? _checkOverdueTimer;
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
@@ -338,7 +337,6 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     _checkOverdueTimer?.cancel();
     _timer.cancel();
     notificationSubscription?.cancel();
-    socketClient?.disconnect();
     if (kDebugMode) {
       ////print('CustomAppBarPage2: Очистка ресурсов');
     }
@@ -357,77 +355,23 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   }
 
   Future<void> _setUpSocketForNotifications() async {
-    if (kDebugMode) {
-      ////print('CustomAppBarPage2: Настройка сокета для уведомлений');
-    }
     final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    final client = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        if (kDebugMode) {
-          ////print('CustomAppBarPage2: Ошибка соединения сокета: $exception');
-        }
-      },
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-    socketClient = client;
-
-    String userId = prefs.getString('unique_id') ?? '';
-
-    final myPresenceChannel = client.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          if (kDebugMode) {
-            ////print('CustomAppBarPage2: Ошибка авторизации сокета: $exception');
-          }
-        },
-      ),
-    );
-
-    client.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      notificationSubscription =
-          myPresenceChannel.bind('notification.created').listen((event) {
-        if (kDebugMode) {
-          ////print('CustomAppBarPage2: Получено уведомление: ${event.data}');
-        }
+    // Общий сокет. Шапка склада не открывает второе соединение.
+    final subscription = await UserRealtimeSocket.instance.listen(
+      'notification.created',
+      (_) {
+        if (!mounted) return;
         setState(() {
           _hasNewNotification = true;
         });
         prefs.setBool('hasNewNotification', true);
-      });
-    });
-
-    try {
-      await client.connect();
-      if (kDebugMode) {
-        ////print('CustomAppBarPage2: Успешное соединение сокета');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        ////print('CustomAppBarPage2: Ошибка соединения сокета: $e');
-      }
+      },
+    );
+    if (!mounted) {
+      await subscription?.cancel();
+      return;
     }
+    notificationSubscription = subscription;
   }
 
   Future<void> _loadUserProfile() async {
@@ -671,12 +615,11 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      widget.title,
+                    child: HoldToReadText(
+                      text: widget.title,
                       style: context.appTextStyles.titleLg.copyWith(
                         color: context.appColors.textPrimary,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

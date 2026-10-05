@@ -253,7 +253,7 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
       CreateIncoming event, Emitter<IncomingState> emit) async {
     emit(IncomingCreateLoading());
     try {
-      await apiService.createIncomingDocument(
+      final created = await apiService.createIncomingDocument(
         date: event.date,
         storageId: event.storageId,
         comment: event.comment,
@@ -265,9 +265,13 @@ class IncomingBloc extends Bloc<IncomingEvent, IncomingState> {
         exchangeRate: event.exchangeRate,
       );
       await Future.delayed(const Duration(milliseconds: 100));
-      emit(IncomingCreateSuccess(event.approve
-          ? 'Документ успешно создан и проведен'
-          : 'Документ успешно создан'));
+      emit(IncomingCreateSuccess(
+        event.approve
+            ? 'Документ успешно создан и проведен'
+            : 'Документ успешно создан',
+        documentId: created.id,
+        docNumber: created.number,
+      ));
     } catch (e) {
       if (e is ApiException) {
         emit(IncomingCreateError(friendlyError(e), statusCode: e.statusCode));

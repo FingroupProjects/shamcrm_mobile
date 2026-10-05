@@ -391,7 +391,7 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
   }
 
-  Future<void> createIncomingDocument({
+  Future<({int? id, String? number})> createIncomingDocument({
     required String date,
     required int storageId,
     required String comment,
@@ -435,7 +435,10 @@ extension ApiWarehouseDocumentsX on ApiService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return;
+        return (
+          id: _idFromCreateBody(response.body),
+          number: _numberFromCreateBody(response.body),
+        );
       } else {
         final message = _extractErrorMessageFromResponse(response);
         throw ApiException(message ?? 'Ошибка сервера', response.statusCode);

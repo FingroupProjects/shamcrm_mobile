@@ -3,6 +3,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/utils/api_validation_message.dart';
 import 'package:crm_task_manager/utils/user_friendly_error.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 OverlayEntry? _overlaySnackBarEntry;
 
@@ -12,6 +13,8 @@ void showCustomSnackBar({
   bool isSuccess = true,
   // true — поверх модалок, иначе SnackBar оказывается за диалогом.
   bool aboveDialogs = false,
+  String? actionLabel,
+  VoidCallback? onAction,
 }) {
   if (message.isEmpty) return;
   if (!context.mounted) return;
@@ -42,16 +45,39 @@ void showCustomSnackBar({
         ),
       ),
       behavior: SnackBarBehavior.floating,
-      margin: EdgeInsets.fromLTRB(12, 8, 12, bottom + 10),
+      margin: EdgeInsets.fromLTRB(16, 8, 16, bottom + 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(28),
       ),
       backgroundColor:
           isSuccess ? const Color(0xff16A34A) : const Color(0xffDC2626),
       elevation: 3,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      duration: const Duration(seconds: 3),
+      duration: Duration(seconds: onAction == null ? 3 : 4),
+      action: actionLabel == null || onAction == null
+          ? null
+          : SnackBarAction(
+              label: actionLabel,
+              textColor: Colors.white,
+              onPressed: onAction,
+            ),
     ),
+  );
+}
+
+/// Успех создания: то же сообщение и кнопка «Открыть», если известен id.
+void showCreatedSnackBar({
+  required BuildContext context,
+  required String message,
+  VoidCallback? onOpen,
+}) {
+  final loc = AppLocalizations.of(context);
+  showCustomSnackBar(
+    context: context,
+    message: message,
+    isSuccess: true,
+    actionLabel: onOpen == null ? null : loc?.translate('open_created'),
+    onAction: onOpen,
   );
 }
 
@@ -82,7 +108,7 @@ void _showOverlaySnackBar({
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: background,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
                     color: shadow.withValues(alpha: 0.28),
@@ -119,6 +145,19 @@ void _showOverlaySnackBar({
       _overlaySnackBarEntry = null;
     }
   });
+}
+
+/// Копирование с той же капсулой, что и «Сохранено».
+Future<void> copyTextAndNotify(BuildContext context, String text) async {
+  final value = text.trim();
+  if (value.isEmpty || !context.mounted) return;
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) return;
+  showCustomSnackBar(
+    context: context,
+    message: 'copied',
+    isSuccess: true,
+  );
 }
 
 /// Keyboard open: sit just above it. Closed: sit above the tab bar.

@@ -194,12 +194,9 @@ class ChatMediaDownloadManager extends ChangeNotifier {
   void _showResult(ChatDownloadTask task, bool success) {
     final context = ApiService.navigatorKey.currentContext;
     final messageKey = switch (task.kind) {
-      ChatDownloadKind.image =>
-        success ? 'image_saved_success' : 'image_save_failed',
-      ChatDownloadKind.video =>
-        success ? 'video_saved_success' : 'video_save_failed',
-      ChatDownloadKind.file =>
-        success ? 'file_saved_success' : 'file_save_failed',
+      ChatDownloadKind.image => success ? 'saved' : 'image_save_failed',
+      ChatDownloadKind.video => success ? 'saved' : 'video_save_failed',
+      ChatDownloadKind.file => success ? 'saved' : 'file_save_failed',
     };
 
     // Overlay toast: white text on green/red, in front of the media viewer.

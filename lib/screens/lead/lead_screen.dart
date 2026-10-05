@@ -20,6 +20,12 @@ import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/lead/source_list_model.dart';
 import 'package:crm_task_manager/models/lead/advertising_campaign_model.dart';
+import 'package:crm_task_manager/utils/list_place_memory.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
+import 'package:crm_task_manager/utils/recent_search_store.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
+import 'package:crm_task_manager/widgets/list_filter_chips.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_delete.dart';
 import 'package:crm_task_manager/screens/lead/lead_status_edit.dart';
@@ -36,13 +42,13 @@ import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
 import 'package:crm_task_manager/bloc/lead/lead_event.dart';
 import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/contact_list_screen.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_add_screen.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 
 class LeadScreen extends StatefulWidget {
   final int? initialStatusId;
@@ -64,10 +70,16 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
+  int? _rememberedStatusId;
+  int? _memoryFunnelId;
+  bool _appliedTabMemory = false;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   bool _isManager = false;
   final TextEditingController _searchController = TextEditingController();
+  List<String> _recentSearches = [];
+  Timer? _recentSearchTimer;
+  bool _leadPlaceRestored = false;
   bool _canCreateLeadStatus = false;
   bool _canUpdateLeadStatus = false;
   bool _canDeleteLeadStatus = false;
@@ -144,7 +156,6 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   bool _shouldShowLoader = false;
   bool _skipNextTabListener = false;
   int? _skipNextTabListenerIndex;
-  PusherChannelsClient? _leadSocketClient;
   final List<StreamSubscription<dynamic>> _leadSocketSubscriptions = [];
   LeadBloc? _leadBloc;
   StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
@@ -289,6 +300,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
@@ -301,6 +313,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _tabScrollController = ScrollController();
     _listScrollController = ScrollController();
     _listScrollController.addListener(_onScroll);
+    unawaited(_loadRecentSearches());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreLeadPlace());
     _loadFeatureState();
 
     _apiService.getSelectedSalesFunnel().then((funnelId) {
@@ -324,6 +338,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
         });
+        _loadLeadTabMemory();
 
         // Просто загружаем статусы, listener будет создан в BlocListener
         _leadBloc?.add(FetchLeadStatuses());
@@ -373,7 +388,40 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     });
   }
 
+  Future<void> _loadRecentSearches() async {
+    final items = await RecentSearchStore.read('leads');
+    if (!mounted) return;
+    setState(() => _recentSearches = items);
+  }
+
+  void _rememberSearch(String query) {
+    _recentSearchTimer?.cancel();
+    _recentSearchTimer = Timer(const Duration(milliseconds: 700), () async {
+      await RecentSearchStore.remember('leads', query);
+      await _loadRecentSearches();
+    });
+  }
+
+  void _restoreLeadPlace() {
+    if (_leadPlaceRestored || !_listScrollController.hasClients) return;
+    final offset = ListPlaceMemory.read('leads');
+    if (offset == null || offset <= 0) {
+      _leadPlaceRestored = true;
+      return;
+    }
+    final max = _listScrollController.position.maxScrollExtent;
+    if (max <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreLeadPlace());
+      return;
+    }
+    _listScrollController.jumpTo(offset.clamp(0, max));
+    _leadPlaceRestored = true;
+  }
+
   void _onScroll() {
+    if (_listScrollController.hasClients) {
+      ListPlaceMemory.save('leads', _listScrollController.offset);
+    }
     if (!_listScrollController.hasClients || _tabTitles.isEmpty) return;
 
     final state = context.read<LeadBloc>().state;
@@ -390,78 +438,19 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _setupLeadSocket() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    final userId = prefs.getString('unique_id');
-
-    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
-      debugPrint('LeadScreen: socket init skipped, token or userId is missing');
-      return;
-    }
-
-    final enteredDomainMap = await _apiService.getEnteredDomain();
-    final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    final enteredDomain = enteredDomainMap['enteredDomain'];
-
-    if (enteredMainDomain == null ||
-        enteredMainDomain.isEmpty ||
-        enteredDomain == null ||
-        enteredDomain.isEmpty) {
-      debugPrint('LeadScreen: socket init skipped, domain is missing');
-      return;
-    }
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    final socketClient = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('LeadScreen: socket connection error: $exception');
-        refresh();
-      },
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-
-    final presenceChannel = socketClient.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint('LeadScreen: socket auth failed: $exception');
-        },
-      ),
-    );
-
-    _leadSocketSubscriptions.add(
-      socketClient.onConnectionEstablished.listen((_) {
-        presenceChannel.subscribeIfNotUnsubscribed();
-      }),
-    );
-
-    _leadSocketSubscriptions.add(
-      presenceChannel.bind('lead.created').listen((event) async {
+    // Общий presence-user. Открытие лидов не создаёт новое Pusher-соединение.
+    final subscription = await UserRealtimeSocket.instance.listen(
+      'lead.created',
+      (event) async {
         await _handleLeadCreatedSocketEvent(event.data);
-      }),
+      },
     );
-
-    _leadSocketClient = socketClient;
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      debugPrint('LeadScreen: socket connect failed: $e');
+    if (!mounted) {
+      await subscription?.cancel();
+      return;
+    }
+    if (subscription != null) {
+      _leadSocketSubscriptions.add(subscription);
     }
   }
 
@@ -953,6 +942,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
+    _rememberSearch(query);
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchLeads(query, currentStatusId);
   }
@@ -1051,6 +1041,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                             _searchController.clear();
                             _lastSearchQuery = '';
                           });
+                          _loadLeadTabMemory();
                         }
 
                         context
@@ -1087,16 +1078,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                             color: context.appColors.buttonPrimaryBg, size: 24),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
-                            title,
+                          child: HoldToReadText(
+                            text: title,
                             style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
                               color: context.appColors.buttonPrimaryBg,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -1106,16 +1095,14 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               )
             else
               Expanded(
-                child: Text(
-                  title,
+                child: HoldToReadText(
+                  text: title,
                   style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
                     color: context.appColors.buttonPrimaryBg,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
@@ -1218,6 +1205,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             showEvent: true,
             clearButtonClick: (value) {
               if (value == false) {
+                _recentSearchTimer?.cancel();
                 if (mounted) {
                   setState(() {
                     _isSearching = false;
@@ -1345,6 +1333,15 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                         height: MediaQuery.of(context).padding.top +
                             kToolbarHeight +
                             15,
+                      ),
+                      ListFilterChips(
+                        hasFilters: _hasActiveFilters(),
+                        onClearFilters: _resetFilters,
+                        recentQueries: _isSearching ? _recentSearches : const [],
+                        onPickQuery: (query) {
+                          _searchController.text = query;
+                          _onSearch(query);
+                        },
                       ),
                       if (!_isSearching &&
                           _selectedManagerIds == null &&
@@ -1641,6 +1638,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
       backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
+        padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.only(bottom: 72),
+        ),
         itemCount: leads.length +
             ((context.watch<LeadBloc>().state is LeadDataLoaded &&
                     (context.watch<LeadBloc>().state as LeadDataLoaded)
@@ -1749,6 +1750,10 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
               backgroundColor: context.appColors.surfacePrimary,
               child: ListView.builder(
                 controller: _listScrollController,
+                padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.only(bottom: 72),
+        ),
                 itemCount: filteredLeads.length + (state.isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index >= filteredLeads.length) {
@@ -2282,6 +2287,8 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
                   }
                 }
 
+                _applyLeadTabMemory();
+
                 // Прокручиваем к активному табу
                 if (_tabScrollController.hasClients) {
                   _scrollToActiveTab();
@@ -2587,6 +2594,36 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     _tabController.dispose();
   }
 
+  Future<void> _loadLeadTabMemory() async {
+    final funnelId = _selectedFunnel?.id ?? 0;
+    _appliedTabMemory = false;
+    _memoryFunnelId = funnelId;
+    final raw = await SectionTabMemory.read('leads_$funnelId');
+    if (!mounted || _memoryFunnelId != funnelId) return;
+    _rememberedStatusId = int.tryParse(raw ?? '');
+    _applyLeadTabMemory();
+  }
+
+  void _applyLeadTabMemory() {
+    if (_appliedTabMemory || _rememberedStatusId == null) return;
+    if (widget.initialStatusId != null) {
+      _appliedTabMemory = true;
+      return;
+    }
+    if (_tabController.length == 0 || _tabTitles.isEmpty) return;
+    final index = _tabTitles.indexWhere(
+      (status) => status['id'] == _rememberedStatusId,
+    );
+    if (index < 0) return;
+    _appliedTabMemory = true;
+    if (_tabController.index == index) {
+      _currentTabIndex = index;
+      return;
+    }
+    _tabController.index = index;
+    _currentTabIndex = index;
+  }
+
   void _onTabControllerChanged() {
     if (!mounted || _tabController.indexIsChanging) return;
 
@@ -2612,6 +2649,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    SectionTabMemory.save('leads_${_selectedFunnel?.id ?? 0}', '$currentStatusId');
     if (_tabScrollController.hasClients) {
       _scrollToActiveTab();
     }
@@ -2717,13 +2755,21 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
     }
   }
 
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_listScrollController);
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
+    context.read<LeadBloc>().add(FetchLeadStatuses(forceRefresh: true));
+  }
+
   @override
   void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     _salesFunnelSubscription?.cancel();
     for (final subscription in _leadSocketSubscriptions) {
       subscription.cancel();
     }
-    _leadSocketClient?.disconnect();
+    _recentSearchTimer?.cancel();
     _listScrollController.removeListener(_onScroll);
     _listScrollController.dispose();
     _tabScrollController.dispose();

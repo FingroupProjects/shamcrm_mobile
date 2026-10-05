@@ -6,6 +6,12 @@ import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
+import 'package:crm_task_manager/utils/list_place_memory.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
+import 'package:crm_task_manager/utils/recent_search_store.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
+import 'package:crm_task_manager/widgets/list_filter_chips.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
@@ -28,12 +34,12 @@ import 'package:crm_task_manager/screens/deal/tabBar/deal_add_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_column.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_status_add.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,11 +64,17 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   late ScrollController _listScrollController;
   List<Map<String, dynamic>> _tabTitles = [];
   int _currentTabIndex = 0;
+  int? _rememberedStatusId;
+  int? _memoryFunnelId;
+  bool _appliedTabMemory = false;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   bool _isManager = false;
 
   final TextEditingController _searchController = TextEditingController();
+  List<String> _recentSearches = [];
+  Timer? _recentSearchTimer;
+  bool _dealPlaceRestored = false;
   bool _canCreateDealStatus = false;
   bool _canUpdateDealStatus = false;
   bool _canDeleteDealStatus = false;
@@ -130,7 +142,6 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   bool _isDealScreenTutorialCompleted = false;
   Map<String, dynamic>? tutorialProgress;
   SalesFunnel? _selectedFunnel;
-  PusherChannelsClient? _dealSocketClient;
   final List<StreamSubscription<dynamic>> _dealSocketSubscriptions = [];
 
   @override
@@ -140,6 +151,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
 
     _dealBloc = context.read<DealBloc>();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
@@ -148,6 +160,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     _tabScrollController = ScrollController();
     _listScrollController = ScrollController();
     _listScrollController.addListener(_onScroll);
+    unawaited(_loadRecentSearches());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDealPlace());
     // НЕ загружаем состояние фильтров - каждый раз начинаем с чистого листа
     _checkPermissions();
 
@@ -172,6 +186,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
         setState(() {
           _selectedFunnel = state.selectedFunnel ?? state.funnels.firstOrNull;
         });
+        _loadDealTabMemory();
 
         // Просто загружаем статусы, listener будет создан в BlocListener
         _dealBloc.add(FetchDealStatuses(
@@ -364,6 +379,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                           _searchController.clear();
                           _lastSearchQuery = '';
                         });
+                        _loadDealTabMemory();
 
                         context
                             .read<SalesFunnelBloc>()
@@ -399,16 +415,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
-                            title,
+                          child: HoldToReadText(
+                            text: title,
                             style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w600,
                               color: context.appColors.buttonPrimaryBg,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -418,16 +432,14 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               )
             else
               Expanded(
-                child: Text(
-                  title,
+                child: HoldToReadText(
+                  text: title,
                   style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w600,
                     color: context.appColors.buttonPrimaryBg,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
@@ -556,7 +568,40 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             _selectedDealCustomFieldFilters!.isNotEmpty);
   }
 
+  Future<void> _loadRecentSearches() async {
+    final items = await RecentSearchStore.read('deals');
+    if (!mounted) return;
+    setState(() => _recentSearches = items);
+  }
+
+  void _rememberSearch(String query) {
+    _recentSearchTimer?.cancel();
+    _recentSearchTimer = Timer(const Duration(milliseconds: 700), () async {
+      await RecentSearchStore.remember('deals', query);
+      await _loadRecentSearches();
+    });
+  }
+
+  void _restoreDealPlace() {
+    if (_dealPlaceRestored || !_listScrollController.hasClients) return;
+    final offset = ListPlaceMemory.read('deals');
+    if (offset == null || offset <= 0) {
+      _dealPlaceRestored = true;
+      return;
+    }
+    final max = _listScrollController.position.maxScrollExtent;
+    if (max <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDealPlace());
+      return;
+    }
+    _listScrollController.jumpTo(offset.clamp(0, max));
+    _dealPlaceRestored = true;
+  }
+
   void _onScroll() {
+    if (_listScrollController.hasClients) {
+      ListPlaceMemory.save('deals', _listScrollController.offset);
+    }
     if (!_listScrollController.hasClients) return;
     if (_listScrollController.position.maxScrollExtent <= 0) return;
 
@@ -606,78 +651,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _setupDealSocket() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    final userId = prefs.getString('unique_id');
-
-    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
-      debugPrint('DealScreen: socket init skipped, token or userId is missing');
-      return;
-    }
-
-    final enteredDomainMap = await _apiService.getEnteredDomain();
-    final enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    final enteredDomain = enteredDomainMap['enteredDomain'];
-
-    if (enteredMainDomain == null ||
-        enteredMainDomain.isEmpty ||
-        enteredDomain == null ||
-        enteredDomain.isEmpty) {
-      debugPrint('DealScreen: socket init skipped, domain is missing');
-      return;
-    }
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    final socketClient = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('DealScreen: socket connection error: $exception');
-        refresh();
-      },
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-
-    final presenceChannel = socketClient.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint('DealScreen: socket auth failed: $exception');
-        },
-      ),
-    );
-
-    _dealSocketSubscriptions.add(
-      socketClient.onConnectionEstablished.listen((_) {
-        presenceChannel.subscribeIfNotUnsubscribed();
-      }),
-    );
-
-    _dealSocketSubscriptions.add(
-      presenceChannel.bind('deal.created').listen((event) async {
+    // Общий presence-user. Открытие сделок не создаёт новое Pusher-соединение.
+    final subscription = await UserRealtimeSocket.instance.listen(
+      'deal.created',
+      (event) async {
         await _handleDealCreatedSocketEvent(event.data);
-      }),
+      },
     );
-
-    _dealSocketClient = socketClient;
-
-    try {
-      await socketClient.connect();
-    } catch (e) {
-      debugPrint('DealScreen: socket connect failed: $e');
+    if (!mounted) {
+      await subscription?.cancel();
+      return;
+    }
+    if (subscription != null) {
+      _dealSocketSubscriptions.add(subscription);
     }
   }
 
@@ -740,12 +726,19 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     throw const FormatException('Unsupported socket payload');
   }
 
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_listScrollController);
+    _dealBloc.add(FetchDealStatuses(salesFunnelId: _selectedFunnel?.id));
+  }
+
   @override
   void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     for (final subscription in _dealSocketSubscriptions) {
       subscription.cancel();
     }
-    _dealSocketClient?.disconnect();
+    _recentSearchTimer?.cancel();
     _listScrollController.removeListener(_onScroll);
     _listScrollController.dispose();
     _tabScrollController.dispose();
@@ -1335,6 +1328,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
+    _rememberSearch(query);
     if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
     _searchDeals(query, currentStatusId);
@@ -1444,6 +1438,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             showCallCenter: true,
             clearButtonClick: (value) {
               if (value == false) {
+                _recentSearchTimer?.cancel();
                 setState(() {
                   _isSearching = false;
                   _searchController.clear();
@@ -1563,6 +1558,15 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                             kToolbarHeight +
                             4,
                       ),
+                      ListFilterChips(
+                        hasFilters: _hasActiveFilters(),
+                        onClearFilters: _resetFilters,
+                        recentQueries: _isSearching ? _recentSearches : const [],
+                        onPickQuery: (query) {
+                          _searchController.text = query;
+                          _onSearch(query);
+                        },
+                      ),
                       if (!_isSearching && _showCustomTabBar)
                         _buildCustomTabBar(),
                       Expanded(
@@ -1634,7 +1638,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
       backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
-        padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
+        padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.fromLTRB(0, 6, 0, 72),
+        ),
         itemCount: deals.length,
         itemBuilder: (context, index) {
           final deal = deals[index];
@@ -1746,7 +1753,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(0, 6, 0, 96),
+                padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.fromLTRB(0, 6, 0, 72),
+        ),
                 itemCount:
                     filteredDeals.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
@@ -2087,6 +2097,36 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _loadDealTabMemory() async {
+    final funnelId = _selectedFunnel?.id ?? 0;
+    _appliedTabMemory = false;
+    _memoryFunnelId = funnelId;
+    final raw = await SectionTabMemory.read('deals_$funnelId');
+    if (!mounted || _memoryFunnelId != funnelId) return;
+    _rememberedStatusId = int.tryParse(raw ?? '');
+    _applyDealTabMemory();
+  }
+
+  void _applyDealTabMemory() {
+    if (_appliedTabMemory || _rememberedStatusId == null) return;
+    if (widget.initialStatusId != null) {
+      _appliedTabMemory = true;
+      return;
+    }
+    if (_tabController.length == 0 || _tabTitles.isEmpty) return;
+    final index = _tabTitles.indexWhere(
+      (status) => status['id'] == _rememberedStatusId,
+    );
+    if (index < 0) return;
+    _appliedTabMemory = true;
+    if (_tabController.index == index) {
+      _currentTabIndex = index;
+      return;
+    }
+    _tabController.index = index;
+    _currentTabIndex = index;
+  }
+
   void _showEditDealStatusDialog(int index) {
     final dealStatus = _tabTitles[index];
     ////debugPrint("DealScreen: Showing edit dialog for status: $dealStatus");
@@ -2219,6 +2259,10 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                       });
                       final currentStatusId =
                           _tabTitles[_currentTabIndex]['id'];
+                      SectionTabMemory.save(
+                        'deals_${_selectedFunnel?.id ?? 0}',
+                        '$currentStatusId',
+                      );
                       if (_tabScrollController.hasClients) {
                         _scrollToActiveTab();
                       }
@@ -2302,6 +2346,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                   _tabController.index = pendingIndex;
                   _currentTabIndex = pendingIndex;
                   _pendingStatusNavigationId = null;
+                  _appliedTabMemory = true;
                 } else if (needNewController) {
                   if (_currentTabIndex < _tabTitles.length &&
                       _currentTabIndex >= 0) {
@@ -2324,6 +2369,8 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
                     _currentTabIndex = safeIndex;
                   }
                 }
+
+                _applyDealTabMemory();
 
                 // Прокручиваем к активному табу
                 if (_tabScrollController.hasClients) {

@@ -5,8 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const List<double> voicePlaybackSpeeds = [1.0, 1.5, 2.0];
+
+/// Скорость помним между заходами в чат.
+const String chatVoiceSpeedPrefsKey = 'chat_voice_playback_speed';
+
+/// Каталог голосовых подставляет сюда «следующую» запись.
+/// Сервис не знает про каталог, чтобы файлы не ссылались друг на друга.
+ChatVoiceTrack? Function(ChatVoiceTrack current)? chatVoiceNextResolver;
 
 double nextVoicePlaybackSpeed(double current) {
   final index = voicePlaybackSpeeds.indexWhere(
@@ -36,6 +44,12 @@ String chatVoiceTrackKey({
   required String filePath,
 }) {
   return '$chatId:$messageId:$filePath';
+}
+
+/// Пока переключаем запись, плеер ещё раз присылает «закончилось».
+/// Это не конец новой записи, очередь из‑за этого перескакивать нельзя.
+bool shouldIgnoreVoiceCompletion({required bool switchingTrack}) {
+  return switchingTrack;
 }
 
 bool shouldShowChatVoiceMiniPlayer({
@@ -105,12 +119,33 @@ class ChatVoicePlayerService extends ChangeNotifier {
   ChatVoicePlayerService._() {
     _playerStateSub = _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        unawaited(stop());
+        if (shouldIgnoreVoiceCompletion(switchingTrack: _switchingTrack)) {
+          return;
+        }
+        unawaited(_handleCompleted());
         return;
       }
+      // Новая запись уже грузится. Следующее «закончилось» будет настоящим.
+      if (_switchingTrack &&
+          state.processingState != ProcessingState.idle &&
+          state.processingState != ProcessingState.completed) {
+        _switchingTrack = false;
+      }
+      if (state.playing) {
+        _keepPauseIcon = false;
+      }
+      // Пауза перед перемоткой не должна мигать кнопкой play.
+      if (_seekInFlight || _pendingSeek != null || _keepPauseIcon) return;
       _notifyListenersSafely();
     });
     _positionSub = _player.positionStream.listen((position) {
+      final pending = _pendingSeek;
+      if (pending != null) {
+        final gap = (position - pending).inMilliseconds.abs();
+        // Старая позиция приходит раньше, чем плеер примет перемотку.
+        if (gap > 450) return;
+        _pendingSeek = null;
+      }
       _position = position;
       _notifyListenersSafely();
     });
@@ -134,8 +169,19 @@ class ChatVoicePlayerService extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   double _speed = 1.0;
+  bool _speedLoaded = false;
+  bool _handlingComplete = false;
+  bool _switchingTrack = false;
   int _playGeneration = 0;
   int? _foregroundChatId;
+  // Пока перемотка не доехала, поток позиции ещё шлёт старое место.
+  // Если его принять, линия прыгает назад и мигает.
+  Duration? _pendingSeek;
+  bool _seekInFlight = false;
+  Duration? _queuedSeek;
+  bool _resumeAfterSeek = false;
+  // На время скрытой паузы перед перемоткой кнопка остаётся «пауза».
+  bool _keepPauseIcon = false;
 
   ChatVoiceTrack? get track => _track;
   Duration get position => _position;
@@ -146,7 +192,7 @@ class ChatVoicePlayerService extends ChangeNotifier {
 
   double get speed => _speed;
   bool get isActive => _track != null;
-  bool get isPlaying => _player.playing && isActive;
+  bool get isPlaying => isActive && (_player.playing || _keepPauseIcon);
   int? get foregroundChatId => _foregroundChatId;
   bool get shouldShowMiniPlayer => shouldShowChatVoiceMiniPlayer(
         isActive: isActive,
@@ -193,8 +239,11 @@ class ChatVoicePlayerService extends ChangeNotifier {
         );
   }
 
-  Future<void> play(ChatVoiceTrack track) async {
+  Future<void> play(ChatVoiceTrack track, {double? startFraction}) async {
+    // Ставим до любого await: stop() внутри play сразу шлёт старое «закончилось».
+    _switchingTrack = true;
     final generation = ++_playGeneration;
+    await _ensureSpeedLoaded();
     _track = track;
     _position = Duration.zero;
     if (track.duration > Duration.zero) {
@@ -212,7 +261,22 @@ class ChatVoicePlayerService extends ChangeNotifier {
       }
       await _player.setSpeed(_speed);
       if (generation != _playGeneration) return;
-      await _player.play();
+      final start = startFraction;
+      if (start != null) {
+        final totalMs = (_player.duration ?? duration).inMilliseconds;
+        if (totalMs > 0) {
+          final at = Duration(
+            milliseconds: (totalMs * start.clamp(0.0, 1.0)).round(),
+          );
+          _position = at;
+          await _player.seek(at);
+        }
+      }
+      if (generation != _playGeneration) return;
+      // Не ждём конец записи. Конец ловит поток состояния и включает следующую.
+      unawaited(_player.play().catchError((Object error) {
+        debugPrint('ChatVoicePlayerService playback error: $error');
+      }));
     } catch (error) {
       debugPrint('ChatVoicePlayerService play error: $error');
       if (generation != _playGeneration) return;
@@ -230,6 +294,8 @@ class ChatVoicePlayerService extends ChangeNotifier {
   }
 
   Future<void> pause() async {
+    _keepPauseIcon = false;
+    _resumeAfterSeek = false;
     await _player.pause();
     _notifyListenersSafely();
   }
@@ -241,12 +307,115 @@ class ChatVoicePlayerService extends ChangeNotifier {
   }
 
   Future<void> cycleSpeed() async {
+    await _ensureSpeedLoaded();
     _speed = nextVoicePlaybackSpeed(_speed);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(chatVoiceSpeedPrefsKey, _speed);
     await _player.setSpeed(_speed);
     _notifyListenersSafely();
   }
 
+  /// Доля от 0 до 1. Нажатие по полоске мини-плеера.
+  ///
+  /// just_audio во время play молча откладывает seek, пока не будет паузы.
+  /// Поэтому сначала держим линию на месте нажатия, ставим паузу,
+  /// перематываем и сразу продолжаем, если запись играла.
+  Future<void> seekToFraction(double fraction) async {
+    if (!isActive) return;
+    final total = duration.inMilliseconds;
+    if (total <= 0) return;
+    final safe = fraction.clamp(0.0, 1.0);
+    final target = Duration(milliseconds: (total * safe).round());
+    _pendingSeek = target;
+    _queuedSeek = target;
+    final keepPlaying = _resumeAfterSeek || _player.playing || _keepPauseIcon;
+    _resumeAfterSeek = keepPlaying;
+    _keepPauseIcon = keepPlaying;
+    _position = target;
+    _notifyListenersSafely();
+    if (_seekInFlight) return;
+    _seekInFlight = true;
+    try {
+      while (_queuedSeek != null && isActive) {
+        final next = _queuedSeek!;
+        _queuedSeek = null;
+        final shouldResume = _resumeAfterSeek;
+        _resumeAfterSeek = false;
+        if (_player.playing) {
+          await _player.pause();
+        }
+        if (!isActive) return;
+        _pendingSeek = next;
+        _position = next;
+        await _player.seek(next);
+        _position = next;
+        _notifyListenersSafely();
+        if (shouldResume && isActive && _queuedSeek == null) {
+          _keepPauseIcon = true;
+          unawaited(_player.play().catchError((Object error) {
+            debugPrint('ChatVoicePlayerService resume after seek error: $error');
+            _keepPauseIcon = false;
+            _notifyListenersSafely();
+          }));
+        } else if (_queuedSeek != null) {
+          _resumeAfterSeek = shouldResume || _resumeAfterSeek;
+          _keepPauseIcon = _resumeAfterSeek;
+        } else {
+          _keepPauseIcon = false;
+        }
+      }
+    } catch (error) {
+      debugPrint('ChatVoicePlayerService seek error: $error');
+    } finally {
+      _seekInFlight = false;
+      // Не сбрасываем цель, пока плеер сам не подтвердит новую позицию.
+      // Иначе старый кадр снова отбросит линию в начало.
+      if (_queuedSeek != null && isActive) {
+        unawaited(seekToFraction(
+          duration.inMilliseconds == 0
+              ? 0
+              : _queuedSeek!.inMilliseconds / duration.inMilliseconds,
+        ));
+      }
+    }
+  }
+
+  Future<void> _ensureSpeedLoaded() async {
+    if (_speedLoaded) return;
+    _speedLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getDouble(chatVoiceSpeedPrefsKey);
+      if (stored == null) return;
+      final known = voicePlaybackSpeeds.any(
+        (speed) => (speed - stored).abs() < 0.01,
+      );
+      if (!known) return;
+      _speed = stored;
+    } catch (error) {
+      debugPrint('ChatVoicePlayerService speed load error: $error');
+    }
+  }
+
+  /// Запись доиграла. Если в чате есть следующее голосовое — включаем его.
+  Future<void> _handleCompleted() async {
+    if (_handlingComplete || _switchingTrack) return;
+    _handlingComplete = true;
+    _switchingTrack = true;
+    final generation = _playGeneration;
+    final current = _track;
+    final next = current == null ? null : chatVoiceNextResolver?.call(current);
+    _handlingComplete = false;
+    if (generation != _playGeneration) return;
+    if (next != null) {
+      await play(next);
+      return;
+    }
+    await stop();
+  }
+
   Future<void> stop() async {
+    _switchingTrack = true;
     _playGeneration++;
     _track = null;
     _position = Duration.zero;

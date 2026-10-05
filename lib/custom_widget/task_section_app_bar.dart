@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:flutter/material.dart';
 
 class TaskSectionAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -66,20 +67,16 @@ class TaskSectionAppBar extends StatelessWidget implements PreferredSizeWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              HoldToReadText(
+                text: title,
                 style: context.appTextStyles.bodyLg.copyWith(
                   color: context.appColors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               if (subtitle != null && subtitle!.trim().isNotEmpty)
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                HoldToReadText(
+                  text: subtitle!,
                   style: context.appTextStyles.bodySm.copyWith(
                     color: context.appColors.textSecondary,
                   ),

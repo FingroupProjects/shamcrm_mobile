@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/bloc/event/event_state.dart';
@@ -17,6 +18,7 @@ import 'package:crm_task_manager/models/event/notice_sms_sample_model.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/lead_list.dart';
 import 'package:crm_task_manager/screens/event/event_details/managers_event.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_schedule_fields.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_sms_template_section.dart';
 import 'package:crm_task_manager/screens/event/event_details/notice_subject_list.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -45,6 +47,9 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
   bool sendSms = false;
   bool smsNoticeNotificationEnabled = false;
   bool isSubjectInvalid = false; // Флаг для валидации тематики
+  bool isLeadInvalid = false;
+  String? _focusField;
+  int _fieldErrorPulse = 0;
   List<NoticeSmsSample> smsTemplates = [NoticeSmsSample.empty()];
   NoticeSmsSample? selectedSmsTemplate;
   // Переменные для файлов
@@ -460,7 +465,8 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -483,7 +489,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => LeaveGate.requestPop(context),
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
@@ -585,7 +591,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                         duration: Duration(seconds: 3),
                       ),
                     );
-                    Navigator.pop(context);
+                    LeaveGate.finish(context);
                   }
                 },
                 child: Form(
@@ -625,27 +631,43 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                 children: [
-                                  SubjectSelectionWidget(
-                                    selectedSubject: selectedSubject,
-                                    onSelectSubject: (String subject) {
-                                      setState(() {
-                                        selectedSubject = subject;
-                                        if (subject.trim().isNotEmpty) {
-                                          isSubjectInvalid = false;
-                                        }
-                                      });
-                                    },
-                                    hasError: isSubjectInvalid,
+                                  RequiredFieldSlot(
+                                    invalid: isSubjectInvalid,
+                                    focus: _focusField == 'subject',
+                                    pulse: _fieldErrorPulse,
+                                    showCaption: false,
+                                    message: AppLocalizations.of(context)!
+                                        .translate('field_required'),
+                                    child: SubjectSelectionWidget(
+                                      selectedSubject: selectedSubject,
+                                      onSelectSubject: (String subject) {
+                                        setState(() {
+                                          selectedSubject = subject;
+                                          if (subject.trim().isNotEmpty) {
+                                            isSubjectInvalid = false;
+                                          }
+                                        });
+                                      },
+                                      hasError: isSubjectInvalid,
+                                    ),
                                   ),
                                   const SizedBox(height: 16),
                                   // Lead selection
-                                  LeadRadioGroupWidget(
-                                    onSelectLead: (LeadData lead) {
-                                      setState(() {
-                                        selectedLead = lead.id.toString();
-                                      });
-                                    },
-                                    selectedLead: selectedLead,
+                                  RequiredFieldSlot(
+                                    invalid: isLeadInvalid,
+                                    focus: _focusField == 'lead',
+                                    pulse: _fieldErrorPulse,
+                                    message: AppLocalizations.of(context)!
+                                        .translate('field_required'),
+                                    child: LeadRadioGroupWidget(
+                                      onSelectLead: (LeadData lead) {
+                                        setState(() {
+                                          selectedLead = lead.id.toString();
+                                          isLeadInvalid = false;
+                                        });
+                                      },
+                                      selectedLead: selectedLead,
+                                    ),
                                   ),
                                   const SizedBox(height: 16),
                                   // Description field
@@ -747,7 +769,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
                                 textColor: primaryText,
                                 borderColor: subtleBorder,
                                 borderWidth: 1,
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () => LeaveGate.requestPop(context),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -786,11 +808,25 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate() && selectedLead != null) {
+    final subjectMissing =
+        selectedSubject == null || selectedSubject!.trim().isEmpty;
+    final leadMissing = selectedLead == null;
+    if (subjectMissing || leadMissing) {
+      setState(() {
+        isSubjectInvalid = subjectMissing;
+        isLeadInvalid = leadMissing;
+        _focusField = subjectMissing ? 'subject' : 'lead';
+        _fieldErrorPulse++;
+      });
+    }
+    if (_formKey.currentState!.validate() &&
+        selectedLead != null &&
+        !subjectMissing) {
       DateTime? parsedDate;
       final dateValue = _dateController.text.trim();
       if (dateValue.isNotEmpty) {
@@ -867,12 +903,7 @@ class _NoticeAddScreenState extends State<NoticeAddScreen> {
               localizations: AppLocalizations.of(context)!,
             ),
           );
-    } else {
-      if (selectedSubject == null || selectedSubject!.trim().isEmpty) {
-        setState(() {
-          isSubjectInvalid = true;
-        });
-      }
+    } else if (!subjectMissing && !leadMissing) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

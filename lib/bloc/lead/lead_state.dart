@@ -102,8 +102,9 @@ class LeadError extends LeadState {
 
 class LeadSuccess extends LeadState {
   final String message;
+  final int? createdId;
 
-  LeadSuccess(this.message);
+  LeadSuccess(this.message, {this.createdId});
 }
 
 class LeadDeleted extends LeadState {

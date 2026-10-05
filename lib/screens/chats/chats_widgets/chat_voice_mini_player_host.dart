@@ -46,16 +46,13 @@ class ChatVoiceMiniPlayerHost extends StatelessWidget {
     return Stack(
       children: [
         child,
+        // Капсула не прилипает к краям экрана.
         Positioned(
-          top: MediaQuery.paddingOf(context).top + kToolbarHeight,
-          left: 0,
-          right: 0,
-          child: Material(
-            elevation: 3,
-            color: Colors.transparent,
-            child: ChatVoiceMiniPlayer(
-              onOpenChat: _openActiveVoiceChat,
-            ),
+          top: MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+          left: 12,
+          right: 12,
+          child: ChatVoiceMiniPlayer(
+            onOpenChat: _openActiveVoiceChat,
           ),
         ),
       ],

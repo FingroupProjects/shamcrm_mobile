@@ -11,6 +11,7 @@ import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/notification/notifications_model.dart';
 import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
@@ -381,6 +382,59 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  List<_NoticeRow> _groupNotifications(List<Notifications> source) {
+    final sorted = [...source]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final rows = <_NoticeRow>[];
+    var hasToday = false;
+    var hasEarlier = false;
+    for (final item in sorted) {
+      final local = item.createdAt.toLocal();
+      final day = DateTime(local.year, local.month, local.day);
+      final isToday = day == today;
+      if (isToday && !hasToday) {
+        rows.add(const _NoticeRow.header('notifications_today'));
+        hasToday = true;
+      }
+      if (!isToday && !hasEarlier) {
+        rows.add(const _NoticeRow.header('notifications_earlier'));
+        hasEarlier = true;
+      }
+      rows.add(_NoticeRow.item(item));
+    }
+    return rows;
+  }
+
+  // Одна и та же круглая кнопка для назад, корзины и дома.
+  // Раньше «назад» растягивалась на всю шапку, а значки были 18 и 22.
+  Widget _headerIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.appColors;
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Material(
+        color: colors.backgroundSecondary,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 22,
+              color: colors.iconPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -392,7 +446,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
+        automaticallyImplyLeading: false,
+        centerTitle: false,
+        titleSpacing: 0,
         toolbarHeight: 78,
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -406,83 +462,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             boxShadow: context.appShadows.card,
           ),
         ),
-        title: Text(
-          AppLocalizations.of(context)!.translate('notifications'),
-          style: textStyles.titleLg.copyWith(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        iconTheme: IconThemeData(color: colors.iconPrimary),
-        leadingWidth: 84,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16, top: 10, bottom: 10),
-          child: Material(
-            color: colors.backgroundSecondary,
-            borderRadius: BorderRadius.circular(18),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () {
-                Navigator.of(context).pop();
-              },
-              child: Center(
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 18,
-                  color: colors.iconPrimary,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _headerIconButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!.translate('notifications'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyles.titleLg.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              _headerIconButton(
+                icon: Icons.delete_outline_rounded,
+                onTap: _clearAllNotifications,
+              ),
+              const SizedBox(width: 8),
+              _headerIconButton(
+                icon: Icons.home_rounded,
+                onTap: _navigateToHomeScreen,
+              ),
+            ],
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16, top: 10, bottom: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Material(
-                    color: colors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: _clearAllNotifications,
-                      child: Icon(
-                        Icons.delete_outline_rounded,
-                        color: colors.iconPrimary,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Material(
-                    color: colors.backgroundSecondary,
-                    borderRadius: BorderRadius.circular(18),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(18),
-                      onTap: _navigateToHomeScreen,
-                      child: Center(
-                        child: Image.asset(
-                          'assets/icons/home_appBar.png',
-                          width: 18,
-                          height: 18,
-                          color: colors.iconPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: BlocListener<NotificationBloc, NotificationState>(
         listener: (context, state) {
@@ -609,6 +621,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               debugPrint(
                   "✅ [BUILD] Уведомлений: ${notifications.length}, все загружено: $isAllLoaded");
 
+              final entries = _groupNotifications(notifications);
               return RefreshIndicator(
                 color: colors.buttonPrimaryBg,
                 backgroundColor: colors.surfacePrimary,
@@ -632,11 +645,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     : ListView.builder(
                         controller: _scrollController,
                         physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: notifications.length + (isAllLoaded ? 0 : 1),
+                        // Первая строка — «Прочитать все», чтобы не сжимать шапку.
+                        itemCount: entries.length + 1 + (isAllLoaded ? 0 : 1),
                         padding: const EdgeInsets.symmetric(
                             vertical: 8, horizontal: 16),
                         itemBuilder: (context, index) {
-                          if (index == notifications.length) {
+                          if (index == 0) {
+                            return Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: colors.buttonPrimaryBg,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  minimumSize: const Size(0, 36),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: _clearAllNotifications,
+                                child: Text(
+                                  AppLocalizations.of(context)!
+                                      .translate('notifications_read_all'),
+                                  style: textStyles.bodyMd.copyWith(
+                                    color: colors.buttonPrimaryBg,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          final entryIndex = index - 1;
+                          if (entryIndex == entries.length) {
                             if (!isAllLoaded && _isLoadingMore) {
                               debugPrint(
                                   "🔄 [BUILD] Показываем индикатор пагинации");
@@ -651,7 +691,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             }
                           }
 
-                          final notification = notifications[index];
+                          final entry = entries[entryIndex];
+                          if (entry.notification == null) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8, top: 4),
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .translate(entry.titleKey!),
+                                style: textStyles.bodySm.copyWith(
+                                  color: colors.textSecondary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          }
+                          final notification = entry.notification!;
 
                           return Dismissible(
                             key: Key(notification.id.toString()),
@@ -672,7 +726,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               debugPrint(
                                   "🗑️ [DELETE] Удаление уведомления ID: ${notification.id}");
                               setState(() {
-                                notifications.removeAt(index);
+                                notifications.removeWhere(
+                                  (item) => item.id == notification.id,
+                                );
                               });
                               notificationBloc
                                   .add(DeleteNotification(notification.id));
@@ -1188,4 +1244,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       debugPrint('════════════════════════════════════════════════════════');
     }
   }
+}
+
+class _NoticeRow {
+  final String? titleKey;
+  final Notifications? notification;
+
+  const _NoticeRow.header(this.titleKey) : notification = null;
+
+  const _NoticeRow.item(this.notification) : titleKey = null;
 }

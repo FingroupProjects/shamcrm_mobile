@@ -730,8 +730,11 @@ class DealBloc extends Bloc<DealEvent, DealState> {
         userIds: event.userIds,
       );
       if (result['success']) {
+        final createdId = result['id'];
         emit(DealSuccess(
-            event.localizations.translate('deal_created_successfully')));
+          event.localizations.translate('deal_created_successfully'),
+          createdId: createdId is int ? createdId : null,
+        ));
       } else {
         emit(DealError(event.localizations.translate(result['message'])));
       }

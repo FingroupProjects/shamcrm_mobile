@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/custom_widget/shimmer_wave.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -150,6 +152,7 @@ class MyNavBar extends StatefulWidget {
   final int currentIndexGroup2;
   final List<int> unreadCountsGroup1;
   final List<int> unreadCountsGroup2;
+  final VoidCallback? onActiveDoubleTap;
 
   const MyNavBar({
     super.key,
@@ -164,6 +167,7 @@ class MyNavBar extends StatefulWidget {
     this.unreadCountsGroup2 = const [],
     this.currentIndexGroup1 = -1,
     this.currentIndexGroup2 = -1,
+    this.onActiveDoubleTap,
   });
 
   @override
@@ -455,7 +459,7 @@ class _MyNavBarState extends State<MyNavBar> {
                                 alpha: 0.96,
                               )
                             : context.appColors.surfacePrimary.withValues(
-                                alpha: 0.68,
+                                alpha: 0.96,
                               ),
                         border: Border.all(
                           color: item.isActive
@@ -532,6 +536,16 @@ class _MyNavBarState extends State<MyNavBar> {
                   widget.onItemSelected(item.groupIndex, item.itemIndex);
                 }
               },
+              onDoubleTap: () {
+                if (_isReordering || !item.isActive) return;
+                HapticFeedback.selectionClick();
+                final action = widget.onActiveDoubleTap;
+                if (action != null) {
+                  action();
+                } else {
+                  SectionScrollBus.instance.request();
+                }
+              },
             );
           },
         ),
@@ -568,24 +582,69 @@ class NavBarItemData {
   });
 }
 
-class _NavBarItem extends StatelessWidget {
+class _NavBarItem extends StatefulWidget {
   final NavBarItemData data;
   final VoidCallback onTap;
+  final VoidCallback onDoubleTap;
   final bool isReordering;
-
-  static const double _iconSize = 22;
 
   const _NavBarItem({
     required Key key,
     required this.data,
     required this.onTap,
+    required this.onDoubleTap,
     this.isReordering = false,
   }) : super(key: key);
 
   @override
+  State<_NavBarItem> createState() => _NavBarItemState();
+}
+
+class _NavBarItemState extends State<_NavBarItem>
+    with SingleTickerProviderStateMixin {
+  static const double _iconSize = 22;
+
+  late final AnimationController _pulse;
+  late final Animation<double> _pulseScale;
+  int _lastUnread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastUnread = widget.data.unreadCount;
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _pulseScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1, end: 1.22), weight: 45),
+      TweenSequenceItem(tween: Tween(begin: 1.22, end: 1), weight: 55),
+    ]).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeOutCubic));
+  }
+
+  @override
+  void didUpdateWidget(_NavBarItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.data.unreadCount;
+    if (next > _lastUnread && next > 0) {
+      _pulse.forward(from: 0);
+    }
+    _lastUnread = next;
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final data = widget.data;
+    final isReordering = widget.isReordering;
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
+      onDoubleTap: data.isActive ? widget.onDoubleTap : null,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -595,7 +654,7 @@ class _NavBarItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: data.isActive
                   ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.96)
-                  : context.appColors.surfacePrimary.withValues(alpha: 0.68),
+                  : context.appColors.surfacePrimary.withValues(alpha: 0.96),
               border: Border.all(
                 color: data.isActive
                     ? context.appColors.buttonPrimaryBg
@@ -656,35 +715,52 @@ class _NavBarItem extends StatelessWidget {
             Positioned(
               top: -8,
               left: -2,
-              child: SizedBox(
-                width: data.unreadCount > 99 ? 34 : 24,
-                height: 24,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: context.appColors.error,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.appColors.error.withValues(alpha: 0.28),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Golos',
-                        height: 1,
+              child: GestureDetector(
+                onLongPress: data.unreadCount > 99
+                    ? () {
+                        final box = context.findRenderObject() as RenderBox?;
+                        showFadingCaption(
+                          context,
+                          '${data.unreadCount}',
+                          anchor: box?.localToGlobal(Offset.zero),
+                          anchorHeight: box?.size.height ?? 24,
+                        );
+                      }
+                    : null,
+                child: ScaleTransition(
+                scale: _pulseScale,
+                child: SizedBox(
+                  width: data.unreadCount > 99 ? 34 : 24,
+                  height: 24,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.appColors.error,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              context.appColors.error.withValues(alpha: 0.28),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        data.unreadCount > 99 ? '99+' : '${data.unreadCount}',
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Golos',
+                          height: 1,
+                        ),
                       ),
                     ),
                   ),
                 ),
+              ),
               ),
             ),
         ],

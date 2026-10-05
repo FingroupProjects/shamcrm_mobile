@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/document/incoming/incoming_bloc.dart';
@@ -18,7 +20,10 @@ import 'package:crm_task_manager/page_2/warehouse/incoming/variant_selection_bot
 import 'package:crm_task_manager/page_2/warehouse/widgets/barcode_scanner_handler.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/save_hint_banner.dart';
 import 'package:crm_task_manager/page_2/warehouse/widgets/validation_helper.dart';
+import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_document_details_screen.dart';
 import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/global_fun.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +76,12 @@ class _IncomingDocumentCreateScreenState
   final ApiService _apiService = ApiService();
   int? _organizationCurrencyId;
   String? _exchangeRateErrorText;
+  bool _allowIncomingPop = false;
+  bool _supplierMissing = false;
+  bool _storageMissing = false;
+  bool _goodsMissing = false;
+  String? _focusField;
+  int _fieldErrorPulse = 0;
 
   @override
   void initState() {
@@ -521,31 +532,14 @@ class _IncomingDocumentCreateScreenState
       return;
     }
 
-    if (_items.isEmpty) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('add_at_least_one_item') ??
-            'Добавьте хотя бы один товар',
-        false,
-      );
-      cancelLoading();
-      return;
-    }
-
-    if (_selectedStorage == null) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_storage') ??
-            'Выберите склад',
-        false,
-      );
-      cancelLoading();
-      return;
-    }
-
-    if (_selectedSupplier == null) {
-      _showSnackBar(
-        AppLocalizations.of(context)!.translate('select_supplier') ??
-            'Выберите поставщика',
-        false,
+    final supplierMissing = _selectedSupplier == null;
+    final storageMissing = _selectedStorage == null;
+    final goodsMissing = _items.isEmpty;
+    if (supplierMissing || storageMissing || goodsMissing) {
+      _markIncomingGap(
+        supplier: supplierMissing,
+        storage: storageMissing,
+        goods: goodsMissing,
       );
       cancelLoading();
       return;
@@ -648,6 +642,30 @@ class _IncomingDocumentCreateScreenState
     }
   }
 
+  void _markIncomingGap({
+    required bool supplier,
+    required bool storage,
+    required bool goods,
+  }) {
+    final focus = supplier ? 'supplier' : storage ? 'storage' : 'goods';
+    final tab = focus == 'goods' ? 1 : 0;
+    setState(() {
+      _supplierMissing = supplier;
+      _storageMissing = storage;
+      _goodsMissing = goods;
+      _focusField = focus;
+    });
+    if (_tabController.index != tab) {
+      _tabController.animateTo(tab);
+      Future.delayed(const Duration(milliseconds: 280), () {
+        if (!mounted) return;
+        setState(() => _fieldErrorPulse++);
+      });
+      return;
+    }
+    setState(() => _fieldErrorPulse++);
+  }
+
   void _showSnackBar(String message, bool isSuccess) {
     if (!mounted) return;
     final colors = context.appColors;
@@ -685,11 +703,8 @@ class _IncomingDocumentCreateScreenState
 
     return WillPopScope(
       onWillPop: () async {
-        if (_items.isNotEmpty) {
-          final shouldExit = await ConfirmExitDialog.show(context);
-          return shouldExit;
-        }
-        return true;
+        if (_allowIncomingPop) return true;
+        return ConfirmExitDialog.show(context);
       },
       child: KeyboardDismissible(
         child: Scaffold(
@@ -700,6 +715,25 @@ class _IncomingDocumentCreateScreenState
               setState(() => _isLoading = false);
 
               if (state is IncomingCreateSuccess && mounted) {
+                final navigator = Navigator.of(context);
+                final createdId = state.documentId;
+                showCreatedSnackBar(
+                  context: context,
+                  message: state.message,
+                  onOpen: createdId == null
+                      ? null
+                      : () {
+                          navigator.push(
+                            MaterialPageRoute(
+                              builder: (_) => IncomingDocumentDetailsScreen(
+                                documentId: createdId,
+                                docNumber: state.docNumber ?? '$createdId',
+                              ),
+                            ),
+                          );
+                        },
+                );
+                _allowIncomingPop = true;
                 Navigator.pop(context, true);
               }
             },
@@ -760,10 +794,17 @@ class _IncomingDocumentCreateScreenState
           const SizedBox(height: 8),
           _buildDateField(localizations),
           const SizedBox(height: 16),
-          SupplierWidget(
+          RequiredFieldSlot(
+            invalid: _supplierMissing,
+            focus: _focusField == 'supplier',
+            pulse: _fieldErrorPulse,
+            message: localizations.translate('select_supplier') ??
+                'Выберите поставщика',
+            child: SupplierWidget(
             selectedSupplier: _selectedSupplier,
             onChanged: (value) => setState(() {
               _selectedSupplier = value;
+              _supplierMissing = false;
               _exchangeRateErrorText = null;
               if (!_isExchangeRateRequired) {
                 _exchangeRateController.clear();
@@ -771,17 +812,29 @@ class _IncomingDocumentCreateScreenState
             }),
             onChangedSupplier: (supplier) => setState(() {
               _selectedSupplierData = supplier;
+              _supplierMissing = false;
               _exchangeRateErrorText = null;
               if (!_isExchangeRateRequired) {
                 _exchangeRateController.clear();
               }
             }),
           ),
+          ),
           const SizedBox(height: 16),
-          StorageWidget(
+          RequiredFieldSlot(
+            invalid: _storageMissing,
+            focus: _focusField == 'storage',
+            pulse: _fieldErrorPulse,
+            message:
+                localizations.translate('select_storage') ?? 'Выберите склад',
+            child: StorageWidget(
             key: const ValueKey('storage_widget_main_tab'),
             selectedStorage: _selectedStorage,
-            onChanged: (value) => setState(() => _selectedStorage = value),
+            onChanged: (value) => setState(() {
+              _selectedStorage = value;
+              _storageMissing = false;
+            }),
+          ),
           ),
           if (_isExchangeRateRequired) ...[
             const SizedBox(height: 16),
@@ -817,17 +870,24 @@ class _IncomingDocumentCreateScreenState
                   _buildSelectedItemsList(),
                   const SizedBox(height: 12),
                 ] else ...[
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Text(
-                        localizations.translate('no_goods_added') ??
-                            'Товары не добавлены',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w400,
-                          color: colors.textSecondary,
+                  RequiredFieldSlot(
+                    invalid: _goodsMissing,
+                    focus: _focusField == 'goods',
+                    pulse: _fieldErrorPulse,
+                    message: localizations.translate('add_at_least_one_item') ??
+                        'Добавьте хотя бы один товар',
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Text(
+                          localizations.translate('no_goods_added') ??
+                              'Товары не добавлены',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w400,
+                            color: colors.textSecondary,
+                          ),
                         ),
                       ),
                     ),
@@ -901,15 +961,8 @@ class _IncomingDocumentCreateScreenState
       elevation: 0,
       leading: IconButton(
         icon: Icon(Icons.arrow_back_ios, color: colors.iconPrimary, size: 24),
-        onPressed: () async {
-          if (_items.isNotEmpty) {
-            final shouldExit = await ConfirmExitDialog.show(context);
-            if (shouldExit && mounted) {
-              Navigator.pop(context);
-            }
-          } else {
-            Navigator.pop(context);
-          }
+        onPressed: () {
+          Navigator.pop(context);
         },
       ),
       title: Row(

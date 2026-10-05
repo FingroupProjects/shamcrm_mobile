@@ -89,6 +89,7 @@ class _InputFieldState extends State<InputField>
 
     widget.messageController.addListener(_handleSelectionChange);
     widget.messageController.addListener(_updateTextState);
+    widget.messageController.addListener(_adoptExternalDraft);
     widget.focusNode.addListener(_handleFocusChange);
 
     _htmlContent = _composerController?.htmlContent ??
@@ -113,6 +114,7 @@ class _InputFieldState extends State<InputField>
     _selectionDebounce?.cancel();
     widget.messageController.removeListener(_handleSelectionChange);
     widget.messageController.removeListener(_updateTextState);
+    widget.messageController.removeListener(_adoptExternalDraft);
     widget.focusNode.removeListener(_handleFocusChange);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -125,6 +127,18 @@ class _InputFieldState extends State<InputField>
     setState(() {
       _voicePressed = value;
     });
+  }
+
+  /// Поле ещё пустое, а контроллер уже получил черновик снаружи.
+  void _adoptExternalDraft() {
+    if (_lastPlainText.isNotEmpty || _htmlContent.trim().isNotEmpty) return;
+    final plain = widget.messageController.text;
+    if (plain.trim().isEmpty) return;
+    final html = _composerController?.htmlContent ?? '';
+    _htmlContent = html.trim().isNotEmpty ? html : plain;
+    _lastPlainText = plain;
+    if (!mounted) return;
+    setState(() => _hasText = true);
   }
 
   void _updateTextState() {
@@ -706,7 +720,7 @@ class _InputFieldState extends State<InputField>
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
 
-    await Clipboard.setData(ClipboardData(text: selectedText));
+    await copyTextAndNotify(context, selectedText);
 
     _closeFormattingPanel(restoreFocus: true);
   }
@@ -721,7 +735,7 @@ class _InputFieldState extends State<InputField>
     final text = widget.messageController.text;
     final selectedText = text.substring(selection.start, selection.end);
 
-    await Clipboard.setData(ClipboardData(text: selectedText));
+    await copyTextAndNotify(context, selectedText);
 
     final newText = text.replaceRange(selection.start, selection.end, '');
     _lastPlainText = newText;

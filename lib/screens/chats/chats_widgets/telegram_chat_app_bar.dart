@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:flutter/material.dart';
 
 /// Telegram-style AppBar with frosted glass effect.
@@ -159,16 +160,14 @@ class TelegramChatAppBar extends StatelessWidget
                                 )
                               : Align(
                                   alignment: Alignment.centerLeft,
-                                  child: Text(
-                                    name,
+                                  child: HoldToReadText(
+                                    text: name,
                                     style:
                                         context.appTextStyles.bodyLg.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: context.appColors.textPrimary,
                                       letterSpacing: -0.3,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                         ),

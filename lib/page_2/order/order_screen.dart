@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_event.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
@@ -20,6 +21,7 @@ import 'package:crm_task_manager/page_2/order/order_details/order_status_edit.da
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -63,6 +65,7 @@ class _OrderScreenState extends State<OrderScreen>
     super.initState();
 
     _tabController = TabController(length: 0, vsync: this);
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
     _orderBloc = OrderBloc(ApiService())..add(FetchOrderStatuses());
     _checkPermissions();
   }
@@ -78,8 +81,15 @@ class _OrderScreenState extends State<OrderScreen>
     });
   }
 
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_scrollController);
+    _orderBloc.add(FetchOrderStatuses(forceRefresh: true));
+  }
+
   @override
   void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     _scrollController.dispose();
     _tabController.dispose();
     _searchController.dispose();
@@ -1191,6 +1201,7 @@ class _OrderScreenState extends State<OrderScreen>
               backgroundColor: colors.surfacePrimary,
               child: ListView.builder(
                 controller: _scrollController,
+                padding: paddingAboveNav(context),
                 itemCount: orders.length,
                 itemBuilder: (context, index) {
                   final order = orders[index];

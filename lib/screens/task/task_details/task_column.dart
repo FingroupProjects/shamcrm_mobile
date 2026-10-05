@@ -9,6 +9,7 @@ import 'package:crm_task_manager/screens/task/task_details/task_add_screen.dart'
 import 'package:crm_task_manager/screens/task/task_details/task_card.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -400,7 +401,10 @@ class TaskColumnState extends State<TaskColumn> {
                       child: ListView.builder(
                         controller: _scrollController,
                         physics: AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.zero,
+                        padding: paddingAboveNav(
+                          context,
+                          base: const EdgeInsets.only(bottom: 72),
+                        ),
                         itemCount:
                             tasks.length + (showPaginationLoader ? 1 : 0),
                         itemBuilder: (context, index) {

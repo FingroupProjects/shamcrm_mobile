@@ -3,8 +3,7 @@ import 'dart:convert';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/utils/active_chat_tracker.dart';
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -95,7 +94,6 @@ class ChatUnreadCounterService {
   final ValueNotifier<ChatUnreadCounts> counts =
       ValueNotifier(const ChatUnreadCounts());
 
-  PusherChannelsClient? _socketClient;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final Map<String, String> _lastMessageFingerprints = {};
 
@@ -103,7 +101,6 @@ class ChatUnreadCounterService {
   bool _isInitialized = false;
   bool _isConnecting = false;
   bool _isRefreshing = false;
-  String? _currentUserUniqueId;
   static const String _countsCacheKey = 'chat_unread_counts_v1';
 
   Future<void> initialize() async {
@@ -241,89 +238,17 @@ class ChatUnreadCounterService {
   }
 
   Future<void> _connectSocketIfNeeded() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    final userUniqueId = prefs.getString('unique_id');
-
-    if (token == null ||
-        token.isEmpty ||
-        userUniqueId == null ||
-        userUniqueId.isEmpty) {
-      return;
-    }
-
-    if (_socketClient != null && _currentUserUniqueId == userUniqueId) {
-      return;
-    }
-
-    _currentUserUniqueId = userUniqueId;
-
-    final enteredDomainMap = await _apiService.getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-    final verifiedDomain = await _apiService.getVerifiedDomain();
-
-    if (enteredMainDomain == null || enteredDomain == null) {
-      if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-        enteredMainDomain = verifiedDomain.split('-back.').last;
-        enteredDomain = verifiedDomain.split('-back.').first;
-      } else {
-        await _apiService.initialize();
-        final baseUrl = await _apiService.getDynamicBaseUrl();
-        final match =
-            RegExp(r'https://(.+?)-back\.(.+?)(/|$)').firstMatch(baseUrl);
-        enteredDomain = match?.group(1) ?? 'fingroupcrm';
-        enteredMainDomain = match?.group(2) ?? 'shamcrm.com';
+    if (_subscriptions.isNotEmpty) return;
+    // Счётчик слушает общий presence-user и не открывает свой сокет.
+    for (final eventName in ['chat.created', 'chat.updated']) {
+      final subscription = await UserRealtimeSocket.instance.listen(
+        eventName,
+        (event) => _handleSocketPayload(event.data),
+      );
+      if (subscription != null) {
+        _subscriptions.add(subscription);
       }
     }
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    final socketClient = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint('ChatUnreadCounterService socket error: $exception');
-        refresh();
-      },
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-
-    final userChannelName = 'presence-user.$userUniqueId';
-    final presenceChannel = socketClient.presenceChannel(
-      userChannelName,
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-          'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth',
-        ),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-      ),
-    );
-
-    _subscriptions.add(
-      socketClient.onConnectionEstablished.listen((_) {
-        presenceChannel.subscribeIfNotUnsubscribed();
-      }),
-    );
-
-    for (final eventName in ['chat.created', 'chat.updated']) {
-      _subscriptions.add(
-        presenceChannel.bind(eventName).listen((event) {
-          _handleSocketPayload(event.data);
-        }),
-      );
-    }
-
-    _socketClient = socketClient;
-    await socketClient.connect();
   }
 
   void _handleSocketPayload(String rawPayload) {
@@ -508,8 +433,9 @@ class ChatUnreadCounterService {
       await subscription.cancel();
     }
     _subscriptions.clear();
-    _socketClient?.dispose();
-    _socketClient = null;
+    // Этот сервис закрывается только при выходе из аккаунта.
+    // Вместе с ним закрываем общий сокет, чтобы следующий логин начал заново.
+    await UserRealtimeSocket.instance.close();
     _isInitialized = false;
     _isConnecting = false;
     _isRefreshing = false;

@@ -1078,27 +1078,7 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
     return GestureDetector(
       onTap: () => _showFullTextDialog(label.replaceAll(':', ''), value),
       onLongPress: () {
-        Clipboard.setData(ClipboardData(text: value));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
-                  'Скопировано',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: context.appColors.textInverse,
-              ),
-            ),
-            backgroundColor: context.appColors.success,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        copyTextAndNotify(context, value);
       },
       child: Text(
         value,
@@ -2027,20 +2007,27 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
                 children: [
                   if (label ==
                       AppLocalizations.of(context)!.translate('lead_name'))
-                    Row(
-                      children: [
-                        _buildExpandableText(
-                            label, value, constraints.maxWidth * 0.7),
-                        if (currentLead?.phone_verified_at != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Image.asset(
-                              'assets/icons/badge.png',
-                              width: 24,
-                              height: 24,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: _buildExpandableText(
+                              label,
+                              value,
+                              constraints.maxWidth,
                             ),
                           ),
-                      ],
+                          if (currentLead?.phone_verified_at != null)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Image.asset(
+                                'assets/icons/badge.png',
+                                width: 24,
+                                height: 24,
+                              ),
+                            ),
+                        ],
+                      ),
                     )
                   else
                     Expanded(

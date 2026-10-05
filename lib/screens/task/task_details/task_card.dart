@@ -2,12 +2,15 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart'; /
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
+import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/task/task_model.dart'; // Импорт модели задачи
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart'; // Импорт экрана деталей задачи
 import 'package:crm_task_manager/screens/task/task_details/task_dropdown_bottom_dialog.dart'; // Импорт виджета выпадающего диалога для выбора статуса задачи
+import 'package:crm_task_manager/widgets/neighbor_pager.dart';
+import 'package:crm_task_manager/widgets/return_highlight.dart';
 import 'package:flutter/material.dart'; // Импорт Flutter фреймворка
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -94,6 +97,34 @@ class TaskCardState extends State<TaskCard> {
     }
   }
 
+  Future<int> _loadMoreTaskNeighbors(TaskBloc bloc, List<Task> items) async {
+    if (!mounted || bloc.allTasksFetched) return items.length;
+    final page = bloc.state is TaskDataLoaded
+        ? (bloc.state as TaskDataLoaded).currentPage
+        : 1;
+    bloc.add(FetchMoreTasks(widget.statusId, page));
+    try {
+      await bloc.stream
+          .firstWhere(
+            (state) => state is TaskDataLoaded && !state.isLoadingMore,
+          )
+          .timeout(const Duration(seconds: 8));
+    } catch (_) {
+      return items.length;
+    }
+    if (bloc.state is! TaskDataLoaded) return items.length;
+    final fresh = (bloc.state as TaskDataLoaded).tasks;
+    final sameColumn =
+        fresh.where((item) => item.statusId == widget.statusId).toList();
+    final merged = sameColumn.isNotEmpty ? sameColumn : fresh;
+    if (merged.length > items.length) {
+      items
+        ..clear()
+        ..addAll(merged);
+    }
+    return items.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -108,32 +139,60 @@ class TaskCardState extends State<TaskCard> {
             AppLocalizations.of(context)!.translate('no_project');
     final overdueDays = widget.task.overdue ?? 0;
 
-    return GestureDetector(
+    return ReturnHighlightBox(
+        section: 'tasks',
+        itemId: widget.task.id.toString(),
+        child: GestureDetector(
         onTap: () async {
           final taskBloc = context.read<TaskBloc>();
+          final loaded = taskBloc.state is TaskDataLoaded
+              ? List<Task>.from((taskBloc.state as TaskDataLoaded).tasks)
+              : <Task>[widget.task];
+          final column = loaded
+              .where((item) => item.statusId == widget.statusId)
+              .toList();
+          final items = column.isNotEmpty
+              ? column
+              : (loaded.isNotEmpty ? loaded : <Task>[widget.task]);
+          var index = items.indexWhere((item) => item.id == widget.task.id);
+          if (index < 0) {
+            items.insert(0, widget.task);
+            index = 0;
+          }
           final result = await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TaskDetailsScreen(
-                taskId: widget.task.id
-                    .toString(), // ID задачи для детального экрана
-                taskNumber: widget.task.taskNumber,
-                taskName: widget.task.name, // Название задачи
-                startDate: widget.task.startDate, // Дата начала задачи
-                endDate: widget.task.endDate, // Дата окончания задачи
-                taskStatus: dropdownValue, // Текущий статус задачи
-                statusId: statusIdTask, // ID статуса задачи
-                priority: widget.task.priority, // Приоритет задачи
-                description: widget.task.description, // Описание задачи
-                project: widget.task.project?.name ??
-                    widget.project ??
-                    AppLocalizations.of(context)!.translate('no_project'),
-                projectId: widget.projectId,
-                customFields: widget.task.customFields,
+              builder: (routeContext) => NeighborPager(
+                initialIndex: index,
+                initialCount: items.length,
+                pageBuilder: (pageContext, i) {
+                  final task = items[i];
+                  final projectName = task.project?.name;
+                  return TaskDetailsScreen(
+                    taskId: task.id.toString(),
+                    taskNumber: task.taskNumber,
+                    taskName: task.name,
+                    startDate: task.startDate,
+                    endDate: task.endDate,
+                    taskStatus: task.taskStatus?.taskStatus?.name ?? widget.name,
+                    statusId: task.statusId,
+                    priority: task.priority,
+                    description: task.description,
+                    project: projectName != null && projectName.isNotEmpty
+                        ? projectName
+                        : widget.project ??
+                            AppLocalizations.of(pageContext)!
+                                .translate('no_project'),
+                    projectId: widget.projectId,
+                    customFields: task.customFields,
+                  );
+                },
+                loadMore: () => _loadMoreTaskNeighbors(taskBloc, items),
               ),
             ),
           );
 
+          ReturnHighlight.flash('tasks', widget.task.id.toString());
           if (!mounted) return;
 
           if (result is Map<String, dynamic> && result['refresh'] == true) {
@@ -392,7 +451,8 @@ class TaskCardState extends State<TaskCard> {
               ),
             ],
           ),
-        ));
+        )),
+    );
   }
 
   Widget _buildTaskAvatar(BuildContext context, String image,

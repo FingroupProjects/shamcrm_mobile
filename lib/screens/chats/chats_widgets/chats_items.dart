@@ -2,6 +2,7 @@ import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/chat_draft_store.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -18,6 +19,7 @@ class ChatItem {
   final String avatar;
   final String icon;
   final bool isGroup;
+  final int? chatId;
 
   ChatItem(
     this.name,
@@ -27,6 +29,7 @@ class ChatItem {
     this.icon,
     this.unreadCount, {
     this.isGroup = false,
+    this.chatId,
   });
 
   get id => null;
@@ -103,22 +106,7 @@ class ChatListItem extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              children: parseHtmlToTextSpans(
-                                context,
-                                chatItem.message,
-                                context.appTextStyles.bodyMd.copyWith(
-                                  color: context.appColors.textPrimary
-                                      .withValues(alpha: 0.76),
-                                ),
-                              ),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        Expanded(child: _buildPreview(context)),
                         const SizedBox(width: 2),
                         SizedBox(
                           width: 33,
@@ -153,6 +141,60 @@ class ChatListItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPreview(BuildContext context) {
+    final chatId = chatItem.chatId;
+    if (chatId == null) return _messagePreview(context, chatItem.message);
+
+    return ListenableBuilder(
+      listenable: ChatDraftStore.instance,
+      builder: (context, _) {
+        final draft = ChatDraftStore.instance.peek(chatId);
+        if (draft == null) return _messagePreview(context, chatItem.message);
+        final label = AppLocalizations.of(context)?.translate('chat_draft') ??
+            'Draft';
+        final base = context.appTextStyles.bodyMd;
+        return RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$label: ',
+                style: base.copyWith(
+                  color: context.appColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              TextSpan(
+                text: draft,
+                style: base.copyWith(
+                  color: context.appColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _messagePreview(BuildContext context, String message) {
+    return RichText(
+      text: TextSpan(
+        children: parseHtmlToTextSpans(
+          context,
+          message,
+          context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textPrimary.withValues(alpha: 0.76),
+          ),
+        ),
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 

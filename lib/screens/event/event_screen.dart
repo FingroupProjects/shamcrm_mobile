@@ -18,10 +18,13 @@ import 'package:crm_task_manager/screens/event/event_cache.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_add_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_card.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,6 +108,14 @@ class _EventScreenState extends State<EventScreen>
       initialIndex: _currentTabIndex,
     );
 
+    SectionTabMemory.read('events').then((saved) {
+      if (!mounted || saved == null) return;
+      final index = EventDateType.values.indexOf(saved);
+      if (index < 0 || _tabController.index == index) return;
+      _tabController.index = index;
+      _currentTabIndex = index;
+    });
+
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         // ← КРИТИЧНО: Проверяем флаг пропуска!
@@ -121,6 +132,9 @@ class _EventScreenState extends State<EventScreen>
         setState(() {
           _currentTabIndex = _tabController.index;
         });
+        if (_tabTitles.isNotEmpty) {
+          SectionTabMemory.save('events', _currentDateType);
+        }
         if (_listScrollController.hasClients) {
           _listScrollController.jumpTo(0);
         }
@@ -561,8 +575,8 @@ class _EventScreenState extends State<EventScreen>
                         ),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
-                            title,
+                          child: HoldToReadText(
+                            text: title,
                             style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Gilroy',
@@ -571,8 +585,6 @@ class _EventScreenState extends State<EventScreen>
                                   ? context.appColors.buttonPrimaryBg
                                   : context.appColors.textPrimary,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -582,8 +594,8 @@ class _EventScreenState extends State<EventScreen>
               )
             else
               Expanded(
-                child: Text(
-                  title,
+                child: HoldToReadText(
+                  text: title,
                   style: TextStyle(
                     fontSize: 20,
                     fontFamily: 'Gilroy',
@@ -592,8 +604,6 @@ class _EventScreenState extends State<EventScreen>
                         ? context.appColors.buttonPrimaryBg
                         : context.appColors.textPrimary,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
@@ -1038,7 +1048,7 @@ class _EventScreenState extends State<EventScreen>
       return ListView.builder(
         controller: _listScrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: paddingAboveNav(context, base: const EdgeInsets.all(16)),
         itemCount: events.length,
         itemBuilder: (context, index) {
           return Padding(
@@ -1077,7 +1087,7 @@ class _EventScreenState extends State<EventScreen>
     return ListView.builder(
       controller: _listScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
+      padding: paddingAboveNav(context, base: const EdgeInsets.all(16)),
       itemCount: events.length,
       itemBuilder: (context, index) {
         return Padding(

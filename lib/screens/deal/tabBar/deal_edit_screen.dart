@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
@@ -1571,7 +1572,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -1594,7 +1596,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () => Navigator.pop(context, null),
+                onPressed: () => LeaveGate.requestPop(context),
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
@@ -1762,7 +1764,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                         duration: const Duration(seconds: 3),
                       ),
                     );
-                    Navigator.pop(context, true);
+                    LeaveGate.finish(context, true);
                   }
                 },
                 child: BlocConsumer<FieldConfigurationBloc,
@@ -1948,7 +1950,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                     buttonColor: _screenFieldBackground(context),
                                     textColor: _screenPrimaryText(context),
                                     onPressed: () =>
-                                        Navigator.pop(context, null),
+                                        LeaveGate.requestPop(context),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -2208,6 +2210,7 @@ class _DealEditScreenState extends State<DealEditScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

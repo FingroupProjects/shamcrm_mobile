@@ -151,3 +151,63 @@ class ConfirmExitDialog extends StatelessWidget {
     );
   }
 }
+
+/// Спрашивает перед выходом с создания или редактирования.
+/// Успешное сохранение закрывает экран через [LeaveGate.finish] без вопроса.
+class LeaveGate extends StatefulWidget {
+  final Widget child;
+
+  const LeaveGate({super.key, required this.child});
+
+  static Future<void> requestPop(BuildContext context, [Object? result]) async {
+    final state = context.findAncestorStateOfType<_LeaveGateState>();
+    if (state == null) {
+      Navigator.of(context).pop(result);
+      return;
+    }
+    await state.requestPop(result);
+  }
+
+  static void finish(BuildContext context, [Object? result]) {
+    final state = context.findAncestorStateOfType<_LeaveGateState>();
+    if (state == null) {
+      Navigator.of(context).pop(result);
+      return;
+    }
+    state.finish(result);
+  }
+
+  @override
+  State<LeaveGate> createState() => _LeaveGateState();
+}
+
+class _LeaveGateState extends State<LeaveGate> {
+  bool _allow = false;
+
+  Future<void> requestPop(Object? result) async {
+    if (_allow) return;
+    final leave = await ConfirmExitDialog.show(context);
+    if (!leave || !mounted) return;
+    finish(result);
+  }
+
+  void finish(Object? result) {
+    setState(() => _allow = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: _allow,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        requestPop(result);
+      },
+      child: widget.child,
+    );
+  }
+}

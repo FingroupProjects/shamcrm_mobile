@@ -77,8 +77,9 @@ class DealError extends DealState {
 
 class DealSuccess extends DealState {
   final String message;
+  final int? createdId;
 
-  DealSuccess(this.message);
+  DealSuccess(this.message, {this.createdId});
 }
 
 class DealDeleted extends DealState {

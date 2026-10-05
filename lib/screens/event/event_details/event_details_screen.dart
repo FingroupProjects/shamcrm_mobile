@@ -14,6 +14,7 @@ import 'package:crm_task_manager/bloc/history_lead_notice_deal/history_lead_noti
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/custom_widget/custom_textf.dart';
 import 'package:crm_task_manager/custom_widget/file_utils.dart';
@@ -79,24 +80,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       context.appColors.surfaceElevated;
 
   void _showCopiedSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)?.translate('copied_to_clipboard') ??
-              'Скопировано',
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: context.appColors.buttonPrimaryFg,
-          ),
-        ),
-        backgroundColor: context.appColors.success,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
+    showCustomSnackBar(
+      context: context,
+      message: 'copied',
+      isSuccess: true,
     );
   }
 

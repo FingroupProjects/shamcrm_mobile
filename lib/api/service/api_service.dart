@@ -298,10 +298,10 @@ class ApiService extends ApiServiceBase {
 
   // Отчёт «Товары по сроку годности» только на этом тенанте.
   static const Set<String> _adminbiovecotjSubdomains = {
-    'adminbiovecotj',
-    'adminbiovecotj-back',
-    'adminbiovecotj-new',
-    'adminbiovecotj-new-back',
+    'bioveco',
+    'bioveco-back',
+    'bioveco-new',
+    'bioveco-new-back',
   };
 
   static final GlobalKey<NavigatorState> navigatorKey =

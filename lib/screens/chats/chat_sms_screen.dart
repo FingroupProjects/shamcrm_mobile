@@ -33,6 +33,11 @@ import 'package:crm_task_manager/screens/chats/chats_widgets/profile_user_corpor
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/telegram_chat_app_bar.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/voice_message_bubble.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
+import 'package:crm_task_manager/services/chat_draft_store.dart';
+import 'package:crm_task_manager/services/chat_read_marker.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
+import 'package:crm_task_manager/services/chat_voice_catalog.dart';
 import 'package:crm_task_manager/services/chat_voice_player_service.dart';
 import 'package:crm_task_manager/screens/chats/pin_message_widget.dart';
 import 'package:crm_task_manager/screens/chats/location_picker_screen.dart';
@@ -125,6 +130,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final ApiService apiService = ApiService();
   // Empty until async init finishes; cached messages may render first.
   String baseUrl = '';
+  String? _voiceCatalogKey;
   bool _canCreateChat = false;
   bool _isRequestInProgress = false;
   int? _highlightedMessageId;
@@ -138,7 +144,12 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   // Состояние ИИ по чату: paused=true значит выключено (в UI показываем инверсию).
   bool _isAiPaused = false;
   bool _isAiFollowupPaused = false;
-  int? _lastMarkedMessageId;
+  // Один POST readMessages на один up_to_message_id, даже если UI зовёт пачкой.
+  final List<StreamSubscription<dynamic>> _sharedUserSubscriptions = [];
+  late final ChatReadMarker _readMarker = ChatReadMarker(
+    send: (messageId) =>
+        widget.apiService.readMessages(widget.chatId, messageId),
+  );
   bool _isRecordingInProgress = false;
   String? referralBody;
   ChatsBloc? _chatsBloc;
@@ -161,6 +172,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   final MessageReactionApiService _reactionApi = MessageReactionApiService();
   final ChatFileSendService _chatFileSendService = ChatFileSendService();
   bool _isNearBottom = true;
+  String? _stickyDateLabel;
   bool _isLoadingOlderFromScroll = false;
   final Set<int> _pendingScrollButtonMessageIds = <int>{};
   final Set<int> _pendingMessageReconciliationIds = <int>{};
@@ -609,22 +621,24 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
   }
 
-  void _bindReactionAliasesToChannel({
+  List<StreamSubscription<dynamic>> _bindReactionAliasesToChannel({
     required dynamic channel,
     required String channelName,
     required List<String> reactionEventAliases,
     required String logPrefix,
   }) {
+    final subscriptions = <StreamSubscription<dynamic>>[];
     for (final reactionEvent in reactionEventAliases) {
-      channel.bind(reactionEvent).listen((event) async {
+      subscriptions.add(channel.bind(reactionEvent).listen((event) async {
         await _processReactionSocketEvent(
           eventName: reactionEvent,
           channel: channelName,
           payload: event.data,
           logPrefix: logPrefix,
         );
-      });
+      }));
     }
+    return subscriptions;
   }
 
   List<MessageReaction> _parseReactionsFromDynamic(dynamic source) {
@@ -846,21 +860,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     '.MessageEdited',
   ];
 
-  void _bindMessageEditedAliasesToChannel({
+  List<StreamSubscription<dynamic>> _bindMessageEditedAliasesToChannel({
     required dynamic channel,
     required String channelName,
     required String logPrefix,
   }) {
+    final subscriptions = <StreamSubscription<dynamic>>[];
     for (final eventName in _messageEditedEventAliases) {
-      channel.bind(eventName).listen((event) async {
+      subscriptions.add(channel.bind(eventName).listen((event) async {
         await _processMessageEditedSocketEvent(
           eventName: eventName,
           channel: channelName,
           payload: event.data,
           logPrefix: logPrefix,
         );
-      });
+      }));
     }
+    return subscriptions;
   }
 
   Future<void> _processMessageEditedSocketEvent({
@@ -1011,6 +1027,30 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     if (_isNearBottom) {
       _markMessagesAsRead();
     }
+
+    _updateStickyDate(currentState.messages, positions);
+  }
+
+  /// Дата дня, который сейчас виден сверху ленты.
+  void _updateStickyDate(
+    List<Message> messages,
+    Iterable<ItemPosition> positions,
+  ) {
+    ItemPosition? topmost;
+    for (final position in positions) {
+      if (position.index < 0 || position.index >= messages.length) continue;
+      final visible = position.itemLeadingEdge < 1 && position.itemTrailingEdge > 0;
+      if (!visible) continue;
+      if (topmost == null || position.index > topmost.index) {
+        topmost = position;
+      }
+    }
+    if (topmost == null) return;
+    final parsed = DateTime.tryParse(messages[topmost.index].createMessateTime);
+    if (parsed == null) return;
+    final label = formatDate(parsed.toLocal());
+    if (label == _stickyDateLabel) return;
+    setState(() => _stickyDateLabel = label);
   }
 
   Future<void> _loadOlderMessagesFromScroll() async {
@@ -1274,6 +1314,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _restoreChatDraft();
     _loadChatAppearance();
     _checkPermissions();
     _getMyDisplayName();
@@ -1853,28 +1894,79 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     }
   }
 
-  Future<void> _markMessagesAsRead() async {
-    if (_isPendingGreenApiChat) return;
-    final state = context.read<MessagingCubit>().state;
-    if (state is! MessagesCollectionState || !_isNearBottom) return;
+  /// Кладёт голосовые чата в очередь, чтобы после одного включилось следующее.
+  void _scheduleVoiceCatalog(List<Message> messages) {
+    final voiceMessages = messages.where(_isVoiceMessage).toList();
+    final signature = '$baseUrl|'
+        '${voiceMessages.map((message) => '${message.id}:${message.filePath}').join('|')}';
+    if (signature == _voiceCatalogKey) return;
+    _voiceCatalogKey = signature;
 
-    List<Message> messages = [];
-    messages = state.messages;
-
-    bool hasUnreadMessages = messages.any((msg) => !msg.isRead);
-    if (messages.isNotEmpty && hasUnreadMessages) {
-      final latestMessageId = messages.first.id;
-      if (_lastMarkedMessageId == latestMessageId) {
-        return;
-      }
-      try {
-        await widget.apiService.readMessages(widget.chatId, latestMessageId);
-        _lastMarkedMessageId = latestMessageId;
-      } catch (e) {
-        debugPrint(
-            'ChatSmsScreen: Ошибка при пометке сообщений как прочитанными: $e');
-      }
+    final apiBase = baseUrl.replaceAll('/api', '');
+    final tracks = <ChatVoiceTrack>[];
+    for (final message in voiceMessages) {
+      final source = resolveFileUrl(message.filePath, apiBase);
+      final playable = source.isNotEmpty ? source : (message.filePath ?? '');
+      if (playable.isEmpty) continue;
+      tracks.add(
+        ChatVoiceTrack(
+          messageId: message.id,
+          chatId: widget.chatId,
+          filePath: message.filePath ?? '',
+          localPath: playable,
+          senderName: message.senderName,
+          sentAtLabel: formatChatVoiceSentAt(message.createMessateTime),
+          duration: message.duration,
+          chatItem: widget.chatItem,
+          endPointInTab: widget.endPointInTab,
+          canSendMessage: widget.canSendMessage,
+          chatUniqueId: widget.chatUniqueId,
+          channelName: channelName ?? widget.initialChannelName,
+        ),
+      );
     }
+
+    ChatVoiceCatalog.replaceChat(widget.chatId, tracks);
+  }
+
+  bool _isVoiceMessage(Message message) {
+    final type = message.type.toLowerCase();
+    if (type == 'voice' ||
+        type == 'audio' ||
+        type == 'ptt' ||
+        type == 'voice_message') {
+      return true;
+    }
+    if (type == 'file' || type == 'document') {
+      return Message.looksLikeVoice(message.filePath) ||
+          Message.looksLikeVoice(message.text);
+    }
+    return false;
+  }
+
+  /// Ставит отметку в очередь. Сеть уходит один раз на самый новый id.
+  void _markMessagesAsRead() {
+    final messageId = _latestUnreadServerMessageId();
+    if (messageId == null) return;
+    _readMarker.request(messageId);
+  }
+
+  /// Новейшее серверное сообщение, которое ещё не прочитано.
+  /// Локальные id (<= 0) пропускаем: их нет в message_reads.
+  int? _latestUnreadServerMessageId() {
+    if (_isPendingGreenApiChat || !_isNearBottom) return null;
+    final state = _messagingCubit?.state ??
+        (mounted ? context.read<MessagingCubit>().state : null);
+    if (state is! MessagesCollectionState) return null;
+
+    final messages = state.messages;
+    if (messages.isEmpty || !messages.any((message) => !message.isRead)) {
+      return null;
+    }
+    for (final message in messages) {
+      if (message.id > 0) return message.id;
+    }
+    return null;
   }
 
   Future<void> _syncOpenedChatReadState() async {
@@ -2303,6 +2395,38 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
   String formatDate(DateTime date) {
     return "${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}";
+  }
+
+  Widget _buildStickyDateChip(String label) {
+    final appearance = ChatAppearanceScope.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: appearance.chromeBlurSigma(),
+          sigmaY: appearance.chromeBlurSigma(),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: appearance.chromeSurfaceColor(context),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: context.appColors.borderSubtle.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.appColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildAvatar(String avatar) {
@@ -2854,6 +2978,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         }
         if (state is MessagesCollectionState) {
           final messages = state.messages;
+          _scheduleVoiceCatalog(messages);
           debugPrint('messageListUi: Rendering ${messages.length} messages');
           final pinnedMessages = state.pinnedMessages;
           final hasLeadPinnedHeader = _shouldShowLeadChannelBanner;
@@ -3098,6 +3223,16 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                   ),
                 ),
               ),
+              if (_stickyDateLabel != null && !_isNearBottom)
+                Positioned(
+                  top: (_shouldShowLeadChannelBanner ? 88 : 8) +
+                      (pinnedMessages.isNotEmpty ? 52 : 0),
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Center(child: _buildStickyDateChip(_stickyDateLabel!)),
+                  ),
+                ),
               Positioned(
                 top: 0,
                 left: 0,
@@ -3407,16 +3542,9 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       connectionErrorHandler: (exception, trace, refresh) {
         debugPrint(
             '=================-=== ❌ Socket connection error: $exception');
-        Future.delayed(Duration(seconds: 5), () async {
-          if (_isDisposing) return;
-          try {
-            await socketClient?.connect();
-            debugPrint('=================-=== 🔄 Socket reconnect attempted');
-          } catch (e) {
-            debugPrint(
-                '=================-=== ❌ Error reconnecting to socket: $e');
-          }
-        });
+        // refresh() уже переподключает сокет. Второй connect() через 5 секунд
+        // заново авторизовал все presence-каналы этого чата.
+        if (_isDisposing) return;
         refresh();
       },
       minimumReconnectDelayDuration: const Duration(seconds: 3),
@@ -3839,281 +3967,108 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         logPrefix: '[CHAT PUBLIC]',
       );
     }
-    debugPrint(
-        '=================-=== 🎯🎯🎯 CHAT_SMS: Setting up USER channel subscription...');
+    // presence-user уже открыт в UserRealtimeSocket.
+    // Свой сокет чата его не авторизует: иначе каждый чат снова бьёт broadcasting/auth.
+    // Запасные private/public user-каналы убраны по той же причине.
     final userId = prefs.getString('unique_id') ?? '';
-    final rawUserId = prefs.getString('userID') ?? '';
-    final fallbackUserChannelIds = <String>{};
-    if (rawUserId.isNotEmpty) {
-      fallbackUserChannelIds.add(rawUserId);
-      fallbackUserChannelIds.add('$enteredDomain-back-$rawUserId');
-    }
-    if (userId.isNotEmpty) {
-      fallbackUserChannelIds.remove(userId);
-    }
     if (userId.isNotEmpty) {
       final userChannelName = 'presence-user.$userId';
-      debugPrint(
-          '=================-=== 🎯🎯🎯 CHAT_SMS: User channel: $userChannelName');
-
-      final userPresenceChannel = client.presenceChannel(
-        userChannelName,
-        authorizationDelegate:
-            EndpointAuthorizableChannelTokenAuthorizationDelegate
-                .forPresenceChannel(
-          authorizationEndpoint: Uri.parse(authUrl),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'X-Tenant': '$enteredDomain-back',
-          },
-          onAuthFailed: (exception, trace) {
-            debugPrint(
-                '=================-=== ❌ Auth failed for $userChannelName: $exception');
-          },
-        ),
-      );
-
-      client.onConnectionEstablished.listen((_) {
+      final userPresenceChannel = await UserRealtimeSocket.instance.userChannel();
+      if (userPresenceChannel != null && !_isDisposing) {
         debugPrint(
-            '=================-=== ✅ Subscribing to user channel: $userChannelName');
-        userPresenceChannel.subscribeIfNotUnsubscribed();
-      });
+            '=================-=== 🎯 CHAT_SMS: reuse shared $userChannelName');
+        _sharedUserSubscriptions.add(
+          userPresenceChannel.bind('chat.updated').listen((event) async {
+            debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
 
-      // ✅ КРИТИЧНО: chat.updated используется ТОЛЬКО для обновления списка чатов, НЕ для добавления сообщений!
-      // ✅ Сообщения добавляются через событие chat.message (MessageSent), которое содержит правильный sender.id
-      // ✅ Поэтому в chat.updated мы НЕ добавляем сообщения, а только обновляем lastMessage в списке чатов
-      // ✅ ОБНОВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (внутри userPresenceChannel)
-// ✅ ИСПРАВЛЕННЫЙ СЛУШАТЕЛЬ chat.updated (в файле chat_sms_screen.dart)
-      userPresenceChannel.bind('chat.updated').listen((event) async {
-        debugPrint('🔔🔔🔔 CHAT_SMS (USER CHANNEL): Received chat.updated!');
+            try {
+              final chatData = json.decode(event.data);
+              final chatObj = chatData['chat'];
+              final eventChatId = chatObj?['id'];
 
-        try {
-          final chatData = json.decode(event.data);
-          final chatObj = chatData['chat'];
-          final eventChatId = chatObj?['id'];
+              if (eventChatId != widget.chatId) {
+                return;
+              }
 
-          if (eventChatId != widget.chatId) {
-            return;
-          }
+              final prefs = await SharedPreferences.getInstance();
+              final myUserId = prefs.getString('userID') ?? '';
 
-          final prefs = await SharedPreferences.getInstance();
-          final myUserId = prefs.getString('userID') ?? '';
+              String? extractedName;
 
-          String? extractedName;
+              String? resolveNameFromMap(Map<dynamic, dynamic> data) {
+                final firstName = data['name']?.toString() ?? '';
+                final lastName = data['lastname']?.toString() ?? '';
+                final fullName = '$firstName $lastName'.trim();
+                return fullName.isNotEmpty ? fullName : null;
+              }
 
-          String? resolveNameFromMap(Map<dynamic, dynamic> data) {
-            final firstName = data['name']?.toString() ?? '';
-            final lastName = data['lastname']?.toString() ?? '';
-            final fullName = '$firstName $lastName'.trim();
-            return fullName.isNotEmpty ? fullName : null;
-          }
-
-          final chatUsers = chatObj?['chatUsers'];
-          if (chatUsers is List) {
-            for (final user in chatUsers) {
-              if (user is Map) {
-                final participant = user['participant'];
-                if (participant is Map) {
-                  final participantId = participant['id']?.toString();
-                  if (participantId != null &&
-                      participantId.isNotEmpty &&
-                      participantId != myUserId) {
-                    extractedName = resolveNameFromMap(participant);
-                    if (extractedName != null) break;
+              final chatUsers = chatObj?['chatUsers'];
+              if (chatUsers is List) {
+                for (final user in chatUsers) {
+                  if (user is Map) {
+                    final participant = user['participant'];
+                    if (participant is Map) {
+                      final participantId = participant['id']?.toString();
+                      if (participantId != null &&
+                          participantId.isNotEmpty &&
+                          participantId != myUserId) {
+                        extractedName = resolveNameFromMap(participant);
+                        if (extractedName != null) break;
+                      }
+                    }
                   }
                 }
               }
-            }
-          }
 
-          if (extractedName == null) {
-            final user = chatObj?['user'];
-            if (user is Map) {
-              final userId = user['id']?.toString();
-              if (userId != null && userId.isNotEmpty && userId != myUserId) {
-                extractedName = resolveNameFromMap(user);
+              if (extractedName == null) {
+                final user = chatObj?['user'];
+                if (user is Map) {
+                  final userId = user['id']?.toString();
+                  if (userId != null && userId.isNotEmpty && userId != myUserId) {
+                    extractedName = resolveNameFromMap(user);
+                  }
+                }
               }
+
+              if (extractedName == null) {
+                final chatName = chatObj?['name'];
+                if (chatName is String && chatName.trim().isNotEmpty) {
+                  extractedName = chatName.trim();
+                }
+              }
+
+              if (mounted &&
+                  extractedName != null &&
+                  extractedName.isNotEmpty &&
+                  (_cachedCompanionName == null ||
+                      _cachedCompanionName!.isEmpty)) {
+                setState(() {
+                  _cachedCompanionName = extractedName;
+                });
+                debugPrint(
+                    '✅ Обновлено имя собеседника из chat.updated: $extractedName');
+              }
+            } catch (e) {
+              debugPrint('❌ Ошибка парсинга chat.updated: $e');
             }
-          }
-
-          if (extractedName == null) {
-            final chatName = chatObj?['name'];
-            if (chatName is String && chatName.trim().isNotEmpty) {
-              extractedName = chatName.trim();
-            }
-          }
-
-          if (mounted &&
-              extractedName != null &&
-              extractedName.isNotEmpty &&
-              (_cachedCompanionName == null || _cachedCompanionName!.isEmpty)) {
-            setState(() {
-              _cachedCompanionName = extractedName;
-            });
-            debugPrint(
-                '✅ Обновлено имя собеседника из chat.updated: $extractedName');
-          }
-
-          // Для открытого чата сообщения добавляем только через chat.message.
-          // chat.updated здесь нужен для имени/метаданных чата и списка чатов.
-        } catch (e) {
-          debugPrint('❌ Ошибка парсинга chat.updated: $e');
-        }
-      });
-      _bindMessageEditedAliasesToChannel(
-        channel: userPresenceChannel,
-        channelName: userChannelName,
-        logPrefix: '[USER PRESENCE]',
-      );
-      _bindReactionAliasesToChannel(
-        channel: userPresenceChannel,
-        channelName: userChannelName,
-        reactionEventAliases: reactionEventAliases,
-        logPrefix: '[USER PRESENCE]',
-      );
-      debugPrint(
-          '=================-=== ✅✅✅ CHAT_SMS: User channel listener registered');
-
-      final userReactionPrivateChannelNames = <String>{
-        'private-user.$userId',
-        if (rawUserId.isNotEmpty) 'private-user.$rawUserId',
-        if (rawUserId.isNotEmpty) 'private-user.$enteredDomain-back-$rawUserId',
-      };
-      final userReactionPublicChannelNames = <String>{
-        'user.$userId',
-        if (rawUserId.isNotEmpty) 'user.$rawUserId',
-        if (rawUserId.isNotEmpty) 'user.$enteredDomain-back-$rawUserId',
-      };
-
-      for (final privateName in userReactionPrivateChannelNames) {
-        final userPrivateChannel = client.privateChannel(
-          privateName,
-          authorizationDelegate:
-              EndpointAuthorizableChannelTokenAuthorizationDelegate
-                  .forPrivateChannel(
-            authorizationEndpoint: Uri.parse(authUrl),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'X-Tenant': '$enteredDomain-back',
-            },
-            onAuthFailed: (exception, trace) {
-              debugPrint(
-                  '=================-=== ❌ Auth failed for $privateName: $exception');
-            },
+          }),
+        );
+        _sharedUserSubscriptions.addAll(
+          _bindMessageEditedAliasesToChannel(
+            channel: userPresenceChannel,
+            channelName: userChannelName,
+            logPrefix: '[USER PRESENCE]',
           ),
         );
-
-        client.onConnectionEstablished.listen((_) {
-          debugPrint(
-              '=================-=== ✅ Subscribing to user private channel: $privateName');
-          userPrivateChannel.subscribeIfNotUnsubscribed();
-        });
-
-        _bindReactionAliasesToChannel(
-          channel: userPrivateChannel,
-          channelName: privateName,
-          reactionEventAliases: reactionEventAliases,
-          logPrefix: '[USER PRIVATE]',
+        _sharedUserSubscriptions.addAll(
+          _bindReactionAliasesToChannel(
+            channel: userPresenceChannel,
+            channelName: userChannelName,
+            reactionEventAliases: reactionEventAliases,
+            logPrefix: '[USER PRESENCE]',
+          ),
         );
       }
-
-      for (final publicName in userReactionPublicChannelNames) {
-        final userPublicChannel = client.publicChannel(publicName);
-
-        client.onConnectionEstablished.listen((_) {
-          debugPrint(
-              '=================-=== ✅ Subscribing to user public channel: $publicName');
-          userPublicChannel.subscribeIfNotUnsubscribed();
-        });
-
-        _bindReactionAliasesToChannel(
-          channel: userPublicChannel,
-          channelName: publicName,
-          reactionEventAliases: reactionEventAliases,
-          logPrefix: '[USER PUBLIC]',
-        );
-      }
-    }
-
-    // Дополнительно подписываемся на fallback user channels
-    // (например presence-user.fingroupcrm-back-1), чтобы не терять reaction-события.
-    for (final fallbackId in fallbackUserChannelIds) {
-      final fallbackChannelName = 'presence-user.$fallbackId';
-      debugPrint(
-          '=================-=== 🎯 CHAT_SMS: Fallback user channel: $fallbackChannelName');
-
-      final fallbackPresenceChannel = client.presenceChannel(
-        fallbackChannelName,
-        authorizationDelegate:
-            EndpointAuthorizableChannelTokenAuthorizationDelegate
-                .forPresenceChannel(
-          authorizationEndpoint: Uri.parse(authUrl),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'X-Tenant': '$enteredDomain-back',
-          },
-          onAuthFailed: (exception, trace) {
-            debugPrint(
-                '=================-=== ❌ Auth failed for $fallbackChannelName: $exception');
-          },
-        ),
-      );
-
-      client.onConnectionEstablished.listen((_) {
-        debugPrint(
-            '=================-=== ✅ Subscribing to fallback user channel: $fallbackChannelName');
-        fallbackPresenceChannel.subscribeIfNotUnsubscribed();
-      });
-
-      _bindReactionAliasesToChannel(
-        channel: fallbackPresenceChannel,
-        channelName: fallbackChannelName,
-        reactionEventAliases: reactionEventAliases,
-        logPrefix: '[FALLBACK USER PRESENCE]',
-      );
-
-      final fallbackPrivateName = 'private-user.$fallbackId';
-      final fallbackPrivateChannel = client.privateChannel(
-        fallbackPrivateName,
-        authorizationDelegate:
-            EndpointAuthorizableChannelTokenAuthorizationDelegate
-                .forPrivateChannel(
-          authorizationEndpoint: Uri.parse(authUrl),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'X-Tenant': '$enteredDomain-back',
-          },
-          onAuthFailed: (exception, trace) {
-            debugPrint(
-                '=================-=== ❌ Auth failed for $fallbackPrivateName: $exception');
-          },
-        ),
-      );
-      client.onConnectionEstablished.listen((_) {
-        debugPrint(
-            '=================-=== ✅ Subscribing to fallback private user channel: $fallbackPrivateName');
-        fallbackPrivateChannel.subscribeIfNotUnsubscribed();
-      });
-      _bindReactionAliasesToChannel(
-        channel: fallbackPrivateChannel,
-        channelName: fallbackPrivateName,
-        reactionEventAliases: reactionEventAliases,
-        logPrefix: '[FALLBACK USER PRIVATE]',
-      );
-
-      final fallbackPublicName = 'user.$fallbackId';
-      final fallbackPublicChannel = client.publicChannel(fallbackPublicName);
-      client.onConnectionEstablished.listen((_) {
-        debugPrint(
-            '=================-=== ✅ Subscribing to fallback public user channel: $fallbackPublicName');
-        fallbackPublicChannel.subscribeIfNotUnsubscribed();
-      });
-      _bindReactionAliasesToChannel(
-        channel: fallbackPublicChannel,
-        channelName: fallbackPublicName,
-        reactionEventAliases: reactionEventAliases,
-        logPrefix: '[FALLBACK USER PUBLIC]',
-      );
     }
 
     try {
@@ -4153,6 +4108,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         debugPrint('Не удалось воспроизвести звук отправки: $error');
       }));
       _messageController.clear();
+      unawaited(ChatDraftStore.instance.clear(widget.chatId));
       await _sendLocalTextMessage(localMessage);
     } else {
       debugPrint('Сообщение пустое, отправка не выполнена');
@@ -4647,6 +4603,33 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     return difference <= 90;
   }
 
+  void _restoreChatDraft() {
+    final ready = ChatDraftStore.instance.peek(widget.chatId);
+    if (ready != null) {
+      _applyChatDraft(ready);
+    }
+    unawaited(ChatDraftStore.instance.ensureLoaded().then((_) {
+      if (!mounted || _messageController.text.trim().isNotEmpty) return;
+      final draft = ChatDraftStore.instance.peek(widget.chatId);
+      if (draft == null) return;
+      _applyChatDraft(draft);
+    }));
+  }
+
+  void _applyChatDraft(String draft) {
+    _messageController.value = TextEditingValue(
+      text: draft,
+      selection: TextSelection.collapsed(offset: draft.length),
+    );
+    _messageController.htmlContent = draft;
+  }
+
+  void _persistChatDraft() {
+    unawaited(
+      ChatDraftStore.instance.save(widget.chatId, _messageController.text),
+    );
+  }
+
   @override
   void dispose() {
     // ✅ Защита от двойного вызова dispose
@@ -4658,6 +4641,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _isDisposing = true;
 
     debugPrint('🗑️ ChatSmsScreen.dispose START for chat ${widget.chatId}');
+
+    _persistChatDraft();
 
     if (_isPendingGreenApiChat) {
       _searchDebounce?.cancel();
@@ -4709,6 +4694,10 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
     _messageController.dispose();
     _searchController.dispose();
+    for (final subscription in _sharedUserSubscriptions) {
+      subscription.cancel();
+    }
+    _sharedUserSubscriptions.clear();
     socketClient?.dispose();
     _focusNode.dispose();
     _searchFocusNode.dispose();
@@ -4745,6 +4734,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       if (_messagingCubit == null) {
         debugPrint(
             'ChatSmsScreen: MessagingCubit is null, skipping mark as read');
+        _readMarker.dispose();
         return;
       }
 
@@ -4765,8 +4755,13 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         debugPrint(
             'ChatSmsScreen: Marking messages as read on exit, chatId: ${widget.chatId}, latestMessageId: $latestMessageId');
 
-        // ✅ Отправляем запрос на сервер, что этот чат полностью прочитан
-        await widget.apiService.readMessages(widget.chatId, latestMessageId);
+        // Тот же шлагбаум, что и у живой ленты: повторный id на сервер не уходит.
+        final marked = await _readMarker.markNow(latestMessageId);
+        if (!marked) {
+          debugPrint(
+              'ChatSmsScreen: readMessages on exit was not confirmed for $latestMessageId');
+          return;
+        }
         debugPrint(
             'ChatSmsScreen: Messages marked as read on server successfully');
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
@@ -4776,6 +4771,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         }
       } else {
         debugPrint('ChatSmsScreen: No server messages to mark as read on exit');
+        _readMarker.dispose();
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
       }
 
@@ -4912,6 +4908,11 @@ class MessageItemWidget extends StatelessWidget {
         return false;
       },
       child: PremiumHapticWrapper(
+        onDoubleTap: _shouldShowMessageReactions &&
+                onReactionToggle != null &&
+                message.id > 0
+            ? () => onReactionToggle!(message, '👍')
+            : null,
         onLongPress: () {
           if (message.type != 'location') {
             _showMessageContextMenu(context, message, focusNode);
@@ -5534,29 +5535,7 @@ class MessageItemWidget extends StatelessWidget {
   }
 
   void _copyMessageToClipboard(BuildContext context, String messageText) {
-    Clipboard.setData(ClipboardData(text: messageText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.translate('copy_message'),
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textInverse,
-          ),
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        backgroundColor: context.appColors.success,
-        elevation: 3,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    unawaited(copyTextAndNotify(context, messageText));
   }
 
   void _copyMessageToClipboardByType(BuildContext context, Message message) {

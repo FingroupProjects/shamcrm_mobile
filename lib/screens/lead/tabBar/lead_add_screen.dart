@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
@@ -37,6 +40,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_status_list_edit.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,6 +88,9 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
   final _apiService = ApiService();
   String? _createdLeadName;
   String? _createdLeadPhone;
+  Set<String> _missingFields = {};
+  String? _firstMissingField;
+  int _fieldErrorPulse = 0;
 
   // Контроллеры для стандартных полей
   final TextEditingController titleController = TextEditingController();
@@ -339,6 +347,7 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         );
 
       case 'name':
+        final nameMissing = _missingFields.contains('name');
         return CustomTextField(
           controller: titleController,
           hintText: AppLocalizations.of(context)!.translate('enter_name_list'),
@@ -349,6 +358,17 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           textColor: fieldText,
           borderColor: fieldBorder,
           focusedBorderColor: focusedBorder,
+          // Рамка как у остальных полей с ошибкой. Текст пишет обёртка ниже.
+          hasError: nameMissing,
+          onChanged: (value) {
+            if (value.trim().isEmpty || !_missingFields.contains('name')) {
+              return;
+            }
+            setState(() {
+              _missingFields.remove('name');
+              if (_firstMissingField == 'name') _firstMissingField = null;
+            });
+          },
         );
 
       case 'phone':
@@ -1642,7 +1662,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -1665,9 +1686,11 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () {
-                  Navigator.pop(context, widget.statusId);
+                onPressed: () async {
+                  final leave = await ConfirmExitDialog.show(context);
+                  if (!leave || !mounted) return;
                   context.read<LeadBloc>().add(FetchLeadStatuses());
+                  LeaveGate.finish(context, widget.statusId);
                 },
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
@@ -1895,32 +1918,28 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                         ),
                       );
                     } else if (state is LeadSuccess) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            AppLocalizations.of(context)!
-                                .translate(state.message),
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.textInverse,
-                            ),
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                          margin:
-                              EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: context.appColors.success,
-                          elevation: 3,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 16),
-                          duration: Duration(seconds: 3),
-                        ),
+                      final navigator = Navigator.of(context);
+                      final createdId = state.createdId;
+                      showCreatedSnackBar(
+                        context: context,
+                        message: state.message,
+                        onOpen: createdId == null
+                            ? null
+                            : () {
+                                navigator.push(
+                                  MaterialPageRoute(
+                                    builder: (_) => LeadDetailsScreen(
+                                      leadId: createdId.toString(),
+                                      leadName: _createdLeadName ?? '',
+                                      leadStatus: '',
+                                      statusId: widget.statusId,
+                                      phone: _createdLeadPhone,
+                                    ),
+                                  ),
+                                );
+                              },
                       );
-                      Navigator.pop(context, {
+                      LeaveGate.finish(context, {
                         'statusId': widget.statusId,
                         'name': _createdLeadName,
                         'phone': _createdLeadPhone,
@@ -1975,9 +1994,20 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                             a.position.compareTo(b.position));
 
                                       return sorted.map((config) {
+                                        final fieldKey = _leadFieldKey(config);
                                         return Column(
                                           children: [
-                                            _buildFieldWidget(config),
+                                            RequiredFieldSlot(
+                                              invalid: _missingFields
+                                                  .contains(fieldKey),
+                                              focus: _firstMissingField ==
+                                                  fieldKey,
+                                              pulse: _fieldErrorPulse,
+                                              message: AppLocalizations.of(
+                                                      context)!
+                                                  .translate('field_required'),
+                                              child: _buildFieldWidget(config),
+                                            ),
                                             const SizedBox(height: 16),
                                           ],
                                         );
@@ -2072,11 +2102,14 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
                                   textColor: primaryText,
                                   borderColor: subtleBorder,
                                   borderWidth: 1,
-                                  onPressed: () {
-                                    Navigator.pop(context, widget.statusId);
+                                  onPressed: () async {
+                                    final leave =
+                                        await ConfirmExitDialog.show(context);
+                                    if (!leave || !mounted) return;
                                     context
                                         .read<LeadBloc>()
                                         .add(FetchLeadStatuses());
+                                    LeaveGate.finish(context, widget.statusId);
                                   },
                                 ),
                               ),
@@ -2117,10 +2150,99 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
+  String _leadFieldKey(FieldConfiguration config) {
+    if (config.isDirectory && config.directoryId != null) {
+      return 'dir_${config.directoryId}';
+    }
+    return config.fieldName;
+  }
+
+  bool _leadFieldEmpty(FieldConfiguration config) {
+    switch (config.fieldName) {
+      case 'name':
+        return titleController.text.trim().isEmpty;
+      case 'phone':
+        return selectedDialCode.replaceAll(RegExp(r'\D'), '').length < 8;
+      case 'email':
+        return emailController.text.trim().isEmpty;
+      case 'manager_id':
+        return selectedManager == null || selectedManager!.isEmpty;
+      case 'city_id':
+        return cityController.text.trim().isEmpty;
+      case 'tg_nick':
+        return tgNickController.text.trim().isEmpty;
+      case 'insta_login':
+        return instaLoginController.text.trim().isEmpty;
+      case 'facebook_login':
+        return facebookLoginController.text.trim().isEmpty;
+      case 'birthday':
+        return birthdayController.text.trim().isEmpty;
+      case 'region_id':
+        return selectedRegion == null || selectedRegion!.isEmpty;
+      case 'source_id':
+        return selectedSourceLead == null || selectedSourceLead!.isEmpty;
+      case 'price_type_id':
+        return _selectedPriceType == null || _selectedPriceType!.isEmpty;
+      case 'lead_status_id':
+        return false;
+      default:
+        if (config.isCustomField) {
+          final match = customFields.where(
+            (field) =>
+                field.fieldName == config.fieldName && !field.isDirectoryField,
+          );
+          if (match.isEmpty) return true;
+          return match.first.controller.text.trim().isEmpty;
+        }
+        if (config.isDirectory && config.directoryId != null) {
+          final match = customFields.where(
+            (field) => field.directoryId == config.directoryId,
+          );
+          if (match.isEmpty) return true;
+          return match.first.selectedEntryIds.isEmpty &&
+              match.first.controller.text.trim().isEmpty;
+        }
+        return false;
+    }
+  }
+
+  List<String> _collectMissingLeadFields() {
+    final sorted = fieldConfigurations.where((config) => config.isActive).toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+    final missing = <String>[];
+    for (final config in sorted) {
+      final must = config.originalRequired || config.fieldName == 'name';
+      if (!must || config.fieldName == 'lead_status_id') continue;
+      if (_leadFieldEmpty(config)) missing.add(_leadFieldKey(config));
+    }
+    if (missing.isEmpty &&
+        titleController.text.trim().isEmpty &&
+        (sorted.isEmpty || sorted.any((config) => config.fieldName == 'name'))) {
+      missing.add('name');
+    }
+    return missing;
+  }
+
   void _submitForm() {
+    final missing = _collectMissingLeadFields();
+    if (missing.isNotEmpty) {
+      setState(() {
+        _missingFields = missing.toSet();
+        _firstMissingField = missing.first;
+        _fieldErrorPulse++;
+      });
+      return;
+    }
+    if (_missingFields.isNotEmpty) {
+      setState(() {
+        _missingFields = {};
+        _firstMissingField = null;
+      });
+    }
     if (_formKey.currentState!.validate()) {
       _createLead();
     } else {

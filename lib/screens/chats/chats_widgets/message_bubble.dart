@@ -6,6 +6,7 @@ import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/compact_reaction_chip.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:html/parser.dart' show parse;
@@ -530,7 +531,6 @@ class MessageBubble extends StatelessWidget {
 
   // Универсальный обработчик клика по ссылке
   void _handleLinkTap(BuildContext context, String url) {
-    final textStyles = context.appTextStyles;
     final colors = context.appColors;
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
@@ -569,30 +569,7 @@ class MessageBubble extends StatelessWidget {
           iconColor: colors.textPrimary,
           textColor: colors.textPrimary,
           onTap: () {
-            Clipboard.setData(ClipboardData(text: url));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!
-                      .translate('copy_url_source_text'),
-                  style: textStyles.bodyLg.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textInverse,
-                  ),
-                ),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: colors.success,
-                elevation: 3,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            copyTextAndNotify(context, url);
           },
         ),
       ],

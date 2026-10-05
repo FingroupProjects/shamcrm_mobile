@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_bloc.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_event.dart';
 import 'package:crm_task_manager/bloc/my-task/my-task_state.dart';
@@ -319,6 +320,10 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
+        padding: paddingAboveNav(
+        context,
+        base: const EdgeInsets.only(bottom: 72),
+      ),
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -368,6 +373,10 @@ class _MyTaskScreenState extends State<MyTaskScreen>
     return Flexible(
       child: ListView.builder(
         controller: _scrollController,
+        padding: paddingAboveNav(
+        context,
+        base: const EdgeInsets.only(bottom: 72),
+      ),
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];

@@ -43,11 +43,17 @@ class IncomingCreateLoading extends IncomingState {}
 
 class IncomingCreateSuccess extends IncomingState {
   final String message;
+  final int? documentId;
+  final String? docNumber;
 
-  const IncomingCreateSuccess(this.message);
+  const IncomingCreateSuccess(
+    this.message, {
+    this.documentId,
+    this.docNumber,
+  });
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, documentId ?? -1, docNumber ?? ''];
 }
 
 class IncomingCreateError extends IncomingState {

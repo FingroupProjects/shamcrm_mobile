@@ -5,6 +5,12 @@ import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/bloc/user/client/get_all_client_bloc.dart';
+import 'package:crm_task_manager/utils/list_place_memory.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
+import 'package:crm_task_manager/utils/recent_search_store.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
+import 'package:crm_task_manager/widgets/list_filter_chips.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
@@ -58,11 +64,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   final Map<int, int> _projectTaskCounts = {};
   final Set<int> _validatedProjectStatusIds = <int>{};
   int _currentTabIndex = 0;
+  int? _rememberedStatusId;
+  bool _appliedTabMemory = false;
   List<GlobalKey> _tabKeys = [];
   bool _isSearching = false;
   bool _isUser = false;
 
   final TextEditingController _searchController = TextEditingController();
+  List<String> _recentSearches = [];
+  Timer? _recentSearchTimer;
+  bool _taskPlaceRestored = false;
   bool _canReadTaskStatus = false;
   bool _canCreateTaskStatus = false;
   bool _canDeleteTaskStatus = false;
@@ -156,6 +167,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
+    _loadTaskTabMemory();
 
     // ОПТИМИЗАЦИЯ: Запускаем GetAllClientBloc асинхронно, не блокируя UI
     Future.microtask(() {
@@ -164,9 +176,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     });
 
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
     _tabScrollController = ScrollController();
     _listScrollController = ScrollController();
     _listScrollController.addListener(_onScroll);
+    unawaited(_loadRecentSearches());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreTaskPlace());
 
     // ОПТИМИЗАЦИЯ: Загружаем роли и разрешения асинхронно
     Future.microtask(() {
@@ -207,6 +222,34 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadTaskTabMemory() async {
+    _appliedTabMemory = false;
+    final raw = await SectionTabMemory.read('tasks');
+    if (!mounted) return;
+    _rememberedStatusId = int.tryParse(raw ?? '');
+    _applyTaskTabMemory();
+  }
+
+  void _applyTaskTabMemory() {
+    if (_appliedTabMemory || _rememberedStatusId == null) return;
+    if (widget.initialStatusId != null) {
+      _appliedTabMemory = true;
+      return;
+    }
+    if (_tabController.length == 0 || _tabTitles.isEmpty) return;
+    final index = _tabTitles.indexWhere(
+      (status) => status['id'] == _rememberedStatusId,
+    );
+    if (index < 0) return;
+    _appliedTabMemory = true;
+    if (_tabController.index == index) {
+      _currentTabIndex = index;
+      return;
+    }
+    _tabController.index = index;
+    _currentTabIndex = index;
+  }
+
   void _onTabControllerChanged() {
     if (!mounted || _tabController.indexIsChanging) return;
 
@@ -240,6 +283,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     }
 
     final currentStatusId = _tabTitles[_currentTabIndex]['id'];
+    SectionTabMemory.save('tasks', '$currentStatusId');
     final hasActiveFilters = _hasActiveFilters();
 
     _taskBloc.add(FetchTasks(
@@ -275,7 +319,40 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     ));
   }
 
+  Future<void> _loadRecentSearches() async {
+    final items = await RecentSearchStore.read('tasks');
+    if (!mounted) return;
+    setState(() => _recentSearches = items);
+  }
+
+  void _rememberSearch(String query) {
+    _recentSearchTimer?.cancel();
+    _recentSearchTimer = Timer(const Duration(milliseconds: 700), () async {
+      await RecentSearchStore.remember('tasks', query);
+      await _loadRecentSearches();
+    });
+  }
+
+  void _restoreTaskPlace() {
+    if (_taskPlaceRestored || !_listScrollController.hasClients) return;
+    final offset = ListPlaceMemory.read('tasks');
+    if (offset == null || offset <= 0) {
+      _taskPlaceRestored = true;
+      return;
+    }
+    final max = _listScrollController.position.maxScrollExtent;
+    if (max <= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreTaskPlace());
+      return;
+    }
+    _listScrollController.jumpTo(offset.clamp(0, max));
+    _taskPlaceRestored = true;
+  }
+
   void _onScroll() {
+    if (_listScrollController.hasClients) {
+      ListPlaceMemory.save('tasks', _listScrollController.offset);
+    }
     if (!_listScrollController.hasClients) return;
     if (_listScrollController.position.maxScrollExtent <= 0) return;
 
@@ -372,9 +449,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_listScrollController);
+    context.read<TaskBloc>().add(FetchTaskStatuses(
+          forceRefresh: true,
+          projectId: _projectContextId,
+        ));
+  }
+
   @override
   void dispose() {
     _searchDebounceTimer?.cancel();
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
+    _recentSearchTimer?.cancel();
     _listScrollController.removeListener(_onScroll);
     _listScrollController.dispose();
     _tabScrollController.dispose();
@@ -1097,6 +1185,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   void _onSearch(String query) {
     _lastSearchQuery = query;
+    _rememberSearch(query);
 
     // ОПТИМИЗАЦИЯ: Отменяем предыдущий таймер debounce
     _searchDebounceTimer?.cancel();
@@ -1243,6 +1332,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             showFilterTaskIcon: showFilter,
             clearButtonClick: (value) {
               if (value == false) {
+                _recentSearchTimer?.cancel();
                 setState(() {
                   _isSearching = false;
                   _searchController.clear();
@@ -1337,6 +1427,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       height: MediaQuery.of(context).padding.top +
                           kToolbarHeight +
                           15,
+                    ),
+                    ListFilterChips(
+                      hasFilters: _hasActiveFilters(),
+                      onClearFilters: _resetFilters,
+                      recentQueries: _isSearching ? _recentSearches : const [],
+                      onPickQuery: (query) {
+                        _searchController.text = query;
+                        _onSearch(query);
+                      },
                     ),
                     if (!_isSearching && _showCustomTabBar)
                       _buildCustomTabBar(),
@@ -1478,7 +1577,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       backgroundColor: context.appColors.surfacePrimary,
       child: ListView.builder(
         controller: _listScrollController,
-        padding: EdgeInsets.zero,
+        padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.only(bottom: 72),
+        ),
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
@@ -1601,7 +1703,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               child: ListView.builder(
                 controller: _listScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
+                padding: paddingAboveNav(
+          context,
+          base: const EdgeInsets.only(bottom: 72),
+        ),
                 itemCount:
                     filteredTasks.length + (showPaginationLoader ? 1 : 0),
                 itemBuilder: (context, index) {
@@ -2101,6 +2206,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   if (preservedIndex != -1) {
                     _tabController.index = preservedIndex;
                     _currentTabIndex = preservedIndex;
+                    _appliedTabMemory = true;
                   } else if (_currentTabIndex < _tabTitles.length &&
                       _currentTabIndex >= 0) {
                     _tabController.index = _currentTabIndex;
@@ -2122,6 +2228,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                     _currentTabIndex = safeIndex;
                   }
                 }
+
+                _applyTaskTabMemory();
 
                 // Прокручиваем к активному табу
                 if (_tabScrollController.hasClients) {

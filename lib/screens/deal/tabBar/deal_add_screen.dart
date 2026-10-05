@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/lead_list/lead_list_bloc.dart';
@@ -32,6 +35,8 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_cu
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/user_list.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +73,9 @@ class _DealAddScreenState extends State<DealAddScreen> {
   bool isEndDateInvalid = false;
   bool isTitleInvalid = false;
   bool isManagerInvalid = false;
+  bool isLeadInvalid = false;
+  String? _focusField;
+  int _fieldErrorPulse = 0;
   bool isManagerManuallySelected = false;
   List<FileHelper> files = [];
   List<UserData> _selectedUsers = [];
@@ -230,11 +238,21 @@ class _DealAddScreenState extends State<DealAddScreen> {
 
     switch (fieldName) {
       case 'name':
-        return _buildDealNameField();
+        return _remindDealField(
+          'name',
+          isTitleInvalid,
+          _buildDealNameField(),
+          showCaption: false,
+        );
       case 'lead_id':
-        return _buildLeadField();
+        return _remindDealField('lead_id', isLeadInvalid, _buildLeadField());
       case 'manager_id':
-        return _buildManagerField();
+        return _remindDealField(
+          'manager_id',
+          isManagerInvalid,
+          _buildManagerField(),
+          showCaption: false,
+        );
       case 'start_date':
         return _buildStartDateField();
       case 'end_date':
@@ -368,6 +386,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
         }
         setState(() {
           selectedLead = selectedLeadData.id.toString();
+          isLeadInvalid = false;
           //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
           if (!isManagerManuallySelected &&
               selectedLeadData.managerId != null) {
@@ -1534,7 +1553,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -1557,9 +1577,11 @@ class _DealAddScreenState extends State<DealAddScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () {
-                  Navigator.pop(context, widget.statusId);
+                onPressed: () async {
+                  final leave = await ConfirmExitDialog.show(context);
+                  if (!leave || !mounted) return;
                   context.read<DealBloc>().add(FetchDealStatuses());
+                  LeaveGate.finish(context, widget.statusId);
                 },
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
@@ -1779,14 +1801,29 @@ class _DealAddScreenState extends State<DealAddScreen> {
                           isSuccess: false,
                         );
                       } else if (state is DealSuccess) {
-                        showCustomSnackBar(
+                        final navigator = Navigator.of(context);
+                        final createdId = state.createdId;
+                        showCreatedSnackBar(
                           context: context,
-                          message: AppLocalizations.of(context)!
-                              .translate(state.message),
-                          isSuccess: true,
+                          message: state.message,
+                          onOpen: createdId == null
+                              ? null
+                              : () {
+                                  navigator.push(
+                                    MaterialPageRoute(
+                                      builder: (_) => DealDetailsScreen(
+                                        dealId: createdId.toString(),
+                                        dealName: titleController.text.trim(),
+                                        sum: sumController.text.trim(),
+                                        dealStatus: '',
+                                        statusId: widget.statusId,
+                                      ),
+                                    ),
+                                  );
+                                },
                         );
                         if (context.mounted) {
-                          Navigator.pop(context, widget.statusId);
+                          LeaveGate.finish(context, widget.statusId);
                           context.read<DealBloc>().add(FetchDealStatuses());
                         }
                       }
@@ -1930,12 +1967,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     buttonColor:
                                         _screenFieldBackground(context),
                                     textColor: primaryText,
-                                    onPressed: () {
-                                      Navigator.pop(
-                                          context, widget.statusId);
+                                    onPressed: () async {
+                                      final leave =
+                                          await ConfirmExitDialog.show(context);
+                                      if (!leave || !mounted) return;
                                       context
                                           .read<DealBloc>()
                                           .add(FetchDealStatuses());
+                                      LeaveGate.finish(
+                                          context, widget.statusId);
                                     },
                                   ),
                                 ),
@@ -1977,6 +2017,7 @@ class _DealAddScreenState extends State<DealAddScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -2139,11 +2180,39 @@ class _DealAddScreenState extends State<DealAddScreen> {
     //print('DealAddScreen: Dispatched CreateDeal event');
   }
 
+  Widget _remindDealField(
+    String key,
+    bool invalid,
+    Widget child, {
+    bool showCaption = true,
+  }) {
+    return RequiredFieldSlot(
+      invalid: invalid,
+      focus: _focusField == key,
+      pulse: _fieldErrorPulse,
+      showCaption: showCaption,
+      message: AppLocalizations.of(context)!.translate('field_required'),
+      child: child,
+    );
+  }
+
   void _submitForm() {
     //print('DealAddScreen: Submitting form with title: ${titleController.text}, lead: $selectedLead, manager: $selectedManager');
+    final titleMissing = titleController.text.isEmpty;
+    final managerMissing = selectedManager == null;
+    final leadMissing = selectedLead == null;
     setState(() {
-      isTitleInvalid = titleController.text.isEmpty;
-      isManagerInvalid = selectedManager == null;
+      isTitleInvalid = titleMissing;
+      isManagerInvalid = managerMissing;
+      isLeadInvalid = leadMissing;
+      _focusField = titleMissing
+          ? 'name'
+          : leadMissing
+              ? 'lead_id'
+              : managerMissing
+                  ? 'manager_id'
+                  : null;
+      if (_focusField != null) _fieldErrorPulse++;
     });
 
     if (_formKey.currentState!.validate() &&
@@ -2151,6 +2220,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
         selectedManager != null &&
         selectedLead != null) {
       _createDeal();
+    } else if (_focusField != null) {
+      return;
     } else {
       //print('DealAddScreen: Form validation failed');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2175,5 +2246,15 @@ class _DealAddScreenState extends State<DealAddScreen> {
         ),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    startDateController.dispose();
+    endDateController.dispose();
+    sumController.dispose();
+    descriptionController.dispose();
+    super.dispose();
   }
 }

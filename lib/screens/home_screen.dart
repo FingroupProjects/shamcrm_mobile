@@ -1387,8 +1387,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                   child: SafeArea(
                     key: ValueKey(currentWidget.runtimeType),
-                    bottom: true,
-                    child: currentWidget,
+                    // Список доходит до низа и уезжает под панель.
+                    bottom: false,
+                    child: Builder(
+                      builder: (context) {
+                        final metrics = MediaQuery.of(context);
+                        // Вложенные экраны ставят «+» по viewPadding.
+                        // Поднимаем его над панелью, иначе кнопку не нажать.
+                        return MediaQuery(
+                          data: metrics.copyWith(
+                            viewPadding: metrics.viewPadding.copyWith(
+                              bottom: metrics.padding.bottom,
+                            ),
+                          ),
+                          child: currentWidget,
+                        );
+                      },
+                    ),
                   ),
                 );
 
@@ -1399,11 +1414,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             bottomNavigationBar: currentWidget is NoAccessScreen
                 ? const SizedBox.shrink()
                 : SizedBox(
-                    // Skeleton и MyNavBar имеют одинаковую внутреннюю
-                    // высоту. Фиксируем внешний размер вместе с safe-area,
-                    // чтобы загрузка графика не двигала верхний край панели.
-                    height: 60 + MediaQuery.of(context).viewPadding.bottom,
-                    child: ValueListenableBuilder<ChatUnreadCounts>(
+                    // 24 сверху — мягкий переход, под ним сами кнопки.
+                    // Карточки проезжают под этой зоной, жёсткой линии нет.
+                    height: 84 + MediaQuery.of(context).viewPadding.bottom,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        const _NavBarFade(),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: ValueListenableBuilder<ChatUnreadCounts>(
                       valueListenable: ChatUnreadCounterService.instance.counts,
                       builder: (context, chatCounts, _) {
                         final unreadCountsGroup1 = _navBarTitleKeysGroup1
@@ -1481,9 +1501,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         );
                       },
                     ),
+                        ),
+                      ],
+                    ),
                   ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Мягкий переход: сверху прозрачно, внизу чуть плотнее. Линии нет.
+class _NavBarFade extends StatelessWidget {
+  const _NavBarFade();
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = context.appColors.backgroundPrimary;
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              surface.withValues(alpha: 0),
+              surface.withValues(alpha: 0.45),
+              surface.withValues(alpha: 0.9),
+            ],
+            stops: const [0, 0.38, 1],
+          ),
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/bloc/event/event_bloc.dart';
 import 'package:crm_task_manager/bloc/event/event_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -518,7 +519,8 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
     final formSurface = _screenSurfaceBackground(context);
     final footerSurface = _screenFooterBackground(context);
 
-    return Theme(
+    return LeaveGate(
+      child: Theme(
       data: screenTheme,
       child: Scaffold(
         backgroundColor: context.appColors.overlay.withValues(alpha: 0),
@@ -541,7 +543,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
               gradientColors: appBarGradient,
               borderColor: subtleBorder,
               child: IconButton(
-                onPressed: () => Navigator.pop(context, null),
+                onPressed: () => LeaveGate.requestPop(context),
                 icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
@@ -644,8 +646,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                       duration: Duration(seconds: 3),
                     ),
                   );
-                  Navigator.pop(
-                      context, true); // Закрываем экран после успешного обновления
+                  LeaveGate.finish(context, true);
                   context
                       .read<NotesBloc>()
                       .add(FetchNotes(widget.notice.lead!.id));
@@ -785,7 +786,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
                                   .translate('cancel'),
                               buttonColor: _screenFieldBackground(context),
                               textColor: primaryText,
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => LeaveGate.requestPop(context),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -821,6 +822,7 @@ class _NoticeEditScreenState extends State<NoticeEditScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

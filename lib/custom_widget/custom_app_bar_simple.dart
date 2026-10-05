@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
@@ -276,12 +277,11 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
             ? Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      widget.title,
+                    child: HoldToReadText(
+                      text: widget.title,
                       style: context.appTextStyles.titleLg.copyWith(
                         color: context.appColors.textPrimary,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

@@ -1056,6 +1056,7 @@ extension ApiDealsX on ApiService {
         return {
           'success': true,
           'message': 'deal_created_successfully',
+          'id': _idFromCreateBody(response.body),
         };
       } else if (response.statusCode == 422) {
         if (response.body.contains('name')) {

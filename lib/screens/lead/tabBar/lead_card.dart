@@ -5,6 +5,8 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/core/theme/widgets/themed_asset_icon.dart';
 import 'package:crm_task_manager/bloc/lead/lead_bloc.dart';
+import 'package:crm_task_manager/bloc/lead/lead_event.dart';
+import 'package:crm_task_manager/bloc/lead/lead_state.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_green_api_chat.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_navigate_to_chat.dart';
@@ -12,6 +14,8 @@ import 'package:crm_task_manager/utils/green_api_integration_store.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/neighbor_pager.dart';
+import 'package:crm_task_manager/widgets/return_highlight.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -349,6 +353,35 @@ class _LeadCardState extends State<LeadCard>
     }
   }
 
+  /// Догружает хвост колонки и дополняет [items] новыми лидами.
+  Future<int> _loadMoreLeadNeighbors(LeadBloc bloc, List<Lead> items) async {
+    if (!mounted || bloc.allLeadsFetched) return items.length;
+    final page = bloc.state is LeadDataLoaded
+        ? (bloc.state as LeadDataLoaded).currentPage
+        : 1;
+    bloc.add(FetchMoreLeads(widget.statusId, page));
+    try {
+      await bloc.stream
+          .firstWhere(
+            (state) => state is LeadDataLoaded && !state.isLoadingMore,
+          )
+          .timeout(const Duration(seconds: 8));
+    } catch (_) {
+      return items.length;
+    }
+    if (bloc.state is! LeadDataLoaded) return items.length;
+    final fresh = (bloc.state as LeadDataLoaded).leads;
+    final sameColumn =
+        fresh.where((item) => item.statusId == widget.statusId).toList();
+    final merged = sameColumn.isNotEmpty ? sameColumn : fresh;
+    if (merged.length > items.length) {
+      items
+        ..clear()
+        ..addAll(merged);
+    }
+    return items.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -361,22 +394,48 @@ class _LeadCardState extends State<LeadCard>
     // Получаем цвет границы в зависимости от источника
     Color borderColor = getBorderColor(widget.lead.source?.name);
 
-    return GestureDetector(
+    return ReturnHighlightBox(
+      section: 'leads',
+      itemId: widget.lead.id.toString(),
+      child: GestureDetector(
       onTap: () async {
+        final bloc = context.read<LeadBloc>();
+        final loaded = bloc.state is LeadDataLoaded
+            ? List<Lead>.from((bloc.state as LeadDataLoaded).leads)
+            : <Lead>[widget.lead];
+        final column =
+            loaded.where((item) => item.statusId == widget.statusId).toList();
+        final items = column.isNotEmpty
+            ? column
+            : (loaded.isNotEmpty ? loaded : <Lead>[widget.lead]);
+        var index = items.indexWhere((item) => item.id == widget.lead.id);
+        if (index < 0) {
+          items.insert(0, widget.lead);
+          index = 0;
+        }
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => LeadDetailsScreen(
-              leadId: widget.lead.id.toString(),
-              leadName: widget.lead.name,
-              leadStatus: dropdownValue,
-              statusId: statusId,
-              initialCurrencyId: widget.lead.currency?.id,
-              initialCurrencyName: widget.lead.currency?.name,
+            builder: (routeContext) => NeighborPager(
+              initialIndex: index,
+              initialCount: items.length,
+              pageBuilder: (_, i) {
+                final lead = items[i];
+                return LeadDetailsScreen(
+                  leadId: lead.id.toString(),
+                  leadName: lead.name,
+                  leadStatus: lead.leadStatus?.title ?? widget.title,
+                  statusId: lead.statusId,
+                  initialCurrencyId: lead.currency?.id,
+                  initialCurrencyName: lead.currency?.name,
+                );
+              },
+              loadMore: () => _loadMoreLeadNeighbors(bloc, items),
             ),
           ),
         );
 
+        ReturnHighlight.flash('leads', widget.lead.id.toString());
         if (!mounted) return;
 
         if (result is Map<String, dynamic> && result['refresh'] == true) {
@@ -691,6 +750,7 @@ class _LeadCardState extends State<LeadCard>
           );
         },
       ),
+    ),
     );
   }
 }

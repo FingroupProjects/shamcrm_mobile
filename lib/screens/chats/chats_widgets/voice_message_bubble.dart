@@ -185,7 +185,16 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
     return file?.path;
   }
 
-  Future<void> _togglePlayback() async {
+  Future<void> _seekWave(double fraction) async {
+    final safe = fraction.clamp(0.0, 1.0);
+    if (_isCurrent) {
+      await _player.seekToFraction(safe);
+      return;
+    }
+    await _togglePlayback(startFraction: safe);
+  }
+
+  Future<void> _togglePlayback({double? startFraction}) async {
     if (_isCurrent && _player.isPlaying) {
       await _player.pause();
       return;
@@ -237,6 +246,7 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
           chatUniqueId: widget.chatUniqueId,
           channelName: widget.channelName,
         ),
+        startFraction: startFraction,
       );
     } catch (error) {
       debugPrint('VoiceMessageWidget play error: $error');
@@ -294,31 +304,32 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
           Material(
             color: bubbleColor,
             borderRadius: BorderRadius.circular(18),
-            child: InkWell(
-              onTap: _isLoading ? null : _togglePlayback,
-              borderRadius: BorderRadius.circular(18),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _VoicePlayButton(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: _isLoading ? null : () => _togglePlayback(),
+                    child: _VoicePlayButton(
                       isLoading: _isLoading,
                       isPlaying: _isCurrent && _player.isPlaying,
                       hasError: _hasError,
                       color: foreground,
                     ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 118,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _VoiceWaveform(
-                            progress: progress,
-                            color: foreground,
-                            seed: widget.message.id,
-                          ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 118,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _VoiceWaveform(
+                          progress: progress,
+                          color: foreground,
+                          seed: widget.message.id,
+                          onSeek: _isLoading ? null : _seekWave,
+                        ),
                           const SizedBox(height: 6),
                           Text(
                             _hasError
@@ -355,7 +366,6 @@ class VoiceMessageWidgetState extends State<VoiceMessageWidget> {
                 ),
               ),
             ),
-          ),
           if (widget.reactions.isNotEmpty)
             Transform.translate(
               offset: const Offset(0, -4),
@@ -451,39 +461,55 @@ class _VoiceWaveform extends StatelessWidget {
   final double progress;
   final Color color;
   final int seed;
+  final ValueChanged<double>? onSeek;
 
   const _VoiceWaveform({
     required this.progress,
     required this.color,
     required this.seed,
+    this.onSeek,
   });
+
+  void _seekAt(BuildContext context, double dx) {
+    final seek = onSeek;
+    if (seek == null) return;
+    final box = context.findRenderObject() as RenderBox?;
+    final width = box?.size.width ?? 0;
+    if (width <= 0) return;
+    seek((dx / width).clamp(0.0, 1.0));
+  }
 
   @override
   Widget build(BuildContext context) {
+    const bars = 32;
     final random = math.Random(seed);
-    return SizedBox(
-      height: 22,
-      child: Row(
-        children: List.generate(18, (index) {
-          final height = 6 + random.nextDouble() * 16;
-          final reached = progress >= (index + 1) / 18;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1),
-              child: Align(
-                alignment: Alignment.center,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (details) => _seekAt(context, details.localPosition.dx),
+      onHorizontalDragUpdate: (details) =>
+          _seekAt(context, details.localPosition.dx),
+      child: SizedBox(
+        height: 22,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(bars, (index) {
+            final height = 4 + random.nextDouble() * 14;
+            final reached = progress >= (index + 0.5) / bars;
+            return Expanded(
+              child: Center(
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
+                  duration: const Duration(milliseconds: 80),
+                  width: 1.6,
                   height: height,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: reached ? 0.95 : 0.35),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

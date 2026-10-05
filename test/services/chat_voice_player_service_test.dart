@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/services/chat_voice_catalog.dart';
 import 'package:crm_task_manager/services/chat_voice_player_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -45,6 +46,19 @@ void main() {
       );
     });
 
+    test('ignores a fake completion while switching tracks', () {
+      expect(shouldIgnoreVoiceCompletion(switchingTrack: true), isTrue);
+      expect(shouldIgnoreVoiceCompletion(switchingTrack: false), isFalse);
+    });
+
+    test('plays the next newer voice in the same chat', () {
+      final older = _track(1);
+      final current = _track(2);
+      final newer = _track(3);
+      expect(nextVoiceInChat([older, current, newer], current)?.messageId, 3);
+      expect(nextVoiceInChat([older, current], current), isNull);
+    });
+
     test('formats sent time for today and older dates', () {
       final now = DateTime(2026, 9, 7, 12, 0);
       expect(formatChatVoiceSentAt('2026-09-07T12:00:00', now: now), isNotEmpty);
@@ -54,4 +68,17 @@ void main() {
       );
     });
   });
+}
+
+ChatVoiceTrack _track(int messageId) {
+  return ChatVoiceTrack(
+    messageId: messageId,
+    chatId: 10,
+    filePath: 'voice.ogg',
+    localPath: 'voice.ogg',
+    senderName: 'Анна',
+    sentAtLabel: '12:00',
+    duration: const Duration(seconds: 3),
+    endPointInTab: 'lead',
+  );
 }

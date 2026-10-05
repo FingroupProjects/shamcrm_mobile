@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:crm_task_manager/bloc/chats/chats_bloc.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
@@ -15,11 +16,13 @@ import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_delete_dialog.dart';
 import 'package:crm_task_manager/screens/chats/create_chat.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/services/chat_draft_store.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -54,9 +57,6 @@ class _ChatsScreenState extends State<ChatsScreen>
   FocusNode focusNode = FocusNode();
   late TabController _tabController;
   late List<String> _tabTitles;
-  late PusherChannelsClient socketClient;
-  bool _isSocketClientInitialized = false;
-  late StreamSubscription<ChannelReadEvent> chatSubscribtion;
   StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
   final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
   String endPointInTab = 'lead';
@@ -113,6 +113,12 @@ class _ChatsScreenState extends State<ChatsScreen>
     'lead': PagingController(firstPageKey: 0),
     'task': PagingController(firstPageKey: 0),
     'corporate': PagingController(firstPageKey: 0),
+  };
+
+  final Map<String, ScrollController> _chatListScroll = {
+    'lead': ScrollController(),
+    'task': ScrollController(),
+    'corporate': ScrollController(),
   };
 
   final Map<String, ChatsBloc> _chatsBlocs = {
@@ -262,9 +268,20 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
   }
 
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    final controller = _chatListScroll[endPointInTab];
+    if (controller != null) {
+      animateScrollToTop(controller);
+    }
+    _chatsBlocs[endPointInTab]?.add(RefreshChats());
+  }
+
   @override
   void initState() {
     super.initState();
+    unawaited(ChatDraftStore.instance.ensureLoaded());
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
 
     // ✅ ДОБАВЛЕНО: Подписываемся на lifecycle events для обработки сворачивания приложения
     WidgetsBinding.instance.addObserver(this);
@@ -611,15 +628,13 @@ class _ChatsScreenState extends State<ChatsScreen>
                             color: context.appColors.buttonPrimaryBg, size: 24),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
-                            title,
+                          child: HoldToReadText(
+                            text: title,
                             style: context.appTextStyles.titleLg.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
                               color: context.appColors.textPrimary,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -629,15 +644,13 @@ class _ChatsScreenState extends State<ChatsScreen>
               )
             else
               Expanded(
-                child: Text(
-                  title,
+                child: HoldToReadText(
+                  text: title,
                   style: context.appTextStyles.titleLg.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: context.appColors.textPrimary,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
@@ -934,199 +947,62 @@ class _ChatsScreenState extends State<ChatsScreen>
       return;
     }
 
-    // Проверяем домены для старой логики
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    // Проверяем домен для email-верификации
-    String? verifiedDomain = await ApiService().getVerifiedDomain();
-    debugPrint(
-        '=================-=== ChatsScreen: Domain parameters: enteredMainDomain=$enteredMainDomain, enteredDomain=$enteredDomain, verifiedDomain=$verifiedDomain');
-
-    // Если домены отсутствуют, используем verifiedDomain или извлекаем из baseUrl ApiService
-    if (enteredMainDomain == null || enteredDomain == null) {
-      if (verifiedDomain != null && verifiedDomain.isNotEmpty) {
-        // Для email-верификации используем verifiedDomain
-        enteredMainDomain = verifiedDomain.split('-back.').last;
-        enteredDomain = verifiedDomain.split('-back.').first;
-        debugPrint(
-            'ChatsScreen: Using verifiedDomain: $verifiedDomain, parsed mainDomain=$enteredMainDomain, domain=$enteredDomain');
-      } else {
-        // Пытаемся извлечь из baseUrl ApiService
-        try {
-          final apiService = ApiService();
-          await apiService.initialize();
-          final baseUrl = await apiService.getDynamicBaseUrl();
-          debugPrint(
-              '=================-=== ChatsScreen: Got baseUrl from ApiService: $baseUrl');
-
-          if (baseUrl.isNotEmpty && baseUrl != 'null') {
-            // Извлекаем домен из baseUrl (формат: https://fingroupcrm-back.shamcrm.com/api)
-            final urlPattern = RegExp(r'https://(.+?)-back\.(.+?)(/|$)');
-            final match = urlPattern.firstMatch(baseUrl);
-            if (match != null) {
-              enteredDomain = match.group(1);
-              enteredMainDomain = match.group(2);
-              debugPrint(
-                  'ChatsScreen: Extracted from baseUrl: domain=$enteredDomain, mainDomain=$enteredMainDomain');
-
-              // Сохраняем извлеченные значения
-              await prefs.setString('enteredMainDomain', enteredMainDomain!);
-              await prefs.setString('enteredDomain', enteredDomain!);
-            } else {
-              debugPrint(
-                  '=================-=== ChatsScreen: Failed to parse baseUrl, using fallback');
-              enteredMainDomain = 'shamcrm.com';
-              enteredDomain =
-                  'fingroupcrm'; // Используем правильный домен из логов
-              await prefs.setString('enteredMainDomain', enteredMainDomain);
-              await prefs.setString('enteredDomain', enteredDomain);
-            }
-          } else {
-            debugPrint('ChatsScreen: BaseUrl empty, using fallback');
-            enteredMainDomain = 'shamcrm.com';
-            enteredDomain = 'fingroupcrm';
-            await prefs.setString('enteredMainDomain', enteredMainDomain);
-            await prefs.setString('enteredDomain', enteredDomain);
-          }
-        } catch (e) {
-          debugPrint(
-              '=================-=== ChatsScreen: Error extracting from baseUrl: $e, using fallback');
-          enteredMainDomain = 'shamcrm.com';
-          enteredDomain = 'fingroupcrm';
-          await prefs.setString('enteredMainDomain', enteredMainDomain);
-          await prefs.setString('enteredDomain', enteredDomain);
-        }
+    // Сокет presence-user общий. Переход на вкладку чатов его не авторизует заново.
+    Future<void> listen(String eventName, Future<void> Function(String data) onData) async {
+      final subscription = await UserRealtimeSocket.instance.listen(
+        eventName,
+        (event) async {
+          await onData(event.data);
+        },
+      );
+      if (!mounted) {
+        await subscription?.cancel();
+        return;
+      }
+      if (subscription != null) {
+        _socketSubscriptions.add(subscription);
       }
     }
 
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    socketClient = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {
-        debugPrint(
-            'ChatsScreen: Socket connection error: $exception, StackTrace: $trace');
-        Future.delayed(Duration(seconds: 5), () async {
-          try {
-            await socketClient.connect();
-            debugPrint('ChatsScreen: Socket reconnect attempted');
-          } catch (e, stackTrace) {
-            debugPrint(
-                'ChatsScreen: Error reconnecting to socket: $e, StackTrace: $stackTrace');
-          }
-        });
-        refresh();
-      },
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-    _isSocketClientInitialized = true;
-
-    final myPresenceChannel = socketClient.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back',
-        },
-        onAuthFailed: (exception, trace) {
-          debugPrint(
-              '=================-=== ChatsScreen: Auth failed for presence-user.$userId: $exception, StackTrace: $trace');
-        },
-      ),
-    );
-
-    _socketSubscriptions.add(socketClient.onConnectionEstablished.listen((_) {
+    await listen('chat.created', (data) async {
       debugPrint(
-          '=================-=== ChatsScreen: Socket connected successfully for userId: $userId');
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      debugPrint(
-          '=================-=== ChatsScreen: Subscribed to channel: presence-user.$userId');
-    }));
-
-    _socketSubscriptions.add(
-      myPresenceChannel.bind('pusher:subscription_succeeded').listen((event) {
-        debugPrint(
-            '=================-=== ChatsScreen: Successfully subscribed to presence-user.$userId: ${event.data}');
-      }),
-    );
-
-    _socketSubscriptions.add(
-      myPresenceChannel.bind('pusher:subscription_error').listen((event) {
-        debugPrint(
-            '=================-=== ChatsScreen: Subscription error for presence-user.$userId: ${event.data}');
-      }),
-    );
-
-    // Используем список подписок, чтобы избежать перезаписи
-    final List<StreamSubscription<ChannelReadEvent>> subscriptions = [];
-
-    subscriptions.add(
-      myPresenceChannel.bind('chat.created').listen((event) async {
-        debugPrint(
-            '=================-=== ChatsScreen: Received chat.created event: ${event.data}');
-        try {
-          final chatData = json.decode(event.data);
-          if (chatData.containsKey('chat') &&
-              chatData['chat'] is Map<String, dynamic>) {
-            await ChatChannelDirectory.waitReady();
-            final chat = Chats.fromJson(chatData['chat']);
-            await updateFromSocket(chat: chat);
-          } else {
-            debugPrint(
-                '=================-=== ChatsScreen: Invalid chat.created data format: ${event.data}');
-          }
-        } catch (e, stackTrace) {
+          '=================-=== ChatsScreen: Received chat.created event: $data');
+      try {
+        final chatData = json.decode(data);
+        if (chatData.containsKey('chat') &&
+            chatData['chat'] is Map<String, dynamic>) {
+          await ChatChannelDirectory.waitReady();
+          final chat = Chats.fromJson(chatData['chat']);
+          await updateFromSocket(chat: chat);
+        } else {
           debugPrint(
-              '=================-=== ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
+              '=================-=== ChatsScreen: Invalid chat.created data format: $data');
         }
-      }),
-    );
-
-    subscriptions.add(
-      myPresenceChannel.bind('chat.updated').listen((event) async {
+      } catch (e, stackTrace) {
         debugPrint(
-            '=================-=== ChatsScreen: Received chat.updated event: ${event.data}');
-        try {
-          final chatData = json.decode(event.data);
-          if (chatData.containsKey('chat') &&
-              chatData['chat'] is Map<String, dynamic>) {
-            await ChatChannelDirectory.waitReady();
-            final chat = Chats.fromJson(chatData['chat']);
-            await updateFromSocket(chat: chat);
-          } else {
-            debugPrint(
-                '=================-=== ChatsScreen: Invalid chat.updated data format: ${event.data}');
-          }
-        } catch (e, stackTrace) {
+            '=================-=== ChatsScreen: Error processing chat.created event: $e, StackTrace: $stackTrace');
+      }
+    });
+
+    await listen('chat.updated', (data) async {
+      debugPrint(
+          '=================-=== ChatsScreen: Received chat.updated event: $data');
+      try {
+        final chatData = json.decode(data);
+        if (chatData.containsKey('chat') &&
+            chatData['chat'] is Map<String, dynamic>) {
+          await ChatChannelDirectory.waitReady();
+          final chat = Chats.fromJson(chatData['chat']);
+          await updateFromSocket(chat: chat);
+        } else {
           debugPrint(
-              '=================-=== ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
+              '=================-=== ChatsScreen: Invalid chat.updated data format: $data');
         }
-      }),
-    );
-
-    // Сохраняем подписки для последующей очистки
-    _socketSubscriptions.addAll(subscriptions);
-    chatSubscribtion =
-        subscriptions.first; // Для совместимости с текущей структурой
-
-    try {
-      await socketClient.connect();
-      debugPrint(
-          '=================-=== ChatsScreen: Socket connection initiated');
-    } catch (e, stackTrace) {
-      debugPrint(
-          '=================-=== ChatsScreen: Error connecting to socket: $e, StackTrace: $stackTrace');
-    }
+      } catch (e, stackTrace) {
+        debugPrint(
+            '=================-=== ChatsScreen: Error processing chat.updated event: $e, StackTrace: $stackTrace');
+      }
+    });
   }
 
   Future<void> updateFromSocket({required Chats chat}) async {
@@ -1596,7 +1472,21 @@ class _ChatsScreenState extends State<ChatsScreen>
   Widget _buildUnreadBadge(int count) {
     final label = count > 99 ? '99+' : '$count';
     final size = count > 99 ? 34.0 : 28.0;
-    return SizedBox(
+    return Builder(
+      builder: (badgeContext) {
+        return GestureDetector(
+      onLongPress: count > 99
+          ? () {
+              final box = badgeContext.findRenderObject() as RenderBox?;
+              showFadingCaption(
+                badgeContext,
+                '$count',
+                anchor: box?.localToGlobal(Offset.zero),
+                anchorHeight: box?.size.height ?? size,
+              );
+            }
+          : null,
+      child: SizedBox(
       width: size,
       height: size,
       child: DecoratedBox(
@@ -1617,6 +1507,9 @@ class _ChatsScreenState extends State<ChatsScreen>
           ),
         ),
       ),
+      ),
+        );
+      },
     );
   }
 
@@ -1648,6 +1541,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               updateChats: updateChats,
               endPointInTab: endPoint,
               pagingController: _pagingControllers[endPoint]!,
+              scrollController: _chatListScroll[endPoint]!,
             ),
           );
         },
@@ -1681,6 +1575,10 @@ class _ChatsScreenState extends State<ChatsScreen>
 
   @override
   void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
+    for (final controller in _chatListScroll.values) {
+      controller.dispose();
+    }
     if (_isTabControllerInitialized) {
       _tabController.dispose();
     }
@@ -1690,9 +1588,6 @@ class _ChatsScreenState extends State<ChatsScreen>
     _salesFunnelSubscription?.cancel();
     for (final subscription in _socketSubscriptions) {
       subscription.cancel();
-    }
-    if (_isSocketClientInitialized) {
-      socketClient.dispose();
     }
     _pagingControllers.forEach((_, controller) => controller.dispose());
     _chatsBlocs.forEach((_, bloc) => bloc.close());
@@ -1706,11 +1601,13 @@ class _ChatItemsWidget extends StatefulWidget {
   final VoidCallback updateChats;
   final String endPointInTab;
   final PagingController<int, Chats> pagingController;
+  final ScrollController scrollController;
 
   const _ChatItemsWidget({
     required this.updateChats,
     required this.endPointInTab,
     required this.pagingController,
+    required this.scrollController,
   });
 
   @override
@@ -2120,7 +2017,8 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         }
       },
       child: PagedListView<int, Chats>(
-        padding: EdgeInsets.symmetric(vertical: 0),
+        padding: paddingAboveNav(context),
+        scrollController: widget.scrollController,
         pagingController: widget.pagingController,
         builderDelegate: PagedChildBuilderDelegate<Chats>(
           noItemsFoundIndicatorBuilder: (context) {

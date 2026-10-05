@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_bloc.dart';
 import 'package:crm_task_manager/bloc/dashboard/charts/dealStats/dealStats_event.dart';
@@ -117,7 +119,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
     _initializeData();
+  }
+
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_scrollController);
+    _onRefresh();
+  }
+
+  @override
+  void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeData() async {
@@ -749,7 +765,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: SingleChildScrollView(
                                 controller: _scrollController,
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(16),
+                                padding: paddingAboveNav(
+                                  context,
+                                  base: const EdgeInsets.all(16),
+                                ),
                                 child: Column(
                                   children: _buildAccountingDashboard(),
                                 ),

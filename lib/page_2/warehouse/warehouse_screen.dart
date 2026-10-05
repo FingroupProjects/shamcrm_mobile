@@ -1,14 +1,27 @@
 import 'package:crm_task_manager/app/app_feature_flags.dart';
+import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/category/category_screen.dart';
 import 'package:crm_task_manager/page_2/dashboard/detailed_report/detailed_report_screen.dart';
+import 'package:crm_task_manager/page_2/goods/goods_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_income/money_income_screen.dart';
 import 'package:crm_task_manager/page_2/money/money_outcome/money_outcome_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/cash_desk/cash_desk_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/expense/expense_screen.dart';
+import 'package:crm_task_manager/page_2/money/money_references/income/income_screen.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/employee/employee_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/measure_units/measue_units_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/openings/openings_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/price_type/pricetype_creen.dart';
+import 'package:crm_task_manager/page_2/warehouse/supplier/supplier_creen.dart';
+import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.dart';
+import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/fast_incoming_screen.dart';
@@ -21,6 +34,7 @@ import 'package:crm_task_manager/page_2/warehouse/write_off/write_off_screen.dar
 import 'package:crm_task_manager/page_2/warehouse/pricing/pricing_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
+import 'package:crm_task_manager/utils/section_scroll_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,8 +50,11 @@ class WarehouseAccountingScreen extends StatefulWidget {
 class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   static const String _documentOrderPrefsKey = 'warehouse_document_order';
   final ApiService _apiService = ApiService();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
   bool isClickAvatarIcon = false;
   bool _isLoading = true;
+  String _query = '';
 
   List<WarehouseDocument> _documents = [];
 
@@ -54,11 +71,188 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasMoneyOutcome = false;
   bool _hasPricing = false;
   bool _showReferences = false;
+  // Кнопка «Отчет» видна только при доступе к дашборду «Учет».
+  bool _hasAccountingDashboard = false;
+  bool _hasStorage = false;
+  bool _hasUnit = false;
+  bool _hasSupplier = false;
+  bool _hasProduct = false;
+  bool _hasPriceType = false;
+  bool _hasCategory = false;
+  bool _hasLead = false;
+  bool _hasOpenings = false;
+  bool _hasCashRegister = false;
+  bool _hasRkoArticle = false;
+  bool _hasPkoArticle = false;
+  bool _isTojsokhtmontjTenant = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
     _checkPermissions();
+  }
+
+  void _onSectionScrollToTop() {
+    if (!mounted) return;
+    animateScrollToTop(_scrollController);
+  }
+
+  @override
+  void dispose() {
+    SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
+    _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  List<WarehouseDocument> get _visibleDocuments {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return _documents;
+    return _documents
+        .where((document) => document.title.toLowerCase().contains(query))
+        .toList();
+  }
+
+  /// Плитки из «Справочников». Пока поиск пустой, их на экране нет.
+  List<WarehouseDocument> get _visibleReferences {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return const [];
+    return _referenceTiles()
+        .where((item) => item.title.toLowerCase().contains(query))
+        .toList();
+  }
+
+  List<WarehouseDocument> _referenceTiles() {
+    final color = context.appColors.buttonPrimaryBg;
+    final loc = AppLocalizations.of(context)!;
+    final tiles = <WarehouseDocument>[];
+
+    void add(String key, String title, IconData icon) {
+      tiles.add(
+        WarehouseDocument(
+          keyName: 'ref_$key',
+          title: title,
+          icon: icon,
+          color: color,
+        ),
+      );
+    }
+
+    if (_hasStorage) {
+      add('warehouse', loc.translate('warehouse'), Icons.warehouse_outlined);
+    }
+    if (_hasUnit) {
+      add(
+        'unit',
+        loc.translate('units_of_measurement'),
+        Icons.straighten_outlined,
+      );
+    }
+    if (_hasSupplier) {
+      add('supplier', loc.translate('supplier'), Icons.business_outlined);
+    }
+    add('employee', loc.translate('employees'), Icons.badge_outlined);
+    if (_hasProduct) {
+      add('product', loc.translate('product'), Icons.inventory_2_outlined);
+    }
+    if (_hasCategory) {
+      add('category', loc.translate('appbar_categories'), Icons.category_outlined);
+    }
+    if (_hasPriceType) {
+      add('price_type', loc.translate('price_type'), Icons.price_change_outlined);
+    }
+    if (_hasCashRegister) {
+      add('cash_register', loc.translate('cash_desk'), Icons.account_balance_wallet);
+    }
+    if (_hasRkoArticle) {
+      add('rko_article', loc.translate('expense_articles'), Icons.trending_down);
+    }
+    if (_hasPkoArticle) {
+      add('pko_article', loc.translate('income_articles'), Icons.trending_up);
+    }
+    if (_hasLead && !_isTojsokhtmontjTenant) {
+      add('clients', loc.translate('clients'), Icons.person_outline);
+    }
+    if (_hasOpenings) {
+      add(
+        'openings',
+        loc.translate('openings'),
+        Icons.account_balance_outlined,
+      );
+    }
+    return tiles;
+  }
+
+  void _openReference(String keyName) {
+    switch (keyName) {
+      case 'ref_supplier':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SupplierCreen()),
+        );
+      case 'ref_employee':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EmployeeScreen()),
+        );
+      case 'ref_warehouse':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => WareHouseScreen()),
+        );
+      case 'ref_unit':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MeasureUnitsScreen()),
+        );
+      case 'ref_product':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GoodsScreen()),
+        );
+      case 'ref_category':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CategoryScreen()),
+        );
+      case 'ref_price_type':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PriceTypeScreen()),
+        );
+      case 'ref_cash_register':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CashDeskScreen()),
+        );
+      case 'ref_rko_article':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ExpenseScreen()),
+        );
+      case 'ref_pko_article':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => IncomeScreen()),
+        );
+      case 'ref_clients':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LeadScreen(
+              isWarehouseReferenceClients: true,
+            ),
+          ),
+        );
+      case 'ref_openings':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OpeningsScreen()),
+        );
+    }
   }
 
   @override
@@ -109,20 +303,21 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           (await _apiService.hasPermission('pricing.read') ||
               await _apiService.hasPermission('price_type.read'));
 
-      // Проверяем права для справочников
-      final hasStorage = await _apiService.hasPermission('storage.read');
-      final hasUnit = await _apiService.hasPermission('unit.read');
-      final hasSupplier = await _apiService.hasPermission('supplier.read');
-      final hasProduct = await _apiService.hasPermission('product.read');
-      final hasPriceType = await _apiService.hasPermission('price_type.read');
-      final hasCategory = await _apiService.hasPermission('category.read');
-      final hasLead = await _apiService.hasPermission('lead.read');
-      final hasOpenings =
-          await _apiService.hasPermission('initial_balance.read');
-      final hasCashRegister =
-          await _apiService.hasPermission('cash_register.read');
-      final hasRkoArticle = await _apiService.hasPermission('rko_article.read');
-      final hasPkoArticle = await _apiService.hasPermission('pko_article.read');
+      // Права справочников нужны и для кнопки, и для поиска на этом экране.
+      _hasStorage = await _apiService.hasPermission('storage.read');
+      _hasUnit = await _apiService.hasPermission('unit.read');
+      _hasSupplier = await _apiService.hasPermission('supplier.read');
+      _hasProduct = await _apiService.hasPermission('product.read');
+      _hasPriceType = await _apiService.hasPermission('price_type.read');
+      _hasCategory = await _apiService.hasPermission('category.read');
+      _hasLead = await _apiService.hasPermission('lead.read');
+      _hasOpenings = await _apiService.hasPermission('initial_balance.read');
+      _hasCashRegister = await _apiService.hasPermission('cash_register.read');
+      _hasRkoArticle = await _apiService.hasPermission('rko_article.read');
+      _hasPkoArticle = await _apiService.hasPermission('pko_article.read');
+      _hasAccountingDashboard =
+          await _apiService.hasPermission('accounting_dashboard');
+      _isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
 
       // Справочники показываются если есть хотя бы одно право из документов или справочников
       _showReferences = _hasIncomeDocument ||
@@ -134,17 +329,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           _hasSupplierReturnDocument ||
           _hasMoneyIncome ||
           _hasMoneyOutcome ||
-          hasStorage ||
-          hasUnit ||
-          hasSupplier ||
-          hasProduct ||
-          hasPriceType ||
-          hasCategory ||
-          hasLead ||
-          hasOpenings ||
-          hasCashRegister ||
-          hasRkoArticle ||
-          hasPkoArticle;
+          _hasStorage ||
+          _hasUnit ||
+          _hasSupplier ||
+          _hasProduct ||
+          _hasPriceType ||
+          _hasCategory ||
+          _hasLead ||
+          _hasOpenings ||
+          _hasCashRegister ||
+          _hasRkoArticle ||
+          _hasPkoArticle;
     } catch (e) {
       debugPrint('Ошибка при проверке прав доступа: $e');
       _hasIncomeDocument = false;
@@ -159,6 +354,19 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasMoneyOutcome = false;
       _hasPricing = false;
       _showReferences = false;
+      _hasAccountingDashboard = false;
+      _hasStorage = false;
+      _hasUnit = false;
+      _hasSupplier = false;
+      _hasProduct = false;
+      _hasPriceType = false;
+      _hasCategory = false;
+      _hasLead = false;
+      _hasOpenings = false;
+      _hasCashRegister = false;
+      _hasRkoArticle = false;
+      _hasPkoArticle = false;
+      _isTojsokhtmontjTenant = false;
     }
 
     if (!mounted) return;
@@ -491,6 +699,25 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                 crossAxisCount;
         final itemHeight = itemWidth / childAspectRatio;
 
+        final visible = [
+          ..._visibleDocuments,
+          ..._visibleReferences,
+        ];
+        if (_query.trim().isNotEmpty) {
+          return Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (final document in visible)
+                SizedBox(
+                  width: itemWidth,
+                  height: itemHeight,
+                  child: _buildDocumentCard(document),
+                ),
+            ],
+          );
+        }
+
         return ReorderableWrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -523,7 +750,13 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _navigateToDocument(document),
+        onTap: () {
+          if (document.keyName.startsWith('ref_')) {
+            _openReference(document.keyName);
+            return;
+          }
+          _navigateToDocument(document);
+        },
         child: Container(
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
@@ -550,7 +783,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: document.color.withOpacity(0.1),
+                    color: document.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -646,13 +879,19 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
             });
           },
           clearButtonClickFiltr: (isSearching) {},
-          showSearchIcon: false,
+          showSearchIcon: true,
           showFilterIcon: false,
           showFilterOrderIcon: false,
-          onChangedSearchInput: (input) {},
-          textEditingController: TextEditingController(),
-          focusNode: FocusNode(),
-          clearButtonClick: (isSearching) {},
+          onChangedSearchInput: (input) {
+            setState(() => _query = input);
+          },
+          textEditingController: _searchController,
+          focusNode: _searchFocus,
+          clearButtonClick: (isSearching) {
+            if (!isSearching) {
+              setState(() => _query = '');
+            }
+          },
           currentFilters: {},
         ),
       ),
@@ -671,21 +910,42 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
                       duration: Duration(milliseconds: 1000),
                     ),
                   )
-                else if (_documents.isEmpty)
+                else if (_documents.isEmpty && !_hasAccountingDashboard)
                   _buildNoPermissionsWidget()
                 else
                   SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
+                    controller: _scrollController,
+                    padding: paddingAboveNav(
+                      context,
+                      base: const EdgeInsets.all(16),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_documents.isNotEmpty) _buildDocumentGrid(),
+                        if (_visibleDocuments.isEmpty &&
+                            _visibleReferences.isEmpty &&
+                            _query.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              localizations.translate('warehouse_search_empty'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 14,
+                                color: context.appColors.textSecondary,
+                              ),
+                            ),
+                          )
+                        else
+                          _buildDocumentGrid(),
                         if (_showReferences) ...[
                           const SizedBox(height: 16),
                           _buildReferencesButton(),
                         ],
-                        const SizedBox(height: 16),
-                        _buildDetailedReportButton(),
+                        if (_hasAccountingDashboard) ...[
+                          const SizedBox(height: 16),
+                          _buildDetailedReportButton(),
+                        ],
                         const SizedBox(height: 20),
                       ],
                     ),

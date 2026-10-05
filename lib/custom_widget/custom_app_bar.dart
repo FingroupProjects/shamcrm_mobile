@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/corporate/chat_corporate_filter_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/lead/chat_lead_filter_screen.dart';
@@ -24,8 +25,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
-import 'package:crm_task_manager/api/service/http/socket_inspector.dart';
-import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -375,6 +375,8 @@ class CustomAppBar extends StatefulWidget {
 class _CustomAppBarState extends State<CustomAppBar>
     with SingleTickerProviderStateMixin {
   bool _isSearching = false;
+  // Крестик закрыл поиск. Пока флаг стоит, поле не открываем снова из-за перерисовки.
+  bool _closeSearchRequested = false;
   final ApiService _apiService = ApiService();
   late TextEditingController _searchController;
   late FocusNode focusNode;
@@ -384,8 +386,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _isFiltering = false;
   bool _isTaskFiltering = false;
   bool _hasNewNotification = false;
-  PusherChannelsClient? socketClient;
-  StreamSubscription<ChannelReadEvent>? notificationSubscription;
+  StreamSubscription<dynamic>? notificationSubscription;
   StreamSubscription<RemoteMessage>? _firebaseMessageSubscription;
   StreamSubscription<RemoteMessage>? _firebaseOpenedAppSubscription;
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -575,7 +576,12 @@ class _CustomAppBarState extends State<CustomAppBar>
       _searchController = widget.textEditingController;
     }
     final hasQuery = _searchController.text.trim().isNotEmpty;
-    if (hasQuery && !_isSearching) {
+    if (_closeSearchRequested) {
+      _isSearching = false;
+      if (!hasQuery) {
+        _closeSearchRequested = false;
+      }
+    } else if (hasQuery && !_isSearching) {
       _isSearching = true;
     }
     // Синхронизируем _areFiltersActive с hasActiveChatFilters и hasActiveEventFilters при обновлении виджета
@@ -601,7 +607,6 @@ class _CustomAppBarState extends State<CustomAppBar>
     notificationSubscription?.cancel();
     _firebaseMessageSubscription?.cancel();
     _firebaseOpenedAppSubscription?.cancel();
-    socketClient?.disconnect();
 
     super.dispose();
   }
@@ -635,56 +640,14 @@ class _CustomAppBarState extends State<CustomAppBar>
   // -------- DEAL custom fields loading moved to filter screen --------
 
   Future<void> _setUpSocketForNotifications() async {
-    // debugPrint(
-    //     '--------------------------- start socket CUSTOM APPBAR:::::::----------------');
     final prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
-    final enteredDomainMap = await ApiService().getEnteredDomain();
-    String? enteredMainDomain = enteredDomainMap['enteredMainDomain'];
-    String? enteredDomain = enteredDomainMap['enteredDomain'];
-
-    final customOptions = PusherChannelsOptions.custom(
-      uriResolver: (metadata) =>
-          Uri.parse('wss://soketi.$enteredMainDomain/app/app-key'),
-      metadata: PusherChannelsOptionsMetadata.byDefault(),
-    );
-
-    final client = createLoggedPusherClient(
-      options: customOptions,
-      connectionErrorHandler: (exception, trace, refresh) {},
-      minimumReconnectDelayDuration: const Duration(seconds: 3),
-    );
-    socketClient = client;
-
-    String userId = prefs.getString('unique_id') ?? '';
-    //debugPrint('userID--------------------------------------------------popopop-p : $userId');
-    //debugPrint(userId);
-
-    final myPresenceChannel = client.presenceChannel(
-      'presence-user.$userId',
-      authorizationDelegate:
-          EndpointAuthorizableChannelTokenAuthorizationDelegate
-              .forPresenceChannel(
-        authorizationEndpoint: Uri.parse(
-            'https://$enteredDomain-back.$enteredMainDomain/broadcasting/auth'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Tenant': '$enteredDomain-back'
-        },
-        onAuthFailed: (exception, trace) {
-          // debugPrint('Auth failed: ${exception.toString()}');
-        },
-      ),
-    );
-
-    client.onConnectionEstablished.listen((_) {
-      myPresenceChannel.subscribeIfNotUnsubscribed();
-      notificationSubscription =
-          myPresenceChannel.bind('notification.created').listen((event) {
-        // debugPrint('Получено уведомление через сокет: ${event.data}');
+    // Общий сокет. Шапка больше не открывает своё соединение на каждый экран.
+    final subscription = await UserRealtimeSocket.instance.listen(
+      'notification.created',
+      (event) {
+        if (!mounted) return;
         try {
-          final data = jsonDecode(event.data);
-          // debugPrint('Данные уведомления: $data');
+          jsonDecode(event.data);
           setState(() {
             _hasNewNotification = true;
           });
@@ -693,17 +656,13 @@ class _CustomAppBarState extends State<CustomAppBar>
         } catch (e) {
           // debugPrint('Ошибка парсинга данных уведомления: $e');
         }
-      });
-    });
-
-    try {
-      await client.connect();
-      //debugPrint('Socket connection SUCCESSS');
-    } catch (e) {
-      if (kDebugMode) {
-        //debugPrint('Socket connection error!');
-      }
+      },
+    );
+    if (!mounted) {
+      await subscription?.cancel();
+      return;
     }
+    notificationSubscription = subscription;
   }
 
   Future<void> _checkPermissions() async {
@@ -980,12 +939,11 @@ class _CustomAppBarState extends State<CustomAppBar>
                   children: [
                     Expanded(
                       child: widget.titleWidget ??
-                          Text(
-                            widget.title,
+                          HoldToReadText(
+                            text: widget.title,
                             style: context.appTextStyles.titleLg.copyWith(
                               color: context.appColors.textPrimary,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                     ),
                   ],
@@ -1095,8 +1053,11 @@ class _CustomAppBarState extends State<CustomAppBar>
                             setState(() {
                               _isSearching = !_isSearching;
                               if (!_isSearching) {
+                                _closeSearchRequested = true;
                                 _searchController.clear();
                                 FocusScope.of(context).unfocus();
+                              } else {
+                                _closeSearchRequested = false;
                               }
                             });
                             widget.clearButtonClick(_isSearching);

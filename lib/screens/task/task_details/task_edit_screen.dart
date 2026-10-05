@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/page_2/widgets/confirm_exit_dialog.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_bloc.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_event.dart';
 import 'package:crm_task_manager/bloc/field_configuration/field_configuration_state.dart';
@@ -1562,7 +1563,8 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     ];
     final subtleBorder = colors.borderPrimary;
 
-    return Scaffold(
+    return LeaveGate(
+      child: Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: !isSettingsMode,
       // ── AppBar styled like LeadEditScreen ──────────────────────────────
@@ -1584,7 +1586,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             gradientColors: appBarGradient,
             borderColor: subtleBorder,
             child: IconButton(
-              onPressed: () => Navigator.pop(context, null),
+              onPressed: () => LeaveGate.requestPop(context),
               icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
@@ -1795,7 +1797,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                         isSuccess: true,
                       );
                       if (context.mounted) {
-                        Navigator.pop(context, true);
+                        LeaveGate.finish(context, true);
                         context.read<TaskBloc>().add(FetchTaskStatuses(
                               projectId: widget.contextProjectId,
                             ));
@@ -1969,6 +1971,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -1989,7 +1992,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: colors.buttonSecondaryBg,
               textColor: colors.buttonSecondaryFg,
-              onPressed: () => Navigator.pop(context, null),
+              onPressed: () => LeaveGate.requestPop(context),
             ),
           ),
           const SizedBox(width: 16),
