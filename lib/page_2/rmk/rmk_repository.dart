@@ -28,7 +28,15 @@ class RmkRepository {
   static const String _goodsFullSyncScope = 'goods_full_sync';
   static const String _syncCompleteVersion = 'complete_v1';
   Future<void>? _syncChain;
-  int _activeSearchCount = 0;
+
+  /// Растёт при каждой полной перезагрузке каталога.
+  /// Старая синхронизация сверяет это число и больше не пишет товары
+  /// предыдущего склада поверх нового списка.
+  int _catalogSyncGeneration = 0;
+
+  /// Увеличивается сразу после очистки локального каталога.
+  /// Экран по этому сигналу убирает анимацию, как только придёт первая страница.
+  final ValueNotifier<int> catalogResetCount = ValueNotifier<int>(0);
 
   Stream<List<RmkGood>> watchGoods({
     String query = '',
@@ -285,20 +293,23 @@ class RmkRepository {
     required int variantId,
     required int storageId,
   }) async {
+    final generation = _catalogSyncGeneration;
     var page = 1;
     while (true) {
+      if (!_isCurrentCatalogSync(generation)) return null;
       final response = await _apiService.getVariants(
         page: page,
         perPage: _syncPageSize,
         filters: {'storage_id': storageId},
       );
+      if (!_isCurrentCatalogSync(generation)) return null;
       final variants = response.data;
       if (variants.isEmpty) return null;
 
       final variant =
           variants.where((item) => item.id == variantId).firstOrNull;
       if (variant != null) {
-        await _saveGoods([variant], page: page);
+        await _saveGoods([variant], page: page, generation: generation);
         return (_db.select(_db.rmkGoods)
               ..where((tbl) => tbl.id.equals(variantId)))
             .getSingleOrNull();
@@ -334,12 +345,14 @@ class RmkRepository {
       }
     }
 
+    final generation = _catalogSyncGeneration;
     final response = await _apiService.getVariants(
       page: 1,
       perPage: _syncPageSize,
       search: normalizedBarcode,
       filters: {'storage_id': storageId},
     );
+    if (!_isCurrentCatalogSync(generation)) return null;
     final variants = response.data;
     if (variants.isEmpty) return null;
 
@@ -349,7 +362,7 @@ class RmkRepository {
     final match = exactMatch ?? variants.firstOrNull;
 
     if (match != null) {
-      await _saveGoods([match], page: 1);
+      await _saveGoods([match], page: 1, generation: generation);
       return (_db.select(_db.rmkGoods)
             ..where((tbl) => tbl.id.equals(match.id)))
           .getSingleOrNull();
@@ -362,21 +375,25 @@ class RmkRepository {
     final normalizedQuery = query.trim();
     if (normalizedQuery.isEmpty) return false;
 
-    _activeSearchCount += 1;
+    // Поиск, начатый на старом складе, не должен дописывать товары
+    // после смены склада или полного обновления.
+    final generation = _catalogSyncGeneration;
     var savedAny = false;
     try {
       var page = 1;
       while (page <= _searchMaxPages) {
+        if (!_isCurrentCatalogSync(generation)) break;
         final response = await _apiService.getVariants(
           page: page,
           perPage: _syncPageSize,
           search: normalizedQuery,
           filters: {'storage_id': storageId},
         );
+        if (!_isCurrentCatalogSync(generation)) break;
         final variants = response.data;
         if (variants.isEmpty) break;
 
-        await _saveGoods(variants, page: page);
+        await _saveGoods(variants, page: page, generation: generation);
         savedAny = true;
 
         if (page >= response.pagination.totalPages ||
@@ -388,8 +405,6 @@ class RmkRepository {
       return savedAny;
     } catch (_) {
       return savedAny;
-    } finally {
-      _activeSearchCount = (_activeSearchCount - 1).clamp(0, 1 << 30);
     }
   }
 
@@ -397,24 +412,43 @@ class RmkRepository {
     required int storageId,
     bool resetCatalogCache = false,
   }) {
-    _syncChain = (_syncChain ?? Future<void>.value()).then(
-      (_) => _executeSync(
+    // Смена склада и pull-to-refresh должны заменить текущую загрузку.
+    // Иначе долгий догруз страниц старого склада тихо отменяет новый запрос,
+    // и на экране остаются прежние товары.
+    if (resetCatalogCache) {
+      _catalogSyncGeneration++;
+    }
+    final generation = _catalogSyncGeneration;
+    final previous = _syncChain ?? Future<void>.value();
+    final result = previous.then((_) {
+      if (!_isCurrentCatalogSync(generation)) return Future<void>.value();
+      return _executeSync(
         storageId: storageId,
         resetCatalogCache: resetCatalogCache,
-      ),
-    );
-    return _syncChain!;
+        generation: generation,
+      );
+    });
+    _syncChain = result;
+    return result;
+  }
+
+  bool _isCurrentCatalogSync(int generation) {
+    return generation == _catalogSyncGeneration;
   }
 
   Future<void> _executeSync({
     required int storageId,
     bool resetCatalogCache = false,
+    required int generation,
   }) async {
     try {
+      if (!_isCurrentCatalogSync(generation)) return;
       await _syncCategories(resetCache: resetCatalogCache);
+      if (!_isCurrentCatalogSync(generation)) return;
       await _syncGoods(
         storageId: storageId,
         resetCache: resetCatalogCache,
+        generation: generation,
       );
     } catch (error, stackTrace) {
       debugPrint('RMK sync failed: $error');
@@ -427,6 +461,7 @@ class RmkRepository {
     await (_db.delete(_db.syncStates)
           ..where((tbl) => tbl.module.equals(_syncModule)))
         .go();
+    catalogResetCount.value++;
   }
 
   Future<void> _markSaleSynced(String saleId) {
@@ -561,7 +596,11 @@ class RmkRepository {
     try {
       final variant = await _findVariantById(goodId);
       if (variant != null) {
-        await _saveGoods([variant], page: 1);
+        await _saveGoods(
+          [variant],
+          page: 1,
+          generation: _catalogSyncGeneration,
+        );
         return _resolveUnitId(variant);
       }
     } catch (error) {
@@ -818,29 +857,40 @@ class RmkRepository {
   Future<void> _syncGoods({
     required int storageId,
     bool resetCache = false,
+    required int generation,
   }) async {
     var page = 1;
     const maxPagesPerSync = 300;
-    final shouldResetCache = resetCache && _activeSearchCount == 0;
-    if (shouldResetCache) {
+    // Полное обновление всегда очищает локальный каталог.
+    // Раньше очистка пропускалась, если параллельно шёл поиск,
+    // и после рефреша на экране оставалась смесь старых товаров.
+    if (resetCache) {
+      if (!_isCurrentCatalogSync(generation)) return;
       await _resetGoodsCache();
     }
+    if (!_isCurrentCatalogSync(generation)) return;
+
     final shouldLoadAllPages = resetCache ||
-        !await _isGoodsFullSyncComplete() ||
+        !await _isGoodsFullSyncComplete(storageId) ||
         await _hasCachedGoodsWithoutUnitInfo();
     var reachedLastPage = false;
 
     while (true) {
+      if (!_isCurrentCatalogSync(generation)) return;
       final response = await _apiService.getVariants(
         page: page,
         perPage: _syncPageSize,
         filters: {'storage_id': storageId},
       );
+      // Пока ждали ответ сервера, пользователь мог сменить склад.
+      // Эти товары уже нельзя сохранять.
+      if (!_isCurrentCatalogSync(generation)) return;
       final variants = response.data;
       if (variants.isEmpty) break;
 
       final hasNewGoods = await _hasNewGoods(variants);
-      await _saveGoods(variants, page: page);
+      await _saveGoods(variants, page: page, generation: generation);
+      if (!_isCurrentCatalogSync(generation)) return;
 
       if (page >= response.pagination.totalPages ||
           variants.length < _syncPageSize) {
@@ -854,8 +904,10 @@ class RmkRepository {
       }
     }
 
-    if (shouldLoadAllPages && reachedLastPage) {
-      await _markGoodsFullSyncComplete();
+    if (shouldLoadAllPages &&
+        reachedLastPage &&
+        _isCurrentCatalogSync(generation)) {
+      await _markGoodsFullSyncComplete(storageId);
     }
   }
 
@@ -903,15 +955,20 @@ class RmkRepository {
     List<Variant> variants, {
     required int page,
     bool resetCacheBeforeSave = false,
+    int? generation,
   }) async {
+    if (generation != null && !_isCurrentCatalogSync(generation)) return;
+
     if (resetCacheBeforeSave) {
       await _db.transaction(() async {
+        if (generation != null && !_isCurrentCatalogSync(generation)) return;
         await _resetGoodsCache();
         await _writeGoodsBatch(variants, page: page);
       });
       return;
     }
 
+    if (generation != null && !_isCurrentCatalogSync(generation)) return;
     await _writeGoodsBatch(variants, page: page);
   }
 
@@ -974,21 +1031,24 @@ class RmkRepository {
     });
   }
 
-  Future<bool> _isGoodsFullSyncComplete() async {
+  String _goodsFullSyncScopeFor(int storageId) =>
+      '${_goodsFullSyncScope}_$storageId';
+
+  Future<bool> _isGoodsFullSyncComplete(int storageId) async {
     final state = await (_db.select(_db.syncStates)
           ..where((tbl) =>
               tbl.module.equals(_syncModule) &
-              tbl.scope.equals(_goodsFullSyncScope)))
+              tbl.scope.equals(_goodsFullSyncScopeFor(storageId))))
         .getSingleOrNull();
     return state?.entityVersion == _syncCompleteVersion;
   }
 
-  Future<void> _markGoodsFullSyncComplete() async {
+  Future<void> _markGoodsFullSyncComplete(int storageId) async {
     final now = DateTime.now();
     await _db.into(_db.syncStates).insertOnConflictUpdate(
           SyncStatesCompanion.insert(
             module: _syncModule,
-            scope: _goodsFullSyncScope,
+            scope: _goodsFullSyncScopeFor(storageId),
             entityVersion: const Value(_syncCompleteVersion),
             lastSyncedAt: Value(now),
             updatedAt: now,

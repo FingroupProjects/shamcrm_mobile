@@ -64,23 +64,17 @@ class ProductNetworkImage extends StatelessWidget {
     final cacheWidth = _decodeWidth(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
-      child: CachedNetworkImage(
-        imageUrl: url!,
+      child: _ResolvedProductPhoto(
+        // Stable key so a catalog refresh does not restart the loader
+        // on a photo that is already on screen.
+        key: ValueKey('$url@$cacheWidth'),
+        url: url!,
+        cacheWidth: cacheWidth,
         width: _finiteSize(width),
         height: _finiteSize(height),
         fit: fit,
-        memCacheWidth: cacheWidth,
-        maxWidthDiskCache: cacheWidth,
-        fadeInDuration: const Duration(milliseconds: 120),
-        fadeOutDuration: Duration.zero,
-        filterQuality: FilterQuality.low,
-        progressIndicatorBuilder: (context, url, progress) {
-          return _loadingBox(
-            colors,
-            progress: progress.progress,
-          );
-        },
-        errorWidget: (context, url, error) => _emptyBox(colors),
+        loading: _loadingBox(colors),
+        error: _emptyBox(colors),
       ),
     );
   }
@@ -142,6 +136,51 @@ class ProductNetworkImage extends StatelessWidget {
   }
 }
 
+/// Shows the loader only until the first decoded frame.
+/// The ring is not painted on top of a photo that is already visible.
+class _ResolvedProductPhoto extends StatelessWidget {
+  const _ResolvedProductPhoto({
+    super.key,
+    required this.url,
+    required this.cacheWidth,
+    required this.width,
+    required this.height,
+    required this.fit,
+    required this.loading,
+    required this.error,
+  });
+
+  final String url;
+  final int cacheWidth;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget loading;
+  final Widget error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image(
+      image: ResizeImage(
+        CachedNetworkImageProvider(url),
+        width: cacheWidth,
+      ),
+      width: width,
+      height: height,
+      fit: fit,
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.low,
+      // frameBuilder replaces the loader. loadingBuilder would keep the
+      // ring stacked on the photo after the first page of images arrives.
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (frame == null) return loading;
+        return child;
+      },
+      errorBuilder: (context, error, stackTrace) => this.error,
+    );
+  }
+}
+
 /// Circular fill 0→100 while a product photo is downloading.
 /// If the server does not send Content-Length, the ring fills automatically.
 class ProductImageLoadProgress extends StatefulWidget {
@@ -176,7 +215,7 @@ class _ProductImageLoadProgressState extends State<ProductImageLoadProgress>
       duration: const Duration(milliseconds: 1100),
     );
     if (widget.progress == null) {
-      _autoFill.forward();
+      _autoFill.repeat();
     }
   }
 
@@ -185,8 +224,8 @@ class _ProductImageLoadProgressState extends State<ProductImageLoadProgress>
     super.didUpdateWidget(oldWidget);
     if (widget.progress != null) {
       _autoFill.stop();
-    } else if (!_autoFill.isAnimating && _autoFill.value < 1) {
-      _autoFill.forward();
+    } else if (!_autoFill.isAnimating) {
+      _autoFill.repeat();
     }
   }
 
@@ -209,7 +248,7 @@ class _ProductImageLoadProgressState extends State<ProductImageLoadProgress>
         child: AnimatedBuilder(
           animation: _autoFill,
           builder: (context, _) {
-            final value = widget.progress ?? (0.08 + (_autoFill.value * 0.84));
+            final value = widget.progress ?? _autoFill.value;
             return CircularProgressIndicator(
               value: value.clamp(0.02, 1.0),
               strokeWidth: widget.strokeWidth,

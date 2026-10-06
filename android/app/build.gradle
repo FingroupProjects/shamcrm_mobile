@@ -67,6 +67,9 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
+            // Меньше файл установки. Классы телефонии сохранены в proguard-rules.pro.
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

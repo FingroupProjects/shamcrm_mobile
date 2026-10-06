@@ -1261,4 +1261,34 @@ extension ApiWarehouseDashboardsX on ApiService {
       response.statusCode,
     );
   }
+
+  /// Reports the current user is allowed to open.
+  /// Endpoint: /api/v3/reports
+  /// A missing report means the tab must stay hidden.
+  Future<List<ReportCatalogItem>> getReportCatalog() async {
+    const path = '/v3/reports';
+    if (kDebugMode) {
+      debugPrint('ApiService: getReportCatalog - path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response);
+      throw Exception(message ?? 'Ошибка загрузки списка отчётов');
+    }
+
+    final rawData = SafeConverters.toMap(json.decode(response.body));
+    final result = rawData['result'];
+    if (result is! List) return [];
+
+    return result
+        .whereType<Map>()
+        .map(
+          (item) => ReportCatalogItem.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .where((item) => item.id > 0)
+        .toList();
+  }
 }

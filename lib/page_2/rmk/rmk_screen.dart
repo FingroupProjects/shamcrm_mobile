@@ -51,6 +51,13 @@ class _RmkScreenState extends State<RmkScreen> {
   bool _isSearchRequesting = false;
   bool _isCartReady = false;
   int _searchRequestId = 0;
+  int _syncRequestId = 0;
+  int _catalogHideToken = 0;
+  int _catalogClearedForToken = -1;
+  int? _revealScheduledForToken;
+
+  /// Пока идёт полная перезагрузка, не показываем товары прошлого склада.
+  bool _hideStaleCatalog = true;
   String _currencyTitle = 'TJS';
 
   @override
@@ -60,6 +67,7 @@ class _RmkScreenState extends State<RmkScreen> {
     imageCache.maximumSize = 80;
     imageCache.maximumSizeBytes = 48 << 20;
     _scrollController.addListener(_onScroll);
+    _repository.catalogResetCount.addListener(_onCatalogReset);
     unawaited(_resetCartSession());
     unawaited(_loadCurrency());
     unawaited(_loadStoragesAndSync());
@@ -73,6 +81,7 @@ class _RmkScreenState extends State<RmkScreen> {
 
   @override
   void dispose() {
+    _repository.catalogResetCount.removeListener(_onCatalogReset);
     unawaited(_repository.clearCart());
     _searchDebounce?.cancel();
     _scrollController.dispose();
@@ -82,7 +91,9 @@ class _RmkScreenState extends State<RmkScreen> {
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients || _isSyncing || _hideStaleCatalog) {
+      return;
+    }
     if (_scrollController.position.extentAfter > 500) return;
 
     final now = DateTime.now();
@@ -107,18 +118,57 @@ class _RmkScreenState extends State<RmkScreen> {
 
   Future<void> _runSync({bool resetCatalogCache = false}) async {
     final storageId = _selectedStorage?.id;
-    if (_isSyncing || storageId == null) return;
-    setState(() => _isSyncing = true);
+    if (storageId == null) return;
+
+    // Новый запрос не отбрасываем, даже если предыдущая загрузка ещё идёт.
+    // Раньше смена склада и pull-to-refresh в этот момент просто выходили,
+    // поэтому товары обновлялись только иногда.
+    if (!mounted) return;
+    final requestId = ++_syncRequestId;
+    _lastBottomSyncAt = DateTime.now();
+    setState(() {
+      _isSyncing = true;
+      if (resetCatalogCache) {
+        _catalogHideToken++;
+        _hideStaleCatalog = true;
+      }
+    });
+
     try {
       await _repository.syncInBackground(
         storageId: storageId,
         resetCatalogCache: resetCatalogCache,
       );
     } finally {
-      if (mounted) {
-        setState(() => _isSyncing = false);
+      if (mounted && requestId == _syncRequestId) {
+        setState(() {
+          _isSyncing = false;
+          _hideStaleCatalog = false;
+        });
       }
     }
+  }
+
+  void _onCatalogReset() {
+    if (!mounted) return;
+    // Cache is empty. The next non-empty list is the first page of the
+    // warehouse we just requested, so the loader can go away.
+    setState(() => _catalogClearedForToken = _catalogHideToken);
+  }
+
+  void _scheduleRevealFreshCatalog() {
+    if (_revealScheduledForToken == _catalogHideToken) return;
+    final token = _catalogHideToken;
+    _revealScheduledForToken = token;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_revealScheduledForToken == token) {
+        _revealScheduledForToken = null;
+      }
+      // Старый колбэк не должен открывать список, если уже началась
+      // новая перезагрузка другого склада.
+      if (!mounted || token != _catalogHideToken) return;
+      setState(() => _hideStaleCatalog = false);
+    });
   }
 
   Future<void> _loadStoragesAndSync() async {
@@ -149,13 +199,21 @@ class _RmkScreenState extends State<RmkScreen> {
         setState(() {
           _isLoadingStorages = false;
           _hasCompletedInitialLoad = true;
+          if (_selectedStorage == null) {
+            _hideStaleCatalog = false;
+          }
         });
       }
     }
   }
 
   Future<void> _handlePullRefresh() async {
-    await _runSync(resetCatalogCache: true);
+    // Обновляем и валюту, и весь каталог выбранного склада.
+    // Индикатор держится, пока сервер не отдаст список заново.
+    await Future.wait([
+      _loadCurrency(),
+      _runSync(resetCatalogCache: true),
+    ]);
   }
 
   bool get _isCatalogLoading => _isLoadingStorages || _isSyncing;
@@ -173,10 +231,16 @@ class _RmkScreenState extends State<RmkScreen> {
   Future<void> _selectStorage(WareHouse storage) async {
     if (_selectedStorage?.id == storage.id) return;
     await _repository.clearCart();
+    if (!mounted) return;
     setState(() {
       _selectedStorage = storage;
       _lastBottomSyncAt = null;
+      _catalogHideToken++;
+      _hideStaleCatalog = true;
     });
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
     unawaited(_runSync(resetCatalogCache: true));
   }
 
@@ -906,8 +970,26 @@ class _RmkScreenState extends State<RmkScreen> {
                                     ),
                             ),
                             builder: (context, goodsSnapshot) {
-                              final goods =
+                              final liveGoods =
                                   goodsSnapshot.data ?? const <RmkGood>[];
+                              // Старый список скрываем, пока кэш не очистится.
+                              // Первая страница нового склада уже убирает анимацию,
+                              // не дожидаясь остальных страниц.
+                              if (_hideStaleCatalog) {
+                                if (goodsSnapshot.hasData && liveGoods.isEmpty) {
+                                  _catalogClearedForToken = _catalogHideToken;
+                                }
+                                final firstPageReady = liveGoods.isNotEmpty &&
+                                    _catalogClearedForToken == _catalogHideToken;
+                                if (!firstPageReady) {
+                                  return const SliverFillRemaining(
+                                    hasScrollBody: false,
+                                    child: _rmkLoading,
+                                  );
+                                }
+                                _scheduleRevealFreshCatalog();
+                              }
+                              final goods = liveGoods;
                               final hasSearchQuery = _query.trim().isNotEmpty;
                               final showFullScreenLoader = goods.isEmpty &&
                                   (hasSearchQuery
@@ -987,23 +1069,6 @@ class _RmkScreenState extends State<RmkScreen> {
                                       ),
                                     ),
                                   ),
-                                  if (_isSyncing && !hasSearchQuery)
-                                    const SliverToBoxAdapter(
-                                      child: Padding(
-                                        padding: EdgeInsets.fromLTRB(
-                                          16,
-                                          0,
-                                          16,
-                                          24,
-                                        ),
-                                        child: PlayStoreImageLoading(
-                                          size: 48,
-                                          duration: Duration(
-                                            milliseconds: 1000,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               );
                             },

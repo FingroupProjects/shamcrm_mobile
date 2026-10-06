@@ -9,6 +9,7 @@ import 'package:crm_task_manager/app/my_app.dart';
 import 'package:crm_task_manager/app/session/session_validation.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/utils/section_tab_memory.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 // Compatibility re-exports for existing `import '.../main.dart'` usages.
@@ -20,6 +21,11 @@ export 'package:crm_task_manager/app/my_app.dart';
 // Разработчик: Авезов Д. И.
 
 void main() {
+  // В магазине печати не нужны: их тысячи, и на слабом телефоне они тратят время.
+  // В отладке логи остаются.
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();

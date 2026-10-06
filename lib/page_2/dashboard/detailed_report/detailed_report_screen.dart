@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
-import 'package:crm_task_manager/utils/safe_converters.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/report_catalog_item.dart';
+import 'package:crm_task_manager/page_2/dashboard/detailed_report/report_tab_catalog.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/top_selling_goods/sales_dashboard_top_selling_goods_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_bloc.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/dashboard/goods_movement/sales_dashboard_goods_movement_event.dart';
@@ -88,35 +89,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   final ApiService _apiService = ApiService();
   late TabController _tabController;
   late ScrollController _scrollController;
-  static const List<Map<String, dynamic>> _baseTabTitles = [
-    {'id': 0, 'titleKey': 'tab_goods_illiquid'},
-    {'id': 1, 'titleKey': 'tab_reconciliation_act'},
-    {'id': 11, 'titleKey': 'tab_goods_movement'},
-    {'id': 2, 'titleKey': 'tab_cash_balance'},
-    {'id': 3, 'titleKey': 'tab_our_debts'},
-    {'id': 4, 'titleKey': 'tab_owed_to_us'},
-    {'id': 5, 'titleKey': 'tab_top_selling_products'},
-    {'id': 6, 'titleKey': 'tab_sales_dynamics'},
-    {'id': 7, 'titleKey': 'tab_net_profit'},
-    {'id': 8, 'titleKey': 'tab_profitability_sales'},
-    {'id': 9, 'titleKey': 'tab_expense_structure'},
-    {'id': 10, 'titleKey': 'order_quantity'},
-  ];
-  static const List<Map<String, dynamic>> _manufactureTabTitles = [
-    {'id': 13, 'titleKey': 'tab_manufacture_goods'},
-    {'id': 14, 'titleKey': 'tab_manufacture_materials'},
-  ];
-  static const Map<String, dynamic> _salaryTab = {
-    'id': 12,
-    'titleKey': 'tab_salary_debt',
-  };
-  static const Map<String, dynamic> _expirationTab = {
-    'id': 15,
-    'titleKey': 'tab_goods_expiration',
-  };
+  // Tabs the server allowed for this user. Empty until the catalog loads.
   List<Map<String, dynamic>> _tabTitles = [];
-  late List<GlobalKey> _tabKeys;
-  late int _currentTabIndex;
+  List<GlobalKey> _tabKeys = [];
+  int _currentTabIndex = 0;
+  bool _reportsLoading = true;
+  String? _reportsError;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool isClickAvatarIcon = false;
@@ -141,8 +119,6 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   late SalesDashboardReconciliationActBloc _reconciliationActBloc;
   late SalesDashboardGoodsMovementBloc _goodsMovementBloc;
   late SalesDashboardGoodsExpirationBloc _goodsExpirationBloc;
-  bool _hasManufacture = false;
-  bool _hasExpirationReport = false;
   bool _tabControllerInitialized = false;
 
   @override
@@ -180,19 +156,16 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _goodsExpirationBloc = SalesDashboardGoodsExpirationBloc();
 
     _scrollController = ScrollController();
-    _rebuildTabs(initialIndex: widget.currentTabIndex);
-    _loadManufactureSettings();
-    _loadExpirationTabVisibility();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToActiveTab();
-    });
+    // The tab list comes from the server. Hidden reports stay off the screen.
+    _loadAvailableReports();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _tabController.dispose();
+    if (_tabControllerInitialized) {
+      _tabController.dispose();
+    }
     _searchController.dispose();
     _searchFocusNode.dispose();
 
@@ -233,6 +206,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   }
 
   void _reloadCurrentTabData() {
+    if (_tabTitles.isEmpty || _currentTabIndex >= _tabTitles.length) return;
     final id = _tabTitles[_currentTabIndex]['id'];
     final filter = _filters[_currentTabIndex] ?? {};
     // Нормализуем поиск: пустая строка становится null
@@ -309,51 +283,82 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
     _reloadCurrentTabData();
   }
 
-  Future<void> _loadExpirationTabVisibility() async {
+  /// Loads the report list and keeps only the tabs this user can open.
+  Future<void> _loadAvailableReports() async {
     try {
-      final visible = await _apiService.isAdminbiovecotjTenant();
-      if (!mounted || _hasExpirationReport == visible) return;
+      final reports = await _apiService.getReportCatalog();
+      if (!mounted) return;
       setState(() {
-        _hasExpirationReport = visible;
-        _rebuildTabs(preserveCurrentSelection: true);
+        _reportsLoading = false;
+        _reportsError = null;
+        _rebuildTabs(
+          initialIndex: widget.currentTabIndex,
+          availableReports: reports,
+        );
       });
-    } catch (_) {}
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToActiveTab();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _reportsLoading = false;
+        _reportsError = e.toString();
+        _tabTitles = [];
+      });
+    }
   }
 
-  Future<void> _loadManufactureSettings() async {
-    try {
-      final settings = await _apiService.getSettings(null);
-      final result = SafeConverters.toMapOrNull(settings['result']);
-      final hasManufacture =
-          result?['has_manufacture'] == true || result?['has_manufacture'] == 1;
-
-      if (!mounted || _hasManufacture == hasManufacture) return;
-
-      setState(() {
-        _hasManufacture = hasManufacture;
-        _rebuildTabs(preserveCurrentSelection: true);
+  /// Turns the server catalog into tabs.
+  /// Unknown reports are skipped. Missing reports stay hidden.
+  List<Map<String, dynamic>> _tabsFromCatalog(
+    List<ReportCatalogItem> reports,
+  ) {
+    final sorted = [...reports]..sort((a, b) {
+        final aPosition = a.position > 0 ? a.position : 1 << 30;
+        final bPosition = b.position > 0 ? b.position : 1 << 30;
+        if (aPosition != bPosition) return aPosition.compareTo(bPosition);
+        return a.id.compareTo(b.id);
       });
-    } catch (_) {
-      if (!mounted) return;
+
+    final tabs = <Map<String, dynamic>>[];
+    final usedLocalIds = <int>{};
+    for (final report in sorted) {
+      final definition = reportTabForCatalogItem(report);
+      if (definition == null) continue;
+      if (!usedLocalIds.add(definition.localId)) continue;
+      tabs.add({
+        'id': definition.localId,
+        'titleKey': definition.titleKey,
+        'title': report.name,
+        'titleEn': report.nameEn,
+      });
     }
+    return tabs;
   }
 
   void _rebuildTabs({
     int? initialIndex,
     bool preserveCurrentSelection = false,
+    List<ReportCatalogItem>? availableReports,
   }) {
     final currentTabId = preserveCurrentSelection && _tabTitles.isNotEmpty
         ? _tabTitles[_currentTabIndex]['id'] as int
         : null;
 
-    // Срок годности — вторым, сразу после «Товары».
-    _tabTitles = [
-      _baseTabTitles.first,
-      if (_hasExpirationReport) _expirationTab,
-      ..._baseTabTitles.skip(1),
-      _salaryTab,
-      if (_hasManufacture) ..._manufactureTabTitles,
-    ];
+    if (availableReports != null) {
+      _tabTitles = _tabsFromCatalog(availableReports);
+    }
+
+    if (_tabTitles.isEmpty) {
+      _currentTabIndex = 0;
+      _tabKeys = [];
+      if (_tabControllerInitialized) {
+        _tabController.dispose();
+        _tabControllerInitialized = false;
+      }
+      return;
+    }
 
     final requestedId = preserveCurrentSelection && currentTabId != null
         ? currentTabId
@@ -388,6 +393,30 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
         _reloadCurrentTabData();
       }
     });
+  }
+
+  bool get _hasVisibleTab =>
+      _tabTitles.isNotEmpty && _currentTabIndex < _tabTitles.length;
+
+  int get _currentTabId =>
+      _hasVisibleTab ? _tabTitles[_currentTabIndex]['id'] as int : 0;
+
+  /// Russian and English titles come from the server.
+  /// Uzbek stays in the app translation, because the API has no uz name.
+  String _resolveTabTitle(
+    Map<String, dynamic> tab,
+    AppLocalizations localizations,
+  ) {
+    final languageCode = localizations.locale.languageCode;
+    if (languageCode == 'uz') {
+      return localizations.translate(tab['titleKey'] as String);
+    }
+
+    final serverTitle = languageCode == 'en'
+        ? (tab['titleEn'] as String? ?? '')
+        : (tab['title'] as String? ?? '');
+    if (serverTitle.trim().isNotEmpty) return serverTitle;
+    return localizations.translate(tab['titleKey'] as String);
   }
 
   @override
@@ -461,11 +490,12 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
                 });
               },
               clearButtonClickFilter: (isSearching) {},
-              showSearchIcon: !isClickAvatarIcon,
+              showSearchIcon: !isClickAvatarIcon && _hasVisibleTab,
               showFilterIcon: !isClickAvatarIcon &&
-                  _tabTitles[_currentTabIndex]['id'] != 12,
-              currentTabIndex: _currentTabIndex,
-              currentTabId: _tabTitles[_currentTabIndex]['id'] as int,
+                  _hasVisibleTab &&
+                  _currentTabId != 12,
+              currentTabIndex: _hasVisibleTab ? _currentTabIndex : 0,
+              currentTabId: _currentTabId,
               onChangedSearchInput: _onSearch,
               textEditingController: _searchController,
               focusNode: _searchFocusNode,
@@ -479,7 +509,41 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
           ),
           body: isClickAvatarIcon
               ? ProfileScreen()
-              : Stack(
+              : _reportsLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: context.appColors.buttonPrimaryBg,
+                      ),
+                    )
+                  : _reportsError != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              localizations?.translate('error_loading') ??
+                                  'Ошибка загрузки',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                color: context.appColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        )
+                      : !_hasVisibleTab
+                          ? Center(
+                              child: Text(
+                                localizations?.translate('no_data') ??
+                                    'Нет данных',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontSize: 16,
+                                  color: context.appColors.textSecondary,
+                                ),
+                              ),
+                            )
+                          : Stack(
                   children: [
                     const Positioned.fill(
                       child: AppBackgroundOverlay(
@@ -530,7 +594,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
         decoration: TaskStyles.tabButtonDecoration(context, isActive),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         child: Text(
-          localizations.translate(_tabTitles[index]['titleKey']),
+          _resolveTabTitle(_tabTitles[index], localizations),
           style: TaskStyles.tabTextStyle.copyWith(
             color: isActive
                 ? context.appColors.textInverse
@@ -605,6 +669,7 @@ class _DetailedReportScreenState extends State<DetailedReportScreen>
   }
 
   void _scrollToActiveTab() {
+    if (_tabKeys.isEmpty || _currentTabIndex >= _tabKeys.length) return;
     final keyContext = _tabKeys[_currentTabIndex].currentContext;
     if (keyContext != null) {
       final box = keyContext.findRenderObject() as RenderBox;

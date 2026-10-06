@@ -112,6 +112,7 @@ import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehou
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
+import 'package:crm_task_manager/models/page_2/dashboard/report_catalog_item.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/goods_expiration_report.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_balance_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/cash_register_details_model.dart';
