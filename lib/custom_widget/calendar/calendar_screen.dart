@@ -5,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/filter/calendar/filter_calendar.d
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 // import 'package:crm_task_manager/screens/my-task/my_task_details/my_task_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/filter_count_badge.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_details_screen.dart';
 // import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -84,6 +85,34 @@ void _changeView(String view) {
   });
 }
 
+
+  bool get _isAwayFromToday {
+    final now = DateTime.now();
+    return _focusedDate.year != now.year || _focusedDate.month != now.month;
+  }
+
+  int get _activeFilterCount {
+    var count = 0;
+    if (_selectedTypes.isNotEmpty) count++;
+    if (_selectedUsers.isNotEmpty) count++;
+    return count;
+  }
+
+  void _jumpToToday() {
+    final now = DateTime.now();
+    setState(() {
+      _focusedDate = now;
+      _selectedDate = now;
+      _isInitialView = false;
+    });
+    context.read<CalendarBloc>().add(FetchCalendarEvents(
+          now.month,
+          now.year,
+          search: _searchController.text.isEmpty ? null : _searchController.text,
+          types: _visibleCalendarTypes,
+          usersId: _selectedUsers,
+        ));
+  }
 
   void _onDateSelected(DateTime selectedDate, DateTime focusedDate) {
     setState(() {
@@ -294,6 +323,23 @@ void _changeView(String view) {
           ),
         ),
         actions: [
+          if (!_isSearching && _isAwayFromToday)
+            TextButton(
+              onPressed: _jumpToToday,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                AppLocalizations.of(context)!.translate('today'),
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                  color: colors.buttonPrimaryBg,
+                ),
+              ),
+            ),
           IconButton(
             icon: _isSearching
                 ? Icon(Icons.close, size: 24, color: colors.iconPrimary)
@@ -314,17 +360,21 @@ void _changeView(String view) {
             animation: _colorAnimation,
             builder: (context, child) {
               return IconButton(
-                icon: ColorFiltered(
-                  colorFilter: ColorFilter.mode(
-                    (_selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty)
-                        ? _colorAnimation.value ?? colors.buttonPrimaryBg
-                        : colors.iconPrimary,
-                    BlendMode.srcIn,
-                  ),
-                  child: Image.asset(
-                    'assets/icons/AppBar/filter.png',
-                    width: 24,
-                    height: 24,
+                icon: FilterCountBadge(
+                  count: _activeFilterCount,
+                  color: colors.buttonPrimaryBg,
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      (_selectedTypes.isNotEmpty || _selectedUsers.isNotEmpty)
+                          ? _colorAnimation.value ?? colors.buttonPrimaryBg
+                          : colors.iconPrimary,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/icons/AppBar/filter.png',
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
                 ),
                 onPressed: _onFilterPressed,

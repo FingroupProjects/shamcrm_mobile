@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
 import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
 import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
 import 'package:crm_task_manager/bloc/permission/permession_event.dart';
 import 'package:crm_task_manager/bloc/permission/permession_state.dart';
@@ -194,9 +195,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ==========================================================================
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // Кнопка Reload не вызывает paused, поэтому колонку сбрасываем здесь.
+    SectionTabMemory.clearAll();
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     debugPrint('HomeScreen: App lifecycle changed to $state');
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      // Закрыли приложение — последняя колонка лидов, сделок, задач и событий сбрасывается.
+      SectionTabMemory.clearAll();
+    }
 
     if (state == AppLifecycleState.resumed) {
       LoggedDioClient.resetIfIdle();

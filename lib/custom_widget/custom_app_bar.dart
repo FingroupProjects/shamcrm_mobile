@@ -5,6 +5,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/widgets/filter_count_badge.dart';
 import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:crm_task_manager/custom_widget/calendar/calendar_screen.dart';
 import 'package:crm_task_manager/custom_widget/filter/chat/corporate/chat_corporate_filter_screen.dart';
@@ -193,6 +194,7 @@ class CustomAppBar extends StatefulWidget {
   final bool hasActiveDealFilters; // Есть ли активные фильтры для сделок
   final bool hasActiveTaskFilters; // Есть ли активные фильтры для задач
   final bool hasActiveLeadFilters; // Есть ли активные фильтры для лидов
+  final int activeFilterCount;
   final Map<String, dynamic>? initialChatFilters; // Начальные фильтры
   final int? currentSalesFunnelId; // ID текущей воронки
   final bool showDashboardIcon; // Новый параметр
@@ -271,6 +273,7 @@ class CustomAppBar extends StatefulWidget {
     this.hasActiveDealFilters = false,
     this.hasActiveTaskFilters = false,
     this.hasActiveLeadFilters = false,
+    this.activeFilterCount = 0,
     this.initialChatFilters,
     this.initialManagersDeal,
     this.initialRegionsDeal,
@@ -896,11 +899,21 @@ class _CustomAppBarState extends State<CustomAppBar>
     Color? color,
     double size = 24,
   }) {
-    return Image.asset(
+    final icon = Image.asset(
       assetPath,
       width: size,
       height: size,
       color: color ?? context.appColors.iconPrimary,
+    );
+    if (!assetPath.endsWith('filter.png')) return icon;
+    return _filterIconWithCount(context, icon);
+  }
+
+  Widget _filterIconWithCount(BuildContext context, Widget icon) {
+    return FilterCountBadge(
+      count: widget.activeFilterCount,
+      color: context.appColors.buttonPrimaryBg,
+      child: icon,
     );
   }
 
@@ -999,10 +1012,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                           color: context.appColors.textPrimary,
                         ),
                         child: IconButton(
-                          icon: Image.asset(
+                          icon: _buildAppBarAssetIcon(
+                            context,
                             'assets/icons/AppBar/filter.png',
-                            width: 24,
-                            height: 24,
                             color: filterIconColor,
                           ),
                           onPressed: () {
@@ -1123,10 +1135,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                         decoration: tooltipDecoration,
                         textStyle: tooltipTextStyle,
                         child: IconButton(
-                          icon: Image.asset(
+                          icon: _buildAppBarAssetIcon(
+                            context,
                             'assets/icons/AppBar/filter.png',
-                            width: 24,
-                            height: 24,
                             color: widget.hasActiveChatFilters
                                 ? activeIconColor
                                 : filterIconColor,
@@ -1211,10 +1222,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                         decoration: tooltipDecoration,
                         textStyle: tooltipTextStyle,
                         child: IconButton(
-                          icon: Image.asset(
+                          icon: _buildAppBarAssetIcon(
+                            context,
                             'assets/icons/AppBar/filter.png',
-                            width: 24,
-                            height: 24,
                             color: widget.hasActiveChatFilters
                                 ? activeIconColor
                                 : filterIconColor,
@@ -1264,10 +1274,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                         decoration: tooltipDecoration,
                         textStyle: tooltipTextStyle,
                         child: IconButton(
-                          icon: Image.asset(
+                          icon: _buildAppBarAssetIcon(
+                            context,
                             'assets/icons/AppBar/filter.png',
-                            width: 24,
-                            height: 24,
                             color: widget.hasActiveChatFilters
                                 ? activeIconColor
                                 : filterIconColor,
@@ -1399,10 +1408,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       textStyle: tooltipTextStyle,
                       child: IconButton(
                         key: widget.FiltrEventIconKey,
-                        icon: Image.asset(
+                        icon: _buildAppBarAssetIcon(
+                          context,
                           'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
                           color: widget.hasActiveEventFilters
                               ? activeIconColor
                               : filterIconColor,
@@ -1435,10 +1443,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                     IconButton(
                       icon: Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: Image.asset(
+                        child: _buildAppBarAssetIcon(
+                          context,
                           'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
                           color: filterIconColor,
                         ),
                       ),
@@ -1450,10 +1457,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                     IconButton(
                       icon: Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: Image.asset(
+                        child: _buildAppBarAssetIcon(
+                          context,
                           'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
                           color: filterIconColor,
                         ),
                       ),
@@ -1465,10 +1471,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                     IconButton(
                       icon: Padding(
                         padding: const EdgeInsets.only(left: 12),
-                        child: Image.asset(
+                        child: _buildAppBarAssetIcon(
+                          context,
                           'assets/icons/AppBar/filter.png',
-                          width: 24,
-                          height: 24,
                           color: filterIconColor,
                         ),
                       ),

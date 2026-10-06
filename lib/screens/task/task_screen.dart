@@ -167,6 +167,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
+    SectionTabMemory.resetTick.addListener(_forgetStandingTab);
     _loadTaskTabMemory();
 
     // ОПТИМИЗАЦИЯ: Запускаем GetAllClientBloc асинхронно, не блокируя UI
@@ -223,11 +224,25 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _loadTaskTabMemory() async {
-    _appliedTabMemory = false;
+    final epoch = SectionTabMemory.epoch;
     final raw = await SectionTabMemory.read('tasks');
-    if (!mounted) return;
+    if (!mounted || epoch != SectionTabMemory.epoch) return;
+    _appliedTabMemory = false;
     _rememberedStatusId = int.tryParse(raw ?? '');
     _applyTaskTabMemory();
+  }
+
+  /// Выход и Reload возвращают первую колонку.
+  void _forgetStandingTab() {
+    _rememberedStatusId = null;
+    _appliedTabMemory = true;
+    _currentTabIndex = 0;
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tabController.length == 0) return;
+      if (_tabController.index == 0) return;
+      _tabController.index = 0;
+    });
   }
 
   void _applyTaskTabMemory() {
@@ -461,6 +476,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _searchDebounceTimer?.cancel();
+    SectionTabMemory.resetTick.removeListener(_forgetStandingTab);
     SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     _recentSearchTimer?.cancel();
     _listScrollController.removeListener(_onScroll);
@@ -1058,6 +1074,33 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _selectedDirectoryValues.isNotEmpty;
   }
 
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedUsers.isNotEmpty) count++;
+    if (_selectedStatuses != null) count++;
+    if (_fromDate != null) count++;
+    if (_toDate != null) count++;
+    if (_isOverdue == true) count++;
+    if (_hasFile == true) count++;
+    if (_hasDeal == true) count++;
+    if (_isUrgent == true) count++;
+    if (_selectedReasonForRefusalIds.isNotEmpty) count++;
+    if (_deadlinefromDate != null) count++;
+    if (_deadlinetoDate != null) count++;
+    if (_completedFromDate != null) count++;
+    if (_completedToDate != null) count++;
+    if (_selectedProjects.isNotEmpty ||
+        (_selectedProject != null && _selectedProject!.isNotEmpty)) {
+      count++;
+    }
+    if (_selectedAuthors.isNotEmpty) count++;
+    if (_selectedDepartment != null && _selectedDepartment!.isNotEmpty) {
+      count++;
+    }
+    if (_selectedDirectoryValues.isNotEmpty) count++;
+    return count;
+  }
+
   Future _handleStatusSelected(int? selectedStatusId) async {
     setState(() {
       _showCustomTabBar = false;
@@ -1324,6 +1367,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 ),
             showFilterIconOnSelectTask: !_showCustomTabBar,
             hasActiveTaskFilters: _hasActiveFilters(),
+            activeFilterCount: _activeFilterCount(),
             showFilterIcon: false,
             showCallCenter: true,
             showMyTaskIcon: true,

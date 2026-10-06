@@ -8,6 +8,7 @@ import 'package:crm_task_manager/app/error_app.dart';
 import 'package:crm_task_manager/app/my_app.dart';
 import 'package:crm_task_manager/app/session/session_validation.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
+import 'package:crm_task_manager/utils/section_tab_memory.dart';
 import 'package:flutter/material.dart';
 
 // Compatibility re-exports for existing `import '.../main.dart'` usages.
@@ -22,6 +23,8 @@ void main() {
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
+      // Новый запуск и Reload не должны открывать прошлую колонку.
+      await SectionTabMemory.clearAll();
 
       final apiService = ApiService();
       final authService = AuthService();

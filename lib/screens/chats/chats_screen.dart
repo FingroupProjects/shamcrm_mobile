@@ -73,6 +73,52 @@ class _ChatsScreenState extends State<ChatsScreen>
     return filters != null && _checkIfFiltersActive(filters);
   }
 
+  int get _activeFilterCount {
+    final filters = _activeFilters;
+    if (filters == null) return 0;
+    var count = 0;
+    bool on(bool value) {
+      if (value) count++;
+      return value;
+    }
+
+    if (endPointInTab == 'lead') {
+      on(filters['managers']?.isNotEmpty == true);
+      on(filters['regions']?.isNotEmpty == true);
+      on(filters['sources']?.isNotEmpty == true);
+      on(filters['statuses'] != null);
+      on(filters['fromDate'] != null);
+      on(filters['toDate'] != null);
+      on(filters['hasSuccessDeals'] == true);
+      on(filters['hasInProgressDeals'] == true);
+      on(filters['hasFailureDeals'] == true);
+      on(filters['hasNotices'] == true);
+      on(filters['hasContact'] == true);
+      on(filters['hasChat'] == true);
+      on(filters['hasNoReplies'] == true);
+      on(filters['hasUnreadMessages'] == true);
+      on(filters['hasDeal'] == true);
+      on(filters['daysWithoutActivity'] != null);
+      on(filters['directory_values']?.isNotEmpty == true);
+    } else if (endPointInTab == 'task') {
+      on(filters['department_id'] != null);
+      on(filters['task_created_from'] != null);
+      on(filters['task_created_to'] != null);
+      on(filters['deadline_from'] != null);
+      on(filters['deadline_to'] != null);
+      on(filters['executor_ids']?.isNotEmpty == true);
+      on(filters['author_ids']?.isNotEmpty == true);
+      on(filters['project_ids']?.isNotEmpty == true);
+      on(filters['task_status_ids']?.isNotEmpty == true);
+      on(filters['unread_only'] == true);
+    } else if (endPointInTab == 'corporate') {
+      on(filters['hasNoReplies'] == true);
+      on(filters['hasUnreadMessages'] == true);
+      on(_positiveInt(filters['daysWithoutActivity']) != null);
+    }
+    return count;
+  }
+
   Map<String, dynamic>? _filtersFor(String endPoint) =>
       _filtersByEndpoint[endPoint];
 
@@ -1146,6 +1192,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               onChatCorporateFiltersApplied: _handleFiltersApplied,
               onChatCorporateFiltersReset: _resetFilters,
               hasActiveChatFilters: _hasActiveFilters,
+              activeFilterCount: _activeFilterCount,
               initialChatFilters: _activeFilters,
               currentSalesFunnelId: _selectedFunnel?.id,
               onChangedSearchInput: (String value) {

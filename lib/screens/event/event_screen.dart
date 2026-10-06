@@ -107,9 +107,11 @@ class _EventScreenState extends State<EventScreen>
       vsync: this,
       initialIndex: _currentTabIndex,
     );
+    SectionTabMemory.resetTick.addListener(_forgetStandingTab);
 
+    final epoch = SectionTabMemory.epoch;
     SectionTabMemory.read('events').then((saved) {
-      if (!mounted || saved == null) return;
+      if (!mounted || epoch != SectionTabMemory.epoch || saved == null) return;
       final index = EventDateType.values.indexOf(saved);
       if (index < 0 || _tabController.index == index) return;
       _tabController.index = index;
@@ -784,6 +786,17 @@ class _EventScreenState extends State<EventScreen>
         _NoticetoDate != null;
   }
 
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedManagers.isNotEmpty) count++;
+    if (_selectedStatuses != null) count++;
+    if (_fromDate != null) count++;
+    if (_toDate != null) count++;
+    if (_NoticefromDate != null) count++;
+    if (_NoticetoDate != null) count++;
+    return count;
+  }
+
   Future<void> _handleManagerSelected(Map managers) async {
     debugPrint('EventScreen: _handleManagerSelected - START WITH NEW LOGIC');
 
@@ -897,6 +910,7 @@ class _EventScreenState extends State<EventScreen>
             initialNoticeManagerEventToDate: _intialNoticeToDate,
             onEventResetFilters: _resetFilters,
             hasActiveEventFilters: _hasActiveFilters(),
+            activeFilterCount: _activeFilterCount(),
             textEditingController: _searchController,
             focusNode: focusNode,
             showFilterTaskIcon: false,
@@ -1105,8 +1119,20 @@ class _EventScreenState extends State<EventScreen>
     );
   }
 
+  /// Выход и Reload возвращают события на «Сегодня».
+  void _forgetStandingTab() {
+    _currentTabIndex = 1;
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tabController.length <= 1) return;
+      if (_tabController.index == 1) return;
+      _tabController.index = 1;
+    });
+  }
+
   @override
   void dispose() {
+    SectionTabMemory.resetTick.removeListener(_forgetStandingTab);
     _tabScrollController.dispose();
     _listScrollController.dispose();
     _tabController.dispose();

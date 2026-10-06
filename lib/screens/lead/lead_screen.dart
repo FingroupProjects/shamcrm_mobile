@@ -297,6 +297,36 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
         _hasActiveCustomFieldFilters;
   }
 
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedManagers.isNotEmpty) count++;
+    if (_selectedRegions.isNotEmpty) count++;
+    if (_selectedState != null) count++;
+    if (_selectedCities.isNotEmpty) count++;
+    if (_selectedSources.isNotEmpty) count++;
+    if (_selectedChannels.isNotEmpty) count++;
+    if (_selectedAdvertisingCampaigns.isNotEmpty) count++;
+    if (_selectedReasonForRefusalIds.isNotEmpty) count++;
+    if (_selectedStatuses != null) count++;
+    if (_fromDate != null) count++;
+    if (_toDate != null) count++;
+    if (_hasSuccessDeals == true) count++;
+    if (_hasInProgressDeals == true) count++;
+    if (_hasFailureDeals == true) count++;
+    if (_hasNotices == true) count++;
+    if (_hasContact == true) count++;
+    if (_hasChat == true) count++;
+    if (_hasNoReplies == true) count++;
+    if (_hasUnreadMessages == true) count++;
+    if (_hasDeal == true) count++;
+    if (_hasOrders == true) count++;
+    if (_daysWithoutActivity != null) count++;
+    if (_numberOfDaysDeal != null) count++;
+    if (_directoryValues.isNotEmpty) count++;
+    if (_hasActiveCustomFieldFilters) count++;
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -304,6 +334,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
+    SectionTabMemory.resetTick.addListener(_forgetStandingTab);
 
     _initializeSalesFunnel();
     context.read<GetAllManagerBloc>().add(GetAllManagerEv());
@@ -1196,6 +1227,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             showMenuIcon: true,
             showFilterIconOnSelectLead: !_showCustomTabBar,
             hasActiveLeadFilters: _hasActiveFilters(),
+            activeFilterCount: _activeFilterCount(),
             showFilterTaskIcon: false,
             showMyTaskIcon: true,
             showCallCenter: true,
@@ -2596,12 +2628,27 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   Future<void> _loadLeadTabMemory() async {
     final funnelId = _selectedFunnel?.id ?? 0;
-    _appliedTabMemory = false;
+    final epoch = SectionTabMemory.epoch;
     _memoryFunnelId = funnelId;
     final raw = await SectionTabMemory.read('leads_$funnelId');
     if (!mounted || _memoryFunnelId != funnelId) return;
+    if (epoch != SectionTabMemory.epoch) return;
+    _appliedTabMemory = false;
     _rememberedStatusId = int.tryParse(raw ?? '');
     _applyLeadTabMemory();
+  }
+
+  /// Выход и Reload возвращают первую колонку.
+  void _forgetStandingTab() {
+    _rememberedStatusId = null;
+    _appliedTabMemory = true;
+    _currentTabIndex = 0;
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tabController.length == 0) return;
+      if (_tabController.index == 0) return;
+      _tabController.index = 0;
+    });
   }
 
   void _applyLeadTabMemory() {
@@ -2764,6 +2811,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    SectionTabMemory.resetTick.removeListener(_forgetStandingTab);
     SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     _salesFunnelSubscription?.cancel();
     for (final subscription in _leadSocketSubscriptions) {

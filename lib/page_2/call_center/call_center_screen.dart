@@ -16,6 +16,7 @@ import 'package:crm_task_manager/page_2/call_center/call_details_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/dashboard_call_center_screen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/widgets/filter_count_badge.dart';
 import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -187,14 +188,20 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
   }
 
   bool _hasAnyFiltersApplied() {
-    return _selectedCallTypes.isNotEmpty ||
-        _selectedOperators.isNotEmpty ||
-        _selectedStatuses.isNotEmpty ||
-        _selectedRatings.isNotEmpty ||
-        _selectedLeads.isNotEmpty ||
-        selectedRemarkStatus != null ||
-        startDate != null ||
-        endDate != null;
+    return _activeFilterCount() > 0;
+  }
+
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedCallTypes.isNotEmpty) count++;
+    if (_selectedOperators.isNotEmpty) count++;
+    if (_selectedStatuses.isNotEmpty) count++;
+    if (_selectedRatings.isNotEmpty) count++;
+    if (_selectedLeads.isNotEmpty) count++;
+    if (selectedRemarkStatus != null) count++;
+    if (startDate != null) count++;
+    if (endDate != null) count++;
+    return count;
   }
 
   void _updateFiltersState() {
@@ -401,13 +408,17 @@ class _CallCenterScreenState extends State<CallCenterScreen> {
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             constraints: const BoxConstraints(),
-            icon: Image.asset(
-              'assets/icons/AppBar/filter.png',
-              width: 24,
-              height: 24,
-              color: _areFiltersApplied
-                  ? context.appColors.buttonPrimaryBg
-                  : context.appColors.iconPrimary,
+            icon: FilterCountBadge(
+              count: _activeFilterCount(),
+              color: context.appColors.buttonPrimaryBg,
+              child: Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 24,
+                height: 24,
+                color: _areFiltersApplied
+                    ? context.appColors.buttonPrimaryBg
+                    : context.appColors.iconPrimary,
+              ),
             ),
             tooltip: AppLocalizations.of(context)!.translate('filter'),
             onPressed: () {

@@ -151,6 +151,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
     // ← КРИТИЧНО: Инициализируем пустой TabController
     _tabController = TabController(length: 0, vsync: this);
+    SectionTabMemory.resetTick.addListener(_forgetStandingTab);
     SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
 
     _dealBloc = context.read<DealBloc>();
@@ -568,6 +569,33 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             _selectedDealCustomFieldFilters!.isNotEmpty);
   }
 
+  int _activeFilterCount() {
+    var count = 0;
+    if (_selectedManagers.isNotEmpty) count++;
+    if (_selectedRegions.isNotEmpty) count++;
+    if (_selectedState != null) count++;
+    if (_selectedCities.isNotEmpty) count++;
+    if (_selectedExecutors.isNotEmpty) count++;
+    if (_selectedSources.isNotEmpty) count++;
+    if (_selectedLeads.isNotEmpty) count++;
+    if (_selectedLeadStatusIds.isNotEmpty) count++;
+    if (_selectedReasonForRefusalIds.isNotEmpty) count++;
+    if (_selectedStatuses != null) count++;
+    if (_fromDate != null) count++;
+    if (_toDate != null) count++;
+    if (_hasTasks == true) count++;
+    if (_withoutNotices) count++;
+    if (_overdueNotices) count++;
+    if (_daysWithoutActivity != null) count++;
+    if (_selectedDirectoryValues.isNotEmpty) count++;
+    if (_selectedDealNames.isNotEmpty) count++;
+    if (_selectedDealCustomFieldFilters != null &&
+        _selectedDealCustomFieldFilters!.isNotEmpty) {
+      count++;
+    }
+    return count;
+  }
+
   Future<void> _loadRecentSearches() async {
     final items = await RecentSearchStore.read('deals');
     if (!mounted) return;
@@ -734,6 +762,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    SectionTabMemory.resetTick.removeListener(_forgetStandingTab);
     SectionScrollBus.instance.tick.removeListener(_onSectionScrollToTop);
     for (final subscription in _dealSocketSubscriptions) {
       subscription.cancel();
@@ -1430,6 +1459,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             showMenuIcon: _showCustomTabBar,
             showFilterIconOnSelectDeal: !_showCustomTabBar,
             hasActiveDealFilters: _hasActiveFilters(),
+            activeFilterCount: _activeFilterCount(),
             showFilterTaskIcon: false,
             showFilterIcon: false,
             showFilterIconDeal: true,
@@ -2099,12 +2129,27 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
   Future<void> _loadDealTabMemory() async {
     final funnelId = _selectedFunnel?.id ?? 0;
-    _appliedTabMemory = false;
+    final epoch = SectionTabMemory.epoch;
     _memoryFunnelId = funnelId;
     final raw = await SectionTabMemory.read('deals_$funnelId');
     if (!mounted || _memoryFunnelId != funnelId) return;
+    if (epoch != SectionTabMemory.epoch) return;
+    _appliedTabMemory = false;
     _rememberedStatusId = int.tryParse(raw ?? '');
     _applyDealTabMemory();
+  }
+
+  /// Выход и Reload возвращают первую колонку.
+  void _forgetStandingTab() {
+    _rememberedStatusId = null;
+    _appliedTabMemory = true;
+    _currentTabIndex = 0;
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _tabController.length == 0) return;
+      if (_tabController.index == 0) return;
+      _tabController.index = 0;
+    });
   }
 
   void _applyDealTabMemory() {
