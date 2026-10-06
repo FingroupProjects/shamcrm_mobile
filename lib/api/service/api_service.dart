@@ -324,7 +324,7 @@ class ApiService extends ApiServiceBase {
   ];
 
   static Map<String, dynamic>? _analyticsFilters;
-
+//   static Map<String, dynamic>? get analyticsFilters => _analyticsFilters;
   static final Map<String, String> _analyticsResponseCache = {};
   static final Map<String, Future<http.Response>> _analyticsInFlight = {};
   static final Map<String, Future<http.Response>> _mutatingInFlight = {};
