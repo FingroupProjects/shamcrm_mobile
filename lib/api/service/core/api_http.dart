@@ -179,6 +179,72 @@ extension ApiHttpX on ApiService {
     return response;
   }
 
+  /// Тот же GET, но с записью в HTTP-конструктор.
+  /// Список чатов и пагинация звали http.get напрямую и в лог не попадали.
+  Future<http.Response> _trackedGet(
+    Uri uri, {
+    required Map<String, String> headers,
+  }) async {
+    String? logId;
+    if (kDebugMode) {
+      logId = DateTime.now().microsecondsSinceEpoch.toString();
+      String? requestPayload;
+      try {
+        final query = uri.queryParametersAll;
+        if (query.isNotEmpty) {
+          requestPayload = json.encode(
+            query.map((key, value) =>
+                MapEntry(key, value.length == 1 ? value.first : value)),
+          );
+        }
+      } catch (_) {
+        requestPayload = null;
+      }
+      HttpLogger().addLog(HttpLogModel(
+        id: logId,
+        timestamp: DateTime.now(),
+        method: 'GET',
+        url: uri.toString(),
+        requestHeaders: headers,
+        requestBody: requestPayload,
+      ));
+    }
+
+    final startTime = DateTime.now();
+    try {
+      final response = await http.get(uri, headers: headers);
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              statusCode: response.statusCode,
+              responseHeaders: response.headers,
+              responseBody: response.body,
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+      return response;
+    } catch (error) {
+      if (kDebugMode && logId != null) {
+        final existingLog = HttpLogger().getLogById(logId);
+        if (existingLog != null) {
+          HttpLogger().updateLog(
+            logId,
+            existingLog.copyWith(
+              error: error.toString(),
+              duration: DateTime.now().difference(startTime),
+            ),
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
   Future<http.Response> _getRequest(String path, {Duration? timeout}) async {
     // Проверяем сессию перед каждым запросом
     if (!await _isSessionValid()) {

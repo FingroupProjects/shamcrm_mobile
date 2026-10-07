@@ -1,3 +1,5 @@
+import FirebaseCore
+import FirebaseMessaging
 import Flutter
 import Network
 import UIKit
@@ -21,6 +23,8 @@ import WidgetKit
     private let chatMarkReadActionId = "CHAT_MARK_READ"
     private let networkMonitor = NWPathMonitor()
     private let networkQueue = DispatchQueue(label: "NetworkMonitor")
+    // Токен Apple может прийти раньше, чем Dart вызовет Firebase.initializeApp.
+    private var pendingApnsToken: Data?
 
     override func application(
         _ application: UIApplication,
@@ -30,8 +34,43 @@ import WidgetKit
 
         registerChatReplyNotificationCategory()
         startNetworkMonitoring()
+        // firebase_messaging ждёт UIApplicationDidFinishLaunchingNotification,
+        // но плагины регистрируются позже, уже в UIScene. Этот вызов он пропускает,
+        // поэтому APNS-токен не появляется и FCM-токен остаётся пустым.
+        registerForRemoteNotifications()
 
         return launched
+    }
+
+    override func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        pendingApnsToken = deviceToken
+        assignPendingApnsTokenIfPossible()
+        super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+    }
+
+    override func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        NSLog("APNS registration failed: %@", error.localizedDescription)
+        super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+    }
+
+    private func registerForRemoteNotifications() {
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    }
+
+    private func assignPendingApnsTokenIfPossible() {
+        guard let token = pendingApnsToken else { return }
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        Messaging.messaging().apnsToken = token
     }
 
     /// Flutter creates the implicit engine while connecting the UIScene.
@@ -39,6 +78,10 @@ import WidgetKit
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
         GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
         attachCustomChannels(messenger: engineBridge.applicationRegistrar.messenger())
+        // Повторяем регистрацию после подключения плагинов: первый APNS-токен
+        // мог прийти до инициализации Firebase.
+        assignPendingApnsTokenIfPossible()
+        registerForRemoteNotifications()
     }
 
     override func applicationDidBecomeActive(_ application: UIApplication) {
@@ -49,6 +92,9 @@ import WidgetKit
     func handleSceneDidBecomeActive() {
         // Safe to restore here: native skips REGISTER if the line is already up.
         nativeSipManager?.updateAppVisibility(isForeground: true, restoreRegistration: true)
+        // После «Разрешить» сцена снова становится активной. Без повторной
+        // регистрации Apple не присылает APNS-токен.
+        registerForRemoteNotifications()
     }
 
     override func applicationDidEnterBackground(_ application: UIApplication) {

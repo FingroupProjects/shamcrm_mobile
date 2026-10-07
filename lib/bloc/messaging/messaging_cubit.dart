@@ -18,6 +18,8 @@ class MessagingCubit extends Cubit<MessagingState> {
 
   Message? selectedMessage;
   Message? _editingMessage;
+  int? _activeChatId;
+  bool _serverPageReady = false;
 
   Future<void> loadInitialPage(
     int chatId, {
@@ -31,10 +33,19 @@ class MessagingCubit extends Cubit<MessagingState> {
       return;
     }
     final normalizedSearch = _normalizeSearch(search);
-    final currentCollection = _currentCollectionOrNull();
+    var currentCollection = _currentCollectionOrNull();
+    // Чужой чат не должен оставаться на экране, пока грузится новый.
+    if (_activeChatId != null && _activeChatId != chatId) {
+      _serverPageReady = false;
+      currentCollection = null;
+      emit(MessagesLoadingState());
+    }
+    _activeChatId = chatId;
 
     if (currentCollection == null || currentCollection.messages.isEmpty) {
-      emit(MessagesLoadingState());
+      if (state is! MessagesLoadingState) {
+        emit(MessagesLoadingState());
+      }
     } else {
       _emitCollection(
         currentCollection.copyWith(
@@ -52,7 +63,9 @@ class MessagingCubit extends Cubit<MessagingState> {
         chatType: chatType,
       );
 
+      if (isClosed || _activeChatId != chatId) return;
       final pendingMessages = _extractPendingMessages(currentCollection);
+      _serverPageReady = true;
       _emitCollection(
         _createCollectionFromPage(
           page,
@@ -217,7 +230,14 @@ class MessagingCubit extends Cubit<MessagingState> {
     );
   }
 
-  void showCachedMessages(List<Message> cachedMessages) {
+  void showCachedMessages(List<Message> cachedMessages, {int? chatId}) {
+    // Сервер уже принёс эту переписку. Поздний кэш не подменяет её
+    // чужими голосовыми, файлами и текстом.
+    if (chatId != null) {
+      if (_serverPageReady && _activeChatId == chatId) return;
+      if (_activeChatId != null && _activeChatId != chatId) return;
+      _activeChatId ??= chatId;
+    }
     final normalizedMessages = _normalizeMessages(cachedMessages);
     final sanitizedMessages = _sanitizeStalePendingUploads(normalizedMessages);
     _emitCollection(

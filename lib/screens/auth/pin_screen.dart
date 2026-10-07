@@ -2,6 +2,7 @@ import 'dart:async';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
@@ -234,6 +235,10 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
       } catch (e) {
         return;
       }
+
+      // Повторный вход с уже сохранённым PIN не открывает PinSetup.
+      // Токен всё равно уходит на сервер текущей сессии.
+      unawaited(FirebaseApi().syncCurrentTokenWithServer());
     } catch (e) {
       debugPrint('PinScreen: FirebaseApi init skipped: $e');
     }

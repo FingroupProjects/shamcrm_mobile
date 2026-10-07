@@ -9,9 +9,12 @@ extension ApiSessionX on ApiService {
   }
 
   Future<void> reset() async {
-    // Сброс значений при выходе
+    // Сброс значений при выходе. Кэш initialize() тоже сбрасываем,
+    // иначе следующий вход останется на прошлом baseUrl.
     baseUrl = null;
     baseUrlSocket = null;
+    _isInitialized = false;
+    _isInitializing = false;
     ////debugPrint('API сброшено');
   }
 

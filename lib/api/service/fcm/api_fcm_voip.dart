@@ -1,65 +1,145 @@
 part of '../api_service.dart';
 
 extension ApiFcmVoipX on ApiService {
-  Future<void> sendDeviceToken(String deviceToken) async {
+  Future<bool> sendDeviceToken(String deviceToken) async {
+    // Раньше запрос шёл голым http.post и в HTTP Inspector не появлялся.
+    // Из-за этого было не видно, ушло ли поле token на сервер.
+    final startedAt = DateTime.now();
+    final logId = startedAt.microsecondsSinceEpoch.toString();
+    final requestBody = json.encode({
+      'type': 'mobile',
+      'token': deviceToken,
+    });
+    var url = '/add-fcm-token';
+    var headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    };
+
+    void publishLog({
+      int? statusCode,
+      String? responseBody,
+      Map<String, String>? responseHeaders,
+      String? error,
+    }) {
+      final duration = DateTime.now().difference(startedAt);
+      final existing = HttpLogger().getLogById(logId);
+      final entry = HttpLogModel(
+        id: logId,
+        timestamp: startedAt,
+        method: 'POST',
+        url: url,
+        requestHeaders: headers,
+        requestBody: requestBody,
+        statusCode: statusCode,
+        responseHeaders: responseHeaders,
+        responseBody: responseBody,
+        duration: duration,
+        error: error,
+      );
+      if (existing == null) {
+        HttpLogger().addLog(entry);
+        return;
+      }
+      HttpLogger().updateLog(logId, entry);
+    }
+
     try {
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('sendDeviceToken: Начало отправки FCM-токена');
-      debugPrint('sendDeviceToken: Token: ${deviceToken.substring(0, 20)}...');
+      final previewLength = deviceToken.length < 20 ? deviceToken.length : 20;
+      debugPrint(
+          'sendDeviceToken: Token: ${deviceToken.substring(0, previewLength)}...');
 
-      // 1. Ждём, пока всё инициализировано
-      await ensureInitialized();
-      if (baseUrl == null || baseUrl!.isEmpty) {
+      // Берём сервер текущей сессии, а не baseUrl из памяти другого входа.
+      final bound = await bindActiveSessionBaseUrl();
+      if (!bound || baseUrl == null || baseUrl!.isEmpty) {
         debugPrint(
             'sendDeviceToken: baseUrl не готов → сохраняем как отложенный');
+        publishLog(
+          error:
+              'Запрос не отправлен: baseUrl не готов. Токен сохранён и будет отправлен повторно.',
+        );
         await _savePendingToken(deviceToken);
-        return;
+        return false;
       }
 
       final token = await getToken();
       if (token == null || token.isEmpty) {
         debugPrint('sendDeviceToken: Нет авторизационного токена → отложенный');
+        publishLog(
+          error:
+              'Запрос не отправлен: нет токена авторизации. Токен сохранён и будет отправлен повторно.',
+        );
         await _savePendingToken(deviceToken);
-        return;
+        return false;
       }
 
       final organizationId = await getSelectedOrganization();
-      final url =
+      url =
           '$baseUrl/add-fcm-token${organizationId != null ? '?organization_id=$organizationId' : ''}';
+      headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Device': 'mobile',
+      };
 
       debugPrint('sendDeviceToken: URL: $url');
+      publishLog();
 
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-          'Device': 'mobile',
-        },
-        body: json.encode({
-          'type': 'mobile',
-          'token': deviceToken,
-        }),
+        headers: headers,
+        body: requestBody,
       );
 
       debugPrint(
           'sendDeviceToken: Ответ: ${response.statusCode} ${response.body}');
+      publishLog(
+        statusCode: response.statusCode,
+        responseHeaders: response.headers,
+        responseBody: response.body,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint('sendDeviceToken: УСПЕШНО отправлен');
         await _removePendingToken(); // Удаляем только при успехе
-      } else {
-        debugPrint(
-            'sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
-        await _savePendingToken(deviceToken);
+        return true;
       }
+      debugPrint('sendDeviceToken: Ошибка ${response.statusCode} → отложенный');
+      await _savePendingToken(deviceToken);
+      return false;
     } catch (e, s) {
       debugPrint('sendDeviceToken: Исключение: $e\n$s');
+      publishLog(error: e.toString());
       await _savePendingToken(deviceToken);
+      return false;
     } finally {
       debugPrint('═══════════════════════════════════════════════════════════');
     }
+  }
+
+  /// Запись в HTTP Inspector, когда add-fcm-token даже не ушёл в сеть.
+  void logSkippedAddFcmToken(String reason) {
+    final now = DateTime.now();
+    HttpLogger().addLog(HttpLogModel(
+      id: now.microsecondsSinceEpoch.toString(),
+      timestamp: now,
+      method: 'POST',
+      url: '/add-fcm-token',
+      requestHeaders: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Device': 'mobile',
+      },
+      requestBody: json.encode({
+        'type': 'mobile',
+        'token': null,
+      }),
+      error: reason,
+    ));
   }
 
   Future<void> _savePendingToken(String token) async {

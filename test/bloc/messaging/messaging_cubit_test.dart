@@ -322,4 +322,19 @@ void main() {
       'second updated',
     );
   });
+
+  test('cache of another chat does not replace the open conversation', () {
+    final cubit = MessagingCubit(_FakeApiService(const {}));
+    cubit.showCachedMessages([_message(1, 'реальные')], chatId: 11);
+    cubit.showCachedMessages(
+      [
+        _message(8, 'voice').copyWith(type: 'voice'),
+        _message(9, 'photo').copyWith(type: 'image'),
+      ],
+      chatId: 22,
+    );
+
+    final state = cubit.state as MessagesCollectionState;
+    expect(state.messages.single.text, 'реальные');
+  });
 }

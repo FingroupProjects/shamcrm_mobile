@@ -624,6 +624,7 @@
   "go_to_date": "Go to Date",
   "not_premission_to_send_sms": "You do not have permission to send a message!",
   "24_hour_leads": "It has been 24 hours since the lead wrote to you! Sending a message will be available only after receiving a new message",
+  "no_integration_cannot_send": "The lead was moved from another funnel. You can’t message the client here.",
   "not_sms": "No Messages",
   "sms_deletes_successfully": "Message deleted successfully!",
   "cannot_someone_delete_sms": "You cannot delete someone else's message!",

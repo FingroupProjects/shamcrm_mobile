@@ -1696,6 +1696,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             endPointInTab: widget.endPointInTab,
             canSendMessage: chat.canSendMessage,
             initialChannelName: chat.channel,
+            initialIntegrationName: _integrationNameFromList(chat),
           ),
         ),
       ),
@@ -1707,6 +1708,15 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
       widget.updateChats.call();
       ChatUnreadCounterService.instance.refreshCounts(silent: true);
     }
+  }
+
+  /// Имя интеграции из уже загруженного списка. Отдельный запрос не нужен.
+  String? _integrationNameFromList(Chats chat) {
+    final username = chat.integration?.username?.trim() ?? '';
+    if (username.isNotEmpty) return username;
+    final name = chat.integration?.name?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    return null;
   }
 
   void onLongPress(Chats chat) {

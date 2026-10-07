@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -371,6 +374,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                   await context
                                       .read<ApiService>()
                                       .getSelectedOrganization();
+                                  // Тот же add-fcm-token, что и после QR.
+                                  // Ожидание APNS не держит экран: повтор внутри sync.
+                                  unawaited(
+                                    FirebaseApi().syncCurrentTokenWithServer(),
+                                  );
                                   await Future.delayed(
                                     const Duration(seconds: 2),
                                   );

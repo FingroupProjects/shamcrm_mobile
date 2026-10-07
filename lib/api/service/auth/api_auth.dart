@@ -33,6 +33,11 @@ extension ApiAuthX on ApiService {
 
       await _saveToken(loginResponse.token);
       await savePermissions(loginResponse.permissions);
+      // Почта — активный вход. Старые QR-ключи не должны перехватывать
+      // add-fcm-token у другого экземпляра ApiService.
+      await clearQrDomainData();
+      await alignEnteredDomainWithVerifiedEmail();
+      await bindActiveSessionBaseUrl();
 
       // Проверяем organization_id из ответа
       String? effectiveOrgId = loginResponse.organizationId;

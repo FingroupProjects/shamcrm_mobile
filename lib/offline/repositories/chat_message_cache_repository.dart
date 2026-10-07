@@ -25,7 +25,11 @@ class ChatMessageCacheRepository {
 
   final AppDatabase _database;
 
-  Future<void> saveMessages(int chatId, List<Message> messages) async {
+  Future<void> saveMessages(
+    int chatId,
+    List<Message> messages, {
+    String? chatType,
+  }) async {
     final now = DateTime.now();
     await (_database.delete(_database.chatMessages)
           ..where((tbl) => tbl.chatId.equals(chatId)))
@@ -40,7 +44,7 @@ class ChatMessageCacheRepository {
             localId: 'server_${chatId}_${message.id}',
             chatId: chatId,
             serverMessageId: Value(message.id > 0 ? message.id : null),
-            payload: jsonEncode(_messageToJson(message)),
+            payload: jsonEncode(message.toCacheJson(chatType: chatType)),
             syncStatus: LocalOperationStatus.synced.value,
             isOutgoing: Value(message.isMyMessage),
             createdAt: now,
@@ -52,7 +56,7 @@ class ChatMessageCacheRepository {
     });
   }
 
-  Future<List<Message>> getMessages(int chatId) async {
+  Future<List<Message>> getMessages(int chatId, {String? chatType}) async {
     final rows = await (_database.select(_database.chatMessages)
           ..where(
               (tbl) => tbl.chatId.equals(chatId) & tbl.isDeleted.equals(false))
@@ -61,11 +65,23 @@ class ChatMessageCacheRepository {
           ]))
         .get();
 
-    return rows
-        .map((row) => Message.fromJson(
-              jsonDecode(row.payload) as Map<String, dynamic>,
-            ))
-        .toList(growable: false);
+    final messages = <Message>[];
+    for (final row in rows) {
+      final decoded = jsonDecode(row.payload);
+      if (decoded is! Map) continue;
+      final json = Map<String, dynamic>.from(decoded);
+      // Старый снимок без версии рисовал чужие типы и сразу сменялся.
+      if (!isDisplaySafeCachePayload(json)) continue;
+      final storedType = json['chat_type']?.toString();
+      if (chatType != null &&
+          storedType != null &&
+          storedType.isNotEmpty &&
+          storedType != chatType) {
+        continue;
+      }
+      messages.add(Message.fromJson(json, chatType: chatType));
+    }
+    return messages;
   }
 
   Future<bool> hasMessages(int chatId) async {
@@ -81,34 +97,4 @@ class ChatMessageCacheRepository {
     await _database.delete(_database.chatMessages).go();
   }
 
-  Map<String, dynamic> _messageToJson(Message message) {
-    return {
-      'id': message.id,
-      'text': message.text,
-      'type': message.type,
-      'file_path': message.filePath,
-      'is_my_message': message.isMyMessage,
-      'created_at': message.createMessateTime,
-      'sender': {'name': message.senderName},
-      // Ноль не сохраняем: раньше из-за этого в кэш попадали выдуманные 20 секунд.
-      'voice_duration': message.duration > Duration.zero
-          ? message.duration.inSeconds
-          : null,
-      'is_pinned': message.isPinned,
-      'is_changed': message.isChanged,
-      'is_read': message.isRead,
-      'is_note': message.isNote,
-      'local_delivery_status': message.deliveryStatus.name,
-      'local_reply_message_id': message.localReplyMessageId,
-      'local_response_type': message.localResponseType,
-      'forwarded_message': message.forwardedMessage != null
-          ? {
-              'id': message.forwardedMessage!.id,
-              'text': message.forwardedMessage!.text,
-              'type': message.forwardedMessage!.type,
-              'sender': {'name': message.forwardedMessage!.senderName},
-            }
-          : null,
-    };
-  }
 }

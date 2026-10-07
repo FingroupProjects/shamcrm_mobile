@@ -92,6 +92,8 @@ class ChatSmsScreen extends StatefulWidget {
   final String endPointInTab;
   final bool canSendMessage;
   final String? initialChannelName;
+  /// Имя интеграции из списка чатов, если сервер его уже прислал.
+  final String? initialIntegrationName;
   /// Лид для первого WhatsApp через Green API, когда чата ещё нет.
   final int? leadId;
   final bool isPendingGreenApiChat;
@@ -106,6 +108,7 @@ class ChatSmsScreen extends StatefulWidget {
     required this.endPointInTab,
     required this.canSendMessage,
     this.initialChannelName,
+    this.initialIntegrationName,
     this.leadId,
     this.isPendingGreenApiChat = false,
   });
@@ -116,6 +119,8 @@ class ChatSmsScreen extends StatefulWidget {
 
 class _ChatSmsScreenState extends State<ChatSmsScreen>
     with WidgetsBindingObserver {
+  // Имя интеграции, которое уже видели. Повторный вход не ждёт сеть.
+  static final Map<int, String> _rememberedIntegrationNames = {};
   final ItemScrollController _scrollControllerMessage = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
@@ -139,6 +144,8 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   String? _searchQuery;
   Timer? _searchDebounce;
   String? integrationUsername;
+  // null — карточка чата ещё не пришла. false — integration именно null.
+  bool? _leadIntegrationAttached;
   String? channelName;
   ChatAdvertising? _chatAdvertising;
   // Состояние ИИ по чату: paused=true значит выключено (в UI показываем инверсию).
@@ -1117,16 +1124,36 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
   }
 
   bool get _shouldShowLeadChannelBanner {
+    if (_isPendingGreenApiChat) return true;
+    if (widget.endPointInTab != 'lead') return false;
+    final channel = channelName ?? widget.initialChannelName;
+    return channel != null && channel.trim().isNotEmpty;
+  }
+
+  bool get _isLeadWithoutIntegration {
     return widget.endPointInTab == 'lead' &&
-        (integrationUsername != null || _isPendingGreenApiChat);
+        !_isPendingGreenApiChat &&
+        _leadIntegrationAttached == false;
+  }
+
+  bool get _canComposeMessage {
+    return widget.canSendMessage &&
+        _canCreateChat &&
+        !_isLeadWithoutIntegration;
+  }
+
+  String get _leadChannelTitle {
+    final name = integrationUsername?.trim();
+    if (name == null || name.isEmpty) return '';
+    return name.startsWith('@') ? name : '@$name';
   }
 
   Widget _buildLeadChannelBanner() {
     return Material(
       color: context.appColors.overlay.withValues(alpha: 0.0),
       child: PinnedLeadMessageWidget(
-        message: '@${integrationUsername ?? 'WhatsApp'}',
-        channelType: channelName,
+        message: _leadChannelTitle,
+        channelType: channelName ?? widget.initialChannelName,
         onTap: null,
         // Кнопка настроек ИИ появляется только при активной
         // интеграции (флаг из get-user-data).
@@ -1325,6 +1352,17 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       // Поле ввода у лида скрыто без channelName.
       channelName = 'green_api';
     }
+    if (widget.endPointInTab == 'lead') {
+      // Иконка канала уже есть в списке. Имя интеграции берём оттуда же
+      // или из прошлого визита, чтобы баннер не выскакивал после запроса.
+      final knownName = _firstNonEmpty([
+        widget.initialIntegrationName,
+        _rememberedIntegrationNames[widget.chatId],
+      ]);
+      if (knownName != null) {
+        integrationUsername = knownName;
+      }
+    }
 
     _chatsBloc = context.read<ChatsBloc>();
     _messagingCubit = context
@@ -1365,12 +1403,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     // ✅ ИСПРАВЛЕНО: Используем uniqueId для привязки чата
     _chatTracker.setActiveChat(widget.chatUniqueId, chatId: widget.chatId);
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
-    unawaited(_cacheService.markChatMessagesRead(widget.chatId));
+    unawaited(_cacheService.markChatMessagesRead(
+      widget.chatId,
+      chatType: widget.endPointInTab,
+    ));
 
     // ✅ КРИТИЧНО: Используем addPostFrameCallback для оптимистичной параллельной загрузки
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // ✅ ШАГ 1: Загружаем кэш МГНОВЕННО (без await, не блокируем UI)
       _loadCachedMessagesOptimistically();
+
+      // Имя интеграции дочитываем из карточки чата параллельно со списком
+      // сообщений. Отдельный запрос интеграции на каждый чат не нужен.
+      if (widget.endPointInTab == 'lead') {
+        unawaited(_fetchIntegration());
+      }
 
       // ✅ ШАГ 2: Параллельно инициализируем сервисы и загружаем свежие данные
       _initializeServicesOptimized();
@@ -1447,7 +1494,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     if (_isPendingGreenApiChat) return;
     final currentState = _messagingCubit?.state;
     if (currentState is MessagesCollectionState) {
-      await _cacheService.cacheMessages(widget.chatId, currentState.messages);
+      await _cacheService.cacheMessages(
+        widget.chatId,
+        currentState.messages,
+        chatType: widget.endPointInTab,
+      );
     }
   }
 
@@ -1640,15 +1691,29 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint(
           '=================-=== 🚀 ChatSmsScreen: Loading cached messages...');
 
-      final cachedMessages =
-          await _cacheService.getCachedMessages(widget.chatId);
+      if (baseUrl.isEmpty) {
+        try {
+          final resolved = await apiService.getDynamicBaseUrl();
+          if (resolved.isNotEmpty && resolved != 'null') {
+            baseUrl = resolved;
+          }
+        } catch (_) {}
+      }
+
+      final cachedMessages = await _cacheService.getCachedMessages(
+        widget.chatId,
+        chatType: widget.endPointInTab,
+      );
 
       if (cachedMessages != null && cachedMessages.isNotEmpty && mounted) {
         debugPrint(
             '=================-=== ✅ ChatSmsScreen: Loaded ${cachedMessages.length} messages from CACHE');
 
-        // ✅ Показываем кэшированные сообщения МГНОВЕННО (не ждем API)
-        context.read<MessagingCubit>().showCachedMessages(cachedMessages);
+        // Показываем только снимок этого чата. Поздний кэш не затирает сервер.
+        context.read<MessagingCubit>().showCachedMessages(
+              cachedMessages,
+              chatId: widget.chatId,
+            );
 
         setState(() {
           _isLoadingFromCache = false;
@@ -1710,13 +1775,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       // ✅ Загружаем свежие сообщения с API (обновляет кэш)
       await _loadMessagesFromApi();
 
-      // ✅ Интеграцию для лидов загружаем в фоне (не блокирует UI)
-      if (widget.endPointInTab == 'lead') {
-        _fetchIntegration().catchError((e) {
-          debugPrint(
-              '=================-=== ⚠️ ChatSmsScreen: Integration error (non-critical): $e');
-        });
-      } else {
+      if (widget.endPointInTab != 'lead') {
         _syncOpenedChatReadState().catchError((e) {
           debugPrint(
               '=================-=== ⚠️ ChatSmsScreen: Read-state sync error (non-critical): $e');
@@ -1763,7 +1822,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
 
       final state = messagingCubit.state;
       if (state is MessagesCollectionState && state.messages.isNotEmpty) {
-        await _cacheService.cacheMessages(widget.chatId, state.messages);
+        await _cacheService.cacheMessages(
+          widget.chatId,
+          state.messages,
+          chatType: widget.endPointInTab,
+        );
         debugPrint(
             '=================-=== ✅ ChatSmsScreen: Cached ${state.messages.length} fresh messages');
         _schedulePendingMessageReconciliation(state.messages);
@@ -1987,14 +2050,35 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     _chatsBloc?.add(ResetUnreadCount(widget.chatId));
   }
 
+  /// Карточка чата. Если первый заход сорвался из-за ещё пустого адреса,
+  /// повторяем один раз уже после инициализации.
+  Future<ChatsGetId> _loadOpenedChat() async {
+    try {
+      return await widget.apiService.getChatById(widget.chatId);
+    } catch (error) {
+      debugPrint('ChatSmsScreen: chat card retry after $error');
+      await widget.apiService.initialize();
+      return widget.apiService.getChatById(widget.chatId);
+    }
+  }
+
   Future<void> _fetchIntegration() async {
     final prefs = await SharedPreferences.getInstance();
+    final savedName = prefs.getString('integration_username_${widget.chatId}');
+    if (mounted &&
+        (integrationUsername == null || integrationUsername!.trim().isEmpty) &&
+        savedName != null &&
+        savedName.trim().isNotEmpty) {
+      setState(() {
+        integrationUsername = savedName.trim();
+      });
+    }
 
     try {
       debugPrint(
           'ChatSmsScreen: Fetching integration data for chatId: ${widget.chatId}');
 
-      final chatData = await widget.apiService.getChatById(widget.chatId);
+      final chatData = await _loadOpenedChat();
       debugPrint('=================-=== ChatSmsScreen: Chat data received');
       _applyOpenedChatReadState(chatData);
 
@@ -2010,39 +2094,32 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       // чтобы кнопка/шторка показывали реальное вкл/выкл.
       _refreshAiState();
 
-      IntegrationForLead? integration;
-      try {
-        integration =
-            await widget.apiService.getIntegrationForLead(widget.chatId);
-        debugPrint(
-            'ChatSmsScreen: Integration data received: ${integration.username}');
-      } catch (integrationError) {
-        debugPrint(
-            '=================-=== ChatSmsScreen: Integration request failed: $integrationError');
-        integration = null;
-      }
-
-      // Ищем первое непустое имя канала по цепочке запасных вариантов.
-      // Раньше при username=null сразу ставили "Неизвестный канал", хотя
-      // у канала есть name / channel.name / имя лида.
+      // Имя уже лежит в /chat/{id}. Отдельный /get-integration не зовём:
+      // из-за него баннер выскакивал вторым кадром и сдвигал переписку.
       final resolvedUsername = _firstNonEmpty([
-        integration?.username,
-        integration?.name,
-        integration?.channel?.name,
-        // Интеграция из самого чата — на случай, когда /get-integration = 404.
         chatData.integrationUsername,
         chatData.integrationName,
-        chatData.name,
+        widget.initialIntegrationName,
+        integrationUsername,
       ]);
 
-      final resolvedChannel =
-          (integration != null ? _determineChannelType(integration) : null) ??
-              chatData.channelName;
+      final resolvedChannel = _firstNonEmpty([
+            chatData.channelName,
+            widget.initialChannelName,
+            channelName,
+          ]) ??
+          '';
 
+      if (!mounted) return;
       setState(() {
-        integrationUsername = resolvedUsername ??
-            AppLocalizations.of(context)!.translate('unknown_channel');
-        channelName = resolvedChannel;
+        _leadIntegrationAttached = chatData.hasIntegration;
+        if (resolvedUsername != null) {
+          integrationUsername = resolvedUsername;
+          _rememberedIntegrationNames[widget.chatId] = resolvedUsername;
+        }
+        if (resolvedChannel.isNotEmpty) {
+          channelName = resolvedChannel;
+        }
       });
 
       // ВАЖНО: кэшируем только реальное значение. Заглушку "неизвестно"
@@ -2061,13 +2138,21 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       debugPrint(
           '=================-=== ChatSmsScreen: Error fetching integration data: $e');
 
+      final savedName = prefs.getString('integration_username_${widget.chatId}');
+      final savedChannel = prefs.getString('channel_name_${widget.chatId}');
+      if (!mounted) return;
       setState(() {
-        integrationUsername =
-            prefs.getString('integration_username_${widget.chatId}') ??
-                AppLocalizations.of(context)!.translate('unknown_channel');
-        channelName =
-            prefs.getString('channel_name_${widget.chatId}') ?? 'unknown';
-        referralBody = prefs.getString('referral_body_${widget.chatId}');
+        if ((integrationUsername == null || integrationUsername!.isEmpty) &&
+            savedName != null &&
+            savedName.isNotEmpty) {
+          integrationUsername = savedName;
+        }
+        if ((channelName == null || channelName!.isEmpty) &&
+            savedChannel != null &&
+            savedChannel.isNotEmpty) {
+          channelName = savedChannel;
+        }
+        referralBody ??= prefs.getString('referral_body_${widget.chatId}');
       });
 
       debugPrint(
@@ -2084,48 +2169,6 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
       }
     }
     return null;
-  }
-
-  String? _determineChannelType(IntegrationForLead integration) {
-    // Тип и имя канала с сервера важнее логина.
-    // Иначе YouTube с обычным username становился «messenger».
-    final hints = [
-      integration.type,
-      integration.channel?.name,
-      integration.username,
-      integration.name,
-    ].map((value) => (value ?? '').toLowerCase()).join(' ');
-
-    if (hints.contains('youtube') || hints.contains('ютуб')) {
-      return 'youtube';
-    }
-
-    if (integration.username != null) {
-      final username = integration.username!.toLowerCase();
-
-      if (username.contains('telegram') || username.contains('tg')) {
-        return 'telegram';
-      } else if (username.contains('green_api') ||
-          username.contains('whatsapp') ||
-          username.contains('wa')) {
-        return 'whatsapp';
-      } else if (username.contains('email') || username.contains('mail')) {
-        return 'email';
-      } else if (username.contains('instagram') || username.contains('ig')) {
-        return 'instagram';
-      } else if (username.contains('facebook') || username.contains('fb')) {
-        return 'facebook';
-      } else if (username.contains('web') || username.contains('site')) {
-        return 'site';
-      }
-    }
-
-    final channelFromServer = integration.channel?.name?.trim();
-    if (channelFromServer != null && channelFromServer.isNotEmpty) {
-      return channelFromServer;
-    }
-
-    return 'messenger';
   }
 
   Future<void> _openTargetMediaUrl() async {
@@ -2738,19 +2781,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                         child: Column(
                           children: [
                             Expanded(child: messageListUi()),
-                            if (widget.canSendMessage && _canCreateChat)
+                            if (_canComposeMessage)
                               inputWidget()
                             else
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 50),
                                 child: Center(
                                   child: Text(
-                                    widget.canSendMessage
+                                    _isLeadWithoutIntegration
                                         ? AppLocalizations.of(context)!
                                             .translate(
-                                                'not_premission_to_send_sms')
-                                        : AppLocalizations.of(context)!
-                                            .translate('24_hour_leads'),
+                                                'no_integration_cannot_send')
+                                        : widget.canSendMessage
+                                            ? AppLocalizations.of(context)!
+                                                .translate(
+                                                    'not_premission_to_send_sms')
+                                            : AppLocalizations.of(context)!
+                                                .translate('24_hour_leads'),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 16,
@@ -4689,7 +4736,11 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
     final currentState = _messagingCubit?.state;
     if (currentState is MessagesCollectionState) {
       unawaited(
-          _cacheService.cacheMessages(widget.chatId, currentState.messages));
+          _cacheService.cacheMessages(
+            widget.chatId,
+            currentState.messages,
+            chatType: widget.endPointInTab,
+          ));
     }
 
     _messageController.dispose();

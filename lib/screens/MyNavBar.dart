@@ -179,6 +179,10 @@ class _MyNavBarState extends State<MyNavBar> {
   List<NavBarItemData>? _orderedItems;
   bool _isReordering = false;
   int _lastItemCount = 0;
+  // Какая вкладка уже была выбрана. Нужно, чтобы не крутить панель
+  // на каждой перерисовке родителя.
+  int? _trackedGroup;
+  int? _trackedIndex;
 
   @override
   void initState() {
@@ -328,38 +332,83 @@ class _MyNavBarState extends State<MyNavBar> {
     }
 
     if (_orderedItems != null && _orderedItems!.isNotEmpty) {
-      final currentItems = _getAllItems();
-      List<NavBarItemData> updatedItems = [];
-
-      for (var orderedItem in _orderedItems!) {
-        final latestItemIndex = currentItems.indexWhere((item) {
-          return item.groupIndex == orderedItem.groupIndex &&
-              item.itemIndex == orderedItem.itemIndex;
+      final updatedItems = _refreshOrderedItems();
+      // Лишний setState во время жеста пересобирает список и сбивает палец.
+      if (!_sameVisibleItems(_orderedItems!, updatedItems)) {
+        setState(() {
+          _orderedItems = updatedItems;
         });
-
-        if (latestItemIndex == -1) {
-          continue;
-        }
-
-        final latestItem = currentItems[latestItemIndex];
-
-        updatedItems.add(NavBarItemData(
-          title: latestItem.title,
-          activeIcon: latestItem.activeIcon,
-          inactiveIcon: latestItem.inactiveIcon,
-          unreadCount: latestItem.unreadCount,
-          groupIndex: latestItem.groupIndex,
-          itemIndex: latestItem.itemIndex,
-          isActive: latestItem.isActive,
-        ));
       }
-
-      setState(() {
-        _orderedItems = updatedItems;
-      });
     }
 
+    // Раньше панель крутилась к активной вкладке после каждого обновления
+    // счётчика чатов и любого setState на главном экране. Если вкладка
+    // была в начале, список сам уезжал в ноль, пока его листали.
+    _scrollToActiveItemIfSelectionChanged();
+  }
+
+  List<NavBarItemData> _refreshOrderedItems() {
+    final currentItems = _getAllItems();
+    final updatedItems = <NavBarItemData>[];
+
+    for (final orderedItem in _orderedItems!) {
+      final latestItemIndex = currentItems.indexWhere((item) {
+        return item.groupIndex == orderedItem.groupIndex &&
+            item.itemIndex == orderedItem.itemIndex;
+      });
+      if (latestItemIndex == -1) continue;
+
+      final latestItem = currentItems[latestItemIndex];
+      updatedItems.add(NavBarItemData(
+        title: latestItem.title,
+        activeIcon: latestItem.activeIcon,
+        inactiveIcon: latestItem.inactiveIcon,
+        unreadCount: latestItem.unreadCount,
+        groupIndex: latestItem.groupIndex,
+        itemIndex: latestItem.itemIndex,
+        isActive: latestItem.isActive,
+      ));
+    }
+    return updatedItems;
+  }
+
+  bool _sameVisibleItems(List<NavBarItemData> current, List<NavBarItemData> next) {
+    if (current.length != next.length) return false;
+    for (var i = 0; i < current.length; i++) {
+      final left = current[i];
+      final right = next[i];
+      if (left.title != right.title ||
+          left.activeIcon != right.activeIcon ||
+          left.inactiveIcon != right.inactiveIcon ||
+          left.unreadCount != right.unreadCount ||
+          left.groupIndex != right.groupIndex ||
+          left.itemIndex != right.itemIndex ||
+          left.isActive != right.isActive) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _scrollToActiveItemIfSelectionChanged() {
+    final items = _orderedItems;
+    if (items == null || items.isEmpty) return;
+
+    final activeIndex = items.indexWhere((item) => item.isActive);
+    if (activeIndex == -1) return;
+
+    final active = items[activeIndex];
+    final selectionChanged = _trackedGroup != active.groupIndex ||
+        _trackedIndex != active.itemIndex;
+    final hadSelection = _trackedGroup != null;
+    _trackedGroup = active.groupIndex;
+    _trackedIndex = active.itemIndex;
+    // Первый показ не двигаем. Иначе панель сама прыгает в начало,
+    // как только главный экран перерисовывается.
+    if (!selectionChanged || !hadSelection) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _scrollToActiveItem();
     });
   }
@@ -367,7 +416,14 @@ class _MyNavBarState extends State<MyNavBar> {
   void _scrollToActiveItem() {
     if (!_scrollController.hasClients ||
         _orderedItems == null ||
-        _orderedItems!.isEmpty) return;
+        _orderedItems!.isEmpty) {
+      return;
+    }
+
+    // Палец важнее анимации: не перебиваем жест, которым листают панель.
+    if (_scrollController.position.isScrollingNotifier.value) {
+      return;
+    }
 
     int activeIndex = _orderedItems!.indexWhere((item) => item.isActive);
 

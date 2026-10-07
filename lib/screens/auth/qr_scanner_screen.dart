@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -86,8 +88,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       await controller.stop();
 
-      // Важно: НЕ отправляем FCM-токен здесь!
-      // Он будет отправлен позже — в PinSetupScreen, после полной инициализации
+      // Тот же вызов, что и после входа по почте.
+      // Не ждём APNS: переход на PIN не должен стоять, повтор идёт внутри sync.
+      unawaited(FirebaseApi().syncCurrentTokenWithServer());
 
       if (mounted) {
         Navigator.pushReplacement(

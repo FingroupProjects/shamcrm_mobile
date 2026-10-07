@@ -193,6 +193,9 @@ class FirebaseApi {
   bool _backgroundHandlerRegistered = false;
   bool _homeScreenReady = false;
   StreamSubscription<String>? _tokenRefreshSubscription;
+  Future<bool>? _fcmSyncInFlight;
+  int _fcmSyncGeneration = 0;
+  String? _lastFcmTokenError;
   String? _lastOpenedPushKey;
   DateTime? _lastOpenedPushAt;
 
@@ -233,17 +236,29 @@ class FirebaseApi {
         sound: true,
       );
 
-      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
-          settings.authorizationStatus != AuthorizationStatus.provisional) {
+      final notificationsAllowed =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional;
+      if (!notificationsAllowed) {
         debugPrint('User declined or has not accepted notification permission');
-        return;
       }
 
-      await _apiService.initialize();
-      debugPrint(
-          'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
+      try {
+        await _apiService.initialize();
+        debugPrint(
+            'FirebaseApi: ApiService initialized with baseUrl: ${_apiService.baseUrl}');
+      } catch (e) {
+        // sendDeviceToken сам перечитает домен сессии. Ошибка кэша
+        // initialize() не должна отменять add-fcm-token.
+        debugPrint('FirebaseApi: initialize before FCM sync failed: $e');
+      }
 
-      await syncCurrentTokenWithServer();
+      // Ранний sync на экране входа стартует до APNS. После разрешения
+      // нужен новый заход, а не ожидание уже проваленного.
+      unawaited(syncCurrentTokenWithServer(restart: true));
+      if (!notificationsAllowed) {
+        return;
+      }
       if (_isInitialized) {
         debugPrint(
             'FirebaseApi уже инициализирован, токен пересинхронизирован');
@@ -261,42 +276,118 @@ class FirebaseApi {
     }
   }
 
-  Future<void> syncCurrentTokenWithServer() async {
-    try {
-      final fcmToken = await _getCurrentFcmToken();
-      if (fcmToken == null || fcmToken.isEmpty) {
-        debugPrint(
-            'FirebaseApi: Не удалось получить актуальный FCM токен для синхронизации');
-        return;
+  /// Отправляет актуальный FCM-токен на сервер текущей сессии.
+  /// Один заход крутится для всех вызовов: почта, QR, PIN и Home.
+  /// [restart] начинает заново после разрешения на уведомления.
+  Future<bool> syncCurrentTokenWithServer({bool restart = false}) {
+    if (restart) {
+      _fcmSyncGeneration += 1;
+      _fcmSyncInFlight = null;
+    } else {
+      final inFlight = _fcmSyncInFlight;
+      if (inFlight != null) {
+        return inFlight;
+      }
+    }
+
+    final generation = _fcmSyncGeneration;
+    final future = _syncCurrentTokenWithRetries(generation);
+    _fcmSyncInFlight = future;
+    future.whenComplete(() {
+      if (identical(_fcmSyncInFlight, future)) {
+        _fcmSyncInFlight = null;
+      }
+    });
+    return future;
+  }
+
+  Future<bool> _syncCurrentTokenWithRetries(int generation) async {
+    // iOS отдаёт APNS не сразу после registerForRemoteNotifications.
+    const attempts = 8;
+    var deviceTokenWasReady = false;
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      if (generation != _fcmSyncGeneration) {
+        return false;
+      }
+      try {
+        final fcmToken = await _getCurrentFcmToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          deviceTokenWasReady = true;
+          final sent = await _syncTokenWithBackend(
+            fcmToken,
+            source: 'manual-sync',
+          );
+          if (sent) {
+            return true;
+          }
+        } else {
+          debugPrint(
+            'FirebaseApi: FCM token not ready, attempt $attempt/$attempts. $_lastFcmTokenError',
+          );
+        }
+      } catch (e) {
+        _lastFcmTokenError = e.toString();
+        debugPrint('FirebaseApi: Ошибка синхронизации FCM токена: $e');
       }
 
-      await _syncTokenWithBackend(fcmToken, source: 'manual-sync');
-    } catch (e) {
-      debugPrint('FirebaseApi: Ошибка ручной синхронизации FCM токена: $e');
+      if (attempt < attempts) {
+        await Future.delayed(const Duration(seconds: 1));
+      }
     }
+
+    // Сам POST пишет sendDeviceToken. Здесь фиксируем случай,
+    // когда поле token пустое, потому что запрос даже не собирался.
+    if (!deviceTokenWasReady && generation == _fcmSyncGeneration) {
+      _apiService.logSkippedAddFcmToken(
+        _lastFcmTokenError ??
+            'FCM-токен устройства не получен. Запрос add-fcm-token на сервер не ушёл.',
+      );
+    }
+    debugPrint('FirebaseApi: FCM token was not delivered to the server');
+    return false;
   }
 
   Future<String?> _getCurrentFcmToken() async {
     if (Platform.isIOS) {
-      final apnsToken = await _firebaseMessaging.getAPNSToken();
+      final deadline = DateTime.now().add(const Duration(seconds: 3));
+      String? apnsToken;
+      while (DateTime.now().isBefore(deadline)) {
+        apnsToken = await _firebaseMessaging.getAPNSToken();
+        if (apnsToken != null) {
+          break;
+        }
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
       if (apnsToken == null) {
-        debugPrint(
-            'FirebaseApi: APNS token is not available yet. Skipping FCM token retrieval.');
+        _lastFcmTokenError =
+            'APNS-токен не получен. На iOS Firebase не выдаёт FCM, пока Apple не пришлёт device token.';
+        debugPrint('FirebaseApi: $_lastFcmTokenError');
         return null;
       }
     }
 
-    return _firebaseMessaging.getToken();
+    try {
+      final token = await _firebaseMessaging.getToken();
+      if (token == null || token.isEmpty) {
+        _lastFcmTokenError =
+            'FirebaseMessaging.getToken() вернул пустое значение.';
+      }
+      return token;
+    } catch (e) {
+      _lastFcmTokenError = e.toString();
+      debugPrint('FirebaseApi: getToken error: $e');
+      return null;
+    }
   }
 
-  Future<void> _syncTokenWithBackend(
+  Future<bool> _syncTokenWithBackend(
     String fcmToken, {
     required String source,
   }) async {
     final preview =
         fcmToken.length > 20 ? '${fcmToken.substring(0, 20)}...' : fcmToken;
     debugPrint('FirebaseApi: [$source] FCM token: $preview');
-    await _apiService.sendDeviceToken(fcmToken);
+    return _apiService.sendDeviceToken(fcmToken);
   }
 
   void _registerBackgroundHandler() {
@@ -1428,7 +1519,8 @@ class FirebaseApi {
 
       final String? token = await _firebaseMessaging.getToken();
       if (token != null) {
-        debugPrint('FCM Token получен: ${token.substring(0, 20)}...');
+        final end = token.length < 20 ? token.length : 20;
+        debugPrint('FCM Token получен: ${token.substring(0, end)}...');
       }
       return token;
     } catch (e) {

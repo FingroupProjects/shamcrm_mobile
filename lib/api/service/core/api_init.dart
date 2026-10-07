@@ -313,6 +313,58 @@ extension ApiInitX on ApiService {
     }
   }
 
+  /// Подставляет baseUrl текущей сессии из SharedPreferences.
+  /// У ApiService много экземпляров, и старый baseUrl в памяти
+  /// отправлял add-fcm-token не на тот сервер.
+  Future<bool> bindActiveSessionBaseUrl() async {
+    try {
+      final url = await getDynamicBaseUrl();
+      if (url.isEmpty || url.contains('null')) {
+        return false;
+      }
+
+      baseUrl = url;
+      try {
+        baseUrlSocket = await getSocketBaseUrl();
+      } catch (e) {
+        debugPrint('bindActiveSessionBaseUrl: socket url skipped: $e');
+      }
+
+      // Следующий initialize() не должен вернуть прошлый сервер из кэша.
+      _isInitialized = true;
+      return true;
+    } catch (e) {
+      debugPrint('bindActiveSessionBaseUrl: $e');
+      return false;
+    }
+  }
+
+  /// QR-ключи больше не описывают активный вход.
+  /// Иначе getDynamicBaseUrl может увести FCM на старый QR-сервер.
+  Future<void> clearQrDomainData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('domain');
+    await prefs.remove('mainDomain');
+  }
+
+  /// После входа по почте enteredDomain не должен остаться от QR.
+  /// Часть экранов читает его раньше verifiedDomain.
+  Future<void> alignEnteredDomainWithVerifiedEmail() async {
+    final verified = await getVerifiedDomain();
+    if (verified == null || verified.isEmpty || !verified.contains('-back.')) {
+      return;
+    }
+
+    final parts = verified.split('-back.');
+    if (parts.length < 2 || parts[0].isEmpty || parts[1].isEmpty) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('enteredDomain', parts[0]);
+    await prefs.setString('enteredMainDomain', parts[1]);
+  }
+
   Future<String?> _getQrDomain() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? domain = prefs.getString('domain');
@@ -349,8 +401,13 @@ extension ApiInitX on ApiService {
   Future<void> saveQrData(String domain, String mainDomain, String login,
       String token, String userId, String organizationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Вход по QR сбрасывает домен почты. getDynamicBaseUrl смотрит
+    // verifiedDomain раньше QR, и FCM уходил на прошлый сервер.
+    await clearEmailVerificationData();
     await prefs.setString('domain', domain);
     await prefs.setString('mainDomain', mainDomain);
+    await prefs.setString('enteredDomain', domain);
+    await prefs.setString('enteredMainDomain', mainDomain);
     await prefs.setString('userLogin', login);
     await prefs.setString('token', token);
     await prefs.setString('userID', userId);
@@ -358,6 +415,7 @@ extension ApiInitX on ApiService {
 
     // Сразу инициализируем baseUrl после сохранения данных
     await initializeFromQrData();
+    _isInitialized = true;
 
     if (kDebugMode) {
       debugPrint(

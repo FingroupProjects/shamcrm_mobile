@@ -40,6 +40,9 @@ class LiquidPinKey extends StatefulWidget {
     this.showShadow = true,
   });
 
+  /// Прогрев шейдера стекла до runApp, чтобы кнопки PIN не мигали.
+  static Future<void> prewarmGlassShader() => _LiquidGlassProgram.prewarm();
+
   String get resolvedLetters {
     if (letters != null) return letters!;
     final number = int.tryParse(digit);
@@ -462,6 +465,38 @@ class _LiquidPinKeyState extends State<LiquidPinKey> {
   }
 }
 
+/// Один скомпилированный шейдер на все кнопки набора.
+/// Программа грузится один раз и до первого кадра PIN.
+class _LiquidGlassProgram {
+  static FragmentProgram? program;
+  static Future<FragmentProgram?>? _loading;
+
+  static Future<void> prewarm() async {
+    await load();
+  }
+
+  static Future<FragmentProgram?> load() {
+    if (program != null) return Future<FragmentProgram?>.value(program);
+    // Не запоминаем «не поддерживается»: на старте движок ещё может
+    // ответить false, а к экрану PIN шейдер уже будет доступен.
+    if (!ImageFilter.isShaderFilterSupported) {
+      return Future<FragmentProgram?>.value(null);
+    }
+    return _loading ??= _loadProgram();
+  }
+
+  static Future<FragmentProgram?> _loadProgram() async {
+    try {
+      final loaded = await FragmentProgram.fromAsset('shaders/liquid_glass.frag');
+      program = loaded;
+      return loaded;
+    } catch (error) {
+      debugPrint('LiquidPinKey: shader unavailable: $error');
+      return null;
+    }
+  }
+}
+
 class _LiquidBackdropLens extends StatefulWidget {
   final bool isDarkBackground;
   final Widget child;
@@ -476,31 +511,28 @@ class _LiquidBackdropLens extends StatefulWidget {
 }
 
 class _LiquidBackdropLensState extends State<_LiquidBackdropLens> {
-  static Future<FragmentProgram?>? _programFuture;
   FragmentShader? _shader;
 
   @override
   void initState() {
     super.initState();
+    // Шейдер создаём сразу, если он уже прогрет до первого кадра.
+    // Иначе await откладывает его на следующий кадр, и кнопка
+    // успевает мигнуть тёмным blur до своего настоящего цвета.
+    final program = _LiquidGlassProgram.program;
+    if (program != null) {
+      _shader = program.fragmentShader();
+      return;
+    }
     unawaited(_initializeShader());
   }
 
   Future<void> _initializeShader() async {
-    if (!ImageFilter.isShaderFilterSupported) return;
-    final program = await (_programFuture ??= _loadProgram());
-    if (!mounted || program == null) return;
+    final program = await _LiquidGlassProgram.load();
+    if (!mounted || program == null || _shader != null) return;
     setState(() {
       _shader = program.fragmentShader();
     });
-  }
-
-  static Future<FragmentProgram?> _loadProgram() async {
-    try {
-      return await FragmentProgram.fromAsset('shaders/liquid_glass.frag');
-    } catch (error) {
-      debugPrint('LiquidPinKey: shader unavailable: $error');
-      return null;
-    }
   }
 
   @override
@@ -511,7 +543,9 @@ class _LiquidBackdropLensState extends State<_LiquidBackdropLens> {
 
   @override
   Widget build(BuildContext context) {
-    ImageFilter filter = ImageFilter.blur(sigmaX: 8, sigmaY: 8);
+    // Sigma 8 заметно темнее настоящего стекла. Пока шейдер недоступен,
+    // оставляем тот же мягкий blur, что и внутри шейдера (2.6).
+    ImageFilter filter = ImageFilter.blur(sigmaX: 2.6, sigmaY: 2.6);
     final shader = _shader;
     if (shader != null && ImageFilter.isShaderFilterSupported) {
       shader

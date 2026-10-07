@@ -56,7 +56,9 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBOELiYITNKdUwsYtXVh4R1uNPrOE49Rx8',
-    appId: '1:307953779464:ios:81f3c7d5cccd77a89522bd',
+    // Совпадает с восстановленным iOS-приложением «shamcrm push ios softtech»
+    // и с GoogleService-Info.plist. Старый id 81f3c7d5 в проекте больше нет.
+    appId: '1:307953779464:ios:8a46e906735080669522bd',
     messagingSenderId: '307953779464',
     projectId: 'shamcrm-23800',
     storageBucket: 'shamcrm-23800.appspot.com',
@@ -65,7 +67,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBOELiYITNKdUwsYtXVh4R1uNPrOE49Rx8',
-    appId: '1:307953779464:ios:81f3c7d5cccd77a89522bd',
+    appId: '1:307953779464:ios:8a46e906735080669522bd',
     messagingSenderId: '307953779464',
     projectId: 'shamcrm-23800',
     storageBucket: 'shamcrm-23800.appspot.com',

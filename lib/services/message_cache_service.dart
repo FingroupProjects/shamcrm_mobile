@@ -12,35 +12,50 @@ class MessageCacheService {
   factory MessageCacheService() => _instance;
 
   ChatMessageCacheRepository? _repository;
-  final Map<int, List<Message>> _memoryCache = {};
-  final Map<int, DateTime> _memoryCacheTime = {};
+  final Map<String, List<Message>> _memoryCache = {};
+  final Map<String, DateTime> _memoryCacheTime = {};
+
+  String _cacheKey(int chatId, String? chatType) => '${chatType ?? ''}|$chatId';
 
   ChatMessageCacheRepository? _resolveRepository() {
     return _repository ??= ChatMessageCacheRepository.tryFromRuntime();
   }
 
-  Future<void> cacheMessages(int chatId, List<Message> messages) async {
+  Future<void> cacheMessages(
+    int chatId,
+    List<Message> messages, {
+    String? chatType,
+  }) async {
     try {
       final persistentMessages = messages
           .where((message) => !message.isUploading)
           .toList(growable: false);
-      _memoryCache[chatId] = persistentMessages;
-      _memoryCacheTime[chatId] = DateTime.now();
+      final key = _cacheKey(chatId, chatType);
+      _memoryCache[key] = persistentMessages;
+      _memoryCacheTime[key] = DateTime.now();
       final repository = _resolveRepository();
       if (repository == null) {
         debugPrint(
             'MessageCache: OfflineRuntime недоступен, сохраняем только в memory cache');
         return;
       }
-      await repository.saveMessages(chatId, persistentMessages);
+      await repository.saveMessages(
+        chatId,
+        persistentMessages,
+        chatType: chatType,
+      );
     } catch (e) {
       debugPrint('MessageCache: cache error for chat=$chatId: $e');
     }
   }
 
-  Future<List<Message>?> getCachedMessages(int chatId) async {
-    final memoryMessages = _memoryCache[chatId];
-    final memoryTime = _memoryCacheTime[chatId];
+  Future<List<Message>?> getCachedMessages(
+    int chatId, {
+    String? chatType,
+  }) async {
+    final key = _cacheKey(chatId, chatType);
+    final memoryMessages = _memoryCache[key];
+    final memoryTime = _memoryCacheTime[key];
     if (memoryMessages != null &&
         memoryTime != null &&
         DateTime.now().difference(memoryTime).inMinutes < 5) {
@@ -52,12 +67,12 @@ class MessageCacheService {
       if (repository == null) {
         return null;
       }
-      final messages = await repository.getMessages(chatId);
+      final messages = await repository.getMessages(chatId, chatType: chatType);
       if (messages.isEmpty) {
         return null;
       }
-      _memoryCache[chatId] = messages;
-      _memoryCacheTime[chatId] = DateTime.now();
+      _memoryCache[key] = messages;
+      _memoryCacheTime[key] = DateTime.now();
       return messages;
     } catch (e) {
       debugPrint('MessageCache: read error for chat=$chatId: $e');
@@ -65,8 +80,8 @@ class MessageCacheService {
     }
   }
 
-  Future<bool> hasCachedMessages(int chatId) async {
-    if (_memoryCache.containsKey(chatId)) {
+  Future<bool> hasCachedMessages(int chatId, {String? chatType}) async {
+    if (_memoryCache.containsKey(_cacheKey(chatId, chatType))) {
       return true;
     }
     final repository = _resolveRepository();
@@ -76,15 +91,17 @@ class MessageCacheService {
     return repository.hasMessages(chatId);
   }
 
-  Future<void> clearChatCache(int chatId) async {
-    _memoryCache.remove(chatId);
-    _memoryCacheTime.remove(chatId);
+  Future<void> clearChatCache(int chatId, {String? chatType}) async {
+    final key = _cacheKey(chatId, chatType);
+    _memoryCache.remove(key);
+    _memoryCacheTime.remove(key);
   }
 
-  Future<void> markChatMessagesRead(int chatId) async {
+  Future<void> markChatMessagesRead(int chatId, {String? chatType}) async {
     try {
-      List<Message>? messages = _memoryCache[chatId];
-      messages ??= await getCachedMessages(chatId);
+      final key = _cacheKey(chatId, chatType);
+      List<Message>? messages = _memoryCache[key];
+      messages ??= await getCachedMessages(chatId, chatType: chatType);
       if (messages == null || messages.isEmpty) {
         return;
       }
@@ -93,18 +110,18 @@ class MessageCacheService {
           .map((message) =>
               message.isRead ? message : message.copyWith(isRead: true))
           .toList(growable: false);
-      await cacheMessages(chatId, updated);
+      await cacheMessages(chatId, updated, chatType: chatType);
     } catch (e) {
       debugPrint('MessageCache: mark read error for chat=$chatId: $e');
     }
   }
 
-  DateTime? getLastUpdateTime(int chatId) {
-    return _memoryCacheTime[chatId];
+  DateTime? getLastUpdateTime(int chatId, {String? chatType}) {
+    return _memoryCacheTime[_cacheKey(chatId, chatType)];
   }
 
-  Future<DateTime?> getLastUpdateTimeAsync(int chatId) async {
-    return _memoryCacheTime[chatId];
+  Future<DateTime?> getLastUpdateTimeAsync(int chatId, {String? chatType}) async {
+    return _memoryCacheTime[_cacheKey(chatId, chatType)];
   }
 
   Future<void> clearOldCache(

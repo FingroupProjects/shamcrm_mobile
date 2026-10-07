@@ -79,14 +79,34 @@ class PinnedLeadMessageWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: context.appTextStyles.bodySm.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: context.appColors.textPrimary,
+                  // Высота строки фиксирована: имя интеграции только
+                  // проявляется, баннер не подпрыгивает и не сдвигает чат.
+                  SizedBox(
+                    height: 20,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 240),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            ...previousChildren,
+                            if (currentChild != null) currentChild,
+                          ],
+                        );
+                      },
+                      child: Text(
+                        message,
+                        key: ValueKey(message),
+                        style: context.appTextStyles.bodySm.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.appColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

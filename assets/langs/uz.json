@@ -622,6 +622,7 @@
   "go_to_date": "Sanaga o'tish",
   "not_premission_to_send_sms": "Xabar yuborish uchun ruxsatingiz yo'q!",
   "24_hour_leads": "Lid sizga yozganiga 24 soat bo'ldi! Xabar yuborish faqat yangi xabar qabul qilingandan keyin mumkin bo'ladi",
+  "no_integration_cannot_send": "Lid boshqa voronkadan ko'chirilgan. Bu yerda mijozga yozib bo'lmaydi.",
   "not_sms": "Xabarlar yo'q",
   "sms_deletes_successfully": "Xabar muvaffaqiyatli o'chirildi!",
   "cannot_someone_delete_sms": "Boshqasining xabarini o'chira olmaysiz!",

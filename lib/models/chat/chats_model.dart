@@ -877,7 +877,20 @@ class Message {
       longitude: longitude,
       filePath: filePath,
     );
-    if (json['voice_duration'] != null && resolvedType != 'location') {
+    // voice_duration есть только у голосовых. Нельзя из-за него
+    // превращать обычный текст или фото в голосовое сообщение:
+    // так кэш на мгновение показывал чужие типы пузырей.
+    final explicitType = (json['type']?.toString() ?? '').toLowerCase();
+    final canPromoteToVoice = explicitType.isEmpty ||
+        explicitType == 'file' ||
+        explicitType == 'document' ||
+        explicitType == 'voice' ||
+        explicitType == 'audio' ||
+        explicitType == 'ptt' ||
+        explicitType == 'voice_message';
+    if (canPromoteToVoice &&
+        resolvedType != 'location' &&
+        parseVoiceDuration(json['voice_duration']) > Duration.zero) {
       resolvedType = 'voice';
     }
 
@@ -891,7 +904,9 @@ class Message {
 
     // ✅ ЛОГИКА ОПРЕДЕЛЕНИЯ СТОРОНЫ СООБЩЕНИЯ
     bool isMyMessage = false;
-    final effectiveChatType = chatType ?? json['chat']?['type']?.toString();
+    final effectiveChatType = chatType ??
+        json['chat_type']?.toString() ??
+        json['chat']?['type']?.toString();
     final senderType = json['sender']?['type']?.toString().toLowerCase();
     final senderId = json['sender']?['id']?.toString();
     final myUserId = userID.value;
@@ -1028,10 +1043,64 @@ class Message {
     );
   }
 
+  /// Снимок, из которого пузырь восстанавливается тем же, что пришёл с сервера.
+  /// Старый кэш без cache_version рисовал другие типы и сразу сменялся.
+  Map<String, dynamic> toCacheJson({String? chatType}) {
+    return {
+      'cache_version': cachePayloadVersion,
+      'id': id,
+      'text': text,
+      'type': type,
+      'file_path': filePath,
+      'latitude': latitude,
+      'longitude': longitude,
+      'is_my_message': isMyMessage,
+      'created_at': createMessateTime,
+      'sender': {'name': senderName},
+      'voice_duration': type == 'voice' && duration > Duration.zero
+          ? duration.inSeconds
+          : null,
+      'is_pinned': isPinned,
+      'is_changed': isChanged,
+      'is_read': isRead,
+      'is_note': isNote,
+      'media_group_id': mediaGroupId,
+      'is_created_by_ai': isCreatedByAi ? true : null,
+      'rating': rating,
+      'local_delivery_status': deliveryStatus.name,
+      'local_reply_message_id': localReplyMessageId,
+      'local_response_type': localResponseType,
+      'chat_type': chatType,
+      'reactions': reactions.map((reaction) => reaction.toJson()).toList(),
+      'forwarded_message': forwardedMessage == null
+          ? null
+          : {
+              'id': forwardedMessage!.id,
+              'text': forwardedMessage!.text,
+              'type': forwardedMessage!.type,
+              'sender': {'name': forwardedMessage!.senderName},
+            },
+      'post': post == null
+          ? null
+          : {
+              'id': post!.id,
+              'caption': post!.caption,
+              'media_url': post!.mediaUrl,
+            },
+    };
+  }
+
   @override
   String toString() {
     return 'Message{id: $id, text: $text, type: $type, filePath: $filePath, latitude: $latitude, longitude: $longitude, isMyMessage: $isMyMessage, isPlaying: $isPlaying, isPause: $isPause, duration: $duration, position: $position, forwardedMessage: $forwardedMessage, isPinned: $isPinned, isChanged: $isChanged, isRead: $isRead, readStatus: $readStatus}';
   }
+}
+
+/// Версия снимка истории. Старые записи без неё на экран не выводим.
+const int cachePayloadVersion = 2;
+
+bool isDisplaySafeCachePayload(Map<String, dynamic> json) {
+  return json['cache_version'] == cachePayloadVersion;
 }
 
 class MessageMediaItem {

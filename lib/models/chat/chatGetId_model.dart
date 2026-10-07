@@ -21,6 +21,8 @@ class ChatsGetId {
   // когда отдельный запрос /get-integration отдаёт 404.
   final String? integrationUsername;
   final String? integrationName;
+  // false только когда в ответе чата integration именно null.
+  final bool hasIntegration;
   // true, только если сервер прислал channel.name.
   // Пустой канал нельзя подменять Telegram: иначе YouTube получит чужую иконку.
   final bool hasServerChannelName;
@@ -41,6 +43,7 @@ class ChatsGetId {
     this.isAiFollowupPaused = false,
     this.integrationUsername,
     this.integrationName,
+    this.hasIntegration = true,
     this.hasServerChannelName = false,
   });
 
@@ -186,6 +189,7 @@ class ChatsGetId {
       integrationUsername:
           SafeConverters.toStringOrNull(integrationMap?['username']),
       integrationName: SafeConverters.toStringOrNull(integrationMap?['name']),
+      hasIntegration: integrationMap != null,
       hasServerChannelName: hasServerChannelName,
     );
   }

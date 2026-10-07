@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
-
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/background/wallpaper_rotation_mode.dart';
 import 'package:crm_task_manager/core/theme/background/wallpaper_source.dart';
@@ -199,31 +197,64 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_advanceCarouselIfNeeded(WallpaperAdvanceReason.resume));
   }
 
-  /// Warm the wallpaper image cache before the first Flutter frame so the
-  /// PIN/login screens don't flash the solid theme color.
+  /// Кладёт обои в ImageCache до первого кадра.
+  /// Отдельный decode через instantiateImageCodec этот кэш не заполняет,
+  /// и стекло кнопок PIN успевало размыть чёрную подложку.
   Future<void> precacheBackground() async {
-    if (_backgroundPreset != AppBackgroundPreset.custom) return;
+    final provider = _displayedBackgroundProvider();
+    if (provider == null) return;
 
     try {
-      if (_backgroundImagePath != null && _backgroundImagePath!.isNotEmpty) {
-        final file = File(_backgroundImagePath!);
-        if (!file.existsSync()) return;
-        final bytes = await file.readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        await codec.getNextFrame();
-        return;
-      }
-
-      if (_backgroundAssetPath != null && _backgroundAssetPath!.isNotEmpty) {
-        final data = await rootBundle.load(_backgroundAssetPath!);
-        final codec = await ui.instantiateImageCodec(
-          data.buffer.asUint8List(),
-        );
-        await codec.getNextFrame();
-      }
-    } catch (_) {
-      // Best-effort: a failed precache must never block app start.
+      await _warmImageProvider(provider);
+    } catch (error) {
+      // Прогрев не должен ломать запуск, если файл обоев недоступен.
+      debugPrint('Wallpaper cache skipped: $error');
     }
+  }
+
+  ImageProvider? _displayedBackgroundProvider() {
+    if (_backgroundPreset != AppBackgroundPreset.custom) return null;
+
+    final imagePath = _backgroundImagePath;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      final file = File(imagePath);
+      if (!file.existsSync()) return null;
+      return FileImage(file);
+    }
+
+    final assetPath = _backgroundAssetPath;
+    if (assetPath != null && assetPath.isNotEmpty) {
+      return AssetImage(assetPath);
+    }
+    return null;
+  }
+
+  ImageConfiguration _warmImageConfiguration() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    final ratio = views.isEmpty ? 1.0 : views.first.devicePixelRatio;
+    return ImageConfiguration(
+      bundle: rootBundle,
+      devicePixelRatio: ratio == 0 ? 1.0 : ratio,
+    );
+  }
+
+  Future<void> _warmImageProvider(ImageProvider provider) {
+    final completer = Completer<void>();
+    final stream = provider.resolve(_warmImageConfiguration());
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo image, bool synchronousCall) {
+        image.dispose();
+        stream.removeListener(listener);
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        stream.removeListener(listener);
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
   }
 
   Future<void> toggleTheme() async {
@@ -758,19 +789,10 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
     if (_carouselItems.length < 2) return;
     final next = _carouselItems[(_carouselIndex + 1) % _carouselItems.length];
     try {
-      if (next.isAsset) {
-        final data = await rootBundle.load(next.path);
-        final codec = await ui.instantiateImageCodec(
-          data.buffer.asUint8List(),
-        );
-        await codec.getNextFrame();
-        return;
-      }
-      final file = File(next.path);
-      if (!file.existsSync()) return;
-      final bytes = await file.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      await codec.getNextFrame();
+      if (!next.isAsset && !File(next.path).existsSync()) return;
+      final ImageProvider provider =
+          next.isAsset ? AssetImage(next.path) : FileImage(File(next.path));
+      await _warmImageProvider(provider);
     } catch (_) {}
   }
 

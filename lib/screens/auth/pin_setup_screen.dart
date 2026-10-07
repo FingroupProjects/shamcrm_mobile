@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/biometric_service.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
@@ -25,7 +25,6 @@ import 'package:crm_task_manager/widgets/biometric_dialogs.dart';
 import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
 import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -128,9 +127,9 @@ class _PinSetupScreenState extends State<PinSetupScreen>
   // FCM ТОКЕН - ОТПРАВКА ПРИ ИНИЦИАЛИЗАЦИИ
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// ✅ Отправка FCM токена при открытии экрана
+  /// Отправка FCM на сервер, в который только что вошли: почта или QR.
+  /// Успех ставим только после ответа 200/201. Иначе экран PIN повторит вызов.
   Future<void> _sendFCMTokenOnInit() async {
-    // Защита от повторного вызова
     if (_fcmTokenSent || _isInitializing) {
       debugPrint('PinSetupScreen: FCM токен уже обрабатывается или отправлен');
       return;
@@ -138,132 +137,16 @@ class _PinSetupScreenState extends State<PinSetupScreen>
 
     _isInitializing = true;
 
-    final apiService = context.read<ApiService>();
-
     try {
-      debugPrint('════════════════════════════════════════════════════════');
-      debugPrint(
-          'PinSetupScreen: 📱 СТАРТ: Отправка FCM токена при инициализации');
-      debugPrint('════════════════════════════════════════════════════════');
-
-      // ✅ ШАГ 1: Инициализируем ApiService
-      debugPrint('PinSetupScreen: 🔧 Шаг 1/3: Инициализация ApiService...');
-      await apiService.ensureInitialized();
-
-      // Проверяем что baseUrl инициализирован
-      if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
-        debugPrint(
-            'PinSetupScreen: ⚠️ baseUrl не инициализирован после ensureInitialized');
-        debugPrint('PinSetupScreen: 🔄 Пробуем явную инициализацию...');
-
-        await apiService.initialize();
-
-        // Финальная проверка
-        if (apiService.baseUrl == null || apiService.baseUrl!.isEmpty) {
-          debugPrint(
-              'PinSetupScreen: ❌ baseUrl всё ещё null, откладываем отправку');
-          debugPrint(
-              '════════════════════════════════════════════════════════');
-          _isInitializing = false;
-          return;
-        }
-      }
-
-      debugPrint('PinSetupScreen: ✅ ApiService инициализирован');
-      debugPrint('PinSetupScreen: 🌐 baseUrl: ${apiService.baseUrl}');
-
-      // ✅ ШАГ 2: Получаем FCM токен (с поддержкой iOS)
-      debugPrint('PinSetupScreen: 📡 Шаг 2/3: Получение FCM токена...');
-      String? fcmToken = await _getFCMToken();
-
-      if (fcmToken == null || fcmToken.isEmpty) {
-        debugPrint('PinSetupScreen: ⚠️ Не удалось получить FCM токен');
-        debugPrint('════════════════════════════════════════════════════════');
-        _isInitializing = false;
-        return;
-      }
-
-      debugPrint('PinSetupScreen: ✅ FCM токен получен');
-      debugPrint(
-          'PinSetupScreen: 🔑 Token (первые 30 символов): ${fcmToken.substring(0, fcmToken.length > 30 ? 30 : fcmToken.length)}...');
-
-      // ✅ ШАГ 3: Отправляем токен на сервер
-      debugPrint(
-          'PinSetupScreen: 📤 Шаг 3/3: Отправка FCM токена на сервер...');
-      await apiService.sendDeviceToken(fcmToken);
-
-      _fcmTokenSent = true;
-      debugPrint('PinSetupScreen: ✅ FCM токен УСПЕШНО отправлен на сервер!');
-      debugPrint('════════════════════════════════════════════════════════');
+      debugPrint('PinSetupScreen: старт отправки FCM токена');
+      final sent = await FirebaseApi().syncCurrentTokenWithServer();
+      _fcmTokenSent = sent;
+      debugPrint('PinSetupScreen: FCM отправлен = $sent');
     } catch (e, stackTrace) {
-      debugPrint('════════════════════════════════════════════════════════');
-      debugPrint('PinSetupScreen: ❌ ОШИБКА отправки FCM токена');
-      debugPrint('PinSetupScreen: Exception: $e');
+      debugPrint('PinSetupScreen: ошибка отправки FCM токена: $e');
       debugPrint('PinSetupScreen: StackTrace: $stackTrace');
-      debugPrint('════════════════════════════════════════════════════════');
-      // Не прерываем работу экрана, просто логируем ошибку
     } finally {
       _isInitializing = false;
-    }
-  }
-
-  /// ✅ Получение FCM токена с поддержкой iOS (APNS)
-  Future<String?> _getFCMToken() async {
-    try {
-      if (Platform.isIOS) {
-        debugPrint('PinSetupScreen: 🍎 Платформа: iOS');
-        debugPrint('PinSetupScreen: 🔍 Проверка APNS токена...');
-
-        // Для iOS сначала проверяем APNS
-        String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-
-        if (apnsToken != null) {
-          debugPrint('PinSetupScreen: ✅ APNS токен получен');
-          // Если APNS токен есть, получаем FCM токен
-          String? fcmToken = await FirebaseMessaging.instance.getToken();
-          return fcmToken;
-        } else {
-          debugPrint('PinSetupScreen: ⚠️ APNS токен недоступен, ждём...');
-
-          // Ждём до 5 секунд появления APNS токена
-          int attempts = 0;
-          const maxAttempts = 10;
-          const delayMs = 500;
-
-          while (attempts < maxAttempts) {
-            await Future.delayed(Duration(milliseconds: delayMs));
-            apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-
-            if (apnsToken != null) {
-              debugPrint(
-                  'PinSetupScreen: ✅ APNS токен получен после ${(attempts + 1) * delayMs}ms ожидания');
-              String? fcmToken = await FirebaseMessaging.instance.getToken();
-              return fcmToken;
-            }
-            attempts++;
-            debugPrint('PinSetupScreen: ⏳ Попытка $attempts/$maxAttempts...');
-          }
-
-          debugPrint(
-              'PinSetupScreen: ⚠️ APNS токен так и не появился после ${maxAttempts * delayMs}ms');
-          debugPrint(
-              'PinSetupScreen: 🔄 Пробуем получить FCM токен напрямую...');
-
-          // Последняя попытка получить FCM токен напрямую
-          return await FirebaseMessaging.instance.getToken();
-        }
-      } else {
-        // Для Android просто получаем FCM токен
-        debugPrint('PinSetupScreen: 🤖 Платформа: Android');
-        debugPrint('PinSetupScreen: 📡 Получение FCM токена...');
-
-        String? fcmToken = await FirebaseMessaging.instance.getToken();
-        return fcmToken;
-      }
-    } catch (e, stackTrace) {
-      debugPrint('PinSetupScreen: ❌ Ошибка получения FCM токена: $e');
-      debugPrint('PinSetupScreen: StackTrace: $stackTrace');
-      return null;
     }
   }
 
@@ -634,6 +517,11 @@ class _PinSetupScreenState extends State<PinSetupScreen>
           await apiService.ensureInitialized();
           await apiService.sendPendingFCMTokenIfNeeded();
           await apiService.sendPendingVoipTokenIfNeeded();
+          // Повтор, если первая попытка на открытии экрана не дождалась APNS.
+          final sent = await FirebaseApi().syncCurrentTokenWithServer();
+          if (sent) {
+            _fcmTokenSent = true;
+          }
           debugPrint('PinSetupScreen: ✅ Отложенные токены обработаны');
         } catch (e) {
           debugPrint(

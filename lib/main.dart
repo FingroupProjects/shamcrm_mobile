@@ -9,6 +9,8 @@ import 'package:crm_task_manager/app/my_app.dart';
 import 'package:crm_task_manager/app/session/session_validation.dart';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/utils/section_tab_memory.dart';
+import 'package:crm_task_manager/widgets/liquid_pin_key.dart';
+import 'package:crm_task_manager/widgets/pin_adaptive_contrast.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -60,6 +62,13 @@ void main() {
 
       final savedLocale = await localeFuture;
       await themeFuture;
+      // Обои, их яркость и шейдер кнопок готовы до первого кадра PIN.
+      // Иначе набор на мгновение рисуется тёмным и тут же меняет цвет.
+      await Future.wait([
+        AppThemeController.instance.precacheBackground(),
+        PinAdaptiveContrastController.warm(AppThemeController.instance),
+        LiquidPinKey.prewarmGlassShader(),
+      ]);
       unawaited(safeConfigureSystemUi());
 
       final domainReady = isDomainChecked && sessionValidation.isValid;

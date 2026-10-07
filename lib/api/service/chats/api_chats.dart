@@ -263,7 +263,7 @@ extension ApiChatsX on ApiService {
 
     try {
       // ДОБАВЛЕНО: Timeout для диагностики медленных ответов бэкенда
-      final response = await http.get(
+      final response = await _trackedGet(
         Uri.parse(fullUrl),
         headers: {
           'Authorization': 'Bearer $token',
@@ -317,13 +317,22 @@ extension ApiChatsX on ApiService {
 
   Future<ChatsGetId> getChatById(int chatId) async {
     final token = await getToken();
+    // Конструктор только запускает инициализацию и не ждёт её.
+    // Без этого /v2/chat/{id} иногда уходит с пустым baseUrl и имя
+    // интеграции в баннере так и не появляется.
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+    }
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      throw Exception('Base URL не может быть инициализирован');
+    }
     String path = '/v2/chat/$chatId';
     path = await _appendQueryParams(path);
 
     debugPrint('════════════════════════════════════════════════════════');
     debugPrint('🔍 [getChatById] Requesting: $baseUrl$path');
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Authorization': 'Bearer $token',
@@ -381,7 +390,7 @@ extension ApiChatsX on ApiService {
     String path = '/v2/chat/getUnreadMessagesCount';
     path = await _appendQueryParams(path);
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Authorization': 'Bearer $token',
@@ -406,7 +415,7 @@ extension ApiChatsX on ApiService {
     final uri = Uri.parse('$baseUrl$path');
     debugPrint('ApiService.getUnreadMessagesCountByChatType: GET $uri');
 
-    final response = await http.get(
+    final response = await _trackedGet(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
@@ -565,7 +574,7 @@ extension ApiChatsX on ApiService {
         path += '&search=${Uri.encodeComponent(search)}';
       }
 
-      final response = await http.get(
+      final response = await _trackedGet(
         Uri.parse('$baseUrl$path'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -969,7 +978,7 @@ extension ApiChatsX on ApiService {
       //debugPrint('ApiService: getAllUser - Generated path: $path');
     }
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
@@ -1003,7 +1012,7 @@ extension ApiChatsX on ApiService {
       //debugPrint('ApiService: getAnotherUsers - Generated path: $path');
     }
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
@@ -1040,7 +1049,7 @@ extension ApiChatsX on ApiService {
       //debugPrint('ApiService: getUsersNotInChat - Generated path: $path');
     }
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
@@ -1079,7 +1088,7 @@ extension ApiChatsX on ApiService {
       //debugPrint('ApiService: getUsersWihtoutCorporateChat - Generated path: $path');
     }
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
@@ -1375,7 +1384,7 @@ extension ApiChatsX on ApiService {
       //debugPrint('ApiService: getTemplates - Generated path: $path');
     }
 
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Content-Type': 'application/json',
@@ -1553,7 +1562,7 @@ extension ApiChatsX on ApiService {
       String path = '/v2/chat/$chatId';
       path = await _appendQueryParams(path);
 
-      final response = await http.get(
+      final response = await _trackedGet(
         Uri.parse('$baseUrl$path'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -1708,7 +1717,7 @@ extension ApiChatsX on ApiService {
     }
 
     final path = await _appendQueryParams('/chat/$chatId');
-    final response = await http.get(
+    final response = await _trackedGet(
       Uri.parse('$baseUrl$path'),
       headers: {
         'Authorization': 'Bearer $token',

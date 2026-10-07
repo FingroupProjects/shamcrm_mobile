@@ -231,8 +231,10 @@ class _CustomWallpaperLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: opacity.clamp(0.1, 1.0),
+    // Готовый слой обоев, который стекло кнопок читает в первый же кадр.
+    // Opacity(1) всё равно создаёт отдельный слой, и BackdropFilter
+    // на мгновение видит под ним чёрный цвет.
+    final wallpaper = RepaintBoundary(
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 700),
         switchInCurve: Curves.easeOut,
@@ -274,6 +276,10 @@ class _CustomWallpaperLayer extends StatelessWidget {
         ),
       ),
     );
+
+    final resolvedOpacity = opacity.clamp(0.1, 1.0);
+    if (resolvedOpacity >= 0.999) return wallpaper;
+    return Opacity(opacity: resolvedOpacity, child: wallpaper);
   }
 }
 
