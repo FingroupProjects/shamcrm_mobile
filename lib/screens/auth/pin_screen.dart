@@ -342,7 +342,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
       final availability =
           _biometricAvailability ?? await _biometricService.getAvailability();
-      if (!availability.hasAnyBiometric) return;
+      if (!mounted || !availability.hasAnyBiometric) return;
 
       // Face ID / отпечаток используют тот же визуальный статус, что и PIN:
       // четыре заполненные точки идут волной, пока система проверяет личность.
@@ -433,33 +433,36 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
         debugPrint('PinScreen: vibration error on press: $e');
       }
 
-      if (_pin.length == 4) {
-        setState(() => _isPinChecking = true);
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          final savedPin = prefs.getString('user_pin');
+      if (!mounted || _pin.length != 4) return;
 
-          if (_pin == savedPin) {
-            debugPrint('PinScreen: PIN корректен');
-            unawaited(attachClaritySession());
+      setState(() => _isPinChecking = true);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final savedPin = prefs.getString('user_pin');
 
-            if (mounted) {
-              _enterApp();
-            }
-          } else {
-            debugPrint('PinScreen: PIN некорректен');
+        if (_pin == savedPin) {
+          debugPrint('PinScreen: PIN корректен');
+          unawaited(attachClaritySession());
+
+          if (mounted) {
+            _enterApp();
+          }
+        } else {
+          debugPrint('PinScreen: PIN некорректен');
+          if (mounted) {
             _triggerErrorEffect();
           }
-        } finally {
-          if (mounted && !_isPinVerified) {
-            setState(() => _isPinChecking = false);
-          }
+        }
+      } finally {
+        if (mounted && !_isPinVerified) {
+          setState(() => _isPinChecking = false);
         }
       }
     }
   }
 
   void _enterApp() {
+    if (!mounted) return;
     final api = context.read<ApiService>();
     setState(() {
       _isPinVerified = true;
@@ -609,6 +612,8 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     } catch (e) {
       debugPrint('PinScreen: vibration error on mismatch: $e');
     }
+
+    if (!mounted) return;
 
     setState(() {
       _isWrongPin = true;

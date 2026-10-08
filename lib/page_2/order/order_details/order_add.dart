@@ -36,6 +36,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
@@ -92,6 +93,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   List<Map<String, dynamic>> _items = [];
   String? selectedLead;
   String? _deliveryMethod;
+  String? _selectedPaymentType;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
   String? _pendingManualAddressSelection;
@@ -184,6 +186,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               })
           .toList();
       selectedLead = widget.order!.lead.id.toString();
+      _selectedPaymentType =
+          normalizeOrderPaymentType(widget.order!.paymentMethod);
       _deliveryMethod = widget.order!.delivery
           ? AppLocalizations.of(context)!.translate('delivery')
           : AppLocalizations.of(context)!.translate('self_delivery');
@@ -954,6 +958,17 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         );
       case 'integration_id':
         return _buildIntegrationStoreField();
+      case 'payment_type':
+      case 'payment_method':
+        return PaymentMethodDropdown(
+          key: const Key('order_payment_type_dropdown'),
+          selectedPaymentMethod: _selectedPaymentType,
+          onSelectPaymentMethod: (value) {
+            setState(() {
+              _selectedPaymentType = value;
+            });
+          },
+        );
       case 'goods':
       case 'order_goods':
       case 'items':
@@ -1471,8 +1486,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       'comment_to_courier',
       'comment',
       'integration_id',
-      'payment_type',
-      'payment_method',
     };
     return !lockedFields.contains(config.fieldName);
   }
@@ -1510,6 +1523,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
     if (selectedManager != null && selectedManager!.isNotEmpty) return true;
     if (_selectedIntegrationId != null) return true;
+    if (_selectedPaymentType != null && _selectedPaymentType!.isNotEmpty) {
+      return true;
+    }
     if (_isTotalEdited) return true;
 
     final cameWithLead = widget.leadId != null || widget.dealId != null;
@@ -2904,10 +2920,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is OrderLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Form(
+                // Форму не заменяем спиннером. Иначе при 422 поле «Клиент»
+                // уничтожается и после ошибки открывается пустым.
+                return Stack(
+                  children: [
+                    Form(
                   key: _formKey,
                   child: Column(
                     children: [
@@ -2934,6 +2951,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       _buildActionButtons(context),
                     ],
                   ),
+                ),
+                    if (state is OrderLoading)
+                      const Positioned.fill(
+                        child: AbsorbPointer(
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             );
@@ -3651,6 +3678,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       ? int.parse(selectedManager!)
                       : null,
                   integrationId: _selectedIntegrationId,
+                  paymentType: _isFieldActiveByNames(
+                    {'payment_type', 'payment_method'},
+                  )
+                      ? _selectedPaymentType
+                      : null,
                   sum: currentTotal,
                   customFields: customFieldMap,
                   directoryValues: directoryValues,

@@ -1241,6 +1241,7 @@
   "cash": "Cash",
   "online": "Online",
   "card": "Card",
+  "installment": "Installment",
   "new": "New",
   "wating_payment": "Waiting for payment",
   "paid": "Paid",

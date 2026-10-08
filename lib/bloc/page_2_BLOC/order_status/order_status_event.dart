@@ -105,6 +105,7 @@ class CreateOrder extends OrderEvent {
   final String? commentToCourier;
   final int? managerId; // Новое поле
   final int? integrationId;
+  final String? paymentType;
   final double sum;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
@@ -124,6 +125,7 @@ class CreateOrder extends OrderEvent {
     this.commentToCourier,
     this.managerId, // Добавляем в конструктор
     this.integrationId,
+    this.paymentType,
     required this.sum,
     this.customFields,
     this.directoryValues,
@@ -146,6 +148,7 @@ class UpdateOrder extends OrderEvent {
   final int? managerId; // Новое поле
   final int? integrationId;
   final int? statusId; // Добавлено для обновления списка
+  final String? paymentType;
   final double sum;
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
@@ -167,6 +170,7 @@ class UpdateOrder extends OrderEvent {
     this.managerId,
     this.integrationId,
     this.statusId,
+    this.paymentType,
     required this.sum,
     this.customFields,
     this.directoryValues,

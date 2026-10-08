@@ -169,7 +169,7 @@ class _OrderScreenState extends State<OrderScreen>
             (_currentFilters['leads'] as List).isNotEmpty) ||
         _currentFilters['fromDate'] != null ||
         _currentFilters['toDate'] != null ||
-        _currentFilters['status'] != null ||
+        (_currentFilters['client']?.toString().trim().isNotEmpty ?? false) ||
         _currentFilters['paymentMethod'] != null ||
         _currentFilters['deliveryType'] != null ||
         (_currentFilters['reason_for_refusal_ids'] != null &&
@@ -209,7 +209,6 @@ class _OrderScreenState extends State<OrderScreen>
         leadIds: _currentFilters['leads'],
         fromDate: _currentFilters['fromDate'],
         toDate: _currentFilters['toDate'],
-        status: _currentFilters['status'],
         paymentMethod: _currentFilters['paymentMethod'],
         deliveryType: _currentFilters['deliveryType'],
         reasonForRefusalIds: _currentReasonForRefusalIds(),
@@ -253,7 +252,6 @@ class _OrderScreenState extends State<OrderScreen>
         leadIds: _currentFilters['leads'],
         fromDate: _currentFilters['fromDate'],
         toDate: _currentFilters['toDate'],
-        status: _currentFilters['status'],
         paymentMethod: _currentFilters['paymentMethod'],
         deliveryType: _currentFilters['deliveryType'],
         reasonForRefusalIds: _currentReasonForRefusalIds(),
@@ -414,7 +412,6 @@ class _OrderScreenState extends State<OrderScreen>
                     leadIds: _currentFilters['leads'],
                     fromDate: _currentFilters['fromDate'],
                     toDate: _currentFilters['toDate'],
-                    status: _currentFilters['status'],
                     paymentMethod: _currentFilters['paymentMethod'],
                     deliveryType: _currentFilters['deliveryType'],
                     reasonForRefusalIds: _currentReasonForRefusalIds(),
@@ -473,7 +470,6 @@ class _OrderScreenState extends State<OrderScreen>
                 leadIds: filters['leads'],
                 fromDate: filters['fromDate'],
                 toDate: filters['toDate'],
-                status: filters['status'],
                 paymentMethod: filters['paymentMethod'],
                 deliveryType: filters['deliveryType'],
                 reasonForRefusalIds:
@@ -577,9 +573,6 @@ class _OrderScreenState extends State<OrderScreen>
                                               : null,
                                           toDate: hasActiveFilters
                                               ? _currentFilters['toDate']
-                                              : null,
-                                          status: hasActiveFilters
-                                              ? _currentFilters['status']
                                               : null,
                                           paymentMethod: hasActiveFilters
                                               ? _currentFilters['paymentMethod']
@@ -882,7 +875,6 @@ class _OrderScreenState extends State<OrderScreen>
                         leadIds: _currentFilters['leads'],
                         fromDate: _currentFilters['fromDate'],
                         toDate: _currentFilters['toDate'],
-                        status: _currentFilters['status'],
                         paymentMethod: _currentFilters['paymentMethod'],
                         deliveryType: _currentFilters['deliveryType'],
                         reasonForRefusalIds: _currentReasonForRefusalIds(),
@@ -905,7 +897,6 @@ class _OrderScreenState extends State<OrderScreen>
                           leadIds: _currentFilters['leads'],
                           fromDate: _currentFilters['fromDate'],
                           toDate: _currentFilters['toDate'],
-                          status: _currentFilters['status'],
                           paymentMethod: _currentFilters['paymentMethod'],
                           deliveryType: _currentFilters['deliveryType'],
                           reasonForRefusalIds: _currentReasonForRefusalIds(),
@@ -1153,76 +1144,65 @@ class _OrderScreenState extends State<OrderScreen>
           }
 
           if (state is OrderLoaded) {
-            final List<Order> orders = state.orders;
-            final orderBloc = context.read<OrderBloc>();
-            if (orders.isEmpty &&
-                !HelpfulEmptyState.isReadyForStatus(
-                  isFetching: orderBloc.isFetching,
-                  completedStatusId: orderBloc.lastCompletedFetchStatusId,
-                  statusId: currentStatusId,
-                )) {
-              return HelpfulEmptyState.loading();
-            }
+            final List<Order> orders = state.orders
+                .where((order) =>
+                    currentStatusId == 0 ||
+                    order.orderStatus.id == currentStatusId)
+                .toList();
 
             if (orders.isEmpty) {
               final l10n = AppLocalizations.of(context)!;
-              return HelpfulEmptyState.refreshable(
-                context: context,
-                onRefresh: () => _onRefresh(currentStatusId),
-                child: _isSearching
-                    ? HelpfulEmptyState.search(l10n)
-                    : HelpfulEmptyState.section(
-                        l10n: l10n,
-                        icon: Icons.shopping_bag_outlined,
-                        titleKey: 'empty_orders_title',
-                        subtitleKey: 'empty_orders_subtitle',
-                        actionKey: _canCreateOrderStatus
-                            ? 'empty_orders_action'
-                            : null,
-                        onAction: _canCreateOrderStatus
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => OrderAddScreen(
-                                      organizationId: widget.organizationId,
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                children: [
+                  SizedBox(height: MediaQuery.sizeOf(context).height * 0.16),
+                  _isSearching
+                      ? HelpfulEmptyState.search(l10n)
+                      : HelpfulEmptyState.section(
+                          l10n: l10n,
+                          icon: Icons.shopping_bag_outlined,
+                          titleKey: 'empty_orders_title',
+                          subtitleKey: 'empty_orders_subtitle',
+                          actionKey: _canCreateOrderStatus
+                              ? 'empty_orders_action'
+                              : null,
+                          onAction: _canCreateOrderStatus
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => OrderAddScreen(
+                                        organizationId: widget.organizationId,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }
-                            : null,
-                      ),
+                                  );
+                                }
+                              : null,
+                        ),
+                ],
               );
             }
 
-            return RefreshIndicator(
-              onRefresh: () => _onRefresh(currentStatusId),
-              color: colors.iconPrimary,
-              backgroundColor: colors.surfacePrimary,
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: paddingAboveNav(context),
-                itemCount: orders.length,
-                itemBuilder: (context, index) {
-                  final order = orders[index];
-                  return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                    child: OrderCard(
-                      order: order,
-                      onStatusUpdated: _onStatusUpdated,
-                      onStatusId: (newStatusId) {
-                        final tabIndex = _statuses
-                            .indexWhere((status) => status.id == newStatusId);
-                        if (tabIndex != -1) {
-                          _tabController.animateTo(tabIndex);
-                        }
-                      },
-                      onTabChange: (int p1) {},
-                    ),
-                  );
-                },
-              ),
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: paddingAboveNav(context),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                return OrderCard(
+                  order: order,
+                  onStatusUpdated: _onStatusUpdated,
+                  onStatusId: (newStatusId) {
+                    final tabIndex = _statuses
+                        .indexWhere((status) => status.id == newStatusId);
+                    if (tabIndex != -1) {
+                      _tabController.animateTo(tabIndex);
+                    }
+                  },
+                  onTabChange: (int p1) {},
+                );
+              },
             );
           }
 

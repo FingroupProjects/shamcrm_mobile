@@ -15,7 +15,6 @@ import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/models/lead/reason_for_refusal_model.dart';
 import 'package:crm_task_manager/models/lead/region_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
-import 'package:crm_task_manager/page_2/order/order_details/status_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +25,6 @@ class OrdersFilterScreen extends StatefulWidget {
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
   final String? initialClient;
-  final String? initialStatus;
   final String? initialPaymentMethod;
   final String? initialDeliveryType;
   final List<int>? initialReasonForRefusalIds;
@@ -42,7 +40,6 @@ class OrdersFilterScreen extends StatefulWidget {
     this.initialFromDate,
     this.initialToDate,
     this.initialClient,
-    this.initialStatus,
     this.initialPaymentMethod,
     this.initialDeliveryType,
     this.initialReasonForRefusalIds,
@@ -65,7 +62,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
 
   DateTime? _fromDate;
   DateTime? _toDate;
-  String? _selectedStatus;
   String? _selectedPaymentMethod;
   String? _selectedDeliveryType;
   bool _askReasonForRefusal = false;
@@ -83,7 +79,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
   bool _isLoading = true;
 
   Key _paymentDropdownKey = UniqueKey();
-  Key _statusDropdownKey = UniqueKey();
 
   @override
   void initState() {
@@ -91,8 +86,8 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
     _clientController.text = widget.initialClient ?? '';
-    _selectedStatus = widget.initialStatus;
-    _selectedPaymentMethod = widget.initialPaymentMethod;
+    _selectedPaymentMethod =
+        normalizeOrderPaymentType(widget.initialPaymentMethod);
     _selectedDeliveryType = widget.initialDeliveryType;
     _selectedManagers = widget.initialManagers
             ?.map((id) => ManagerData(id: int.parse(id), name: ''))
@@ -220,6 +215,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
 
   Future<void> _loadFilterState() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('order_status');
     if (!mounted) return;
 
     setState(() {
@@ -234,9 +230,9 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
 
       _clientController.text =
           prefs.getString('order_client') ?? widget.initialClient ?? '';
-      _selectedStatus = prefs.getString('order_status') ?? widget.initialStatus;
-      _selectedPaymentMethod = prefs.getString('order_payment_method') ??
-          widget.initialPaymentMethod;
+      _selectedPaymentMethod = normalizeOrderPaymentType(
+        prefs.getString('order_payment_method') ?? widget.initialPaymentMethod,
+      );
       _selectedDeliveryType =
           prefs.getString('order_delivery_type') ?? widget.initialDeliveryType;
 
@@ -317,11 +313,7 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
 
     await prefs.setString('order_client', _clientController.text);
 
-    if (_selectedStatus != null) {
-      await prefs.setString('order_status', _selectedStatus!);
-    } else {
-      await prefs.remove('order_status');
-    }
+    await prefs.remove('order_status');
 
     if (_selectedPaymentMethod != null) {
       await prefs.setString('order_payment_method', _selectedPaymentMethod!);
@@ -382,7 +374,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       _fromDate = null;
       _toDate = null;
       _clientController.text = '';
-      _selectedStatus = null;
       _selectedPaymentMethod = null;
       _selectedDeliveryType = null;
       _selectedManagers.clear();
@@ -393,7 +384,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
         for (final title in _selectedCustomFieldValues.keys) title: <String>[],
       };
       _paymentDropdownKey = UniqueKey();
-      _statusDropdownKey = UniqueKey();
     });
     widget.onResetFilters?.call();
     _saveFilterState();
@@ -506,7 +496,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
     return _fromDate != null ||
         _toDate != null ||
         _clientController.text.isNotEmpty ||
-        _selectedStatus != null ||
         _selectedPaymentMethod != null ||
         _selectedDeliveryType != null ||
         _selectedManagers.isNotEmpty ||
@@ -561,7 +550,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
       'toDate': toDateWithTime,
       'client':
           _clientController.text.isNotEmpty ? _clientController.text : null,
-      'status': _selectedStatus,
       'paymentMethod': _selectedPaymentMethod,
       'deliveryType': _selectedDeliveryType,
       'managers': _selectedManagers.isNotEmpty
@@ -860,21 +848,6 @@ class _OrdersFilterScreenState extends State<OrdersFilterScreen> {
                                   onSelectPaymentMethod: (value) {
                                     setState(() {
                                       _selectedPaymentMethod = value;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildFilterCard(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: StatusMethodDropdown(
-                                  key: _statusDropdownKey,
-                                  selectedstatusMethod: _selectedStatus,
-                                  onSelectstatusMethod: (value) {
-                                    setState(() {
-                                      _selectedStatus = value;
                                     });
                                   },
                                 ),

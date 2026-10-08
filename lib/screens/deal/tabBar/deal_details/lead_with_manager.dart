@@ -37,6 +37,33 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
 
   bool _hasPhone(LeadData lead) => (lead.phone ?? '').trim().isNotEmpty;
 
+  bool _sameLeadId(LeadData lead, String? leadId) =>
+      leadId != null && leadId.isNotEmpty && lead.id.toString() == leadId;
+
+  /// Уже выбранный клиент. Его нельзя терять, когда список лидов
+  /// перезагружается после закрытия окна товаров.
+  LeadData? _pinnedLead() {
+    final selectedId = widget.selectedLead;
+    if (selectedId == null || selectedId.isEmpty) return null;
+
+    if (selectedLeadData != null && _sameLeadId(selectedLeadData!, selectedId)) {
+      return selectedLeadData;
+    }
+
+    for (final lead in leadsList) {
+      if (_sameLeadId(lead, selectedId)) return lead;
+    }
+
+    return null;
+  }
+
+  List<LeadData> _dropdownItems() {
+    final pinned = _pinnedLead();
+    if (pinned == null) return leadsList;
+    if (leadsList.any((lead) => lead.id == pinned.id)) return leadsList;
+    return [pinned, ...leadsList];
+  }
+
   Widget _buildLeadInfo(
     LeadData lead, {
     double nameFontSize = 14,
@@ -110,7 +137,13 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
   void _loadLeads({required bool forceRefresh}) {
     if (forceRefresh) {
       setState(() {
-        leadsList = [];
+        // Оставляем выбранного клиента в списке, пока грузится новая страница.
+        // Пустой список пересоздавал дропдаун без значения, и поле «Клиент» очищалось.
+        final pinned = _pinnedLead();
+        if (pinned != null) {
+          selectedLeadData = pinned;
+        }
+        leadsList = pinned == null ? <LeadData>[] : <LeadData>[pinned];
         _ignoreStaleSuccess = true;
         _listVersion++;
       });
@@ -130,27 +163,27 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
   }
 
   void _updateSelectedLeadData() {
-    //print('LeadWithManager: Updating selected lead, prop selectedLead: ${widget.selectedLead}');
-    if (widget.selectedLead != null && leadsList.isNotEmpty) {
-      try {
-        final newSelectedLead = leadsList.firstWhere(
-          (lead) => lead.id.toString() == widget.selectedLead,
-        );
-        if (selectedLeadData?.id != newSelectedLead.id) {
-          selectedLeadData = newSelectedLead;
-          //print('LeadWithManager: Found lead: ${newSelectedLead.id}, managerId: ${newSelectedLead.managerId}');
-          widget.onSelectLead(newSelectedLead);
-        } else {
-          //print('LeadWithManager: Lead ${newSelectedLead.id} already selected, skipping onSelectLead');
-        }
-      } catch (e) {
-        //print('LeadWithManager: Lead not found for ID ${widget.selectedLead}: $e');
-        selectedLeadData = null;
-      }
-    } else {
-      //print('LeadWithManager: No selected lead or empty leads list');
+    final selectedId = widget.selectedLead;
+    if (selectedId == null || selectedId.isEmpty) {
       selectedLeadData = null;
+      return;
     }
+
+    for (final lead in leadsList) {
+      if (!_sameLeadId(lead, selectedId)) continue;
+
+      // Тот же клиент уже стоит в поле. Повторно не сообщаем родителю,
+      // иначе форма заказа может заново перезаписать связанные поля.
+      if (selectedLeadData?.id != lead.id) {
+        selectedLeadData = lead;
+        widget.onSelectLead(lead);
+      } else {
+        selectedLeadData = lead;
+      }
+      return;
+    }
+
+    // Клиента нет на первой странице. Не обнуляем уже выбранное значение.
   }
 
   Future<CustomDropdownPaginatedResponse<LeadData>> _searchLeads(
@@ -193,18 +226,29 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
             if (state is GetAllLeadLoading) {
               _ignoreStaleSuccess = false;
             } else if (state is GetAllLeadSuccess && !_ignoreStaleSuccess) {
-              leadsList = state.dataLead.result ?? [];
+              // Копия, чтобы не менять кэш блока, когда добавляем выбранного клиента.
+              leadsList = List<LeadData>.from(state.dataLead.result ?? []);
               WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                final beforeId = selectedLeadData?.id;
                 _updateSelectedLeadData();
+                if (selectedLeadData?.id != beforeId) {
+                  setState(() {});
+                }
               });
             }
 
+            final dropdownItems = _dropdownItems();
+            final pinnedLead = _pinnedLead();
+
             return CustomDropdown<LeadData>.searchRequestPaginated(
-              key: ValueKey('lead_manager_$_listVersion'),
+              key: ValueKey(
+                'lead_manager_${_listVersion}_${pinnedLead?.id ?? 'none'}',
+              ),
               paginatedRequest: _searchLeads,
               futureRequestDelay: const Duration(milliseconds: 350),
               closeDropDownOnClearFilterSearch: true,
-              items: leadsList,
+              items: dropdownItems,
               searchHintText: AppLocalizations.of(context)!.translate('search'),
               overlayHeight: 400,
               enabled: true,
@@ -250,15 +294,9 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
                 return _buildLeadInfo(item);
               },
               headerBuilder: (context, selectedItem, enabled) {
-                if (state is GetAllLeadLoading) {
-                  return Text(
-                    AppLocalizations.of(context)!.translate('select_client'),
-                    style: context.appTextStyles.bodyMd.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: context.appColors.textSecondary,
-                    ),
-                  );
-                }
+                // Во время обновления списка оставляем имя клиента.
+                // Раньше здесь показывалась подсказка «Выберите клиента»,
+                // и заполненное поле выглядело пустым.
                 return _buildLeadInfo(
                   selectedItem,
                   phoneFontSize: 11,
@@ -272,9 +310,7 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
                 ),
               ),
               excludeSelected: false,
-              initialItem: leadsList.contains(selectedLeadData)
-                  ? selectedLeadData
-                  : null,
+              initialItem: pinnedLead,
               validator: (value) {
                 if (value == null) {
                   return AppLocalizations.of(context)!.translate('field_required');

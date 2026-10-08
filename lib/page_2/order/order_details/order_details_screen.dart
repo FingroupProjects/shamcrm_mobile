@@ -12,6 +12,7 @@ import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_edits.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_good_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_history_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -244,18 +245,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   String formatPaymentType(String? paymentType, BuildContext context) {
-    switch (paymentType?.toLowerCase()) {
-      case 'cash':
-        return 'Наличными';
-      case 'alif':
-        return 'ALIF';
-      case 'click':
-        return 'CLICK';
-      case 'payme':
-        return 'PAYME';
-      default:
-        return AppLocalizations.of(context)!.translate('');
+    final code = normalizeOrderPaymentType(paymentType);
+    if (code == null) {
+      return paymentType?.trim() ?? '';
     }
+    return orderPaymentTypeLabel(context, code);
   }
 
   String _withColon(String value) {
@@ -330,7 +324,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       case 'deliveryType':
       case 'delivery_type':
       case 'delivery':
-        return _withColon(AppLocalizations.of(context)!.translate('delivery'));
+        return _withColon(
+            AppLocalizations.of(context)!.translate('delivery_method'));
       case 'delivery_address_id':
         return _withColon(
             AppLocalizations.of(context)!.translate('order_address_label'));
@@ -415,6 +410,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         return order.delivery
             ? (order.deliveryAddress ?? '')
             : (order.branchName ?? '');
+      case 'deliveryType':
+      case 'delivery_type':
+      case 'delivery':
+        return order.delivery
+            ? AppLocalizations.of(context)!.translate('delivery')
+            : AppLocalizations.of(context)!.translate('self_delivery');
       case 'branch_id':
         return order.branchName ?? '';
       case 'comment_to_courier':
@@ -422,9 +423,13 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       case 'sum':
         return _formatPrice(order.sum);
       case 'payment_type':
+      case 'payment_method':
         return formatPaymentType(order.paymentMethod, context);
       case 'payment_status':
-        return formatPaymentType(order.paymentStatus, context);
+        final statusCode = normalizeOrderPaymentType(order.paymentStatus);
+        return statusCode == null
+            ? ''
+            : orderPaymentTypeLabel(context, statusCode);
       default:
         return '';
     }
@@ -509,7 +514,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         {
           'label':
               AppLocalizations.of(context)!.translate('payment_status_title'),
-          'value': formatPaymentType(order.paymentStatus, context)
+          'value': () {
+            final statusCode = normalizeOrderPaymentType(order.paymentStatus);
+            return statusCode == null
+                ? ''
+                : orderPaymentTypeLabel(context, statusCode);
+          }(),
         },
       ];
       final refusalReason = (order.refusalReasonText ?? '').trim();

@@ -529,6 +529,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         managerId: event.managerId,
         integration: event.integrationId,
         sum: event.sum,
+        paymentType: event.paymentType,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
         files: event.files,
@@ -543,13 +544,14 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         emit(OrderSuccess(statusId: statusId));
         //print('OrderBloc: Выдано состояние OrderSuccess');
       } else {
-        //print('OrderBloc: Ошибка сервера при создании заказа: ${result['error']}');
-        emit(OrderError('Не удалось создать заказ:'));
+        emit(OrderError(
+          result['error']?.toString() ?? 'Не удалось создать заказ',
+        ));
       }
     } catch (e, stackTrace) {
       //print('OrderBloc: Ошибка при создании заказа: $e');
       //print('OrderBloc: StackTrace: $stackTrace');
-      emit(OrderError('Ошибка создания заказа'));
+      emit(OrderError('Ошибка создания заказа: $e'));
     }
   }
 
@@ -604,6 +606,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         managerId: event.managerId,
         integration: event.integrationId,
         sum: event.sum,
+        paymentType: event.paymentType,
         customFields: event.customFields,
         directoryValues: event.directoryValues,
         filePaths: event.filePaths,
@@ -987,7 +990,6 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         await OrderCache.setPersistentOrderCount(status.id, status.ordersCount);
       }
 
-      // 3. Кэшируем статусы
       await OrderCache.cacheOrderStatuses(statuses
           .map((status) => {
                 'id': status.id,
@@ -996,10 +998,8 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
               })
           .toList());
 
-      // 4. Эмитим состояние со статусами
-      emit(OrderLoaded(statuses, orderCounts: Map.from(_orderCounts)));
-
-      // 5. СОХРАНЯЕМ ФИЛЬТРЫ В БЛОКЕ ПЕРЕД ПАРАЛЛЕЛЬНОЙ ЗАГРУЗКОЙ
+      // Не публикуем статусы отдельно: список заказов ещё пустой,
+      // и экран на миг показывает «Заказов пока нет».
       if (statuses.isNotEmpty) {
         debugPrint(
             '🚀 OrderBloc: Starting parallel fetch for ${statuses.length} statuses');
@@ -1059,6 +1059,11 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           orders: allOrdersList,
           orderCounts: Map.from(_orderCounts),
         ));
+        if (statuses.isNotEmpty) {
+          _lastCompletedFetchStatusId = statuses.first.id;
+        }
+      } else {
+        emit(OrderLoaded(statuses, orderCounts: Map.from(_orderCounts)));
       }
     } catch (e) {
       debugPrint('❌ OrderBloc: _fetchOrderStatusesWithFilters - Error: $e');

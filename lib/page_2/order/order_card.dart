@@ -38,6 +38,11 @@ class _OrderCardState extends State<OrderCard> {
   int? currencyId;
   bool _hideTojsokhtmontjOrderPaymentBadges = false;
 
+  // Одна загрузка валюты на все карточки списка.
+  // Иначе каждая карточка бьёт в API и после скролла вызывает setState уже уничтоженная.
+  static int? _sharedCurrencyId;
+  static Future<int?>? _sharedCurrencyRequest;
+
   @override
   void initState() {
     super.initState();
@@ -59,56 +64,53 @@ class _OrderCardState extends State<OrderCard> {
 
   Future<void> _loadCurrencyId() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedCurrencyId = prefs.getInt('currency_id');
-
-      if (kDebugMode) {
-        //print('OrderCard: Загружен currency_id из SharedPreferences: $savedCurrencyId');
-      }
+      final resolvedCurrencyId = await _resolveCurrencyId();
+      if (!mounted || resolvedCurrencyId == null) return;
 
       setState(() {
-        currencyId = savedCurrencyId ?? 0;
+        currencyId = resolvedCurrencyId;
       });
-
-      if (currencyId == 0 || currencyId == null) {
-        await _fetchCurrencyFromAPI();
-      }
     } catch (e) {
       if (kDebugMode) {
         //print('OrderCard: Ошибка загрузки currency_id: $e');
       }
+      if (!mounted) return;
       setState(() {
-        currencyId = 0;
+        currencyId = 1;
       });
     }
   }
 
-  Future<void> _fetchCurrencyFromAPI() async {
+  static Future<int?> _resolveCurrencyId() {
+    final cached = _sharedCurrencyId;
+    if (cached != null && cached != 0) {
+      return Future<int?>.value(cached);
+    }
+
+    return _sharedCurrencyRequest ??= _loadCurrencyIdOnce();
+  }
+
+  static Future<int?> _loadCurrencyIdOnce() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyId = prefs.getInt('currency_id');
+      if (savedCurrencyId != null && savedCurrencyId != 0) {
+        _sharedCurrencyId = savedCurrencyId;
+        return savedCurrencyId;
+      }
+
       final apiService = ApiService();
       final organizationId = await apiService.getSelectedOrganization();
       final settingsList = await apiService.getMiniAppSettings(organizationId);
+      if (settingsList.isEmpty) return savedCurrencyId ?? 1;
 
-      if (settingsList.isNotEmpty) {
-        final settings = settingsList.first;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('currency_id', settings.currencyId);
-
-        setState(() {
-          currencyId = settings.currencyId;
-        });
-
-        if (kDebugMode) {
-          //print('OrderCard: Загружен currency_id из API: ${settings.currencyId}');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        //print('OrderCard: Ошибка загрузки currency_id из API: $e');
-      }
-      setState(() {
-        currencyId = 1;
-      });
+      final loadedCurrencyId = settingsList.first.currencyId;
+      await prefs.setInt('currency_id', loadedCurrencyId);
+      _sharedCurrencyId = loadedCurrencyId;
+      return loadedCurrencyId;
+    } catch (_) {
+      _sharedCurrencyRequest = null;
+      rethrow;
     }
   }
 
@@ -271,6 +273,7 @@ class _OrderCardState extends State<OrderCard> {
                         context,
                         dropdownValue,
                         (String newValue, int newStatusId) {
+                          if (!mounted) return;
                           setState(() {
                             dropdownValue = newValue;
                             statusId = newStatusId;

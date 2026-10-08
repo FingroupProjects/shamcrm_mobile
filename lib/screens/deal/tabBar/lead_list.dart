@@ -24,6 +24,10 @@ class LeadRadioGroupWidget extends StatefulWidget {
   final String? hintText;
   final String? searchHintText;
 
+  /// Лид, который уже известен экрану (например, из просмотра заказа).
+  /// Показываем его сразу, не дожидаясь первой страницы списка.
+  final LeadData? initialSelectedLead;
+
   const LeadRadioGroupWidget({
     super.key,
     required this.onSelectLead,
@@ -35,6 +39,7 @@ class LeadRadioGroupWidget extends StatefulWidget {
     this.labelText,
     this.hintText,
     this.searchHintText,
+    this.initialSelectedLead,
   });
 
   @override
@@ -53,11 +58,50 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
 
   bool _isExcluded(int leadId) => widget.excludedLeadIds.contains(leadId);
 
+  bool _sameLeadId(LeadData lead, String? leadId) =>
+      leadId != null && leadId.isNotEmpty && lead.id.toString() == leadId;
+
+  /// Клиент, которого поле должно продолжать показывать.
+  /// После выбора товаров список лидов перезагружается только первой страницей.
+  /// Клиент из поиска на эту страницу часто не попадает, и раньше поле очищалось.
+  LeadData? _pinnedLead() {
+    final selectedId = widget.selectedLead;
+    if (selectedId == null || selectedId.isEmpty) return null;
+
+    if (selectedLeadData != null && _sameLeadId(selectedLeadData!, selectedId)) {
+      return selectedLeadData;
+    }
+
+    for (final lead in leadsList) {
+      if (_sameLeadId(lead, selectedId)) return lead;
+    }
+
+    final initial = widget.initialSelectedLead;
+    if (initial != null && _sameLeadId(initial, selectedId)) return initial;
+
+    return null;
+  }
+
+  /// В список дропдауна всегда кладём выбранного клиента,
+  /// даже если свежая первая страница его не содержит.
+  List<LeadData> _dropdownItems() {
+    final pinned = _pinnedLead();
+    if (pinned == null) return leadsList;
+    if (leadsList.any((lead) => lead.id == pinned.id)) return leadsList;
+    return [pinned, ...leadsList];
+  }
+
   void _reloadLeads() {
     if (!mounted) return;
     setState(() {
       if (widget.alwaysRefreshFromServer) {
-        leadsList = [];
+        // Не затираем выбранного клиента пустым списком:
+        // иначе дропдаун пересоздаётся без значения.
+        final pinned = _pinnedLead();
+        if (pinned != null) {
+          selectedLeadData = pinned;
+        }
+        leadsList = pinned == null ? <LeadData>[] : <LeadData>[pinned];
         _isInitialized = false;
         _refreshPhase = _LeadRefreshPhase.requested;
         _listVersion++;
@@ -65,7 +109,7 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
           selectedLeadData = null;
           _initialLeadSet = true;
         } else {
-          _initialLeadSet = false;
+          _initialLeadSet = selectedLeadData != null;
         }
       }
     });
@@ -122,7 +166,16 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
   @override
   void initState() {
     super.initState();
-    if (widget.selectedLead == null || widget.selectedLead!.isEmpty) {
+    final initial = widget.initialSelectedLead;
+    final hasSelectedId =
+        widget.selectedLead != null && widget.selectedLead!.isNotEmpty;
+    if (initial != null &&
+        (!hasSelectedId || _sameLeadId(initial, widget.selectedLead))) {
+      // Сразу показываем лида из заказа, до ответа сервера.
+      selectedLeadData = initial;
+      leadsList = [initial];
+      _initialLeadSet = true;
+    } else if (!hasSelectedId) {
       _initialLeadSet = true;
     }
 
@@ -177,32 +230,38 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
   }
 
   void _updateSelectedLeadData() {
-    if (widget.selectedLead == null || widget.selectedLead!.isEmpty) {
+    final selectedId = widget.selectedLead;
+    if (selectedId == null || selectedId.isEmpty) {
       selectedLeadData = null;
       _initialLeadSet = true;
       return;
     }
 
-    if (leadsList.isEmpty) {
-      selectedLeadData = null;
-      _initialLeadSet = true;
-      return;
-    }
-
-    if (widget.selectedLead != null && leadsList.isNotEmpty) {
-      try {
-        selectedLeadData = leadsList.firstWhere(
-          (lead) => lead.id.toString() == widget.selectedLead,
-        );
+    for (final lead in leadsList) {
+      if (_sameLeadId(lead, selectedId)) {
+        selectedLeadData = lead;
         _initialLeadSet = true;
-      } catch (e) {
-        selectedLeadData = null;
-        _initialLeadSet = true; // Processed even if not found
+        return;
       }
-    } else {
-      selectedLeadData = null;
-      _initialLeadSet = leadsList.isNotEmpty;
     }
+
+    // Клиента нет на текущей странице. Если он уже выбран — оставляем его.
+    // Пустой список во время обновления тоже не должен сбрасывать поле.
+    if (selectedLeadData != null && _sameLeadId(selectedLeadData!, selectedId)) {
+      _initialLeadSet = true;
+      return;
+    }
+
+    // В редактировании заказа лид уже есть в карточке, но может не попасть
+    // на первую страницу списка. Показываем его из заказа, а не пустое поле.
+    final initial = widget.initialSelectedLead;
+    if (initial != null && _sameLeadId(initial, selectedId)) {
+      selectedLeadData = initial;
+      _initialLeadSet = true;
+      return;
+    }
+
+    _initialLeadSet = true;
   }
 
   Future<CustomDropdownPaginatedResponse<LeadData>> _searchLeads(
@@ -283,24 +342,22 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
                     _refreshPhase == _LeadRefreshPhase.loading ||
                     ((isLoading || isInitial) && !_isInitialized);
 
-            final actualInitialItem = isStillLoading
-                ? null
-                : (selectedLeadData != null &&
-                        leadsList.contains(selectedLeadData))
-                    ? selectedLeadData
-                    : null;
+            // Пока список грузится заново, выбранный клиент остаётся в поле.
+            // Раньше на время загрузки сюда передавался null, и значение пропадало.
+            final dropdownItems = _dropdownItems();
+            final actualInitialItem = _pinnedLead();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CustomDropdown<LeadData>.searchRequestPaginated(
                   key: ValueKey(
-                    'lead_field_${_listVersion}_${selectedLeadData?.id ?? 'none'}',
+                    'lead_field_${_listVersion}_${actualInitialItem?.id ?? 'none'}',
                   ),
                   paginatedRequest: _searchLeads,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
-                  items: leadsList,
+                  items: dropdownItems,
                   searchHintText: widget.searchHintText ??
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
@@ -334,21 +391,8 @@ class _LeadRadioGroupWidgetState extends State<LeadRadioGroupWidget>
                     );
                   },
                   headerBuilder: (context, selectedItem, enabled) {
-                    if (isStillLoading) {
-                      return Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              context.appColors.buttonPrimaryBg,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
+                    // Имя клиента показываем и во время обновления списка.
+                    // Спиннер вместо имени выглядел так, будто поле «Клиент» сбросилось.
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

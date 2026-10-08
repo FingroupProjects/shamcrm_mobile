@@ -143,11 +143,28 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
   bool get _hasActivePage2Filters {
     return _isGoodsFiltering ||
         _isOrdersFiltering ||
+        _orderFiltersAreActive(widget.currentFilters) ||
         _isIncomeFiltering ||
         _isIncomingFiltering ||
         _isManufactureFiltering ||
         _isClientSaleFiltering ||
         _isClientReturnFiltering;
+  }
+
+  bool _orderFiltersAreActive(Map<String, dynamic> filters) {
+    bool listNotEmpty(dynamic value) => value is List && value.isNotEmpty;
+    bool mapNotEmpty(dynamic value) => value is Map && value.isNotEmpty;
+    final client = filters['client']?.toString().trim() ?? '';
+    return listNotEmpty(filters['managers']) ||
+        listNotEmpty(filters['regions']) ||
+        listNotEmpty(filters['leads']) ||
+        filters['fromDate'] != null ||
+        filters['toDate'] != null ||
+        client.isNotEmpty ||
+        filters['paymentMethod'] != null ||
+        filters['deliveryType'] != null ||
+        listNotEmpty(filters['reason_for_refusal_ids']) ||
+        mapNotEmpty(filters['custom_field_filters']);
   }
 
   @override
@@ -214,7 +231,6 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
         (widget.currentFilters['fromDate'] != null ||
             widget.currentFilters['toDate'] != null ||
             widget.currentFilters['client'] != null ||
-            widget.currentFilters['status'] != null ||
             widget.currentFilters['paymentMethod'] != null ||
             widget.currentFilters['deliveryType'] != null ||
             (widget.currentFilters['reason_for_refusal_ids'] != null &&
@@ -775,7 +791,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
             if (widget.showFilterOrderIcon && _canCreateOrder)
               _buildFilterActionButton(
                 context,
-                color: _isOrdersFiltering
+                color: (_isOrdersFiltering ||
+                        _orderFiltersAreActive(widget.currentFilters))
                     ? blinkingFilterColor
                     : context.appColors.iconPrimary,
                 onPressed: () => navigateToOrderFilterScreen(context),
@@ -880,7 +897,6 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
     DateTime? initialFromDate = widget.currentFilters['fromDate'];
     DateTime? initialToDate = widget.currentFilters['toDate'];
     String? initialClient = widget.currentFilters['client'];
-    String? initialStatus = widget.currentFilters['status'];
     String? initialPaymentMethod = widget.currentFilters['paymentMethod'];
     String? initialDeliveryType = widget.currentFilters['deliveryType'];
     List<int>? initialReasonForRefusalIds =
@@ -910,22 +926,8 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
               ////print('CustomAppBarPage2: Получены фильтры из OrdersFilterScreen: $filters');
             }
             setState(() {
-              _isOrdersFiltering = filters.isNotEmpty ||
-                  (filters['managers'] != null &&
-                      filters['managers'].isNotEmpty) ||
-                  (filters['regions'] != null &&
-                      filters['regions'].isNotEmpty) ||
-                  (filters['leads'] != null && filters['leads'].isNotEmpty) ||
-                  filters['fromDate'] != null ||
-                  filters['toDate'] != null ||
-                  filters['client'] != null ||
-                  filters['status'] != null ||
-                  filters['paymentMethod'] != null ||
-                  filters['deliveryType'] != null ||
-                  (filters['reason_for_refusal_ids'] != null &&
-                      filters['reason_for_refusal_ids'].isNotEmpty) ||
-                  (filters['custom_field_filters'] != null &&
-                      (filters['custom_field_filters'] as Map).isNotEmpty);
+              _isOrdersFiltering =
+                  _orderFiltersAreActive(Map<String, dynamic>.from(filters));
             });
             widget.onFilterGoodsSelected?.call(filters);
           },
@@ -942,7 +944,6 @@ class _CustomAppBarState extends State<CustomAppBarPage2>
           initialFromDate: initialFromDate,
           initialToDate: initialToDate,
           initialClient: initialClient,
-          initialStatus: initialStatus,
           initialPaymentMethod: initialPaymentMethod,
           initialDeliveryType: initialDeliveryType,
           initialReasonForRefusalIds: initialReasonForRefusalIds,

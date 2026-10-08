@@ -251,7 +251,7 @@ extension ApiWarehouseOrdersX on ApiService {
       url += '&status=$status';
     }
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
-      url += '&payment_type=$paymentMethod';
+      url += '&payment_type=${Uri.encodeComponent(paymentMethod)}';
     }
     if (deliveryType != null && deliveryType.isNotEmpty) {
       url += '&delivery_type=${Uri.encodeComponent(deliveryType)}';
@@ -439,6 +439,7 @@ extension ApiWarehouseOrdersX on ApiService {
     int? managerId,
     int? integration,
     required double sum,
+    String? paymentType,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
     List<FileHelper>? files,
@@ -468,8 +469,10 @@ extension ApiWarehouseOrdersX on ApiService {
         request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
         request.fields['organization_id'] = resolvedOrganizationId.toString();
         request.fields['status_id'] = statusId.toString();
-        request.fields['payment_type'] = 'cash';
         request.fields['sum'] = sum.toString();
+        if (paymentType != null && paymentType.trim().isNotEmpty) {
+          request.fields['payment_type'] = paymentType.trim();
+        }
         if (commentToCourier != null) {
           request.fields['comment_to_courier'] = commentToCourier;
         }
@@ -558,7 +561,7 @@ extension ApiWarehouseOrdersX on ApiService {
         throw (jsonResponse['message'] ?? 'Ошибка при создании заказа');
       }
 
-      final body = {
+      final Map<String, dynamic> body = {
         'phone': phone,
         'deliveryType': delivery ? 'delivery' : 'pickup',
         'goods': goods
@@ -571,11 +574,13 @@ extension ApiWarehouseOrdersX on ApiService {
         'organization_id': resolvedOrganizationId,
         'status_id': statusId,
         'comment_to_courier': commentToCourier,
-        'payment_type': 'cash',
         'manager_id': managerId,
         'integration_id': integration,
         'sum': sum,
       };
+      if (paymentType != null && paymentType.trim().isNotEmpty) {
+        body['payment_type'] = paymentType.trim();
+      }
 
       if (leadId != null) {
         body['lead_id'] = leadId;
@@ -603,16 +608,8 @@ extension ApiWarehouseOrdersX on ApiService {
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
+      // Через _postRequest запрос и ответ попадают в HTTP inspector.
+      final response = await _postRequest('/order', body);
 
       ////debugPrint('ApiService: Код ответа сервера: ${response.statusCode}');
       ////debugPrint('ApiService: Тело ответа сервера: ${response.body}');
@@ -665,6 +662,7 @@ extension ApiWarehouseOrdersX on ApiService {
     int? managerId, // Новое поле
     int? integration,
     required double sum,
+    String? paymentType,
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
     List<String>? filePaths,
@@ -695,8 +693,10 @@ extension ApiWarehouseOrdersX on ApiService {
         request.fields['phone'] = phone;
         request.fields['deliveryType'] = delivery ? 'delivery' : 'pickup';
         request.fields['organization_id'] = resolvedOrganizationId.toString();
-        request.fields['payment_type'] = 'cash';
         request.fields['sum'] = sum.toString();
+        if (paymentType != null && paymentType.trim().isNotEmpty) {
+          request.fields['payment_type'] = paymentType.trim();
+        }
         if (commentToCourier != null) {
           request.fields['comment_to_courier'] = commentToCourier;
         }
@@ -791,7 +791,7 @@ extension ApiWarehouseOrdersX on ApiService {
             jsonResponse['message'] ?? 'Ошибка при обновлении заказа');
       }
 
-      final body = {
+      final Map<String, dynamic> body = {
         'phone': phone,
         'deliveryType': delivery
             ? 'delivery'
@@ -805,11 +805,13 @@ extension ApiWarehouseOrdersX on ApiService {
             .toList(),
         'organization_id': resolvedOrganizationId.toString(),
         'comment_to_courier': commentToCourier,
-        'payment_type': 'cash',
         'manager_id': managerId?.toString(),
         'integration_id': integration,
         'sum': sum,
       };
+      if (paymentType != null && paymentType.trim().isNotEmpty) {
+        body['payment_type'] = paymentType.trim();
+      }
 
       if (leadId != null) {
         body['lead_id'] = leadId;
@@ -839,16 +841,8 @@ extension ApiWarehouseOrdersX on ApiService {
 
       ////debugPrint('ApiService: Тело запроса для обновления заказа: ${jsonEncode(body)}');
 
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Device': 'mobile',
-        },
-        body: jsonEncode(body),
-      );
+      // Через _postRequest запрос и ответ попадают в HTTP inspector.
+      final response = await _postRequest('/order/$orderId', body);
 
       ////debugPrint('ApiService: Код ответа сервера: ${response.statusCode}');
       ////debugPrint('ApiService: Тело ответа сервера: ${response.body}');

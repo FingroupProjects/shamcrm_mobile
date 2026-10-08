@@ -5,6 +5,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -141,18 +142,11 @@ class _OrdersWidgetState extends State<OrdersWidget> {
   }
 
   String formatPaymentType(String? paymentType, BuildContext context) {
-    switch (paymentType?.toLowerCase()) {
-      case 'cash':
-        return 'Наличными';
-      case 'alif':
-        return 'ALIF';
-      case 'click':
-        return 'CLICK';
-      case 'payme':
-        return 'PAYME';
-      default:
-        return AppLocalizations.of(context)!.translate('');
+    final code = normalizeOrderPaymentType(paymentType);
+    if (code == null) {
+      return paymentType?.trim() ?? '';
     }
+    return orderPaymentTypeLabel(context, code);
   }
 
   Widget _buildOrderItem(Order order) {

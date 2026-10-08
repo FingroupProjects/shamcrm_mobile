@@ -36,6 +36,7 @@ import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
+import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
@@ -75,6 +76,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   LeadData? _selectedLead;
   String? selectedManager;
   String? _deliveryMethod;
+  String? _paymentType;
   Branch? _selectedBranch;
   DeliveryAddress? _selectedDeliveryAddress;
   String? _pendingManualAddressSelection;
@@ -137,13 +139,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         'imagePath': imagePath,
       };
     }).toList();
+    final orderLeadPhone = widget.order.lead.phone.trim();
     _selectedLead =
         widget.order.lead.id != 0 || widget.order.lead.name.isNotEmpty
             ? LeadData(
                 id: widget.order.lead.id,
                 name: widget.order.lead.name,
+                phone: orderLeadPhone.isEmpty ? null : orderLeadPhone,
               )
             : null;
+    _paymentType = normalizeOrderPaymentType(widget.order.paymentMethod);
     selectedManager = widget.order.manager?.id.toString();
     _selectedIntegrationId = widget.order.integrationId;
     _selectedDeliveryAddress = widget.order.deliveryAddress != null
@@ -1131,6 +1136,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       children: [
         LeadRadioGroupWidget(
           selectedLead: _selectedLead?.id.toString(),
+          initialSelectedLead: _selectedLead,
           onSelectLead: (LeadData lead) {
             final isSameClient =
                 _selectedLead != null && _selectedLead!.id == lead.id;
@@ -1244,6 +1250,17 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
         );
       case 'integration_id':
         return _buildIntegrationStoreField();
+      case 'payment_type':
+      case 'payment_method':
+        return PaymentMethodDropdown(
+          key: const Key('order_payment_type_dropdown'),
+          selectedPaymentMethod: _paymentType,
+          onSelectPaymentMethod: (value) {
+            setState(() {
+              _paymentType = value;
+            });
+          },
+        );
       case 'goods':
       case 'order_goods':
       case 'items':
@@ -1761,8 +1778,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       'comment_to_courier',
       'comment',
       'integration_id',
-      'payment_type',
-      'payment_method',
     };
     return !lockedFields.contains(config.fieldName);
   }
@@ -2780,10 +2795,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 }
               },
               builder: (context, state) {
-                if (state is OrderLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                return Form(
+                // Форму не заменяем спиннером. Иначе при 422 поле «Клиент»
+                // уничтожается и после ошибки открывается пустым.
+                return Stack(
+                  children: [
+                    Form(
                   key: _formKey,
                   child: Column(
                     children: [
@@ -2809,6 +2825,16 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                       _buildActionButtons(context),
                     ],
                   ),
+                ),
+                    if (state is OrderLoading)
+                      const Positioned.fill(
+                        child: AbsorbPointer(
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             );
@@ -3529,6 +3555,13 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                             ? int.parse(selectedManager!)
                             : null,
                         integrationId: _selectedIntegrationId,
+                        paymentType: _isFieldActiveByNames(
+                          {'payment_type', 'payment_method'},
+                        )
+                            ? _paymentType
+                            : normalizeOrderPaymentType(
+                                widget.order.paymentMethod,
+                              ),
                         statusId: widget
                             .order.orderStatus.id, // Передаем текущий statusId
                         sum: currentTotal,
