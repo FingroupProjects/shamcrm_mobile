@@ -20,6 +20,7 @@ import '../../bloc/auth_domain/domain_state.dart';
 import '../../bloc/login/login_bloc.dart';
 import '../../bloc/login/login_event.dart';
 import '../../bloc/login/login_state.dart';
+import 'debug_test_login_checkbox.dart';
 import 'qr_scanner_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -234,6 +235,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                         ),
+                        const SizedBox(height: 16),
+                        // Под кнопкой «Ручной ввод», на экране QR.
+                        const DebugTestLoginCheckbox(),
                       ],
                       if (_showManualInput) ...[
                         CustomTextField(
@@ -440,6 +444,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           label: localizations.translate('qr_code_label'),
                           onPressed: _resetToQrMode,
                         ),
+                        const SizedBox(height: 16),
+                        // На экране почты тоже внизу, не над полями.
+                        const DebugTestLoginCheckbox(),
                       ],
                     ],
                   ),

@@ -1,7 +1,34 @@
 part of '../api_service.dart';
 
+/// Один раз за процесс, чтобы HTTP Inspector не забивался одинаковыми пропусками.
+bool _addFcmDebugSkipLogged = false;
+
 extension ApiFcmVoipX on ApiService {
+  /// Галочка «Тестовый» включена: add-fcm-token не уходит.
+  /// Отложенный токен тоже стираем, чтобы он не ушёл позже и не затёр клиента.
+  Future<void> skipAddFcmTokenInDebug() async {
+    await _removePendingToken();
+    if (_addFcmDebugSkipLogged) {
+      return;
+    }
+    _addFcmDebugSkipLogged = true;
+    debugPrint(
+      'add-fcm-token пропущен: на экране входа включена галочка «Тестовый».',
+    );
+    logSkippedAddFcmToken(
+      'Галочка «Тестовый» включена. add-fcm-token не отправлен, чтобы не заменить FCM-токен клиента.',
+    );
+  }
+
   Future<bool> sendDeviceToken(String deviceToken) async {
+    // Обновление токена и отложенная отправка идут сюда в обход sync.
+    // Проверка здесь закрывает и эти пути.
+    await ensureDebugTestLoginLoaded();
+    if (!allowAddFcmTokenUpload) {
+      await skipAddFcmTokenInDebug();
+      return false;
+    }
+
     // Раньше запрос шёл голым http.post и в HTTP Inspector не появлялся.
     // Из-за этого было не видно, ушло ли поле token на сервер.
     final startedAt = DateTime.now();

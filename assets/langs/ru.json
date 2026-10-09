@@ -2171,6 +2171,8 @@
   "configuration_check": "Проверка конфигурации...",
   "site_open_failed": "Не удалось открыть сайт",
   "scan_qr_prompt": "Сканируйте QR-код",
+  "debug_test_login": "Тестовый",
+  "debug_test_login_hint": "Включено — FCM-токен на сервер не уходит. Выключите, чтобы отправить.",
   "invalid_email_in_qr": "Некорректный email в QR-коде",
   "qr_scan_error": "Ошибка при сканировании QR-кода",
   "email_verified_success": "Email успешно подтвержден",
@@ -2796,5 +2798,18 @@
   "list_active_filters": "Фильтры",
   "notifications_today": "Сегодня",
   "notifications_earlier": "Раньше",
-  "notifications_read_all": "Прочитать все"
+  "notifications_read_all": "Прочитать все",
+  "channel_whatsapp": "WhatsApp",
+  "channel_telegram": "Telegram",
+  "channel_telegram_bot": "Telegram бот",
+  "channel_mini_app": "Mini App",
+  "channel_instagram": "Instagram",
+  "channel_instagram_comment": "Instagram Комментарий",
+  "channel_instagram_story": "Instagram Сторис",
+  "channel_facebook": "Facebook",
+  "channel_jivo": "Jivo",
+  "channel_email": "Email",
+  "channel_site": "Интернет магазин",
+  "channel_website_widget": "Виджет сайта",
+  "channel_youtube": "YouTube"
 }

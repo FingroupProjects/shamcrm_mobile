@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
@@ -265,6 +266,8 @@ class _ConnectedAccountsChartState extends State<ConnectedAccountsChart> {
   }
 
   String _channelLabel(String type) {
+    final title = channelDisplayTitle(context, type);
+    if (title != null) return title;
     final key = type.trim().toLowerCase();
     return switch (key) {
       'whatsapp' || 'green_api' => 'WhatsApp',

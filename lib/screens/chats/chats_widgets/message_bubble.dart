@@ -82,6 +82,10 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onTargetReferralTap;
   final int? replyMessageId;
   final void Function(int)? onReplyTap;
+  // Сколько строк цитаты показывать. У ответа на пост строк больше, чем у обычного ответа.
+  final int replyPreviewMaxLines;
+  // Тап по цитате поста раскрывает текст, если переходить к сообщению некуда.
+  final VoidCallback? onReplyPreviewTap;
   final bool isHighlighted;
   final bool isChanged;
   final bool isRead;
@@ -108,6 +112,8 @@ class MessageBubble extends StatelessWidget {
     this.onTargetReferralTap,
     this.replyMessageId,
     this.onReplyTap,
+    this.replyPreviewMaxLines = 2,
+    this.onReplyPreviewTap,
     this.isHighlighted = false,
     required this.isChanged,
     required this.isRead,
@@ -370,7 +376,8 @@ class MessageBubble extends StatelessWidget {
         ? appearance.outgoingForeground(context)
         : appearance.incomingForeground(context);
     final Color bodyColor = appearance.secondaryForeground(context, isSender);
-    final int maxPreviewLines = isTargetReferralReplyPreview ? 40 : 2;
+    final int maxPreviewLines =
+        isTargetReferralReplyPreview ? 40 : replyPreviewMaxLines;
     final authorLabel = (replyAuthorName ?? '').trim().isNotEmpty
         ? replyAuthorName!.trim()
         : AppLocalizations.of(context)!.translate('unknown_channel');
@@ -384,7 +391,7 @@ class MessageBubble extends StatelessWidget {
               }
               onReplyTap?.call(replyMessageId!);
             }
-          : null,
+          : onReplyPreviewTap,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.68,

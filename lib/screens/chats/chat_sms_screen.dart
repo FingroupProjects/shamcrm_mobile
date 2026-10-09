@@ -4982,6 +4982,8 @@ class MessageItemWidget extends StatelessWidget {
     String? replyMessageText;
     String? replyPreviewAuthorName;
     bool isTargetReferralReplyPreview = false;
+    // Комментарий к посту показываем цитатой внутри того же пузыря, как ответ в Telegram.
+    bool isPostReplyPreview = false;
     if (isFirstMessage && referralBody != null && referralBody!.isNotEmpty) {
       replyMessageText = referralBody;
       isTargetReferralReplyPreview = true;
@@ -4990,6 +4992,18 @@ class MessageItemWidget extends StatelessWidget {
               ? companionName!.trim()
               : message.senderName;
       replyPreviewAuthorName = fallbackCompanionName;
+    } else if (message.type == 'text' && message.post != null) {
+      final localizations = AppLocalizations.of(context)!;
+      final caption = message.post!.caption.trim();
+      final isYoutubeChannel = _normalizedChannelName.contains('youtube') ||
+          _normalizedChannelName.contains('ютуб');
+      replyMessageText = caption.isNotEmpty
+          ? caption
+          : localizations.translate(
+              isYoutubeChannel ? 'youtube_post' : 'instagram_post',
+            );
+      replyPreviewAuthorName = localizations.translate('reply_to_post');
+      isPostReplyPreview = true;
     } else if (message.forwardedMessage != null) {
       replyMessageText = message.forwardedMessage!.type == 'voice'
           ? AppLocalizations.of(context)!.translate('voice_message')
@@ -5017,6 +5031,10 @@ class MessageItemWidget extends StatelessWidget {
               isTargetReferralReplyPreview ? onTargetReferralTap : null,
           replyMessageId: message.forwardedMessage?.id,
           onReplyTap: (id) => onReplyTap?.call(id),
+          replyPreviewMaxLines: isPostReplyPreview
+              ? (isPostExpanded ? 30 : 4)
+              : 2,
+          onReplyPreviewTap: isPostReplyPreview ? onTogglePost : null,
           isHighlighted: highlightedMessageId == message.id,
           isChanged: message.isChanged,
           isRead: message.isRead,
@@ -5235,9 +5253,10 @@ class MessageItemWidget extends StatelessWidget {
         content = const SizedBox();
     }
 
-    // Если есть превью поста — оборачиваем контент вместе с ним.
+    // Текст уже содержит цитату поста внутри пузыря.
+    // Для фото и файлов карточка поста остаётся над сообщением.
     Widget result;
-    if (message.post == null) {
+    if (message.post == null || isPostReplyPreview) {
       result = content;
     } else {
       result = Column(

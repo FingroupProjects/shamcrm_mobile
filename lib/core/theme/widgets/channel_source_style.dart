@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Тип канала. Нужен, чтобы дать каждому источнику свой вид.
@@ -49,6 +50,10 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
       .replaceAll(' ', '');
 
   if (name.isEmpty) return ChannelSourceKind.unknown;
+  // green_api_tg — это Telegram, его нельзя спутать с WhatsApp.
+  if (name.contains('green_api_tg')) {
+    return ChannelSourceKind.telegram;
+  }
   if (name.contains('telegram') ||
       name.contains('телеграм') ||
       name.contains('mini_app') ||
@@ -62,7 +67,10 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
       name.contains('greenapi')) {
     return ChannelSourceKind.whatsapp;
   }
-  if (name.contains('instagram') || name.contains('инстаграм')) {
+  if (name.contains('instagram') ||
+      name.contains('инстаграм') ||
+      name.contains('reply_story') ||
+      name.contains('story')) {
     return ChannelSourceKind.instagram;
   }
   // YouTube-интеграция: канал, комментарий или русское имя.
@@ -203,4 +211,42 @@ ChannelSourceLook lookForChannel(ChannelSourceKind kind) {
 /// Цвет канала для рамки карточки и акцента.
 Color channelBrandColor(String? rawName) {
   return lookForChannel(resolveChannelSourceKind(rawName)).brand;
+}
+
+/// Ключ канала с бэка → ключ перевода в ru/en/uz.
+const Map<String, String> channelTitleKeys = {
+  'whatsapp': 'channel_whatsapp',
+  'whatsapp_web': 'channel_whatsapp',
+  'green_api': 'channel_whatsapp',
+  'telegram_account': 'channel_telegram',
+  'telegram_bot': 'channel_telegram_bot',
+  'custom_telegram_bot': 'channel_telegram_bot',
+  'green_api_tg': 'channel_telegram',
+  'mini_app': 'channel_mini_app',
+  'instagram': 'channel_instagram',
+  'instagram_comment': 'channel_instagram_comment',
+  'reply_story': 'channel_instagram_story',
+  'facebook': 'channel_facebook',
+  'jivo': 'channel_jivo',
+  'email': 'channel_email',
+  'support': 'support_chat_name',
+  'site': 'channel_site',
+  'website_widget': 'channel_website_widget',
+  'youtube': 'channel_youtube',
+  'youtube_comment': 'channel_youtube',
+};
+
+/// Имя канала на текущем языке. null, если такого ключа в словаре нет.
+String? channelDisplayTitle(BuildContext context, String? rawName) {
+  final key = (rawName ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceFirst(RegExp(r'^channel-'), '')
+      .replaceAll('-', '_')
+      .replaceAll(' ', '_');
+  final localizationKey = channelTitleKeys[key];
+  if (localizationKey == null) return null;
+  final localizations = AppLocalizations.of(context);
+  if (localizations == null) return null;
+  return localizations.translate(localizationKey);
 }

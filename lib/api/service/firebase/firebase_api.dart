@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
+import 'package:crm_task_manager/app/fcm_debug_send_switch.dart';
 import 'package:crm_task_manager/bloc/messaging/messaging_cubit.dart';
 import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
@@ -280,6 +281,24 @@ class FirebaseApi {
   /// Один заход крутится для всех вызовов: почта, QR, PIN и Home.
   /// [restart] начинает заново после разрешения на уведомления.
   Future<bool> syncCurrentTokenWithServer({bool restart = false}) {
+    return _syncAfterTestLoginCheck(restart: restart);
+  }
+
+  /// Галочка «Тестовый» читается до повторов.
+  /// Иначе debug успеет восемь раз ждать токен и ничего не отправит.
+  Future<bool> _syncAfterTestLoginCheck({required bool restart}) async {
+    await ensureDebugTestLoginLoaded();
+    if (!allowAddFcmTokenUpload) {
+      debugPrint(
+        'FirebaseApi: add-fcm-token пропущен. Галочка «Тестовый» включена.',
+      );
+      unawaited(_apiService.skipAddFcmTokenInDebug());
+      return false;
+    }
+    return _beginFcmSync(restart: restart);
+  }
+
+  Future<bool> _beginFcmSync({required bool restart}) {
     if (restart) {
       _fcmSyncGeneration += 1;
       _fcmSyncInFlight = null;

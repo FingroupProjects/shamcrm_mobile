@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
@@ -117,6 +118,8 @@ class _SourcesChartState extends State<SourcesChart> {
   }
 
   String _displaySourceName(String name) {
+    final title = channelDisplayTitle(context, name);
+    if (title != null) return title;
     final normalized = name.trim().toLowerCase();
     switch (normalized) {
       case 'сайт':

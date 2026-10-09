@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
@@ -20,8 +21,9 @@ class RepliesMessagesChart extends StatefulWidget {
 
 class _RepliesMessagesChartState extends State<RepliesMessagesChart> {
   String _displayChannelName(String channelName) {
+    final title = channelDisplayTitle(context, channelName);
+    if (title != null) return title;
     final normalized = channelName.trim().toLowerCase();
-    if (normalized == 'green_api') return 'WhatsApp';
     if (normalized.contains('youtube') || normalized.contains('ютуб')) {
       return 'YouTube';
     }

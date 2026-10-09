@@ -2156,6 +2156,8 @@
   "configuration_check": "Checking configuration...",
   "site_open_failed": "Failed to open site",
   "scan_qr_prompt": "Scan the QR code",
+  "debug_test_login": "Test",
+  "debug_test_login_hint": "On — the FCM token is not sent. Turn off to send it.",
   "invalid_email_in_qr": "Invalid email in QR code",
   "qr_scan_error": "QR code scanning error",
   "email_verified_success": "Email verified successfully",
@@ -2781,5 +2783,18 @@
   "list_active_filters": "Filters",
   "notifications_today": "Today",
   "notifications_earlier": "Earlier",
-  "notifications_read_all": "Mark all read"
+  "notifications_read_all": "Mark all read",
+  "channel_whatsapp": "WhatsApp",
+  "channel_telegram": "Telegram",
+  "channel_telegram_bot": "Telegram bot",
+  "channel_mini_app": "Mini App",
+  "channel_instagram": "Instagram",
+  "channel_instagram_comment": "Instagram Comment",
+  "channel_instagram_story": "Instagram Stories",
+  "channel_facebook": "Facebook",
+  "channel_jivo": "Jivo",
+  "channel_email": "Email",
+  "channel_site": "Online store",
+  "channel_website_widget": "Website widget",
+  "channel_youtube": "YouTube"
 }

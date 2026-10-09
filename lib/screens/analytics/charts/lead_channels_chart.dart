@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/chart_shimmer_loader.dart';
@@ -126,7 +127,8 @@ class _LeadChannelsChartState extends State<LeadChannelsChart> {
                         ),
                       ),
                       title: Text(
-                        channel.name,
+                        channelDisplayTitle(context, channel.name) ??
+                            channel.name,
                         style: TextStyle(
                           fontSize: ResponsiveHelper(context).bodyFontSize,
                           fontWeight: FontWeight.w600,

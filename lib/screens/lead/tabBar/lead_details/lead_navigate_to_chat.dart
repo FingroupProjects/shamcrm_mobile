@@ -13,6 +13,16 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 
+/// Имя канала в списке чатов. Берётся из перевода текущего языка.
+String leadChannelLabel(BuildContext context, String channelName) {
+  final title = channelDisplayTitle(context, channelName);
+  if (title != null) return title;
+  if (channelName.trim().isEmpty) {
+    return AppLocalizations.of(context)!.translate('no_name_chat');
+  }
+  return channelName;
+}
+
 Future<void> openLeadChatDirect(
   BuildContext context, {
   required int leadId,
@@ -129,19 +139,6 @@ Future<void> openLeadChatDirect(
   showDialog(
     context: context,
     builder: (dialogContext) {
-      final Map<String, String> customChannelNames = {
-        'telegram_account': 'Telegram',
-        'telegram_bot': 'Telegram бот',
-        'mini_app': 'Mini App',
-        'whatsapp': 'WhatsApp',
-        'green_api': 'WhatsApp',
-        'facebook': 'Facebook',
-        'instagram': 'Instagram',
-        'youtube': 'YouTube',
-        'youtube_comment': 'YouTube',
-        'site': 'Интернет магазин',
-      };
-
       return Dialog(
         backgroundColor: dialogContext.appColors.surfacePrimary,
         shape: RoundedRectangleBorder(
@@ -170,17 +167,7 @@ Future<void> openLeadChatDirect(
                 itemBuilder: (context, index) {
                   final channelName = channels[index];
                   final displayName =
-                      channelName.toLowerCase() == 'support'
-                          ? AppLocalizations.of(dialogContext)!
-                              .translate('support_chat_name')
-                          : customChannelNames[channelName
-                                  .replaceAll('channel-', '')
-                                  .trim()
-                                  .toLowerCase()] ??
-                              (channelName.isNotEmpty
-                                  ? channelName
-                                  : AppLocalizations.of(dialogContext)!
-                                      .translate('no_name_chat'));
+                      leadChannelLabel(dialogContext, channelName);
                   final chatsForChannel = leadChats
                       .where((chat) => chat.channel.name == channelName)
                       .toList();
@@ -333,22 +320,6 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
     }
     if (mounted) setState(() {});
   }
-
-  // Иконки каналов — PNG из assets/icons/leads.
-  // Сайт рисуется иконкой языка, у него нет своего файла.
-
-  final Map<String, String> customChannelNames = {
-    'telegram_account': 'Telegram',
-    'telegram_bot': 'Telegram бот',
-    'mini_app': 'Mini App',
-    'whatsapp': 'WhatsApp',
-    'green_api': 'WhatsApp',
-    'facebook': 'Facebook',
-    'instagram': 'Instagram',
-    'youtube': 'YouTube',
-    'youtube_comment': 'YouTube',
-    'site': 'Интернет магазин',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -525,17 +496,7 @@ class _LeadNavigateToChatDialogState extends State<LeadNavigateToChat> {
                           itemBuilder: (context, index) {
                             final channelName = channels[index];
                             final displayName =
-                                channelName.toLowerCase() == 'support'
-                                    ? AppLocalizations.of(context)!
-                                        .translate('support_chat_name')
-                                    : customChannelNames[channelName
-                                            .replaceAll('channel-', '')
-                                            .trim()
-                                            .toLowerCase()] ??
-                                        (channelName.isNotEmpty
-                                            ? channelName
-                                            : AppLocalizations.of(context)!
-                                                .translate('no_name_chat'));
+                                leadChannelLabel(context, channelName);
                             //print('LeadNavigateToChat: Building chat item $index - Channel: $channelName, DisplayName: $displayName');
                             return Padding(
                               padding: const EdgeInsets.symmetric(

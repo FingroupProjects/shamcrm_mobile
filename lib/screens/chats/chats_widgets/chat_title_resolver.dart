@@ -15,18 +15,25 @@ class ChatTitleResolver {
   static const Set<String> _channelTitles = {
     'telegram_account',
     'telegram_bot',
+    'custom_telegram_bot',
+    'green_api_tg',
     'mini_app',
     'whatsapp',
+    'whatsapp_web',
     'green_api',
     'instagram',
     'instagram_comment',
+    'reply_story',
     'youtube',
     'youtube_comment',
     'facebook',
     'messenger',
+    'jivo',
     'phone',
     'email',
+    'support',
     'site',
+    'website_widget',
   };
 
   static bool isPlaceholder(String? value) {

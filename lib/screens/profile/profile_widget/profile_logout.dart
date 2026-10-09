@@ -1,6 +1,8 @@
+import 'package:crm_task_manager/app/fcm_debug_send_switch.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -13,10 +15,20 @@ class LogoutButtonWidget extends StatelessWidget {
 
     return GestureDetector(
       onTap: () async {
+        await ensureDebugTestLoginLoaded();
+        // Debug и галочка «Тестовый»: /logout не уходит.
+        // Иначе сервер удалит FCM клиента. Телефон всё равно очищаем и закрываем.
+        final skipServerLogout = kDebugMode && debugTestLogin;
+        if (skipServerLogout) {
+          debugPrint(
+            'LogoutButton: тестовый debug-вход. Запрос /logout не отправляем.',
+          );
+        }
         await AppLogoutService.logoutAndReset(
           context: context,
           restartApp: false,
           navigateToAuth: false,
+          notifyServer: !skipServerLogout,
           exitApp: true,
         );
       },
