@@ -15,6 +15,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 
+import 'internal_dial_number.dart';
 import 'sip_state.dart';
 
 class SipAudioRoute {
@@ -166,6 +167,8 @@ class SipService extends ChangeNotifier
   String? get currentAudioRouteName => _currentAudioRouteName;
   String? _currentCallTarget;
   String? _currentCallDisplayName;
+  // Номер, который человек видит в окне вызова. В SIP уходит копия без кода страны.
+  String? _outgoingVisibleNumber;
   String? get currentCallTarget => _currentCallTarget;
   String? get currentCallDisplayName => _currentCallDisplayName;
   String? _currentInviteUri;
@@ -2085,23 +2088,40 @@ class SipService extends ChangeNotifier
       return;
     }
 
-    final normalizedTarget = _restoreTajikPlusIfMissing(dialTarget);
-    if (normalizedTarget.isEmpty) {
+    // Окно вызова показывает номер как его набрали (+992927777777).
+    // В линию уходит тот же номер без кода страны: АТС добавит его сама.
+    final visibleNumber = dialTarget.trim();
+    final homeDialCode = await _readOrganizationDialCode();
+    final dialedNumber = stripCountryCodeForInternalCall(
+      visibleNumber,
+      homeDialCode: homeDialCode,
+    );
+    final rawDigits = visibleNumber.replaceAll(RegExp(r'\D'), '');
+    final comparableRaw =
+        rawDigits.startsWith('00') ? rawDigits.substring(2) : rawDigits;
+    if (dialedNumber != comparableRaw) {
+      debugPrint(
+        'SipService: country code removed before dial '
+        'shown="$visibleNumber" home="${homeDialCode ?? ''}" dialed="$dialedNumber"',
+      );
+    }
+    if (dialedNumber.isEmpty) {
       _setError('Введите номер для звонка.');
       return;
     }
 
     _currentCallDirection = SipCallDirection.outgoing;
-    _currentCallTarget = normalizedTarget;
+    _outgoingVisibleNumber = visibleNumber;
+    _currentCallTarget = visibleNumber;
     final normalizedDisplayName = displayName?.trim() ?? '';
     _currentCallDisplayName = normalizedDisplayName.isEmpty ||
             normalizedDisplayName.toLowerCase() == 'неизвестно'
-        ? normalizedTarget
+        ? visibleNumber
         : normalizedDisplayName;
     _currentCallStartedAt = null;
 
     final target =
-        _buildTargetUri(normalizedTarget, _extractDomain(_state.server));
+        _buildTargetUri(dialedNumber, _extractDomain(_state.server));
     _currentInviteUri = target;
 
     if (_shouldUseNativeSip()) {
@@ -2114,7 +2134,8 @@ class SipService extends ChangeNotifier
         'nativeMakeCall',
         extra: <String, String>{
           'target': target,
-          'dialed': normalizedTarget,
+          'dialed': dialedNumber,
+          'shown': visibleNumber,
         },
       );
 
@@ -2123,7 +2144,7 @@ class SipService extends ChangeNotifier
       // writing "calling" afterwards would resurrect an already ended call.
       _state = _state.copyWith(
         callStatus: SipCallUiStatus.calling,
-        remoteIdentity: normalizedTarget,
+        remoteIdentity: visibleNumber,
         clearError: true,
         isSpeakerOn: false,
         isMuted: false,
@@ -2162,7 +2183,8 @@ class SipService extends ChangeNotifier
       'makeCall',
       extra: <String, String>{
         'target': target,
-        'dialed': normalizedTarget,
+        'dialed': dialedNumber,
+        'shown': visibleNumber,
       },
     );
     final success = await _helper.call(target, voiceOnly: true);
@@ -2174,6 +2196,7 @@ class SipService extends ChangeNotifier
 
     _state = _state.copyWith(
       callStatus: SipCallUiStatus.calling,
+      remoteIdentity: visibleNumber,
       clearError: true,
     );
     _notifyListenersSafely();
@@ -2252,6 +2275,7 @@ class SipService extends ChangeNotifier
       _currentCallStartedAt = null;
       _currentCallTarget = null;
       _currentCallDisplayName = null;
+      _outgoingVisibleNumber = null;
       _state = _state.copyWith(
         callStatus: SipCallUiStatus.ended,
         clearRemoteIdentity: true,
@@ -2871,6 +2895,33 @@ class SipService extends ChangeNotifier
     return normalized.isEmpty ? null : normalized;
   }
 
+  /// В окне исходящего звонка оставляем номер с кодом страны.
+  /// Ответ Linphone приходит уже без кода — его на экран не подставляем.
+  String? _shownCallIdentity(String? reportedRemote) {
+    final visible = _outgoingVisibleNumber?.trim();
+    if (_currentCallDirection == SipCallDirection.outgoing &&
+        visible != null &&
+        visible.isNotEmpty) {
+      return visible;
+    }
+    return reportedRemote;
+  }
+
+  /// Код страны организации из настроек (поле localization → default_dial_code).
+  Future<String?> _readOrganizationDialCode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString('default_dial_code');
+      if (saved == null || saved.trim().isEmpty) return null;
+      return saved.trim();
+    } catch (error) {
+      debugPrint('SipService: failed to read default_dial_code: $error');
+      return null;
+    }
+  }
+
+  /// Только показ входящего номера. На исходящий звонок не использовать:
+  /// плюс перед 992 заставляет АТС набрать код страны второй раз.
   String _restoreTajikPlusIfMissing(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty || trimmed.startsWith('+')) {
@@ -3642,6 +3693,7 @@ class SipService extends ChangeNotifier
     }
 
     if (mappedCall == SipCallUiStatus.incoming) {
+      _outgoingVisibleNumber = null;
       _rememberIncomingFingerprint(
         callUUID: callUUID,
         callId: callId,
@@ -3692,7 +3744,9 @@ class SipService extends ChangeNotifier
       registrationStatus: resolvedRegistration,
       callStatus: mappedCall,
       errorMessage: resolvedMessage,
-      remoteIdentity: remoteIdentity,
+      remoteIdentity: mappedCall == SipCallUiStatus.incoming
+          ? remoteIdentity
+          : _shownCallIdentity(remoteIdentity),
       isMuted: muted,
       isSpeakerOn: resolvedSpeakerOn,
       clearRemoteIdentity:
@@ -3947,6 +4001,7 @@ class SipService extends ChangeNotifier
     switch (nativeState) {
       case 'incoming':
         _currentCallDisplayName = null;
+        _outgoingVisibleNumber = null;
         if (_isDuplicateIncomingEvent(
           callUUID: callUUID,
           callId: callId,
@@ -3991,7 +4046,7 @@ class SipService extends ChangeNotifier
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.calling,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: _shownCallIdentity(remoteIdentity),
           clearError: true,
           isMuted: muted ?? _state.isMuted,
           isSpeakerOn: _state.isSpeakerOn,
@@ -4013,7 +4068,7 @@ class SipService extends ChangeNotifier
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ringing,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: _shownCallIdentity(remoteIdentity),
           errorMessage: _outgoingNetworkMediaActive
               ? 'Сообщение линии (гудок/~занято).'
               : null,
@@ -4047,7 +4102,7 @@ class SipService extends ChangeNotifier
         );
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: _shownCallIdentity(remoteIdentity),
           errorMessage: outgoingNetworkMedia
               ? 'Сообщение линии. При сбросе сетью (~8 с) это нормально для TTL.'
               : null,
@@ -4744,13 +4799,16 @@ class SipService extends ChangeNotifier
             : SipCallDirection.outgoing;
         if (call.direction == 'INCOMING') {
           _currentCallDisplayName = null;
+          _outgoingVisibleNumber = null;
+          _currentCallTarget = remoteIdentity ?? _state.sipId;
         }
-        _currentCallTarget = remoteIdentity ?? _state.sipId;
         _state = _state.copyWith(
           callStatus: call.direction == 'INCOMING'
               ? SipCallUiStatus.incoming
               : SipCallUiStatus.calling,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: call.direction == 'INCOMING'
+              ? remoteIdentity
+              : _shownCallIdentity(remoteIdentity),
           clearError: true,
         );
         if (call.direction == 'INCOMING') {
@@ -4761,7 +4819,7 @@ class SipService extends ChangeNotifier
       case CallStateEnum.PROGRESS:
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.ringing,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: _shownCallIdentity(remoteIdentity),
         );
         break;
       case CallStateEnum.ACCEPTED:
@@ -4770,7 +4828,7 @@ class SipService extends ChangeNotifier
         _currentCallStartedAt ??= DateTime.now();
         _state = _state.copyWith(
           callStatus: SipCallUiStatus.inCall,
-          remoteIdentity: remoteIdentity,
+          remoteIdentity: _shownCallIdentity(remoteIdentity),
           clearError: true,
         );
         unawaited(_reportIosSystemCallConnectedIfNeeded());
@@ -4952,6 +5010,7 @@ class SipService extends ChangeNotifier
     _currentCallStartedAt = null;
     _currentCallTarget = null;
     _currentCallDisplayName = null;
+    _outgoingVisibleNumber = null;
     unawaited(refreshRecentCallLogs(force: true));
   }
 }

@@ -110,7 +110,7 @@ class _ProjectMultiSelectWidgetState extends State<ProjectMultiSelectWidget> {
                       closedFillColor: colors.fieldBg,
                       expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),

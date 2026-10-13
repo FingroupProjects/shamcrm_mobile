@@ -48,14 +48,15 @@ class HelpfulEmptyState extends StatelessWidget {
     required AppLocalizations l10n,
     required IconData icon,
     required String titleKey,
-    required String subtitleKey,
+    // У части разделов только заголовок, второй строки нет.
+    String? subtitleKey,
     String? actionKey,
     VoidCallback? onAction,
   }) {
     return HelpfulEmptyState(
       icon: icon,
       title: l10n.translate(titleKey),
-      subtitle: l10n.translate(subtitleKey),
+      subtitle: subtitleKey == null ? null : l10n.translate(subtitleKey),
       actionLabel: actionKey == null ? null : l10n.translate(actionKey),
       onAction: onAction,
     );

@@ -9,6 +9,7 @@ import 'package:crm_task_manager/main.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
+import 'package:crm_task_manager/screens/absence/absence_detail_view.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
@@ -547,14 +548,23 @@ class FirebaseApi {
     }
 
     try {
-      await _pushChannel
-          .invokeMethod<void>('showForegroundPush', <String, dynamic>{
+      final payload = <String, dynamic>{
         'title': title.isEmpty ? 'shamCRM' : title,
         'body': body,
-        'type': type,
-        'id': message.data['id']?.toString() ??
-            message.data['chat_id']?.toString(),
+      };
+      message.data.forEach((key, value) {
+        final text = value?.toString().trim() ?? '';
+        if (text.isEmpty || text.toLowerCase() == 'null') {
+          return;
+        }
+        payload[key] = text;
       });
+      payload['title'] = title.isEmpty ? 'shamCRM' : title;
+      payload['body'] = body;
+      if (type != null && type.isNotEmpty) {
+        payload['type'] = type;
+      }
+      await _pushChannel.invokeMethod<void>('showForegroundPush', payload);
     } catch (error) {
       debugPrint('FirebaseApi: failed to show foreground push: $error');
     }
@@ -789,15 +799,31 @@ class FirebaseApi {
   }
 
   String? _normalizePushType(Map<String, dynamic> data) {
-    final raw = _pickPushValue(data, <String>['type', 'event']);
+    final raw = _pickPushValue(data, <String>['type', 'event'])?.toLowerCase();
     if (raw == null) {
+      // Иногда бэкенд кладёт только id. По ним всё ещё можно открыть экран.
+      if (_pickPushValue(data, <String>['chat_id', 'chatId']) != null) {
+        return 'message';
+      }
+      if (_pickPushValue(data, <String>['event_id', 'notice_id']) != null) {
+        return 'notice';
+      }
       return null;
     }
-    switch (raw.toLowerCase()) {
+    switch (raw) {
       case 'message':
+      case 'chat':
       case 'chat_message':
       case 'new_message':
         return 'message';
+      case 'notice':
+      case 'event':
+      case 'eventid':
+        return 'notice';
+      case 'absence_request':
+      case 'absence-request':
+      case 'absencerequest':
+        return 'absence_request';
       default:
         return raw;
     }
@@ -824,6 +850,14 @@ class FirebaseApi {
       return _pickPushValue(data, <String>[
         'event_id',
         'notice_id',
+        'id',
+      ]);
+    }
+    if (type == 'absence_request') {
+      return _pickPushValue(data, <String>[
+        'model_id',
+        'modelId',
+        'absence_request_id',
         'id',
       ]);
     }
@@ -880,7 +914,7 @@ class FirebaseApi {
         final data = _stringifyPushData(decoded);
         final savedAt = int.tryParse(data['_saved_at_ms']?.toString() ?? '');
         if (savedAt != null &&
-            DateTime.now().millisecondsSinceEpoch - savedAt > 60000) {
+            DateTime.now().millisecondsSinceEpoch - savedAt > 300000) {
           debugPrint('FirebaseApi: pending push expired');
           return null;
         }
@@ -930,6 +964,9 @@ class FirebaseApi {
           break;
         case 'dealDeadLineNotification':
           await navigateToDealScreen(id, data);
+          break;
+        case 'absence_request':
+          await navigateToAbsenceScreen(id);
           break;
         case 'orders':
           await navigateToOrdersScreen(id, data);
@@ -1451,6 +1488,19 @@ class FirebaseApi {
     } catch (e) {
       debugPrint('❌ ERROR: $e');
     }
+  }
+
+  Future<void> navigateToAbsenceScreen(String id) async {
+    final requestId = int.tryParse(id) ?? 0;
+    if (requestId <= 0 || navigatorKey.currentState == null) {
+      debugPrint('FirebaseApi: absence request id is empty');
+      return;
+    }
+    await navigatorKey.currentState!.push(
+      MaterialPageRoute(
+        builder: (context) => AbsenceDetailScreen(requestId: requestId),
+      ),
+    );
   }
 
   Future<void> navigateToEventScreen(

@@ -10,6 +10,8 @@ class TaskProfile {
   final String authorName; // Поле для имени автора
   final String usersNames; // Поле для имен пользователей
   final String? priority_level;
+  // Имя проекта из объекта project в ответе /task/getByChat.
+  final String? projectName;
 
   TaskProfile({
     required this.id,
@@ -21,6 +23,7 @@ class TaskProfile {
     required this.authorName,
     required this.usersNames,
     this.priority_level,
+    this.projectName,
   });
 
   factory TaskProfile.fromJson(Map<String, dynamic> json) {
@@ -43,6 +46,27 @@ class TaskProfile {
       priority_level: json['priority_level'],
       authorName: authorName,
       usersNames: usersNames,
+      projectName: _readProjectName(json),
     );
   }
+}
+
+/// Сервер отдаёт проект объектом {id, name} или строкой.
+/// Если поля нет, карточка покажет «Не указан».
+String? _readProjectName(Map<String, dynamic> json) {
+  final project = json['project'] ?? json['project_name'];
+  if (project == null) return null;
+
+  if (project is String) {
+    final name = project.trim();
+    return name.isEmpty ? null : name;
+  }
+
+  if (project is Map) {
+    final name = project['name']?.toString().trim();
+    if (name == null || name.isEmpty) return null;
+    return name;
+  }
+
+  return null;
 }

@@ -200,8 +200,8 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
     return CustomDropdownDecoration(
       closedFillColor: context.appColors.fieldBg,
       expandedFillColor: context.appColors.surfacePrimary,
-      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
-      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
+      expandedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
       closedBorderRadius: BorderRadius.circular(12),
       expandedBorderRadius: BorderRadius.circular(12),
     );
@@ -240,7 +240,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
     required String title,
     required String hint,
     required WareHouse? selectedValue,
-    required ValueChanged<WareHouse> onChanged,
+    required ValueChanged<WareHouse?> onChanged,
   }) {
     return _buildSectionCard(
       title: title,
@@ -304,7 +304,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                         )
                       : null,
                   onChanged: (value) {
-                    if (value != null && mounted) {
+                    if (mounted) {
                       onChanged(value);
                       FocusScope.of(context).unfocus();
                     }
@@ -423,7 +423,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                   )
                 : null,
             onChanged: (value) {
-              if (value != null && mounted) {
+              if (mounted) {
                 setState(() {
                   _selectedAuthor = value;
                 });
@@ -559,15 +559,18 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                                 ? localizations.translate('approved')
                                 : localizations.translate('not_approved'))
                             : null,
-                        onSelectstatusMethod: (String value) {
-                          if (mounted) {
-                            setState(() {
+                        onSelectstatusMethod: (value) {
+                          if (!mounted) return;
+                          setState(() {
+                            if (value == null) {
+                              _selectedStatus = null;
+                            } else {
                               _selectedStatus =
                                   value == localizations.translate('approved')
                                       ? '1'
                                       : '0';
-                            });
-                          }
+                            }
+                          });
                         },
                       ),
                     ),
@@ -590,13 +593,13 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
                             : (_isDeleted!
                                 ? localizations.translate('yes')
                                 : localizations.translate('no')),
-                        onSelectstatusMethod: (String value) {
-                          if (mounted) {
-                            setState(() {
-                              _isDeleted =
-                                  value == localizations.translate('yes');
-                            });
-                          }
+                        onSelectstatusMethod: (value) {
+                          if (!mounted) return;
+                          setState(() {
+                            _isDeleted = value == null
+                                ? null
+                                : value == localizations.translate('yes');
+                          });
                         },
                       ),
                     ),
@@ -644,7 +647,7 @@ class _ManufactureFilterScreenState extends State<ManufactureFilterScreen> {
 
 class _StatusMethodDropdown extends StatefulWidget {
   final String? selectedstatusMethod;
-  final Function(String) onSelectstatusMethod;
+  final Function(String?) onSelectstatusMethod;
   final List<String> statusMethodsList;
   final String title;
 
@@ -695,9 +698,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             closedFillColor: context.appColors.fieldBg,
             expandedFillColor: context.appColors.surfacePrimary,
             closedBorder:
-                Border.all(color: context.appColors.fieldBg, width: 1),
+                Border.all(color: context.appColors.borderSubtle, width: 1),
             expandedBorder:
-                Border.all(color: context.appColors.fieldBg, width: 1),
+                Border.all(color: context.appColors.borderSubtle, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorderRadius: BorderRadius.circular(12),
           ),
@@ -728,12 +731,10 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
           ),
           initialItem: selectedstatusMethod,
           onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                selectedstatusMethod = value;
-              });
-              widget.onSelectstatusMethod(value);
-            }
+            setState(() {
+              selectedstatusMethod = value;
+            });
+            widget.onSelectstatusMethod(value);
           },
         ),
       ],

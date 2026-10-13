@@ -8,6 +8,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import 'chart_scale.dart';
+import 'example_chart_frame.dart';
 
 class ProfitabilityChart extends StatefulWidget {
   const ProfitabilityChart({super.key, required this.profitabilityData});
@@ -44,13 +46,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
   }
 
   double _parseProfitabilityValue(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final cleaned = value.replaceAll(RegExp(r'[^\d.-]'), '');
-      return double.tryParse(cleaned) ?? 0.0;
-    }
-    return 0.0;
+    return parseChartNumber(value);
   }
 
   void onPeriodChanged(ProfitabilityTimePeriod period) {
@@ -63,217 +59,17 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     }
   }
 
-  Map<String, double> _calculateYAxisRange(List<ProfitabilityMonth> months) {
-    if (months.isEmpty) {
-      return {'minY': 0, 'maxY': 100, 'interval': 20};
-    }
 
-    final values = months
-        .map((m) => _parseProfitabilityValue(m.profitabilityPercentage))
-        .toList();
 
-    final minValue = values.reduce((a, b) => a < b ? a : b);
-    final maxValue = values.reduce((a, b) => a > b ? a : b);
-
-    final range = maxValue - minValue;
-    final padding = range > 0 ? range * 0.2 : 10;
-
-    double calculatedMin = minValue - padding;
-    double calculatedMax = maxValue + padding;
-
-    if (minValue >= 0) {
-      calculatedMin = 0;
-    }
-
-    if (maxValue <= 0) {
-      calculatedMax = 0;
-    }
-
-    if ((calculatedMax - calculatedMin) < 10) {
-      final center = (calculatedMax + calculatedMin) / 2;
-      calculatedMin = center - 5;
-      calculatedMax = center + 5;
-    }
-
-    calculatedMin = (calculatedMin / 5).floor() * 5.0;
-    calculatedMax = (calculatedMax / 5).ceil() * 5.0;
-
-    final totalRange = calculatedMax - calculatedMin;
-    double interval;
-    if (totalRange <= 5) {
-      interval = 1;
-    } else if (totalRange <= 10) {
-      interval = 2;
-    } else if (totalRange <= 20) {
-      interval = 5;
-    } else if (totalRange <= 50) {
-      interval = 10;
-    } else if (totalRange <= 100) {
-      interval = 20;
-    } else if (totalRange <= 200) {
-      interval = 25;
-    } else if (totalRange <= 500) {
-      interval = 50;
-    } else {
-      interval = 100;
-    }
-
-    return {
-      'minY': calculatedMin,
-      'maxY': calculatedMax,
-      'interval': interval,
-    };
-  }
-
-  Widget _buildMockChart(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    final colors = context.appColors;
-
-    final List<double> mockData = [5, 2, 8, 4, 1, 10, 7, 5, 1, 12, 9, 11];
-    final List<String> mockMonthNames = [
-      localizations.translate('january'),
-      localizations.translate('february'),
-      localizations.translate('march'),
-      localizations.translate('april'),
-      localizations.translate('may'),
-      localizations.translate('june'),
-      localizations.translate('july'),
-      localizations.translate('august'),
-      localizations.translate('september'),
-      localizations.translate('october'),
-      localizations.translate('november'),
-      localizations.translate('december'),
-    ];
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16, top: 16, bottom: 8),
-          child: LineChart(
-            LineChartData(
-              backgroundColor: Colors.transparent,
-              gridData: FlGridData(
-                show: true,
-                drawHorizontalLine: true,
-                drawVerticalLine: false,
-                horizontalInterval: 5,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                    color: colors.borderSubtle.withValues(alpha: 0.38),
-                    strokeWidth: 1,
-                  );
-                },
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      if (value < 0 || value >= mockMonthNames.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Transform.rotate(
-                          angle: -0.4,
-                          child: Text(
-                            mockMonthNames[value.toInt()],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    reservedSize: 70,
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toStringAsFixed(0),
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: colors.textSecondary,
-                        ),
-                      );
-                    },
-                    reservedSize: 40,
-                    interval: 5,
-                  ),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              minX: 0,
-              maxX: 11,
-              minY: 0,
-              maxY: 15,
-              lineBarsData: [
-                LineChartBarData(
-                  spots: List.generate(
-                    mockData.length,
-                    (index) => FlSpot(index.toDouble(), mockData[index]),
-                  ),
-                  isCurved: true,
-                  curveSmoothness: 0.3,
-                  color: Colors.grey[300],
-                  barWidth: 3,
-                  isStrokeCapRound: true,
-                  dotData: FlDotData(
-                    show: true,
-                    getDotPainter: (spot, percent, barData, index) {
-                      return FlDotCirclePainter(
-                        radius: 4,
-                        color: Colors.grey[300]!,
-                        strokeWidth: 2,
-                        strokeColor: Colors.white,
-                      );
-                    },
-                  ),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colors.borderSubtle.withValues(alpha: 0.3),
-                        colors.borderSubtle.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              lineTouchData: LineTouchData(enabled: false),
-            ),
-          ),
-        ),
-        Text(
-          localizations.translate('no_data_to_display'),
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: "Gilroy",
-            fontWeight: FontWeight.w500,
-            color: colors.textSecondary,
-          ),
-        ),
-      ],
+  List<ProfitabilityMonth> _exampleMonths() {
+    const amounts = <int>[8, 12, 10, 15, 11, 18, 16, 14, 21, 19, 24, 22];
+    return List.generate(
+      amounts.length,
+      (index) => ProfitabilityMonth(
+        month: index + 1,
+        monthName: '${index + 1}',
+        profitabilityPercentage: amounts[index],
+      ),
     );
   }
 
@@ -281,15 +77,17 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final periodData = _getSelectedPeriodData();
-    final months = periodData?.data.result.months ?? [];
-    final yAxisRange = _calculateYAxisRange(months);
-    final colors = context.appColors;
+    final realMonths = periodData?.data.result.months ?? [];
+    final showExample = !realMonths
+        .map((month) => _parseProfitabilityValue(month.profitabilityPercentage))
+        .any((value) => value != 0);
+    final months = showExample ? _exampleMonths() : realMonths;
+    final values = months.map(
+      (month) => _parseProfitabilityValue(month.profitabilityPercentage),
+    );
+    final scale = ChartScale.fromValues(values, allowNegative: true);
     final textStyles = context.appTextStyles;
-
-    // Check if all values are zero
-    final hasData = months.isNotEmpty &&
-        months.any(
-            (m) => _parseProfitabilityValue(m.profitabilityPercentage) != 0.0);
+    final colors = context.appColors;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -348,9 +146,11 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                       color: colors.buttonPrimaryBg,
                     ),
                   )
-                : !hasData
-                    ? _buildMockChart(context)
-                    : Padding(
+                : ExampleChartFrame(
+                    show: showExample,
+                    label: localizations.translate('no_data_to_display'),
+                    child: ClipRect(
+                        child: Padding(
                         padding: const EdgeInsets.only(
                             right: 16, top: 16, bottom: 8),
                         child: LineChart(
@@ -360,7 +160,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                               show: true,
                               drawHorizontalLine: true,
                               drawVerticalLine: false,
-                              horizontalInterval: yAxisRange['interval'],
+                              horizontalInterval: scale.interval,
                               getDrawingHorizontalLine: (value) {
                                 return FlLine(
                                   color: colors.borderSubtle
@@ -381,43 +181,30 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                                     }
                                     final monthName =
                                         months[value.toInt()].monthName;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Transform.rotate(
-                                        angle: -0.4,
-                                        child: Text(
-                                          localizations.translate(
-                                              monthName.toLowerCase()),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                            color: colors.textSecondary,
-                                          ),
-                                        ),
+                                    return chartAxisLabel(
+                                      localizedShortMonth(
+                                        monthName,
+                                        localizations,
                                       ),
+                                      colors.textSecondary,
+                                      meta,
                                     );
                                   },
-                                  reservedSize: 70,
+                                  reservedSize: 36,
                                 ),
                               ),
                               leftTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
                                   getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      value.toStringAsFixed(0),
-                                      style: TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: colors.textSecondary,
-                                      ),
+                                    return chartValueLabel(
+                                      formatChartAxis(value, localizations),
+                                      colors.textSecondary,
+                                      meta,
                                     );
                                   },
-                                  reservedSize: 40,
-                                  interval: yAxisRange['interval'],
+                                  reservedSize: 48,
+                                  interval: scale.interval,
                                 ),
                               ),
                               rightTitles: const AxisTitles(
@@ -428,10 +215,12 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                               ),
                             ),
                             borderData: FlBorderData(show: false),
-                            minX: 0,
-                            maxX: (months.length - 1).toDouble(),
-                            minY: yAxisRange['minY']!,
-                            maxY: yAxisRange['maxY']!,
+                            minX: months.length <= 1 ? -0.5 : -0.4,
+                            maxX: months.length <= 1
+                                ? 0.5
+                                : (months.length - 1).toDouble() + 0.4,
+                            minY: scale.minY,
+                            maxY: scale.maxY,
                             lineBarsData: [
                               LineChartBarData(
                                 spots: List.generate(
@@ -442,8 +231,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                                         months[index].profitabilityPercentage),
                                   ),
                                 ),
-                                isCurved: true,
-                                curveSmoothness: 0.3,
+                                isCurved: false,
                                 color: colors.buttonPrimaryBg,
                                 barWidth: 3,
                                 isStrokeCapRound: true,
@@ -471,13 +259,13 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                                           .withValues(alpha: 0.0),
                                     ],
                                   ),
-                                  cutOffY: yAxisRange['minY']!,
+                                  cutOffY: scale.minY,
                                   applyCutOffY: true,
                                 ),
                               ),
                             ],
                             lineTouchData: LineTouchData(
-                              enabled: true,
+                              enabled: !showExample,
                               touchTooltipData: LineTouchTooltipData(
                                 tooltipRoundedRadius: 8,
                                 tooltipPadding: const EdgeInsets.symmetric(
@@ -522,6 +310,8 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
                           ),
                         ),
                       ),
+                    ),
+                    ),
           ),
           const SizedBox(height: 16),
           Align(
@@ -554,6 +344,7 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     return CustomDropdown<ProfitabilityTimePeriod>(
+      canClear: false,
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: colors.borderSubtle),
         expandedBorder: Border.all(color: colors.borderSubtle),
@@ -572,6 +363,15 @@ class _ProfitabilityChartState extends State<ProfitabilityChart> {
           onPeriodChanged(value);
         }
       },
+      hintBuilder: (context, hint, enabled) => Text(
+        getPeriodText(selectedPeriod, AppLocalizations.of(context)!),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Gilroy',
+          color: context.appColors.textPrimary,
+        ),
+      ),
       headerBuilder: (context, selectedItem, enabled) {
         return Text(
           getPeriodText(selectedItem, localizations),

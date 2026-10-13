@@ -23,6 +23,7 @@ class _DropDownField<T> extends StatefulWidget {
   final _HintBuilder? hintBuilder;
   final _DropdownType dropdownType;
   final bool enabled;
+  final bool canClear;
   final MultiSelectController<T> selectedItemsNotifier;
 
   const _DropDownField({
@@ -46,6 +47,7 @@ class _DropDownField<T> extends StatefulWidget {
     this.suffixIcon,
     this.headerPadding,
     this.enabled = true,
+    this.canClear = true,
   });
 
   @override
@@ -61,6 +63,40 @@ class _DropDownFieldState<T> extends State<_DropDownField<T>> {
     super.initState();
     selectedItem = widget.selectedItemNotifier.value;
     selectedItems = widget.selectedItemsNotifier.value;
+    widget.selectedItemNotifier.addListener(_syncSelection);
+    widget.selectedItemsNotifier.addListener(_syncSelection);
+  }
+
+  @override
+  void dispose() {
+    widget.selectedItemNotifier.removeListener(_syncSelection);
+    widget.selectedItemsNotifier.removeListener(_syncSelection);
+    super.dispose();
+  }
+
+  void _syncSelection() {
+    if (!mounted) return;
+    setState(() {
+      selectedItem = widget.selectedItemNotifier.value;
+      selectedItems = widget.selectedItemsNotifier.value;
+    });
+  }
+
+  bool get _hasSelection {
+    return switch (widget.dropdownType) {
+      _DropdownType.singleSelect => selectedItem != null,
+      _DropdownType.multipleSelect => selectedItems.isNotEmpty,
+    };
+  }
+
+  // Крестик снимает выбор, не открывая список.
+  void _clearSelection() {
+    switch (widget.dropdownType) {
+      case _DropdownType.singleSelect:
+        widget.selectedItemNotifier.value = null;
+      case _DropdownType.multipleSelect:
+        widget.selectedItemsNotifier.value = <T>[];
+    }
   }
 
   Widget hintBuilder(BuildContext context) {
@@ -161,7 +197,20 @@ class _DropDownFieldState<T> extends State<_DropDownField<T>> {
                         : hintBuilder(context),
                   },
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 4),
+                if (_hasSelection && widget.canClear)
+                  GestureDetector(
+                    onTap: _clearSelection,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                 widget.suffixIcon ??
                     (widget.enabled
                         ? _defaultOverlayIconDown

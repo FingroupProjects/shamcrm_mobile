@@ -8,6 +8,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import 'example_chart_frame.dart';
 
 class ExpenseStructureChart extends StatefulWidget {
   const ExpenseStructureChart(this.expenseStructureData, {Key? key})
@@ -110,6 +111,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     return CustomDropdown<ExpensePeriodEnum>(
+      canClear: false,
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: colors.borderSubtle),
         expandedBorder: Border.all(color: colors.borderSubtle),
@@ -127,6 +129,15 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
         if (value != null) {
           onPeriodChanged(value);
         }
+      },
+      hintBuilder: (context, hint, enabled) {
+        return Text(
+          getPeriodText(context, selectedPeriod),
+          style: textStyles.bodySm.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
+          ),
+        );
       },
       headerBuilder: (context, selectedItem, enabled) {
         return Text(
@@ -149,46 +160,30 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
     );
   }
 
+  /// Круг из четырёх долей. Так график выглядит, когда придут статьи расходов.
+  List<ExpenseItem> _exampleExpenses() {
+    ExpenseItem item(String name, num percent) {
+      return ExpenseItem(
+        articleName: name,
+        articleType: '',
+        sum: percent,
+        formattedSum: '$percent%',
+        percentage: percent,
+      );
+    }
+
+    return [
+      item('Аренда', 35),
+      item('Зарплата', 25),
+      item('Закуп', 22),
+      item('Прочее', 18),
+    ];
+  }
+
   Widget _buildChart(
-      AppLocalizations localizations, List<ExpenseItem> expenseStructure) {
-    final colors = context.appColors;
-    final textStyles = context.appTextStyles;
-    if (expenseStructure.isEmpty) {
-      return Center(
-        child: Text(
-          localizations.translate('no_data_to_display'),
-          style: textStyles.bodyLg.copyWith(
-            fontWeight: FontWeight.w500,
-            color: colors.textSecondary,
-          ),
-        ),
-      );
-    }
-
-    bool allZeros = expenseStructure.every((item) => item.percentage == 0);
-
-    if (allZeros) {
-      return Center(
-        child: Container(
-          width: 160,
-          height: 160,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey[300],
-          ),
-          child: Center(
-            child: Text(
-              localizations.translate('no_data'),
-              style: textStyles.bodyMd.copyWith(
-                fontWeight: FontWeight.w500,
-                color: colors.textSecondary,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
+    List<ExpenseItem> expenseStructure, {
+    bool interactive = true,
+  }) {
     return SizedBox(
       height: 160,
       width: 160,
@@ -196,6 +191,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
         PieChartData(
           startDegreeOffset: -90,
           pieTouchData: PieTouchData(
+            enabled: interactive,
             touchCallback: (FlTouchEvent event, pieTouchResponse) {
               setState(() {
                 if (!event.isInterestedForInteractions ||
@@ -241,6 +237,7 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
   }
 
   Widget _buildLegend(List<ExpenseItem> expenseStructure) {
+    final colors = context.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: expenseStructure.asMap().entries.map((entry) {
@@ -264,11 +261,11 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
               Flexible(
                 child: Text(
                   item.articleName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontFamily: "Gilroy",
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A202C),
+                    color: colors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -285,6 +282,9 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
     final localizations = AppLocalizations.of(context)!;
     final currentData = _getCurrentPeriodData();
     final expenseStructure = currentData?.data.result.expenseStructure ?? [];
+    final showExample = expenseStructure.isEmpty ||
+        expenseStructure.every((item) => item.percentage == 0);
+    final items = showExample ? _exampleExpenses() : expenseStructure;
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
@@ -354,36 +354,27 @@ class _ExpenseStructureChartState extends State<ExpenseStructureChart>
 
           const SizedBox(height: 24),
 
-          // Chart and Legend
-          expenseStructure.isEmpty
-              ? SizedBox(
-                  height: 200,
-                  child: Center(
-                    child: Text(
-                      localizations.translate('no_data_to_display'),
-                      style: textStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
+          ExampleChartFrame(
+            show: showExample,
+            label: localizations.translate('no_data_to_display'),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: _buildChart(
+                    items,
+                    interactive: !showExample,
                   ),
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Chart
-                    Expanded(
-                      flex: 1,
-                      child: _buildChart(localizations, expenseStructure),
-                    ),
-                    const SizedBox(width: 24),
-                    // Legend
-                    Expanded(
-                      flex: 1,
-                      child: _buildLegend(expenseStructure),
-                    ),
-                  ],
                 ),
+                const SizedBox(width: 24),
+                Expanded(
+                  flex: 1,
+                  child: _buildLegend(items),
+                ),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 16),
 

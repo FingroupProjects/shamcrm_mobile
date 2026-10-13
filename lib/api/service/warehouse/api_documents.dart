@@ -7,6 +7,29 @@ String _dateOnlyQuery(DateTime date) {
   return '$y-$m-$d';
 }
 
+/// good_id[], category_id[], storage_id[], author_id[], date_from, date_to.
+String _appendGoodsOpeningFilters(String path, GoodsOpeningFilter? filters) {
+  if (filters == null || !filters.isActive) return path;
+
+  void addIds(String key, List<int> ids) {
+    for (final id in ids) {
+      path += '&$key[]=$id';
+    }
+  }
+
+  addIds('good_id', filters.goodIds);
+  addIds('category_id', filters.categoryIds);
+  addIds('storage_id', filters.storageIds);
+  addIds('author_id', filters.authorIds);
+  if (filters.dateFrom != null) {
+    path += '&date_from=${_dateOnlyQuery(filters.dateFrom!)}';
+  }
+  if (filters.dateTo != null) {
+    path += '&date_to=${_dateOnlyQuery(filters.dateTo!)}';
+  }
+  return path;
+}
+
 String _appendWarehouseDocumentFilters(
   String path,
   Map<String, dynamic>? filters,
@@ -3475,11 +3498,13 @@ extension ApiWarehouseDocumentsX on ApiService {
     }
   }
 
-  /// Получить первоначальные остатки по товарам
+  /// Получить первоначальные остатки по товарам.
+  /// organization_id и sales_funnel_id уже добавляет _appendQueryParams.
   Future<GoodsOpeningsResponse> getGoodsOpenings({
     String? search,
     int page = 1,
     int perPage = 20,
+    GoodsOpeningFilter? filters,
   }) async {
     String path = await _appendQueryParams('/good-initial-balance');
 
@@ -3489,6 +3514,8 @@ extension ApiWarehouseDocumentsX on ApiService {
     if (search != null && search.trim().isNotEmpty) {
       path += '&search=${Uri.encodeComponent(search.trim())}';
     }
+
+    path = _appendGoodsOpeningFilters(path, filters);
 
     if (kDebugMode) {
       debugPrint('ApiService: getGoodsOpenings - path: $path');

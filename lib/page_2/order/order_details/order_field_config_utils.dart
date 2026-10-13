@@ -26,6 +26,9 @@ String _canonicalSystemFieldName(String fieldName) {
     case 'comment_to_courier':
     case 'comment':
       return 'comment';
+    case 'date':
+    case 'дата':
+      return 'date';
     case 'goods':
     case 'order_goods':
     case 'items':

@@ -108,7 +108,7 @@ class _UserListCalendarWidgetState extends State<UserListCalendarWidget> {
                           colors.surfacePrimary.withValues(alpha: 0.72),
                       expandedFillColor: colors.surfacePrimary,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),

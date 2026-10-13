@@ -21,6 +21,7 @@ import 'package:crm_task_manager/models/user/user_byId_model..dart';
 import 'package:crm_task_manager/screens/notifications_screen.dart';
 import 'package:crm_task_manager/page_2/call_center/call_center_screen.dart';
 import 'package:crm_task_manager/screens/event/event_screen.dart';
+import 'package:crm_task_manager/screens/absence/absence_screen.dart';
 import 'package:crm_task_manager/screens/lead/masterclass_qr_scanner_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
@@ -403,6 +404,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canReadGps = false; // Новая переменная для GPS®
   bool _canOpenTimesheet = false;
   bool _canReadSalesPlanning = false;
+  bool _canOpenAbsence = false;
   bool _canShowMasterclassQrScanner = false;
   // DEAL custom fields were moved to filter screen
 
@@ -679,6 +681,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadTimesheet = await _apiService.canReadTimesheet();
     final canReadSalesPlanning =
         await _apiService.hasPermission('planning.read');
+    final canOpenAbsence = await _apiService.canOpenAbsenceRequests();
     var canShowMasterclassQr = false;
     if (widget.showMasterclassQrScanner) {
       final isFingroupcrm = await _apiService.isFingroupcrmTenant();
@@ -695,6 +698,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canReadGps = canReadGps;
       _canOpenTimesheet = canReadTimesheet;
       _canReadSalesPlanning = canReadSalesPlanning;
+      _canOpenAbsence = canOpenAbsence;
       _canShowMasterclassQrScanner = canShowMasterclassQr;
     });
   }
@@ -1668,6 +1672,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     ),
                                   );
                                   break;
+                                case 'absence':
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AbsenceScreen(),
+                                    ),
+                                  );
+                                  break;
                                 case 'projects':
                                   widget.onProjectsPressed?.call();
                                   break;
@@ -1969,6 +1982,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                                           const SizedBox(width: 8),
                                           Text(AppLocalizations.of(context)!
                                               .translate('sales_planning')),
+                                        ],
+                                      ),
+                                    ),
+                                  if (_canOpenAbsence)
+                                    PopupMenuItem<String>(
+                                      value: 'absence',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.event_busy_outlined,
+                                              color: inactiveIconColor),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('absence_menu')),
                                         ],
                                       ),
                                     ),

@@ -217,9 +217,9 @@ class _GoodsFilterScreenState extends State<GoodsFilterScreen> {
               ),
               initialItem: selectedCategory,
               onChanged: (value) {
-                if (value == null) return;
+                // Крестик присылает null: категория снова «все».
                 setState(() {
-                  selectedCategoryId = value.id;
+                  selectedCategoryId = value?.id;
                 });
               },
             ),

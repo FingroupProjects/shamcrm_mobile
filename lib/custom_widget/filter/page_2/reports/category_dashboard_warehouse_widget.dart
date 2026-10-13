@@ -143,13 +143,11 @@ class _CategoryDashboardWarehouseWidgetState extends State<CategoryDashboardWare
                     ? selectedCategoryData
                     : null,
                 onChanged: (value) {
-                  if (value != null) {
-                    widget.onChanged(value.id.toString());
-                    setState(() {
-                      selectedCategoryData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                  widget.onChanged(value?.id.toString());
+                  setState(() {
+                    selectedCategoryData = value;
+                  });
+                  FocusScope.of(context).unfocus();
                 },
               ),
             ],

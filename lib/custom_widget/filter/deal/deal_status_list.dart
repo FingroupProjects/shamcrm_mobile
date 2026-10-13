@@ -11,7 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class DealStatusRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
-  final Function(DealStatus) onSelectStatus;
+  final Function(DealStatus?) onSelectStatus;
 
   DealStatusRadioGroupWidget({
     Key? key,
@@ -92,7 +92,7 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
     return CustomDropdownDecoration(
       closedFillColor: colors.fieldBg,
       expandedFillColor: colors.fieldBg,
-      closedBorder: Border.all(color: Colors.transparent, width: 1),
+      closedBorder: Border.all(color: colors.borderSubtle, width: 1),
       closedBorderRadius: BorderRadius.circular(12),
       expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
       expandedBorderRadius: BorderRadius.circular(12),
@@ -237,13 +237,11 @@ class _DealStatusRadioGroupWidgetState extends State<DealStatusRadioGroupWidget>
                   ? selectedStatusData
                   : null,
               onChanged: (value) {
-                if (value != null) {
-                  widget.onSelectStatus(value);
-                  setState(() {
-                    selectedStatusData = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
+                widget.onSelectStatus(value);
+                setState(() {
+                  selectedStatusData = value;
+                });
+                FocusScope.of(context).unfocus();
               },
             ),
           ),

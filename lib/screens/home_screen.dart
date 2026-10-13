@@ -986,6 +986,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
 
       final firebaseApi = FirebaseApi();
+      // Сначала забираем тап, который iOS сохранил до готовности главного экрана.
+      await WidgetService.pullPendingNativePush();
       firebaseApi.markHomeReady();
       await firebaseApi.consumePendingPushNavigation();
 

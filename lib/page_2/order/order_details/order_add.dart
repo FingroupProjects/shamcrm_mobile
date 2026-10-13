@@ -3089,35 +3089,44 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildItemsEmptyState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
+    // Пустая карточка открывает тот же список, что кнопка «Добавить товар».
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 28,
-            color: colors.textSecondary,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            AppLocalizations.of(context)!.translate('add_at_least_one_product'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w500,
-              color: colors.textSecondary,
+        onTap: _navigateToAddProduct,
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colors.borderSubtle.withValues(alpha: 0.55),
             ),
           ),
-        ],
+          child: Column(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 28,
+                color: colors.textSecondary,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                AppLocalizations.of(context)!
+                    .translate('add_at_least_one_product'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

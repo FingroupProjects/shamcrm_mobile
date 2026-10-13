@@ -211,13 +211,11 @@ class _OrderStatusWarehouseWidgetState extends State<OrderStatusWarehouseWidget>
                     ? selectedOrderStatusData
                     : null,
                 onChanged: (value) {
-                  if (value != null) {
-                    widget.onChanged(value.id.toString());
-                    setState(() {
-                      selectedOrderStatusData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                  widget.onChanged(value?.id.toString());
+                  setState(() {
+                    selectedOrderStatusData = value;
+                  });
+                  FocusScope.of(context).unfocus();
                 },
               ),
             ],

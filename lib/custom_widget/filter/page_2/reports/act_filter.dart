@@ -667,7 +667,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                           .firstWhere((s) => s.id == _selectedSupplier!.id)
                       : null,
                   onChanged: (value) {
-                    if (value != null && mounted) {
+                    if (mounted) {
                       setState(() {
                         _selectedSupplier = value;
                       });
@@ -808,7 +808,7 @@ class _ActFilterScreenState extends State<ActFilterScreen> {
                       ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                       : null,
                   onChanged: (value) {
-                    if (value != null && mounted) {
+                    if (mounted) {
                       setState(() {
                         _selectedLead = value;
                       });

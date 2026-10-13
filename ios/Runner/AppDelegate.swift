@@ -18,6 +18,7 @@ import WidgetKit
 
     private let appGroupId = "group.com.softtech.crmTaskManager"
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
+    private let pendingPushKey = "ios_pending_push_tap_v1"
     private let chatReplyCategoryId = "CHAT_MESSAGE_REPLY"
     private let chatReplyActionId = "CHAT_REPLY"
     private let chatMarkReadActionId = "CHAT_MARK_READ"
@@ -190,12 +191,20 @@ import WidgetKit
                 self.handleSyncLanguage(call: call, result: result)
             case "getPendingNavigation":
                 self.handleGetPendingNavigation(result: result)
+            case "getPendingPush":
+                self.handleGetPendingPush(result: result)
+            case "ackPendingPush":
+                UserDefaults.standard.removeObject(forKey: self.pendingPushKey)
+                result(true)
             case "showForegroundPush":
                 self.handleShowForegroundPush(call: call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
         }
+
+        // Канал мог появиться позже, чем тап, которым открыли приложение.
+        deliverPendingPush()
     }
 
     private func setupNetworkEventChannel(messenger: FlutterBinaryMessenger) {
@@ -322,11 +331,16 @@ import WidgetKit
         content.title = (title?.isEmpty == false ? title! : "shamCRM")
         content.body = body
         content.sound = .default
-        if let type = args["type"] as? String, !type.isEmpty {
-            content.userInfo["type"] = type
-        }
-        if let id = args["id"] as? String, !id.isEmpty {
-            content.userInfo["id"] = id
+        // В баннер кладём все поля пуша, иначе тап по нему откроет
+        // приложение без chat_id / event_id и экран некуда переходить.
+        for (key, value) in args {
+            if key == "title" || key == "body" {
+                continue
+            }
+            let text = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty, text.lowercased() != "null" {
+                content.userInfo[key] = text
+            }
         }
 
         let request = UNNotificationRequest(
@@ -392,6 +406,9 @@ import WidgetKit
         }
 
         guard response.actionIdentifier == chatReplyActionId else {
+            // Обычный тап. Firebase на iOS часто не успевает забрать этот
+            // payload: плагин поднимается уже после сцены. Сохраняем сами.
+            capturePushTap(response.notification.request.content.userInfo)
             super.userNotificationCenter(
                 center,
                 didReceive: response,
@@ -474,27 +491,16 @@ import WidgetKit
     }
 
     private func resolveChatId(from userInfo: [AnyHashable: Any]) -> String? {
-        for key in ["chat_id", "chatId", "id"] {
-            if let value = userInfo[key] {
-                let stringValue = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
-                if isUsablePreference(stringValue) {
-                    return stringValue
-                }
-            }
-        }
-        return nil
+        let payload = flattenedPushValues(from: userInfo)
+        return firstPushValue(payload, keys: ["chat_id", "chatId", "id"])
     }
 
     private func resolveMessageId(from userInfo: [AnyHashable: Any]) -> String? {
-        for key in ["message_id", "messageId", "notification_message_id", "up_to_message_id"] {
-            if let value = userInfo[key] {
-                let stringValue = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
-                if isUsablePreference(stringValue) {
-                    return stringValue
-                }
-            }
-        }
-        return nil
+        let payload = flattenedPushValues(from: userInfo)
+        return firstPushValue(
+            payload,
+            keys: ["message_id", "messageId", "notification_message_id", "up_to_message_id"]
+        )
     }
 
     private func resolveApiBaseUrl() -> String? {
@@ -564,6 +570,149 @@ import WidgetKit
         }
 
         return true
+    }
+
+    /// Тап по пушу. Метод не private: его вызывает SceneDelegate при холодном запуске.
+    func capturePushTap(_ userInfo: [AnyHashable: Any]) {
+        var payload = flattenedPushValues(from: userInfo)
+        if firstPushValue(payload, keys: ["type", "event"]) == nil {
+            if firstPushValue(payload, keys: ["chat_id", "chatId"]) != nil {
+                payload["type"] = "message"
+            } else if firstPushValue(payload, keys: ["event_id", "notice_id"]) != nil {
+                payload["type"] = "notice"
+            } else {
+                NSLog(
+                    "Push tap has no type. keys=%@",
+                    payload.keys.sorted().joined(separator: ",")
+                )
+                return
+            }
+        }
+
+        let type = (payload["type"] ?? "").lowercased()
+        if type == "incoming_call" ||
+            type == "call_start" ||
+            type == "sip_incoming_call" ||
+            type == "call_cancelled" ||
+            type == "call_canceled" ||
+            type == "call_ended" ||
+            type == "call_end" {
+            return
+        }
+
+        NSLog("Push tap saved type=%@", payload["type"] ?? "")
+        savePendingPush(payload)
+        deliverPendingPush()
+    }
+
+    private func flattenedPushValues(from userInfo: [AnyHashable: Any]) -> [String: String] {
+        var result: [String: String] = [:]
+
+        func absorb(key: String, value: Any) {
+            if key == "aps" {
+                return
+            }
+            if let text = value as? String {
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty || trimmed.lowercased() == "null" {
+                    return
+                }
+                if trimmed.hasPrefix("{"),
+                   let data = trimmed.data(using: .utf8),
+                   let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    for (nestedKey, nestedValue) in object {
+                        absorb(key: nestedKey, value: nestedValue)
+                    }
+                    return
+                }
+                result[key] = trimmed
+                return
+            }
+            if let number = value as? NSNumber {
+                result[key] = number.stringValue
+                return
+            }
+            if let nested = value as? [AnyHashable: Any],
+               key == "data" || key == "payload" || key == "custom" {
+                for (nestedKey, nestedValue) in nested {
+                    absorb(key: String(describing: nestedKey), value: nestedValue)
+                }
+            }
+        }
+
+        for (key, value) in userInfo {
+            absorb(key: String(describing: key), value: value)
+        }
+        return result
+    }
+
+    private func firstPushValue(_ payload: [String: String], keys: [String]) -> String? {
+        for key in keys {
+            if let value = payload[key], !value.isEmpty, value.lowercased() != "null" {
+                return value
+            }
+        }
+        return nil
+    }
+
+    private func savePendingPush(_ payload: [String: String]) {
+        var stored = payload
+        stored["_saved_at_ms"] = String(Int(Date().timeIntervalSince1970 * 1000))
+        guard
+            let data = try? JSONSerialization.data(withJSONObject: stored),
+            let json = String(data: data, encoding: .utf8)
+        else {
+            return
+        }
+        UserDefaults.standard.set(json, forKey: pendingPushKey)
+    }
+
+    private func pendingPushPayload() -> [String: String]? {
+        guard let json = UserDefaults.standard.string(forKey: pendingPushKey),
+              let data = json.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            return nil
+        }
+
+        let savedAt = Double("\(object["_saved_at_ms"] ?? "")") ?? 0
+        if savedAt > 0, Date().timeIntervalSince1970 * 1000 - savedAt > 10 * 60 * 1000 {
+            UserDefaults.standard.removeObject(forKey: pendingPushKey)
+            return nil
+        }
+
+        var payload: [String: String] = [:]
+        for (key, value) in object {
+            if key == "_saved_at_ms" {
+                continue
+            }
+            let text = "\(value)".trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty, text.lowercased() != "null" {
+                payload[key] = text
+            }
+        }
+        return payload.isEmpty ? nil : payload
+    }
+
+    private func deliverPendingPush() {
+        guard let channel = widgetMethodChannel,
+              let payload = pendingPushPayload()
+        else {
+            return
+        }
+        channel.invokeMethod("openFromPush", arguments: payload)
+    }
+
+    private func handleGetPendingPush(result: @escaping FlutterResult) {
+        guard let payload = pendingPushPayload(),
+              let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8)
+        else {
+            result(nil)
+            return
+        }
+        UserDefaults.standard.removeObject(forKey: pendingPushKey)
+        result(json)
     }
 
     deinit {

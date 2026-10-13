@@ -1008,6 +1008,11 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     required VariantBottomSheetState state,
     required AppLocalizations localizations,
   }) {
+    // Пока товары едут с сервера, не пишем «в категории нет товаров».
+    if (state.isLoading && variants.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     if (variants.isEmpty) {
       final colors = context.appColors;
       return Center(

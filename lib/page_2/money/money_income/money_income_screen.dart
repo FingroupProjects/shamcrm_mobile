@@ -426,7 +426,6 @@ class _MoneyIncomeScreenState extends State<MoneyIncomeScreen> {
                                 l10n: localizations,
                                 icon: Icons.south_west_rounded,
                                 titleKey: 'empty_money_income_title',
-                                subtitleKey: 'empty_money_income_subtitle',
                               ),
                       ),
                     ],

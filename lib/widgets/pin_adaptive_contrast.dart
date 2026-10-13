@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/tokens/app_color_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -251,6 +252,20 @@ class PinAdaptiveContrastController {
       screenSize: size,
     );
 
+    // Обычный фон без фото. Цвет чернил берём из текущего фона каждый раз.
+    // Анимация темы на половине пути уже считает яркость «светлой»,
+    // но сам фон ещё серый. Если запомнить этот серый, набор после
+    // возврата на светлую тему остаётся белым на белом.
+    if (!hasCustomBackground) {
+      _syncSolidBackground(
+        context: context,
+        controller: controller,
+        isDark: isDark,
+        paletteKey: paletteKey,
+      );
+      return;
+    }
+
     // Даже если размер экрана чуть отличается от замера при старте,
     // берём уже посчитанный цвет. Иначе кнопки мигают заглушкой.
     final cached = PinAdaptiveContrastCache.lookupSameWallpaper(paletteKey);
@@ -277,16 +292,6 @@ class PinAdaptiveContrastController {
     if (_paletteKey == paletteKey) return;
     _paletteKey = paletteKey;
 
-    if (!hasCustomBackground) {
-      palette = PinAdaptivePalette.fallback(
-        isDark: isDark,
-        backgroundLuminance:
-            context.appColors.backgroundPrimary.computeLuminance(),
-      );
-      PinAdaptiveContrastCache.save(paletteKey, palette!);
-      return;
-    }
-
     // Фото ещё не замерено. Не подменяем его тёмной темой:
     // заглушка 0.55 перекрашивала кнопки сразу после входа.
     palette ??= PinAdaptivePalette.fallback(
@@ -300,6 +305,61 @@ class PinAdaptiveContrastController {
         screenSize: size,
         onChanged: onChanged,
       ),
+    );
+  }
+
+  /// Сплошной фон темы. Чернила следуют за цветом, который уже на экране.
+  /// В общий кэш пишем только конечный цвет, когда анимация темы закончилась.
+  void _syncSolidBackground({
+    required BuildContext context,
+    required AppThemeController controller,
+    required bool isDark,
+    required String paletteKey,
+  }) {
+    final background = context.appColors.backgroundPrimary;
+    _paletteKey = paletteKey;
+    palette = PinAdaptivePalette.fallback(
+      isDark: isDark,
+      backgroundLuminance: background.computeLuminance(),
+    );
+
+    if (!_isSettledThemeBackground(
+      current: background,
+      controller: controller,
+      isDark: isDark,
+    )) {
+      return;
+    }
+    PinAdaptiveContrastCache.save(paletteKey, palette!);
+  }
+
+  /// Фон ещё едет между светлой и тёмной темой, если цвет не совпал с целью.
+  @visibleForTesting
+  static bool isSettledThemeBackground({
+    required Color current,
+    required Color target,
+  }) {
+    int channel(int argb, int shift) => (argb >> shift) & 0xFF;
+    final left = current.toARGB32();
+    final right = target.toARGB32();
+    final redGap = (channel(left, 16) - channel(right, 16)).abs();
+    final greenGap = (channel(left, 8) - channel(right, 8)).abs();
+    final blueGap = (channel(left, 0) - channel(right, 0)).abs();
+    return redGap <= 3 && greenGap <= 3 && blueGap <= 3;
+  }
+
+  static bool _isSettledThemeBackground({
+    required Color current,
+    required AppThemeController controller,
+    required bool isDark,
+  }) {
+    final target = AppColorTokens.fromPalette(
+      isDark ? controller.darkPalette : controller.lightPalette,
+      brightness: isDark ? Brightness.dark : Brightness.light,
+    );
+    return isSettledThemeBackground(
+      current: current,
+      target: target.backgroundPrimary,
     );
   }
 

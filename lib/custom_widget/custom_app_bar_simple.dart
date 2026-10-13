@@ -18,6 +18,9 @@ class CustomAppBarSimple extends StatefulWidget {
   final ValueChanged<String>? onChangedSearchInput;
   final Function(bool) clearButtonClick;
   final bool showSearchIcon;
+  final bool showFilterIcon;
+  final bool filterActive;
+  final VoidCallback? onFilterTap;
 
   CustomAppBarSimple({
     super.key,
@@ -28,6 +31,9 @@ class CustomAppBarSimple extends StatefulWidget {
     required this.focusNode,
     required this.clearButtonClick,
     this.showSearchIcon = true,
+    this.showFilterIcon = false,
+    this.filterActive = false,
+    this.onFilterTap,
   });
 
   @override
@@ -68,6 +74,27 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
       lowerBound: 0.0,
       upperBound: 1.0,
     );
+    _syncFilterBlink();
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomAppBarSimple oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filterActive != widget.filterActive) {
+      _syncFilterBlink();
+    }
+  }
+
+  /// Иконка фильтра мигает, пока фильтр включён. Так же, как в документах склада.
+  void _syncFilterBlink() {
+    if (widget.filterActive) {
+      if (!_blinkController.isAnimating) {
+        _blinkController.repeat(reverse: true);
+      }
+      return;
+    }
+    _blinkController.stop();
+    _blinkController.value = 0;
   }
 
   @override
@@ -258,6 +285,105 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
     );
   }
 
+  Widget? _buildTrailing(BuildContext context) {
+    final showFilter = widget.showFilterIcon && !_isSearching;
+    if (!widget.showSearchIcon && !showFilter) return null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showFilter) _buildFilterButton(context),
+        if (showFilter && widget.showSearchIcon) const SizedBox(width: 8),
+        if (widget.showSearchIcon) _buildSearchButton(context),
+      ],
+    );
+  }
+
+  Widget _buildFilterButton(BuildContext context) {
+    return AppBarShell.capsule(
+      context,
+      width: AppBarShell.orbSize,
+      padding: EdgeInsets.zero,
+      child: Tooltip(
+        message: AppLocalizations.of(context)!.translate('filter'),
+        preferBelow: false,
+        decoration: BoxDecoration(
+          color: context.appColors.surfacePrimary,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: context.appShadows.card,
+        ),
+        textStyle: context.appTextStyles.bodySm.copyWith(
+          color: context.appColors.textPrimary,
+        ),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: widget.onFilterTap,
+          icon: AnimatedBuilder(
+            animation: _blinkController,
+            builder: (context, _) {
+              final idle = context.appColors.iconPrimary;
+              final active = context.appColors.buttonPrimaryBg;
+              final color = widget.filterActive
+                  ? Color.lerp(idle, active, _blinkController.value) ?? active
+                  : idle;
+              return _buildAppBarAssetIcon(
+                context,
+                'assets/icons/AppBar/filter.png',
+                color: color,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchButton(BuildContext context) {
+    return AppBarShell.capsule(
+      context,
+      width: AppBarShell.orbSize,
+      padding: EdgeInsets.zero,
+      child: Tooltip(
+        message: AppLocalizations.of(context)!.translate('search'),
+        preferBelow: false,
+        decoration: BoxDecoration(
+          color: context.appColors.surfacePrimary,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: context.appShadows.card,
+        ),
+        textStyle: context.appTextStyles.bodySm.copyWith(
+          color: context.appColors.textPrimary,
+        ),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: _isSearching
+              ? Icon(Icons.close, color: context.appColors.iconPrimary)
+              : _buildAppBarAssetIcon(
+                  context,
+                  'assets/icons/AppBar/search.png',
+                ),
+          onPressed: () {
+            setState(() {
+              _isSearching = !_isSearching;
+              if (!_isSearching) {
+                _searchController.clear();
+                FocusScope.of(context).unfocus();
+              }
+            });
+            widget.clearButtonClick(_isSearching);
+            if (_isSearching) {
+              Future.delayed(const Duration(milliseconds: 100), () {
+                FocusScope.of(context).requestFocus(focusNode);
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBarShell(
@@ -309,53 +435,7 @@ class _CustomAppBarSimpleState extends State<CustomAppBarSimple>
                 ),
               ),
       ),
-      trailing: widget.showSearchIcon
-          ? AppBarShell.capsule(
-              context,
-              width: AppBarShell.orbSize,
-              padding: EdgeInsets.zero,
-              child: Tooltip(
-                message: AppLocalizations.of(context)!.translate('search'),
-                preferBelow: false,
-                decoration: BoxDecoration(
-                  color: context.appColors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: context.appShadows.card,
-                ),
-                textStyle: context.appTextStyles.bodySm.copyWith(
-                  color: context.appColors.textPrimary,
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(),
-                  icon: _isSearching
-                      ? Icon(Icons.close, color: context.appColors.iconPrimary)
-                      : _buildAppBarAssetIcon(
-                          context,
-                          'assets/icons/AppBar/search.png',
-                        ),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      if (!_isSearching) {
-                        _searchController.clear();
-                        FocusScope.of(context).unfocus();
-                      }
-                    });
-                    widget.clearButtonClick(_isSearching);
-                    if (_isSearching) {
-                      Future.delayed(Duration(milliseconds: 100), () {
-                        FocusScope.of(context).requestFocus(focusNode);
-                      });
-                    }
-                    if (kDebugMode) {
-                      //print('CustomAppBarSimple: Переключение поиска: $_isSearching');
-                    }
-                  },
-                ),
-              ),
-            )
-          : null,
+      trailing: _buildTrailing(context),
     );
   }
 }

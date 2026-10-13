@@ -94,8 +94,9 @@ class _MyTaskColumnState extends State<MyTaskColumn> {
                   onRefresh: _onRefresh,
                   child: HelpfulEmptyState(
                     icon: Icons.task_alt_rounded,
-                    title: l10n.translate('empty_tasks_title'),
-                    subtitle: l10n.translate('empty_tasks_subtitle'),
+                    // На экране «Задачи» другой текст, здесь свой.
+                    title: l10n.translate('empty_my_tasks_title'),
+                    subtitle: l10n.translate('empty_my_tasks_subtitle'),
                     actionLabel: l10n.translate('empty_tasks_action'),
                     onAction: () {
                       Navigator.push(

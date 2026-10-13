@@ -54,6 +54,8 @@ void showCustomSnackBar({
       elevation: 3,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       duration: Duration(seconds: onAction == null ? 3 : 4),
+      // Кнопка «Открыть» иначе оставляет плашку навсегда.
+      persist: false,
       action: actionLabel == null || onAction == null
           ? null
           : SnackBarAction(

@@ -52,7 +52,7 @@ class _DealLeadStatusMultiSelectWidgetState
     return CustomDropdownDecoration(
       closedFillColor: colors.fieldBg,
       expandedFillColor: colors.fieldBg,
-      closedBorder: Border.all(color: Colors.transparent, width: 1),
+      closedBorder: Border.all(color: colors.borderSubtle, width: 1),
       closedBorderRadius: BorderRadius.circular(12),
       expandedBorder: Border.all(color: colors.fieldBorder, width: 1),
       expandedBorderRadius: BorderRadius.circular(12),

@@ -111,7 +111,7 @@ class _LeadStatusForFilterMultiSelectWidgetState extends State<LeadStatusForFilt
                       closedFillColor: surfaceColor,
                       expandedFillColor: overlayColor,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: context.appColors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(18),

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc/bloc.dart';
 
 import '../../../../api/service/api_service.dart';
+import '../../../../models/page_2/openings/goods_opening_filter.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import 'goods_openings_event.dart';
 import 'goods_openings_state.dart';
@@ -16,6 +17,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
   int _loadToken = 0;
   List<GoodsOpeningDocument> _allItems = [];
   String? _search;
+  GoodsOpeningFilter _filters = GoodsOpeningFilter.empty;
   bool _hasReachedMax = false;
   bool _isLoadingMore = false;
 
@@ -37,6 +39,10 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
 
       _currentPage = 1;
       _search = event.search;
+      // null в событии значит «оставить прошлый фильтр», например при поиске.
+      if (event.updateFilters) {
+        _filters = event.filters ?? GoodsOpeningFilter.empty;
+      }
       _hasReachedMax = false;
       _isLoadingMore = false;
       final token = ++_loadToken;
@@ -45,6 +51,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
         search: event.search,
         page: _currentPage,
         perPage: _perPage,
+        filters: _filters,
       );
       if (token != _loadToken) return;
 
@@ -80,6 +87,7 @@ class GoodsOpeningsBloc extends Bloc<GoodsOpeningsEvent, GoodsOpeningsState> {
         search: _search,
         page: nextPage,
         perPage: _perPage,
+        filters: _filters,
       );
       if (token != _loadToken) return;
 

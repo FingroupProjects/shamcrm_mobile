@@ -22,6 +22,10 @@ class CalendarWidget extends StatelessWidget {
   final Function(DateTime) onPageChanged;
   final Set<DateTime>? filteredDates;
 
+  /// Возврат к сегодняшнему месяцу. Кнопка живёт в шапке месяца,
+  /// отдельно от заголовка экрана, чтобы не наезжать на «Календарь».
+  final VoidCallback? onJumpToToday;
+
   const CalendarWidget({
     super.key,
     required this.calendarFormat,
@@ -32,6 +36,7 @@ class CalendarWidget extends StatelessWidget {
     required this.onFormatChanged,
     required this.onPageChanged,
     this.filteredDates,
+    this.onJumpToToday,
   });
 
   @override
@@ -65,7 +70,9 @@ class CalendarWidget extends StatelessWidget {
       },
       locale: AppLocalizations.of(context)!.locale.languageCode,
       calendarStyle: CalendarStyle(
-        cellMargin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.025),
+        // Небольшой отступ, чтобы круг выбранного дня и точки событий
+        // помещались в ячейку и не сливались.
+        cellMargin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
         weekendTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.035,
           color: colors.error.withValues(alpha: 0.95),
@@ -76,12 +83,19 @@ class CalendarWidget extends StatelessWidget {
           color: colors.textPrimary.withValues(alpha: 0.96),
           fontFamily: 'Gilroy',
         ),
+        outsideTextStyle: TextStyle(
+          fontSize: MediaQuery.of(context).size.width * 0.035,
+          color: colors.textPrimary.withValues(alpha: 0.38),
+          fontFamily: 'Gilroy',
+        ),
+        // Запасной стиль, если кастомный билдер не вернул виджет.
+        // Выбранный день — плотный круг, сегодня — только обводка.
         todayDecoration: BoxDecoration(
-          color: colors.buttonPrimaryBg,
           shape: BoxShape.circle,
+          border: Border.all(color: colors.buttonPrimaryBg, width: 1.8),
         ),
         selectedDecoration: BoxDecoration(
-          color: colors.buttonPrimaryBg.withValues(alpha: 0.35),
+          color: colors.buttonPrimaryBg,
           shape: BoxShape.circle,
         ),
         markerDecoration: BoxDecoration(
@@ -90,13 +104,15 @@ class CalendarWidget extends StatelessWidget {
         ),
         todayTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.035,
-          color: colors.textInverse,
+          color: colors.buttonPrimaryBg,
           fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w700,
         ),
         selectedTextStyle: TextStyle(
           fontSize: MediaQuery.of(context).size.width * 0.035,
-          color: colors.textInverse,
+          color: colors.buttonPrimaryFg,
           fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w700,
         ),
       ),
       daysOfWeekStyle: DaysOfWeekStyle(
@@ -132,25 +148,28 @@ class CalendarWidget extends StatelessWidget {
             ),
           );
         },
-        prioritizedBuilder: (context, day, focusedDay) {
-          final colors = context.appColors;
-          final isSunday = day.weekday == DateTime.sunday;
-          final isToday = isSameDay(day, DateTime.now());
-          final textColor = isSunday
-              ? colors.error
-              : colors.textPrimary.withValues(alpha: 0.96);
-          return Center(
-            child: Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: MediaQuery.of(context).size.width * 0.035,
-                color: textColor,
-                fontFamily: 'Gilroy',
-                fontWeight: isToday ? FontWeight.w700 : FontWeight.w600,
-              ),
-            ),
-          );
-        },
+        // prioritizedBuilder заменял ячейку целиком и прятал
+        // selectedDecoration, поэтому нажатый день ничем не отличался.
+        selectedBuilder: (context, day, focusedDay) => _CalendarDayCell(
+          day: day,
+          kind: _CalendarDayKind.selected,
+        ),
+        todayBuilder: (context, day, focusedDay) => _CalendarDayCell(
+          day: day,
+          kind: _CalendarDayKind.today,
+        ),
+        defaultBuilder: (context, day, focusedDay) => _CalendarDayCell(
+          day: day,
+          kind: _CalendarDayKind.normal,
+        ),
+        outsideBuilder: (context, day, focusedDay) => _CalendarDayCell(
+          day: day,
+          kind: _CalendarDayKind.outside,
+        ),
+        disabledBuilder: (context, day, focusedDay) => _CalendarDayCell(
+          day: day,
+          kind: _CalendarDayKind.disabled,
+        ),
         markerBuilder: (context, date, events) {
           if (events.isNotEmpty) {
             return Positioned(
@@ -173,6 +192,39 @@ class CalendarWidget extends StatelessWidget {
           }
           return null;
         },
+        headerTitleBuilder: (context, day) {
+          final title = DateFormat(
+            'MMMM yyyy',
+            AppLocalizations.of(context)!.locale.languageCode,
+          ).format(day).capitalize();
+          final now = DateTime.now();
+          // Кнопка «Сегодня» только если открыт не текущий месяц.
+          final showToday = onJumpToToday != null &&
+              (day.year != now.year || day.month != now.month);
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.045,
+                    color: colors.textPrimary,
+                    fontFamily: 'Gilroy',
+                  ),
+                ),
+              ),
+              if (showToday) ...[
+                const SizedBox(width: 8),
+                CalendarTodayButton(onPressed: onJumpToToday!),
+              ],
+            ],
+          );
+        },
       ),
       headerStyle: HeaderStyle(
         titleTextStyle: TextStyle(
@@ -188,6 +240,190 @@ class CalendarWidget extends StatelessWidget {
             .capitalize(),
         leftChevronIcon: Icon(Icons.arrow_left, color: colors.iconPrimary),
         rightChevronIcon: Icon(Icons.arrow_right, color: colors.iconPrimary),
+      ),
+    );
+  }
+}
+
+/// Как выглядит число в сетке. Выбранный и сегодняшний дни
+/// рисуются отдельно, чтобы их нельзя было спутать.
+enum _CalendarDayKind { normal, outside, today, selected, disabled }
+
+class _CalendarDayCell extends StatelessWidget {
+  const _CalendarDayCell({
+    required this.day,
+    required this.kind,
+  });
+
+  final DateTime day;
+  final _CalendarDayKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isSunday = day.weekday == DateTime.sunday;
+
+    final Color textColor;
+    BoxDecoration? decoration;
+    var weight = FontWeight.w600;
+
+    switch (kind) {
+      case _CalendarDayKind.selected:
+        // Плотный круг цвета кнопки. Текст контрастный, день сразу виден.
+        decoration = BoxDecoration(
+          color: colors.buttonPrimaryBg,
+          shape: BoxShape.circle,
+        );
+        textColor = colors.buttonPrimaryFg;
+        weight = FontWeight.w700;
+      case _CalendarDayKind.today:
+        // Сегодня, если оно не выбрано: только обводка, без заливки.
+        decoration = BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: colors.buttonPrimaryBg, width: 1.8),
+        );
+        textColor = colors.buttonPrimaryBg;
+        weight = FontWeight.w700;
+      case _CalendarDayKind.outside:
+        decoration = null;
+        textColor = isSunday
+            ? colors.error.withValues(alpha: 0.4)
+            : colors.textPrimary.withValues(alpha: 0.38);
+      case _CalendarDayKind.disabled:
+        decoration = null;
+        textColor = colors.textMuted.withValues(alpha: 0.55);
+      case _CalendarDayKind.normal:
+        decoration = null;
+        textColor = isSunday
+            ? colors.error
+            : colors.textPrimary.withValues(alpha: 0.96);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final side = constraints.maxWidth < constraints.maxHeight
+            ? constraints.maxWidth
+            : constraints.maxHeight;
+        // Круг чуть выше центра, снизу остаётся место для точек событий.
+        final circle = (side * 0.72).clamp(26.0, 36.0);
+
+        return Align(
+          alignment: const Alignment(0, -0.22),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            width: circle,
+            height: circle,
+            alignment: Alignment.center,
+            decoration: decoration,
+            child: Text(
+              '${day.day}',
+              style: TextStyle(
+                fontSize: (circle * 0.42).clamp(12.0, 16.0),
+                color: textColor,
+                fontFamily: 'Gilroy',
+                fontWeight: weight,
+                height: 1,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Дата выбранного дня и короткая плашка «Через 74 дня».
+/// Плашка справа, список событий под ней не сдвигается в сторону.
+class CalendarSelectedDateTitle extends StatelessWidget {
+  const CalendarSelectedDateTitle({super.key, required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final locale = AppLocalizations.of(context)!;
+    final label = DateFormat(
+      'd MMMM yyyy',
+      locale.locale.languageCode,
+    ).format(date).capitalize();
+    final distance = relativeCalendarDistance(
+      date,
+      DateTime.now(),
+      locale.locale.languageCode,
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 18,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            distance,
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: colors.buttonPrimaryBg,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Отдельная кнопка «Сегодня». Своя заливка и обводка,
+/// чтобы она не сливалась с заголовком.
+class CalendarTodayButton extends StatelessWidget {
+  const CalendarTodayButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: colors.buttonPrimaryBg,
+        backgroundColor: colors.buttonPrimaryBg.withValues(alpha: 0.14),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        minimumSize: const Size(0, 30),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.55),
+          ),
+        ),
+      ),
+      child: Text(
+        AppLocalizations.of(context)!.translate('today'),
+        style: const TextStyle(
+          fontFamily: 'Gilroy',
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -213,14 +449,27 @@ class EventListForDate extends StatelessWidget {
     final eventDate =
         DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final eventsOnSelectedDate = events[eventDate] ?? [];
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: eventsOnSelectedDate.isEmpty
-          ? HelpfulEmptyState.section(
-              l10n: AppLocalizations.of(context)!,
-              icon: Icons.event_available_outlined,
-              titleKey: 'empty_calendar_title',
-              subtitleKey: 'empty_calendar_subtitle',
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Дата видна и когда событий нет: иначе выбранный день
+                // можно узнать только по кругу в сетке.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: CalendarSelectedDateTitle(date: selectedDate),
+                ),
+                HelpfulEmptyState.section(
+                  l10n: AppLocalizations.of(context)!,
+                  icon: Icons.event_available_outlined,
+                  titleKey: 'empty_calendar_title',
+                  subtitleKey: 'empty_calendar_subtitle',
+                ),
+              ],
             )
           : ConstrainedBox(
               constraints: BoxConstraints(
@@ -239,21 +488,7 @@ class EventListForDate extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        DateFormat(
-                                'd MMMM yyyy',
-                                AppLocalizations.of(context)!
-                                    .locale
-                                    .languageCode)
-                            .format(selectedDate)
-                            .capitalize(),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                        ),
-                      ),
+                      CalendarSelectedDateTitle(date: selectedDate),
                       ...eventsOnSelectedDate.map((event) {
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -384,11 +619,19 @@ class DayViewEventList extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: sortedEvents.isEmpty
-          ? HelpfulEmptyState.section(
-              l10n: AppLocalizations.of(context)!,
-              icon: Icons.event_available_outlined,
-              titleKey: 'empty_calendar_title',
-              subtitleKey: 'empty_calendar_subtitle',
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CalendarSelectedDateTitle(date: selectedDate),
+                const SizedBox(height: 12),
+                HelpfulEmptyState.section(
+                  l10n: AppLocalizations.of(context)!,
+                  icon: Icons.event_available_outlined,
+                  titleKey: 'empty_calendar_title',
+                  subtitleKey: 'empty_calendar_subtitle',
+                ),
+              ],
             )
           : ConstrainedBox(
               constraints: BoxConstraints(
@@ -398,18 +641,7 @@ class DayViewEventList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      DateFormat('d MMMM yyyy',
-                              AppLocalizations.of(context)!.locale.languageCode)
-                          .format(selectedDate)
-                          .capitalize(),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
-                      ),
-                    ),
+                    CalendarSelectedDateTitle(date: selectedDate),
                     const SizedBox(height: 16),
                     ...sortedEvents.map((event) {
                       return Padding(

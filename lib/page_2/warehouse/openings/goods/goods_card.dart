@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/helpers/theme_context_extension.dart';
 import '../../../../models/page_2/openings/goods_openings_model.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
+
+/// Дата документа приходит как "2025-12-22 10:24:18" в поле date.
+/// На карточке показываем её коротко. Если разобрать не вышло — оставляем как есть.
+String formatGoodsOpeningDate(String? raw) {
+  if (raw == null || raw.isEmpty) return 'N/A';
+  try {
+    return DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(raw));
+  } catch (_) {
+    return raw;
+  }
+}
 
 class GoodsCard extends StatelessWidget {
   final GoodsOpeningDocument goods;
@@ -89,6 +101,16 @@ class GoodsCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Склад: ${goods.storage?.name ?? 'N/A'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w400,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${localizations.translate('created_at')}: ${formatGoodsOpeningDate(goods.date)}',
                     style: TextStyle(
                       fontSize: 14,
                       fontFamily: 'Gilroy',

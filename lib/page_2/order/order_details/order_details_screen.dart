@@ -257,6 +257,32 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     return '$value:';
   }
 
+  // Поле «Дата» приходит в field position как date.
+  // Включено оно или нет, решает сервер через is_active.
+  bool _isServerDateField(String fieldName) {
+    final normalized = fieldName.trim().toLowerCase();
+    return normalized == 'date' || normalized == 'дата';
+  }
+
+  // Показываем календарную дату как dd.MM.yyyy.
+  // Если сервер прислал незнакомый формат, выводим строку как есть.
+  String _formatServerDate(String? raw) {
+    final text = (raw ?? '').trim();
+    if (text.isEmpty) return '';
+
+    final iso = RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(text);
+    if (iso != null) {
+      return '${iso.group(3)}.${iso.group(2)}.${iso.group(1)}';
+    }
+
+    final dotted = RegExp(r'^(\d{2})\.(\d{2})\.(\d{4})').firstMatch(text);
+    if (dotted != null) {
+      return '${dotted.group(1)}.${dotted.group(2)}.${dotted.group(3)}';
+    }
+
+    return text;
+  }
+
   void _appendDetailIfMissing({
     required Set<String> fieldNames,
     required String label,
@@ -281,6 +307,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   String _getFieldName(FieldConfiguration fc) {
     if (fc.isCustomField || fc.isDirectory) {
       return _withColon(fc.fieldName);
+    }
+
+    if (_isServerDateField(fc.fieldName)) {
+      return _withColon(AppLocalizations.of(context)!.translate('date'));
     }
 
     switch (fc.fieldName) {
@@ -378,6 +408,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         }
       }
       return values.join(', ');
+    }
+
+    if (_isServerDateField(fc.fieldName)) {
+      return _formatServerDate(order.date);
     }
 
     switch (fc.fieldName) {

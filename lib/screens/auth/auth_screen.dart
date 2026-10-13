@@ -8,6 +8,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/screens/profile/change_password/forgot_password_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,22 @@ class _AuthScreenState extends State<AuthScreen> {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  /// Пароль уже на экране, но человек его не помнит.
+  /// Это сброс по почте, не смена текущего пароля из настроек.
+  Future<void> _openForgotPassword() async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForgotPasswordScreen(
+          initialEmail: emailController.text.trim(),
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      passwordController.clear();
+    }
   }
 
   bool _isValidEmail(String email) {
@@ -409,31 +426,48 @@ class _AuthScreenState extends State<AuthScreen> {
                                     ),
                                   );
                                 }
-                                return CustomButton(
-                                  buttonText:
-                                      localizations.translate('login_button'),
-                                  buttonColor: colors.buttonPrimaryBg,
-                                  textColor: colors.buttonPrimaryFg,
-                                  onPressed: () {
-                                    final password =
-                                        passwordController.text.trim();
-                                    if (password.isNotEmpty) {
-                                      context.read<LoginBloc>().add(
-                                            CheckLogin(
-                                              _verifiedLogin,
-                                              password,
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CustomButton(
+                                      buttonText: localizations
+                                          .translate('login_button'),
+                                      buttonColor: colors.buttonPrimaryBg,
+                                      textColor: colors.buttonPrimaryFg,
+                                      onPressed: () {
+                                        final password =
+                                            passwordController.text.trim();
+                                        if (password.isNotEmpty) {
+                                          context.read<LoginBloc>().add(
+                                                CheckLogin(
+                                                  _verifiedLogin,
+                                                  password,
+                                                ),
+                                              );
+                                        } else {
+                                          showCustomSnackBar(
+                                            context: context,
+                                            message: localizations.translate(
+                                              'login_password_hint',
                                             ),
+                                            isSuccess: false,
                                           );
-                                    } else {
-                                      showCustomSnackBar(
-                                        context: context,
-                                        message: localizations.translate(
-                                          'login_password_hint',
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(height: 4),
+                                    TextButton(
+                                      onPressed: _openForgotPassword,
+                                      child: Text(
+                                        localizations
+                                            .translate('forgot_password'),
+                                        style: textStyles.labelLg.copyWith(
+                                          color: colors.buttonPrimaryBg,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        isSuccess: false,
-                                      );
-                                    }
-                                  },
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
                             );

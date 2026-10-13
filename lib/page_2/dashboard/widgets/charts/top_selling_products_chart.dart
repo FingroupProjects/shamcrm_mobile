@@ -7,6 +7,8 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import '../../../../models/page_2/dashboard/top_selling_model.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import 'chart_scale.dart';
+import 'example_chart_frame.dart';
 
 class TopSellingProductsChart extends StatefulWidget {
   const TopSellingProductsChart(this.allTopSellingData, {super.key});
@@ -151,13 +153,40 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     );
   }
 
-  Widget _buildChartViewport(List<TopSellingData> productsData) {
-    return _buildChart(
+  List<TopSellingData> _exampleProducts() {
+    TopSellingData item(int id, String name, int quantity) {
+      return TopSellingData(
+        id: id,
+        name: name,
+        category: '',
+        totalQuantity: quantity,
+        totalAmount: '0',
+        avgPrice: '0',
+      );
+    }
+
+    return [
+      item(1, 'Товар 1', 18),
+      item(2, 'Товар 2', 14),
+      item(3, 'Товар 3', 11),
+      item(4, 'Товар 4', 8),
+      item(5, 'Товар 5', 6),
+    ];
+  }
+
+  Widget _buildChartViewport(
+    List<TopSellingData> productsData, {
+    bool interactive = true,
+  }) {
+    final scale = ChartScale.fromValues(
+      productsData.map((item) => item.totalQuantity.toDouble()),
+    );
+    final chart = _buildChart(
       barGroups: _buildBarGroups(productsData),
-      maxY: _getMaxY(productsData),
-      interval: _getInterval(productsData),
+      maxY: scale.maxY,
+      interval: scale.interval,
       names: productsData.map((e) => e.name).toList(),
-      touchEnabled: true,
+      touchEnabled: interactive,
       getTooltipItem: (group, gi, rod, ri) {
         final p = productsData[gi];
         return BarTooltipItem(
@@ -179,6 +208,21 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
               ),
             ),
           ],
+        );
+      },
+    );
+    // Последний столбик и его подпись не должны обрезаться краем карточки.
+    final minWidth = productsData.length * (_barWidth + _groupsSpace + 28) +
+        _leftTitlesReservedSize +
+        16;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = minWidth > constraints.maxWidth
+            ? minWidth
+            : constraints.maxWidth;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(width: width, child: chart),
         );
       },
     );
@@ -228,17 +272,10 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
               showTitles: true,
               reservedSize: _leftTitlesReservedSize,
               interval: interval,
-              getTitlesWidget: (value, meta) => SideTitleWidget(
-                axisSide: meta.axisSide,
-                space: 6,
-                child: Text(
-                  _formatAxisValue(value),
-                  style: const TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ).copyWith(color: context.appColors.textSecondary),
-                ),
+              getTitlesWidget: (value, meta) => chartValueLabel(
+                formatChartAxis(value, AppLocalizations.of(context)!),
+                context.appColors.textSecondary,
+                meta,
               ),
             ),
           ),
@@ -264,60 +301,13 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
     );
   }
 
-  Widget _mockChart(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final mockData = [45.0, 30, 65, 25, 55, 35];
-    final mockNames = List.generate(
-      mockData.length,
-      (i) => '${l.translate('product')} ${'ABCDEF'[i]}',
-    );
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        _buildChart(
-          barGroups: List.generate(
-            mockData.length,
-            (i) => BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: mockData[i].toDouble(),
-                  color: Colors.grey[300],
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      context.appColors.borderSubtle.withValues(alpha: 0.9),
-                      context.appColors.borderSubtle.withValues(alpha: 0.45),
-                    ],
-                  ),
-                  width: _barWidth,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(6)),
-                ),
-              ],
-            ),
-          ),
-          maxY: 80,
-          interval: 20,
-          names: mockNames,
-          touchEnabled: false,
-        ),
-        Text(
-          l.translate('no_data_to_display'),
-          style: context.appTextStyles.bodyMd.copyWith(
-            fontWeight: FontWeight.w500,
-            color: context.appColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final productsData = _getDataForSelectedPeriod();
+    final showExample = productsData.isEmpty ||
+        productsData.every((item) => item.totalQuantity == 0);
+    final items = showExample ? _exampleProducts() : productsData;
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
@@ -357,9 +347,14 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
           const SizedBox(height: 12),
           SizedBox(
             height: _chartHeight,
-            child: productsData.isEmpty
-                ? _mockChart(context)
-                : _buildChartViewport(productsData),
+            child: ExampleChartFrame(
+              show: showExample,
+              label: l.translate('no_data_to_display'),
+              child: _buildChartViewport(
+                items,
+                interactive: !showExample,
+              ),
+            ),
           ),
           const SizedBox(height: 4),
           Align(
@@ -382,57 +377,5 @@ class _TopSellingProductsChartState extends State<TopSellingProductsChart> {
         ],
       ),
     );
-  }
-
-  double _getInterval(List<TopSellingData> data) {
-    if (data.isEmpty) return 1;
-    final max = data
-        .map((e) => e.totalQuantity.toDouble())
-        .reduce((a, b) => a > b ? a : b);
-    return _niceInterval(max);
-  }
-
-  double _getMaxY(List<TopSellingData> data) {
-    if (data.isEmpty) return 10;
-    final max = data
-        .map((e) => e.totalQuantity.toDouble())
-        .reduce((a, b) => a > b ? a : b);
-    if (max <= 0) return 10;
-    final interval = _niceInterval(max);
-    return (max / interval).ceil() * interval;
-  }
-
-  String _formatAxisValue(double value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M';
-    }
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}K';
-    }
-    return value.toInt().toString();
-  }
-
-  double _niceInterval(double maxValue) {
-    if (maxValue <= 0) return 1;
-    final step = maxValue / 4;
-    final mag = _pow10(step);
-    final n = step / mag;
-    if (n <= 1) return mag;
-    if (n <= 2) return 2 * mag;
-    if (n <= 5) return 5 * mag;
-    return 10 * mag;
-  }
-
-  double _pow10(double value) {
-    var m = 1.0;
-    while (value >= 10) {
-      value /= 10;
-      m *= 10;
-    }
-    while (value > 0 && value < 1) {
-      value *= 10;
-      m /= 10;
-    }
-    return m;
   }
 }

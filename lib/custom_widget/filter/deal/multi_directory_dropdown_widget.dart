@@ -137,7 +137,7 @@ class _MultiDirectoryDropdownWidgetState extends State<MultiDirectoryDropdownWid
                     closedFillColor: fieldColor,
                     expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: Colors.transparent,
+                      color: context.appColors.borderSubtle,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(18),

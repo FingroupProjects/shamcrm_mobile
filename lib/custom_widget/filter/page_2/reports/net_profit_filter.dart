@@ -211,12 +211,10 @@ class _NetProfitFilterScreenState extends State<NetProfitFilterScreen> {
               excludeSelected: false,
               initialItem: selectedPeriod,
               onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    selectedPeriod = value;
-                  });
-                  FocusScope.of(context).unfocus();
-                }
+                setState(() {
+                  selectedPeriod = value;
+                });
+                FocusScope.of(context).unfocus();
               },
             ),
           ],

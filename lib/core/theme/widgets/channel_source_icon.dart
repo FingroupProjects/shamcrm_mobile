@@ -56,7 +56,7 @@ class ChannelSourceIcon extends StatelessWidget {
 }
 
 /// Путь к PNG канала.
-/// Тёмные копии есть только у телефона, почты и заглушки.
+/// Тёмные копии есть у телефона, колл-центра, почты и заглушки.
 /// Бренды (Telegram, WhatsApp и остальные) одни и те же в обеих темах.
 String leadSourceAsset(ChannelSourceKind kind, {required bool isDark}) {
   switch (kind) {
@@ -76,6 +76,11 @@ String leadSourceAsset(ChannelSourceKind kind, {required bool isDark}) {
       return isDark
           ? 'assets/icons/leads/telefon_dark.png'
           : 'assets/icons/leads/telefon.png';
+    case ChannelSourceKind.callCenter:
+      // Своя трубка колл-центра, не заглушка default.
+      return isDark
+          ? 'assets/icons/leads/telephone-call_dark.png'
+          : 'assets/icons/leads/telephone-call.png';
     case ChannelSourceKind.email:
       return isDark
           ? 'assets/icons/leads/email_dark.png'

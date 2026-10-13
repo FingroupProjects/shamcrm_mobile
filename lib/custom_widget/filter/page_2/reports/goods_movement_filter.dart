@@ -694,7 +694,7 @@ class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
                           .firstWhere((s) => s.id == _selectedSupplier!.id)
                       : null,
                   onChanged: (value) {
-                    if (value != null && mounted) {
+                    if (mounted) {
                       setState(() {
                         _selectedSupplier = value;
                       });
@@ -835,7 +835,7 @@ class _GoodsMovementFilterScreenState extends State<GoodsMovementFilterScreen> {
                       ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                       : null,
                   onChanged: (value) {
-                    if (value != null && mounted) {
+                    if (mounted) {
                       setState(() {
                         _selectedLead = value;
                       });

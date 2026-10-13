@@ -729,6 +729,11 @@ class _VariantSelectionBottomSheetState
     final availableVariants =
         variants.where((v) => !_isItemAlreadyAdded(v)).toList();
 
+    // Пока товары едут с сервера, не пишем «в категории нет товаров».
+    if (state.isLoading && availableVariants.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     if (availableVariants.isEmpty) {
       return Center(
         child: Text(

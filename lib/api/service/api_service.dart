@@ -3,7 +3,9 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:crm_task_manager/models/absence/absence_models.dart';
 import 'package:crm_task_manager/models/lead/LeadStatusForFilter.dart';
+import 'package:crm_task_manager/screens/absence/absence_logic.dart';
 import 'package:crm_task_manager/models/common/api_exception_model.dart';
 import 'package:crm_task_manager/models/user/author_data_response.dart';
 import 'package:crm_task_manager/models/event/calendar_model.dart';
@@ -145,6 +147,7 @@ import 'package:crm_task_manager/models/page_2/subCategoryAttribute_model.dart';
 import 'package:crm_task_manager/models/page_2/subCategoryById.dart';
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/models/page_2/variant_model.dart';
+import 'package:crm_task_manager/models/page_2/openings/goods_opening_filter.dart';
 import 'package:crm_task_manager/models/page_2/openings/goods_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/supplier_openings_model.dart';
 import 'package:crm_task_manager/models/page_2/openings/client_openings_model.dart';
@@ -202,6 +205,7 @@ import '../../models/page_2/dashboard_goods_movement_history_model.dart';
 import '../../models/auth/domain_check.dart';
 import '../../models/money/income_categories_data_response.dart';
 import '../../models/auth/login_model.dart';
+import '../../models/auth/password_reset.dart';
 import '../../models/money/money_income_document_model.dart';
 import '../../models/money/employee_remaining_model.dart';
 import '../../models/money/money_outcome_document_model.dart';
@@ -255,6 +259,7 @@ part 'warehouse/api_call_center.dart';
 part 'cash/api_cash.dart';
 part 'sales_plan/api_sales_plan.dart';
 part 'localization/api_localization.dart';
+part 'absence/api_absence.dart';
 
 class ApiService extends ApiServiceBase {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
@@ -322,6 +327,9 @@ class ApiService extends ApiServiceBase {
     '/login',
     '/get-user-by-email',
     '/checkDomain',
+    // На экране входа токена ещё нет: человек как раз не может войти.
+    '/forgot-password',
+    '/setPassword',
     // '/add-fcm-token',
   ];
 

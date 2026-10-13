@@ -221,6 +221,28 @@ List<Country> countries = [
   Country(name: "YE", fullname: "Yemen", flag: "\uD83C\uDDFE\uD83C\uDDEA", dialCode: "+967"),
   Country(name: "ZM", fullname: "Zambia", flag: "\uD83C\uDDFF\uD83C\uDDF2", dialCode: "+260"),
   Country(name: "ZW", fullname: "Zimbabwe", flag: "\uD83C\uDDFF\uD83C\uDDFC", dialCode: "+263"),
+  // Коды, которых не было в справочнике. Нужны, чтобы клиент из этих стран
+  // выбирал свой код без отдельной доработки.
+  Country(name: "BD", fullname: "Bangladesh", flag: "\uD83C\uDDE7\uD83C\uDDE9", dialCode: "+880"),
+  Country(name: "HK", fullname: "Hong Kong", flag: "\uD83C\uDDED\uD83C\uDDF0", dialCode: "+852"),
+  Country(name: "MO", fullname: "Macau", flag: "\uD83C\uDDF2\uD83C\uDDF4", dialCode: "+853"),
+  Country(name: "PS", fullname: "Palestine", flag: "\uD83C\uDDF5\uD83C\uDDF8", dialCode: "+970"),
+  Country(name: "TD", fullname: "Chad", flag: "\uD83C\uDDF9\uD83C\uDDE9", dialCode: "+235"),
+  Country(name: "SD", fullname: "Sudan", flag: "\uD83C\uDDF8\uD83C\uDDE9", dialCode: "+249"),
+  Country(name: "RE", fullname: "Reunion", flag: "\uD83C\uDDF7\uD83C\uDDEA", dialCode: "+262"),
+  Country(name: "YT", fullname: "Mayotte", flag: "\uD83C\uDDFE\uD83C\uDDF9", dialCode: "+262"),
+  Country(name: "XK", fullname: "Kosovo", flag: "\uD83C\uDDFD\uD83C\uDDF0", dialCode: "+383"),
+  Country(name: "MK", fullname: "North Macedonia", flag: "\uD83C\uDDF2\uD83C\uDDF0", dialCode: "+389"),
+  Country(name: "PA", fullname: "Panama", flag: "\uD83C\uDDF5\uD83C\uDDE6", dialCode: "+507"),
+  Country(name: "GP", fullname: "Guadeloupe", flag: "\uD83C\uDDEC\uD83C\uDDF5", dialCode: "+590"),
+  Country(name: "AW", fullname: "Aruba", flag: "\uD83C\uDDE6\uD83C\uDDFC", dialCode: "+297"),
+  Country(name: "FO", fullname: "Faroe Islands", flag: "\uD83C\uDDEB\uD83C\uDDF4", dialCode: "+298"),
+  Country(name: "FK", fullname: "Falkland Islands", flag: "\uD83C\uDDEB\uD83C\uDDF0", dialCode: "+500"),
+  Country(name: "CK", fullname: "Cook Islands", flag: "\uD83C\uDDE8\uD83C\uDDF0", dialCode: "+682"),
+  Country(name: "CW", fullname: "Curacao", flag: "\uD83C\uDDE8\uD83C\uDDFC", dialCode: "+599"),
+  Country(name: "BQ", fullname: "Caribbean Netherlands", flag: "\uD83C\uDDE7\uD83C\uDDF6", dialCode: "+599"),
+  Country(name: "SH", fullname: "Saint Helena", flag: "\uD83C\uDDF8\uD83C\uDDED", dialCode: "+290"),
+  Country(name: "IO", fullname: "British Indian Ocean Territory", flag: "\uD83C\uDDEE\uD83C\uDDF4", dialCode: "+246"),
 ];
 
 final Map<String, int> phoneNumberLengths = {
@@ -392,6 +414,24 @@ final Map<String, int> phoneNumberLengths = {
   '+263': 9,
   '+372': 8,
   '+385': 8,
+  '+880': 10,
+  '+852': 8,
+  '+853': 8,
+  '+970': 9,
+  '+235': 8,
+  '+249': 9,
+  '+262': 9,
+  '+383': 8,
+  '+389': 8,
+  '+507': 8,
+  '+590': 9,
+  '+297': 7,
+  '+298': 6,
+  '+500': 5,
+  '+682': 5,
+  '+599': 7,
+  '+290': 4,
+  '+246': 7,
 };
 
 List<String> countryCodes = [
@@ -417,5 +457,7 @@ List<String> countryCodes = [
   '+211', '+94','+597', '+268', '+46', '+41', '+963', '+886', '+255', 
   '+66', '+670', '+228', '+690', '+676', '+1', '+216', '+90', '+993', '+1', 
   '+688', '+256', '+380', '+971', '+598', '+998', '+678', '+58', '+84', '+681', 
-  '+212', '+967', '+260', '+263'
+  '+212', '+967', '+260', '+263',
+  '+880', '+852', '+853', '+970', '+235', '+249', '+262', '+383', '+389',
+  '+507', '+590', '+297', '+298', '+500', '+682', '+599', '+290', '+246'
 ]; 

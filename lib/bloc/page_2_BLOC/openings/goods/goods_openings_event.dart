@@ -1,9 +1,19 @@
+import '../../../../models/page_2/openings/goods_opening_filter.dart';
+
 abstract class GoodsOpeningsEvent {}
 
 class LoadGoodsOpenings extends GoodsOpeningsEvent {
   final String? search;
-  
-  LoadGoodsOpenings({this.search});
+  final GoodsOpeningFilter? filters;
+
+  /// true — записать [filters], в том числе пустой после «Сбросить».
+  final bool updateFilters;
+
+  LoadGoodsOpenings({
+    this.search,
+    this.filters,
+    this.updateFilters = false,
+  });
 }
 
 class LoadMoreGoodsOpenings extends GoodsOpeningsEvent {

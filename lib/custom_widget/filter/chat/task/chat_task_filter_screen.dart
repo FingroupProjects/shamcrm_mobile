@@ -683,9 +683,9 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
                         padding: const EdgeInsets.all(10),
                         child: TaskStatusRadioGroupWidget(
                           selectedStatus: _selectedStatuses?.toString(),
-                          onSelectStatus: (TaskStatus selectedStatusData) {
+                          onSelectStatus: (selectedStatusData) {
                             setState(() {
-                              _selectedStatuses = selectedStatusData.id;
+                              _selectedStatuses = selectedStatusData?.id;
                             });
                           },
                         ),

@@ -142,13 +142,11 @@ class _ExpenseArticleDashboardWarehouseWidgetState extends State<ExpenseArticleD
                     ? selectedExpenseArticleData
                     : null,
                 onChanged: (value) {
-                  if (value != null) {
-                    widget.onChanged(value.id.toString());
-                    setState(() {
-                      selectedExpenseArticleData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                  widget.onChanged(value?.id.toString());
+                  setState(() {
+                    selectedExpenseArticleData = value;
+                  });
+                  FocusScope.of(context).unfocus();
                 },
               ),
             ],

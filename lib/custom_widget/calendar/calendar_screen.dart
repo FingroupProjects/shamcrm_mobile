@@ -278,25 +278,32 @@ void _changeView(String view) {
               )
             : GestureDetector(
                 onTap: () => _showYearPicker(context),
+                behavior: HitTestBehavior.opaque,
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _isInitialView
-                          ? AppLocalizations.of(context)!.translate('calendar')
-                          : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode)
-                              .format(_focusedDate)
-                              .capitalize(),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary,
+                    // Flexible, чтобы длинный заголовок сжимался
+                    // и не залезал на кнопки справа.
+                    Flexible(
+                      child: Text(
+                        _isInitialView
+                            ? AppLocalizations.of(context)!.translate('calendar')
+                            : DateFormat('yyyy', AppLocalizations.of(context)!.locale.languageCode)
+                                .format(_focusedDate)
+                                .capitalize(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down, size: 24),
+                    Icon(Icons.arrow_drop_down, size: 22, color: colors.iconPrimary),
                   ],
                 ),
               ),
+        titleSpacing: 4,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
@@ -323,24 +330,10 @@ void _changeView(String view) {
           ),
         ),
         actions: [
-          if (!_isSearching && _isAwayFromToday)
-            TextButton(
-              onPressed: _jumpToToday,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                AppLocalizations.of(context)!.translate('today'),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w700,
-                  color: colors.buttonPrimaryBg,
-                ),
-              ),
-            ),
           IconButton(
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             icon: _isSearching
                 ? Icon(Icons.close, size: 24, color: colors.iconPrimary)
                 : ColorFiltered(
@@ -360,6 +353,9 @@ void _changeView(String view) {
             animation: _colorAnimation,
             builder: (context, child) {
               return IconButton(
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 icon: FilterCountBadge(
                   count: _activeFilterCount,
                   color: colors.buttonPrimaryBg,
@@ -381,7 +377,7 @@ void _changeView(String view) {
               );
             },
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 4),
           if (!_isSearching)
             CalendarViewDropdown(
               currentFormat: _calendarFormat,
@@ -470,6 +466,17 @@ void _changeView(String view) {
                             _selectedUsers.isNotEmpty
                         ? _filteredDates
                         : null,
+                    onJumpToToday: _jumpToToday,
+                  ),
+                if (_calendarFormat == CalendarFormat.twoWeeks &&
+                    !_isSearching &&
+                    _isAwayFromToday)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8, right: 12),
+                      child: CalendarTodayButton(onPressed: _jumpToToday),
+                    ),
                   ),
                 if (_calendarFormat == CalendarFormat.twoWeeks && _selectedDate != null)
                   DayViewEventList(

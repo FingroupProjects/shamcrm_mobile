@@ -117,7 +117,9 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: TextField(
         focusNode: focusNode,
-        style: widget.decoration?.textStyle,
+        style: widget.decoration?.textStyle ??
+            TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        cursorColor: Theme.of(context).colorScheme.primary,
         onChanged: (val) async {
           if (widget.searchType != null &&
               widget.searchType == _SearchType.onRequestData &&
@@ -150,20 +152,32 @@ class _SearchFieldState<T> extends State<_SearchField<T>> {
         controller: searchCtrl,
         decoration: InputDecoration(
           filled: true,
+          // Без своей заливки поиск был почти белым даже в тёмной теме.
           fillColor: widget.decoration?.fillColor ??
-              SearchFieldDecoration._defaultFillColor,
+              Theme.of(context).colorScheme.surfaceContainerHighest,
           constraints: widget.decoration?.constraints ??
               const BoxConstraints.tightFor(height: 40),
           contentPadding:
               widget.decoration?.contentPadding ?? const EdgeInsets.all(8),
           hintText: widget.searchHintText,
-          hintStyle: widget.decoration?.hintStyle,
+          hintStyle: widget.decoration?.hintStyle ??
+              TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
           prefixIcon: widget.decoration?.prefixIcon ??
-              const Icon(Icons.search, size: 22),
+              Icon(
+                Icons.search,
+                size: 22,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
           suffixIcon: widget.decoration?.suffixIcon?.call(onClear) ??
               GestureDetector(
                 onTap: onClear,
-                child: const Icon(Icons.close, size: 20),
+                child: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           border: widget.decoration?.border ??
               OutlineInputBorder(

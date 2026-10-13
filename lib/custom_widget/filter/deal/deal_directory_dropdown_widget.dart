@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -108,11 +109,11 @@ class _DirectoryDropdownWidgetState extends State<DirectoryDropdownWidget> {
         const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7FD),
+                      color: context.appColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               width: 1,
-              color: const Color(0xFFF4F7FD),
+              color: context.appColors.borderSubtle,
             ),
           ),
           child: errorMessage != null
@@ -123,15 +124,15 @@ class _DirectoryDropdownWidgetState extends State<DirectoryDropdownWidget> {
                   searchHintText: AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   decoration: CustomDropdownDecoration(
-                    closedFillColor: const Color(0xFFF4F7FD),
-                    expandedFillColor: Colors.white,
+                    closedFillColor: context.appColors.fieldBg,
+                    expandedFillColor: context.appColors.surfacePrimary,
                     closedBorder: Border.all(
-                      color: const Color(0xFFF4F7FD),
+                      color: context.appColors.borderSubtle,
                       width: 1,
                     ),
                     closedBorderRadius: BorderRadius.circular(12),
                     expandedBorder: Border.all(
-                      color: const Color(0xFFF4F7FD),
+                      color: context.appColors.borderSubtle,
                       width: 1,
                     ),
                     expandedBorderRadius: BorderRadius.circular(12),

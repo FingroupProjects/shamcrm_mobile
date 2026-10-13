@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -189,21 +190,16 @@ class DateFieldWithFromTo extends StatelessWidget {
                 //     ),
                 //   ),
                 // ),
-                border: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
-                  borderSide: hasError
-                      ? BorderSide(color: context.appColors.error, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
-                ),
+                border: AppFieldStyle.outline(context, hasError: hasError),
                 errorStyle: context.appTextStyles.bodyMd.copyWith(
                   color: context.appColors.error,
                   fontWeight: FontWeight.w400,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: context.appRadius.input,
-                  borderSide: hasError
-                      ? BorderSide(color: context.appColors.error, width: 1.5)
-                      : const BorderSide(color: Colors.transparent),
+                enabledBorder: AppFieldStyle.outline(context, hasError: hasError),
+                focusedBorder: AppFieldStyle.outline(
+                  context,
+                  hasError: hasError,
+                  focused: !hasError,
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: context.appRadius.input,

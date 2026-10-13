@@ -534,7 +534,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                         .firstWhere((s) => s.id == _selectedSupplier!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       _selectedSupplier = value;
                     });
@@ -677,7 +677,7 @@ class _CreditorsFilterScreenState extends State<CreditorsFilterScreen> {
                     ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       _selectedLead = value;
                     });

@@ -76,6 +76,9 @@ class WidgetService {
     await _consumePendingNativePush();
   }
 
+  /// Повторно читает тап, если Dart стартовал раньше, чем iOS сохранил пуш.
+  static Future<void> pullPendingNativePush() => _consumePendingNativePush();
+
   static Future<void> _consumePendingNativePush() async {
     try {
       final raw = await platform.invokeMethod<String>('getPendingPush');
@@ -124,6 +127,12 @@ class WidgetService {
         await FirebaseApi().handleNativePushTap(
           Map<String, dynamic>.from(args),
         );
+      }
+      // Нативное хранилище больше не нужно: Dart уже забрал этот тап.
+      try {
+        await platform.invokeMethod<void>('ackPendingPush');
+      } catch (e) {
+        debugPrint('WidgetService: ackPendingPush failed: $e');
       }
       return;
     }

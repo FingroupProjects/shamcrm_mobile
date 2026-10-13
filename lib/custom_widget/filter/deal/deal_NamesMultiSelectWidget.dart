@@ -113,7 +113,7 @@ class _DealNamesMultiSelectWidgetState extends State<DealNamesMultiSelectWidget>
                       closedFillColor: colors.fieldBg,
                       expandedFillColor: colors.fieldBg,
                       closedBorder: Border.all(
-                        color: Colors.transparent,
+                        color: colors.borderSubtle,
                         width: 1,
                       ),
                       closedBorderRadius: BorderRadius.circular(12),

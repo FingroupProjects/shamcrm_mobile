@@ -501,6 +501,8 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       isLoading: true,
       selectedCategoryId: event.categoryId,
       selectedCategoryName: event.categoryName,
+      // Старый список не показываем, пока новая подкатегория грузится.
+      categoryVariants: const [],
       allVariants: const [],
       searchQuery: null,
       searchCategories: const [],

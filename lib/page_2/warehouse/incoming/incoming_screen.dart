@@ -686,7 +686,6 @@ class _IncomingScreenState extends State<IncomingScreen> {
                           l10n: localizations!,
                           icon: Icons.move_to_inbox_rounded,
                           titleKey: 'empty_incoming_title',
-                          subtitleKey: 'empty_incoming_subtitle',
                           actionKey: _hasCreatePermission
                               ? 'empty_incoming_action'
                               : null,

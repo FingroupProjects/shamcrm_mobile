@@ -49,6 +49,9 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
   List<UserData> initialUsersList = [];
   List<UserData> selectedUsersData = [];
   bool isLoading = false;
+  // Форма создаётся раньше, чем приходят исполнители.
+  // Без этой ссылки в ней остаётся пустой список, хотя имя уже видно.
+  FormFieldState<List<UserData>>? _formField;
 
   @override
   void initState() {
@@ -153,9 +156,31 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
     }
 
     _selectedUsersController.value = List<UserData>.from(selectedUsersData);
+    _publishSelectionToForm();
 
     if (notifyParent) {
       widget.onSelectUsers(selectedUsersData);
+    }
+  }
+
+  /// Кладёт уже показанный выбор в FormField.
+  /// Иначе validate() видит initialValue = [] и пишет «поле обязательно».
+  void _publishSelectionToForm() {
+    final field = _formField;
+    if (field == null || !field.mounted) return;
+
+    final next = List<UserData>.from(selectedUsersData);
+    final currentIds = (field.value ?? const <UserData>[])
+        .map((user) => user.id)
+        .toList()
+      ..sort();
+    final nextIds = next.map((user) => user.id).toList()..sort();
+
+    if (!listEquals(currentIds, nextIds)) {
+      field.didChange(next);
+    }
+    if (field.hasError) {
+      field.validate();
     }
   }
 
@@ -179,6 +204,7 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
       selectedUsersData = nextSelected;
     });
     _selectedUsersController.value = List<UserData>.from(nextSelected);
+    _publishSelectionToForm();
     widget.onSelectUsers(nextSelected);
   }
 
@@ -246,12 +272,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
       initialValue: selectedUsersData,
       validator: (value) {
         if (!widget.isRequired) return null;
-        if ((value ?? const <UserData>[]).isEmpty) {
+        // На экране уже есть выбранные люди, даже если value формы ещё пустой.
+        final chosen = selectedUsersData.isNotEmpty
+            ? selectedUsersData
+            : (value ?? const <UserData>[]);
+        if (chosen.isEmpty) {
           return localizations.translate('field_required_project');
         }
         return null;
       },
       builder: (field) {
+        _formField = field;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -363,6 +394,11 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                               ),
                             );
 
+                        // «Выбрать всех» в покое того же цвета, что и остальные.
+                        // Голубая заливка только когда пункт уже отмечен.
+                        final isChecked =
+                            isSelectAll ? allVisibleSelected : isSelected;
+
                         return ListTile(
                           onTap: () {
                             if (isSelectAll) {
@@ -385,24 +421,17 @@ class _UserMultiSelectWidgetState extends State<UserMultiSelectWidget> {
                                   height: 18,
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: isSelectAll
+                                      color: isChecked
                                           ? accentColor
-                                          : (isSelected
-                                              ? accentColor
-                                              : colors.borderPrimary),
+                                          : colors.borderPrimary,
                                       width: 1,
                                     ),
                                     borderRadius: BorderRadius.circular(4),
-                                    color: isSelectAll
-                                        ? (allVisibleSelected
-                                            ? accentColor
-                                            : Colors.transparent)
-                                        : (isSelected
-                                            ? accentColor
-                                            : Colors.transparent),
+                                    color: isChecked
+                                        ? accentColor
+                                        : Colors.transparent,
                                   ),
-                                  child: (isSelectAll && allVisibleSelected) ||
-                                          (!isSelectAll && isSelected)
+                                  child: isChecked
                                       ? const Icon(
                                           Icons.check,
                                           color: Colors.white,

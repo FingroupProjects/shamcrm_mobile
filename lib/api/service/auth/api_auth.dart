@@ -263,4 +263,82 @@ extension ApiAuthX on ApiService {
       rethrow;
     }
   }
+
+  /// Смена пароля, когда человек помнит текущий.
+  /// organization_id и sales_funnel_id уходят и в query, и в теле,
+  /// как в `POST /changePassword`.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final organizationId = await getSelectedOrganization();
+    final salesFunnelId = await getSelectedSalesFunnel();
+    final response = await _postRequest('/changePassword', {
+      'current_password': currentPassword,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+      'organization_id': organizationId ?? '1',
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId,
+    });
+    _ensurePasswordActionSucceeded(response, fallback: 'password_change_error');
+  }
+
+  /// Письмо с кодом. В `result` приходит пользователь и сам код.
+  Future<ForgotPasswordChallenge> requestForgotPassword(String email) async {
+    final response = await _postRequest('/forgot-password', {
+      'email': email.trim(),
+    });
+
+    Object? decoded;
+    try {
+      decoded = json.decode(response.body);
+    } catch (_) {
+      throw Exception('forgot_password_error');
+    }
+
+    if (response.statusCode == 200 &&
+        decoded is Map &&
+        decoded['result'] != null) {
+      try {
+        return parseForgotPasswordResult(
+          decoded['result'],
+          fallbackEmail: email.trim(),
+        );
+      } on FormatException {
+        throw Exception('forgot_password_bad_result');
+      }
+    }
+
+    throw Exception(
+      passwordApiErrorText(decoded, fallback: 'forgot_password_error'),
+    );
+  }
+
+  /// Новый пароль после верного кода. id берётся из ответа forgot-password.
+  Future<void> setPasswordAfterReset({
+    required int userId,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final response = await _postRequest('/setPassword/$userId', {
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    });
+    _ensurePasswordActionSucceeded(response, fallback: 'password_change_error');
+  }
+
+  void _ensurePasswordActionSucceeded(
+    http.Response response, {
+    required String fallback,
+  }) {
+    Object? decoded;
+    try {
+      decoded = json.decode(response.body);
+    } catch (_) {
+      decoded = null;
+    }
+    if (passwordApiSucceeded(response.statusCode, decoded)) return;
+    throw Exception(passwordApiErrorText(decoded, fallback: fallback));
+  }
 }

@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../../../screens/profile/languages/app_localizations.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import 'chart_scale.dart';
+import 'example_chart_frame.dart';
 
 // Removed hardcoded strings - now using localization
 
@@ -140,32 +142,44 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
   //   }
   // }
 
-  double _calculateInterval(double maxY) {
-    // Более детальные интервалы для красивого UI
-    if (maxY <= 5) return 1;
-    if (maxY <= 10) return 2;
-    if (maxY <= 20) return 5;
-    if (maxY <= 50) return 10;
-    if (maxY <= 100) return 20;
-    if (maxY <= 200) return 25;
-    if (maxY <= 500) return 50;
-    if (maxY <= 1000) return 100;
-    if (maxY <= 2000) return 200;
-    if (maxY <= 5000) return 500;
-    if (maxY <= 10000) return 1000;
-    return 2000;
+  List<OrderChartData> _exampleOrders() {
+    const first = <int>[4, 6, 5, 8, 7, 10, 9, 8, 12, 11, 14, 13];
+    const second = <int>[2, 3, 4, 3, 5, 6, 5, 7, 6, 8, 7, 9];
+    List<DataPoint> points(List<int> amounts) {
+      return List.generate(
+        amounts.length,
+        (index) => DataPoint(
+          id: index,
+          label: '${index + 1}',
+          amount: amounts[index],
+        ),
+      );
+    }
+
+    return [
+      OrderChartData(name: 'Новая заявка', data: points(first)),
+      OrderChartData(name: 'Реализован', data: points(second)),
+    ];
   }
 
-  LineChartData _buildChartData(List<OrderChartData> chartData) {
+  LineChartData _buildChartData(
+    List<OrderChartData> chartData, {
+    bool interactive = true,
+  }) {
     final colors = context.appColors;
-    // Determine maxX based on data points
-    double maxX = 0;
-    for (var data in chartData) {
-      if (data.data.isNotEmpty) {
-        maxX = data.data.length - 1.0;
+    final localizations = AppLocalizations.of(context)!;
+    var pointCount = 0;
+    final amounts = <double>[];
+    for (final data in chartData) {
+      if (data.data.length > pointCount) pointCount = data.data.length;
+      for (final point in data.data) {
+        amounts.add(point.amount < 0 ? 0 : point.amount.toDouble());
       }
     }
-    if (maxX < 1) maxX = 11;
+    // Один день не должен растягиваться на весь год.
+    final maxX = pointCount <= 1 ? 0.5 : (pointCount - 1).toDouble();
+    final minX = pointCount <= 1 ? -0.5 : 0.0;
+    final scale = ChartScale.fromValues(amounts);
 
     List<LineChartBarData> lineBars = chartData.asMap().entries.map((entry) {
       int lineIndex = entry.key;
@@ -186,8 +200,7 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
 
       return LineChartBarData(
         spots: spots,
-        isCurved: true,
-        curveSmoothness: 0.3,
+        isCurved: false,
         color: lineColor,
         barWidth: 3,
         isStrokeCapRound: true,
@@ -208,31 +221,12 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
       );
     }).toList();
 
-    // Find the actual maximum value from data
-    double maxY = 0;
-    for (var data in chartData) {
-      for (var point in data.data) {
-        if (point.amount > maxY) {
-          maxY = point.amount.toDouble();
-        }
-      }
-    }
-
-    // Set minimum maxY to avoid division by zero and ensure readable chart
-    if (maxY == 0) {
-      maxY = 1; // Default scale when no data
-    }
-
-    // Вычисляем интервал на основе оригинального maxY, а не adjustedMaxY
-    double horizontalInterval = _calculateInterval(maxY);
-    double adjustedMaxY = maxY * 1.1;
-
     return LineChartData(
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
         drawHorizontalLine: true,
-        horizontalInterval: horizontalInterval,
+        horizontalInterval: scale.interval,
         getDrawingHorizontalLine: (value) {
           return FlLine(
             color: colors.borderSubtle.withValues(alpha: 0.38),
@@ -245,17 +239,13 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            interval: horizontalInterval,
-            reservedSize: 40,
+            interval: scale.interval,
+            reservedSize: 48,
             getTitlesWidget: (value, meta) {
-              return Text(
-                value.toInt().toString(),
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: colors.textSecondary,
-                ),
+              return chartValueLabel(
+                formatChartAxis(value, localizations),
+                colors.textSecondary,
+                meta,
               );
             },
           ),
@@ -265,43 +255,36 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 40,
+            reservedSize: 36,
             interval: 1,
             getTitlesWidget: (value, meta) {
-              int index = value.toInt();
-              if (chartData.isNotEmpty &&
-                  chartData.first.data.length > index &&
-                  index >= 0) {
-                String label = chartData.first.data[index].label;
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Transform.rotate(
-                    angle: -0.5,
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                );
+              final index = value.toInt();
+              if (chartData.isEmpty ||
+                  index < 0 ||
+                  index >= chartData.first.data.length ||
+                  (value - index).abs() > 0.01) {
+                return const SizedBox.shrink();
               }
-              return const SizedBox.shrink();
+              return chartAxisLabel(
+                localizedShortMonth(
+                  chartData.first.data[index].label,
+                  localizations,
+                ),
+                colors.textSecondary,
+                meta,
+              );
             },
           ),
         ),
       ),
       borderData: FlBorderData(show: false),
-      minX: 0,
+      minX: minX,
       maxX: maxX,
-      minY: 0,
-      maxY: adjustedMaxY,
+      minY: scale.minY,
+      maxY: scale.maxY,
       lineBarsData: lineBars,
       lineTouchData: LineTouchData(
-        enabled: true,
+        enabled: interactive,
         touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
           if (event is FlTapUpEvent && touchResponse?.lineBarSpots != null) {
             final firstSpot = touchResponse!.lineBarSpots!.first;
@@ -402,6 +385,11 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
     final localizations = AppLocalizations.of(context)!;
     final currentData = _getCurrentPeriodData();
     final chartData = currentData?.data.chartData ?? [];
+    final hasValues = chartData.any(
+      (line) => line.data.any((point) => point.amount != 0),
+    );
+    final showExample = !hasValues;
+    final display = showExample ? _exampleOrders() : chartData;
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
@@ -459,27 +447,25 @@ class _OrderQuantityChartState extends State<OrderQuantityChart> {
           const SizedBox(height: 16),
 
           // Legend
-          if (chartData.isNotEmpty) _buildLegend(chartData),
+          if (display.isNotEmpty) _buildLegend(display),
 
           const SizedBox(height: 24),
 
           // Chart content
           SizedBox(
             height: 300,
-            child: chartData.isEmpty
-                ? Center(
-                    child: Text(
-                      localizations.translate('no_data_to_display'),
-                      style: textStyles.bodyLg.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.only(right: 16, top: 16),
-                    child: LineChart(_buildChartData(chartData)),
+            child: ExampleChartFrame(
+              show: showExample,
+              label: localizations.translate('no_data_to_display'),
+              child: ClipRect(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16, top: 16),
+                  child: LineChart(
+                    _buildChartData(display, interactive: !showExample),
                   ),
+                ),
+              ),
+            ),
           ),
 
           const SizedBox(height: 16),

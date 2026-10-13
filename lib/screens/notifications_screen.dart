@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/notification/notifications_model.dart';
 import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_title_resolver.dart';
+import 'package:crm_task_manager/screens/absence/absence_detail_view.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details_screen.dart';
 import 'package:crm_task_manager/screens/event/event_details/event_details_screen.dart';
 import 'package:crm_task_manager/screens/home_screen.dart';
@@ -609,7 +610,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       l10n: AppLocalizations.of(context)!,
                       icon: Icons.notifications_none_rounded,
                       titleKey: 'empty_notifications_title',
-                      subtitleKey: 'empty_notifications_subtitle',
                     ),
                   ],
                 ),
@@ -638,7 +638,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             l10n: AppLocalizations.of(context)!,
                             icon: Icons.notifications_none_rounded,
                             titleKey: 'empty_notifications_title',
-                            subtitleKey: 'empty_notifications_subtitle',
                           ),
                         ],
                       )
@@ -846,6 +845,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return localizations.translate('task_deadline_reminder');
       case 'myTaskOutDated':
         return localizations.translate('my_task_overdue_reminder');
+      case 'absence_request':
+        return localizations.translate('absence_notification');
       case 'updateLeadStatus':
         return localizations.translate('lead_status_changed');
       default:
@@ -1227,6 +1228,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           });
           notificationBloc.add(DeleteNotification(notificationId));
           debugPrint('✅ Notification removed');
+        }
+      } else if (type.toLowerCase().replaceAll('-', '_') == 'absence_request') {
+        // modelId заявки приходит третьим аргументом navigateToScreen.
+        if (chatId <= 0) {
+          if (mounted) {
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)!
+                  .translate('absence_unavailable'),
+              isSuccess: false,
+            );
+          }
+        } else {
+          await navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => AbsenceDetailScreen(requestId: chatId),
+            ),
+          );
+          if (mounted) {
+            setState(() {
+              (notificationBloc.state as NotificationDataLoaded)
+                  .notifications
+                  .removeWhere(
+                      (notification) => notification.id == notificationId);
+            });
+            notificationBloc.add(DeleteNotification(notificationId));
+          }
         }
       } else {
         debugPrint('❓ Unknown notification type: $type');

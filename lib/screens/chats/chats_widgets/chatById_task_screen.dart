@@ -511,6 +511,19 @@ class _TaskByIdScreenState extends State<TaskByIdScreen> {
                               context,
                               task,
                               AppLocalizations.of(context)!
+                                  .translate('project_label'),
+                              (task.projectName == null ||
+                                      task.projectName!.trim().isEmpty)
+                                  ? AppLocalizations.of(context)!
+                                      .translate('not_specified')
+                                  : task.projectName!,
+                              Icons.folder_outlined,
+                              null),
+                          buildDivider(),
+                          buildInfoRow(
+                              context,
+                              task,
+                              AppLocalizations.of(context)!
                                   .translate('priority_level'),
                               priorityLevelText,
                               Icons.low_priority,

@@ -52,12 +52,18 @@ class _ItemsList<T> extends StatelessWidget {
               splashColor: decoration?.splashColor ??
                   ListItemDecoration._defaultSplashColor,
               highlightColor: decoration?.highlightColor ??
-                  ListItemDecoration._defaultHighlightColor,
+                  Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.08),
               onTap: () => onItemSelect(items[index]),
               child: Ink(
                 color: selected
                     ? (decoration?.selectedColor ??
-                        ListItemDecoration._defaultSelectedColor)
+                        Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.22))
                     : Colors.transparent,
                 padding: listItemPadding,
                 child: listItemBuilder(

@@ -1,5 +1,6 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/bloc/manager_list/manager_bloc.dart';
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -70,15 +71,15 @@ class _ManagersMultiSelectWidgetState extends State<ManagerMultiSelectWidget> {
                           AppLocalizations.of(context)!.translate('search'),
                       overlayHeight: 400,
                       decoration: CustomDropdownDecoration(
-                        closedFillColor: Color(0xffF4F7FD),
-                        expandedFillColor: Colors.white,
+                        closedFillColor: context.appColors.fieldBg,
+                        expandedFillColor: context.appColors.surfacePrimary,
                         closedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
+                          color: context.appColors.borderSubtle,
                           width: 1,
                         ),
                         closedBorderRadius: BorderRadius.circular(12),
                         expandedBorder: Border.all(
-                          color: Color(0xffF4F7FD),
+                          color: context.appColors.borderSubtle,
                           width: 1,
                         ),
                         expandedBorderRadius: BorderRadius.circular(12),

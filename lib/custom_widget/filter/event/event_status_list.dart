@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 class EventStatusRadioGroupWidget extends StatefulWidget {
   final String? selectedStatus;
-  final Function(int) onSelectStatus;
+  final Function(int?) onSelectStatus;
 
   const EventStatusRadioGroupWidget({
     super.key,
@@ -149,13 +149,12 @@ class _EventStatusRadioGroupWidgetState
                   )
                 : null,
             onChanged: (value) {
-              if (value != null) {
-                widget.onSelectStatus(value['id']);
-                setState(() {
-                  selectedStatusData = value['id'];
-                });
-                FocusScope.of(context).unfocus();
-              }
+              final id = value == null ? null : value['id'] as int?;
+              widget.onSelectStatus(id);
+              setState(() {
+                selectedStatusData = id;
+              });
+              FocusScope.of(context).unfocus();
             },
           ),
         ),

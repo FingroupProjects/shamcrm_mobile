@@ -6,6 +6,7 @@ enum ChannelSourceKind {
   telegram,
   whatsapp,
   phone,
+  callCenter,
   email,
   instagram,
   youtube,
@@ -13,6 +14,7 @@ enum ChannelSourceKind {
   facebook,
   site,
   unknown,
+  
 }
 
 /// Стиль бейджа. Разные каналы выглядят по-разному.
@@ -92,6 +94,16 @@ ChannelSourceKind resolveChannelSourceKind(String? rawName) {
       name.contains('telephony')) {
     return ChannelSourceKind.phone;
   }
+  // «Кол. центр» не телефон и не заглушка default.
+  // Точки в названии оставляем: «кол.центр».
+  final compact = name.replaceAll('.', '');
+  if (compact.contains('колцентр') ||
+      compact.contains('коллцентр') ||
+      compact.contains('callcenter') ||
+      compact.contains('call_center') ||
+      name.contains('call_center')) {
+    return ChannelSourceKind.callCenter;
+  }
   // «Интернет магазин» — это канал site. Для него нет PNG.
   if (name.contains('site') ||
       name.contains('сайт') ||
@@ -123,6 +135,8 @@ String? channelIconKey(String? rawName) {
       return 'email';
     case ChannelSourceKind.phone:
       return 'phone';
+    case ChannelSourceKind.callCenter:
+      return 'call_center';
     case ChannelSourceKind.site:
       return 'site';
     case ChannelSourceKind.unknown:
@@ -151,6 +165,13 @@ ChannelSourceLook lookForChannel(ChannelSourceKind kind) {
       return const ChannelSourceLook(
         kind: ChannelSourceKind.phone,
         icon: Icons.phone_rounded,
+        brand: Color(0xFF0EA5E9),
+        style: ChannelBadgeStyle.adaptive,
+      );
+    case ChannelSourceKind.callCenter:
+      return const ChannelSourceLook(
+        kind: ChannelSourceKind.callCenter,
+        icon: Icons.call_rounded,
         brand: Color(0xFF0EA5E9),
         style: ChannelBadgeStyle.adaptive,
       );

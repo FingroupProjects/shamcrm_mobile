@@ -132,6 +132,10 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
                     items: periodLabels,
                     selectedLabel: selectedPeriodLabel,
                     onChanged: (label) {
+                      if (label == null) {
+                        setState(() => _periodKey = null);
+                        return;
+                      }
                       final index = periodLabels.indexOf(label);
                       if (index >= 0) {
                         setState(() => _periodKey = periodKeys[index]);
@@ -287,7 +291,7 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
   Widget _buildFilterSection({
     required String label,
     required List<String> items,
-    required ValueChanged<String> onChanged,
+    required ValueChanged<String?> onChanged,
     required String hint,
     required String? selectedLabel,
   }) {
@@ -316,12 +320,12 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
             closedFillColor: colors.fieldBg,
             expandedFillColor: colors.surfacePrimary,
             closedBorder: Border.all(
-              color: colors.fieldBg,
+              color: colors.borderSubtle,
               width: 1,
             ),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorder: Border.all(
-              color: colors.fieldBg,
+              color: colors.borderSubtle,
               width: 1,
             ),
             expandedBorderRadius: BorderRadius.circular(12),
@@ -396,10 +400,8 @@ class _AnalyticsFilterSheetState extends State<AnalyticsFilterSheet> {
           excludeSelected: false,
           initialItem: selectedLabel,
           onChanged: (value) {
-            if (value != null) {
-              onChanged(value);
-              FocusScope.of(context).unfocus();
-            }
+            onChanged(value);
+            FocusScope.of(context).unfocus();
           },
         ),
       ],

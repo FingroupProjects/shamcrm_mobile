@@ -145,13 +145,11 @@ class _StorageDashboardWidgetState extends State<StorageDashboardWidget> {
                     ? selectedStorageData
                     : null,
                 onChanged: (value) {
-                  if (value != null) {
-                    widget.onChanged(value.id.toString());
-                    setState(() {
-                      selectedStorageData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                  widget.onChanged(value?.id.toString());
+                  setState(() {
+                    selectedStorageData = value;
+                  });
+                  FocusScope.of(context).unfocus();
                 },
               ),
             ],

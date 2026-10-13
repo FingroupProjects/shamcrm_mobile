@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'dart:math';
 
 import '../../../../bloc/page_2_BLOC/dashboard/sales_dashboard_bloc.dart';
 import '../../detailed_report/detailed_report_screen.dart';
+import 'chart_scale.dart';
+import 'example_chart_frame.dart';
 
 class SalesData {
   final String period;
@@ -56,32 +57,16 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
       // Преобразуем данные месяцев в формат для графика
       return periodData.data.result.months.map((monthData) {
         return SalesData(
-          period: _getShortMonthName(monthData.monthName),
-          value: double.tryParse(monthData.totalAmount) ?? 0.0,
+          // Полное имя месяца. Короткую подпись собираем при отрисовке,
+          // чтобы она следовала языку приложения, а не языку ответа сервера.
+          period: monthData.monthName,
+          value: parseChartNumber(monthData.totalAmount),
         );
       }).toList();
     } catch (e) {
       // Если данных для периода нет, возвращаем пустой список
       return [];
     }
-  }
-
-  String _getShortMonthName(String fullName) {
-    final monthMap = {
-      'Январь': 'Янв',
-      'Февраль': 'Фев',
-      'Март': 'Мар',
-      'Апрель': 'Апр',
-      'Май': 'Май',
-      'Июнь': 'Июн',
-      'Июль': 'Июл',
-      'Август': 'Авг',
-      'Сентябрь': 'Сен',
-      'Октябрь': 'Окт',
-      'Ноябрь': 'Ноя',
-      'Декабрь': 'Дек',
-    };
-    return monthMap[fullName] ?? fullName.substring(0, 3);
   }
 
   void onPeriodChanged(SalesDynamicsTimePeriod? period) {
@@ -110,6 +95,16 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final isLoading = widget.allSalesDynamicsData.isEmpty;
+    final hasValues = salesData.any((item) => item.value != 0);
+    // Пустой период показывает пример графика, как в CRM.
+    final showExample = !isLoading && !hasValues;
+    final points = showExample ? _exampleSales() : salesData;
+    // Отрицательная сумма тоже входит в шкалу. Иначе столбец
+    // рисуется ниже нуля и залезает на «Подробнее».
+    final scale = ChartScale.fromValues(
+      points.map((item) => item.value),
+      allowNegative: true,
+    );
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
 
@@ -168,198 +163,46 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
-          // Chart content
+          // Столбцы, а не линия по нулю: высота каждого месяца — его сумма.
           SizedBox(
-            height: 300,
+            height: 220,
             child: isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
                       color: Color(0xFF3935E7),
                     ),
                   )
-                : salesData.isEmpty
-                    ? Center(
-                        child: Text(
-                          localizations.translate('no_data_to_display'),
-                          style: textStyles.bodyLg.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      )
-                    : Padding(
-                        padding: const EdgeInsets.only(right: 16, top: 16),
-                        child: LineChart(
-                          LineChartData(
-                            backgroundColor: Colors.transparent,
-                            gridData: FlGridData(
-                              show: true,
-                              drawHorizontalLine: true,
-                              drawVerticalLine: false,
-                              horizontalInterval: _calculateInterval(),
-                              getDrawingHorizontalLine: (value) {
-                                return FlLine(
-                                  color: colors.borderSubtle
-                                      .withValues(alpha: 0.38),
-                                  strokeWidth: 1,
-                                );
-                              },
+                : ExampleChartFrame(
+                    show: showExample,
+                    label: localizations.translate('no_data_to_display'),
+                    // Обрезаем столбец по карточке, чтобы он не лёг на «Подробнее».
+                    child: ClipRect(
+                      child: Padding(
+                      padding: const EdgeInsets.only(right: 4, top: 4),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final slot = points.isEmpty
+                              ? 16.0
+                              : constraints.maxWidth / points.length;
+                          final barWidth = (slot * 0.42).clamp(8.0, 18.0);
+                          return BarChart(
+                            _salesBars(
+                              points: points,
+                              localizations: localizations,
+                              plotMin: scale.minY,
+                              plotMax: scale.maxY,
+                              interval: scale.interval,
+                              barWidth: barWidth,
+                              interactive: !showExample,
                             ),
-                            titlesData: FlTitlesData(
-                              show: true,
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    if (value < 0 ||
-                                        value >= salesData.length) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Transform.rotate(
-                                        angle: -0.5,
-                                        child: Text(
-                                          salesData[value.toInt()].period,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontFamily: 'Gilroy',
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ).copyWith(
-                                              color: colors.textSecondary),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  reservedSize: 50,
-                                ),
-                              ),
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      _formatAxisValue(value),
-                                      style: const TextStyle(
-                                        fontFamily: 'Gilroy',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ).copyWith(color: colors.textSecondary),
-                                    );
-                                  },
-                                  reservedSize: 50,
-                                  interval: _calculateInterval(),
-                                ),
-                              ),
-                              rightTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
-                            borderData: FlBorderData(
-                              show: false,
-                            ),
-                            minX: 0,
-                            maxX: (salesData.length - 1).toDouble(),
-                            minY: 0,
-                            maxY: _calculateMaxY(),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: List.generate(
-                                  salesData.length,
-                                  (index) => FlSpot(
-                                    index.toDouble(),
-                                    salesData[index].value,
-                                  ),
-                                ),
-                                isCurved: true,
-                                curveSmoothness: 0.3,
-                                color: const Color(0xFF00E676),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF00E676),
-                                    Color(0xFF00C853)
-                                  ],
-                                ),
-                                barWidth: 3,
-                                isStrokeCapRound: true,
-                                dotData: FlDotData(
-                                  show: true,
-                                  getDotPainter:
-                                      (spot, percent, barData, index) {
-                                    return FlDotCirclePainter(
-                                      radius: 4,
-                                      color: colors.buttonPrimaryBg,
-                                      strokeWidth: 2,
-                                      strokeColor: colors.surfacePrimary,
-                                    );
-                                  },
-                                ),
-                                belowBarData: BarAreaData(
-                                  show: true,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      colors.buttonPrimaryBg
-                                          .withValues(alpha: 0.28),
-                                      colors.buttonPrimaryBg
-                                          .withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                            lineTouchData: LineTouchData(
-                              enabled: true,
-                              touchTooltipData: LineTouchTooltipData(
-                                tooltipRoundedRadius: 8,
-                                tooltipPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                tooltipMargin: 8,
-                                fitInsideVertically: true,
-                                fitInsideHorizontally: true,
-                                getTooltipItems: (touchedSpots) {
-                                  return touchedSpots.map((touchedSpot) {
-                                    final index = touchedSpot.x.toInt();
-                                    if (index >= 0 &&
-                                        index < salesData.length) {
-                                      return LineTooltipItem(
-                                        '${salesData[index].period}\n',
-                                        const TextStyle(
-                                          fontFamily: 'Gilroy',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                            text: _formatValue(touchedSpot.y),
-                                            style: const TextStyle(
-                                              fontFamily: 'Gilroy',
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                    return null;
-                                  }).toList();
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
+                    ),
+                    ),
+                  ),
           ),
           const SizedBox(height: 16),
 
@@ -386,103 +229,171 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
     );
   }
 
-  double _calculateMaxY() {
-    if (salesData.isEmpty) return 100;
-    final maxValue =
-        salesData.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    if (maxValue == 0) return 100;
-    return maxValue * 1.2;
+  /// Пример на 12 месяцев. Цифры не с сервера, только форма будущего графика.
+  List<SalesData> _exampleSales() {
+    const amounts = <double>[
+      42, 58, 51, 73, 88, 96, 110, 104, 128, 121, 146, 138,
+    ];
+    return List.generate(
+      amounts.length,
+      (index) => SalesData(period: '${index + 1}', value: amounts[index]),
+    );
   }
 
-  // ============================================
-  // НОВАЯ ЛОГИКА РАСЧЁТА ИНТЕРВАЛОВ
-  // ============================================
-  double _calculateInterval() {
-    final maxY = _calculateMaxY();
-
-    if (maxY == 0) return 20;
-
-    // Целевое количество делений - 5
-    // (это даст нам 6 линий включая 0)
-    const targetDivisions = 5;
-
-    // Рассчитываем "сырой" интервал
-    double rawInterval = maxY / targetDivisions;
-
-    // Находим порядок величины (степень 10)
-    double magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
-
-    // Нормализуем интервал к "красивым" числам: 1, 2, 5, 10, 20, 50, 100...
-    double normalizedInterval = rawInterval / magnitude;
-
-    double niceInterval;
-    if (normalizedInterval <= 1) {
-      niceInterval = 1;
-    } else if (normalizedInterval <= 2) {
-      niceInterval = 2;
-    } else if (normalizedInterval <= 5) {
-      niceInterval = 5;
-    } else {
-      niceInterval = 10;
-    }
-
-    return niceInterval * magnitude;
+  /// Три буквы месяца. «Июнь» не влезает в ячейку и уезжает вниз карточки.
+  String _axisMonth(String name, AppLocalizations localizations) {
+    final label = localizedShortMonth(name, localizations);
+    if (label.length <= 3) return label;
+    return label.substring(0, 3);
   }
 
-  // ============================================
-  // НОВОЕ ФОРМАТИРОВАНИЕ ДЛЯ ОСИ Y
-  // ============================================
-  String _formatAxisValue(double value) {
-    if (value == 0) return '0';
-
-    final absValue = value.abs();
-
-    if (absValue >= 1000000000) {
-      // Миллиарды
-      return '${(value / 1000000000).toStringAsFixed(value % 1000000000 == 0 ? 0 : 1)}млрд';
-    } else if (absValue >= 1000000) {
-      // Миллионы
-      return '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}м';
-    } else if (absValue >= 1000) {
-      // Тысячи
-      return '${(value / 1000).toStringAsFixed(value % 1000 == 0 ? 0 : 1)}т';
-    } else {
-      return value.toInt().toString();
-    }
-  }
-
-  // ============================================
-  // НОВОЕ ФОРМАТИРОВАНИЕ ДЛЯ TOOLTIP
-  // ============================================
-  String _formatValue(double value) {
-    if (value == 0) return '0';
-
-    final absValue = value.abs();
-
-    if (absValue >= 1000000000) {
-      // Миллиарды
-      return '${(value / 1000000000).toStringAsFixed(2)}млрд';
-    } else if (absValue >= 1000000) {
-      // Миллионы
-      return '${(value / 1000000).toStringAsFixed(2)}м';
-    } else if (absValue >= 10000) {
-      // Для больших тысяч используем сокращение
-      return '${(value / 1000).toStringAsFixed(1)}т';
-    } else if (absValue >= 1000) {
-      // Для малых тысяч можем показать полное число с разделителем
-      return value.toInt().toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (Match m) => '${m[1]} ',
+  BarChartData _salesBars({
+    required List<SalesData> points,
+    required AppLocalizations localizations,
+    required double plotMin,
+    required double plotMax,
+    required double interval,
+    required double barWidth,
+    required bool interactive,
+  }) {
+    final colors = context.appColors;
+    final safeInterval = interval <= 0 ? (plotMax - plotMin).abs() : interval;
+    return BarChartData(
+      alignment: BarChartAlignment.spaceAround,
+      minY: plotMin,
+      maxY: plotMax,
+      groupsSpace: 8,
+      backgroundColor: Colors.transparent,
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        drawHorizontalLine: true,
+        horizontalInterval: safeInterval,
+        getDrawingHorizontalLine: (value) {
+          return FlLine(
+            color: colors.borderSubtle.withValues(alpha: 0.38),
+            strokeWidth: 1,
           );
-    } else {
-      return value.toStringAsFixed(0);
-    }
+        },
+      ),
+      borderData: FlBorderData(show: false),
+      barTouchData: BarTouchData(
+        enabled: interactive,
+        touchTooltipData: BarTouchTooltipData(
+          tooltipRoundedRadius: 8,
+          tooltipPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+          tooltipMargin: 6,
+          fitInsideVertically: true,
+          fitInsideHorizontally: true,
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            if (groupIndex < 0 || groupIndex >= points.length) return null;
+            final month = points[groupIndex];
+            return BarTooltipItem(
+              '${_axisMonth(month.period, localizations)}\n',
+              const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+              children: [
+                TextSpan(
+                  text: formatChartAxis(month.value, localizations),
+                  style: const TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+      titlesData: FlTitlesData(
+        show: true,
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 44,
+            interval: safeInterval,
+            getTitlesWidget: (value, meta) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(
+                  formatChartAxis(value, localizations),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 22,
+            getTitlesWidget: (value, meta) {
+              final index = value.toInt();
+              if (index < 0 || index >= points.length) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  _axisMonth(points[index].period, localizations),
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      barGroups: List.generate(points.length, (index) {
+        final value = points[index].value;
+        final belowZero = value < 0;
+        return BarChartGroupData(
+          x: index,
+          barRods: [
+            BarChartRodData(
+              toY: value,
+              width: barWidth,
+              color: belowZero
+                  ? const Color(0xFFFF5252)
+                  : const Color(0xFF00C853),
+              borderRadius: BorderRadius.vertical(
+                top: belowZero ? Radius.zero : const Radius.circular(4),
+                bottom: belowZero ? const Radius.circular(4) : Radius.zero,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
   }
 
   Widget _buildPeriodDropdown() {
     final colors = context.appColors;
     final textStyles = context.appTextStyles;
     return CustomDropdown<SalesDynamicsTimePeriod>(
+      canClear: false,
       decoration: CustomDropdownDecoration(
         closedBorder: Border.all(color: colors.borderSubtle),
         expandedBorder: Border.all(color: colors.borderSubtle),
@@ -500,6 +411,16 @@ class _SalesDynamicsLineChartState extends State<SalesDynamicsLineChart> {
         if (value != null) {
           onPeriodChanged(value);
         }
+      },
+      hintBuilder: (context, hint, enabled) {
+        final localizations = AppLocalizations.of(context)!;
+        return Text(
+          getPeriodText(selectedPeriod, localizations),
+          style: textStyles.bodySm.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
+          ),
+        );
       },
       headerBuilder: (context, selectedItem, enabled) {
         final localizations = AppLocalizations.of(context)!;

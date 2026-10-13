@@ -12,6 +12,7 @@ import '../../../../bloc/cash_register_list/cash_register_list_bloc.dart';
 import '../../../../utils/global_fun.dart';
 import '../opening_delete_dialog.dart';
 import 'edit_goods_opening_screen.dart';
+import 'goods_card.dart';
 
 class GoodsOpeningDetailsScreen extends StatefulWidget {
   final GoodsOpeningDocument document;
@@ -72,6 +73,10 @@ class _GoodsOpeningDetailsScreenState extends State<GoodsOpeningDetailsScreen> {
       {
         'label': '${localizations.translate('storage')}:',
         'value': currentDocument.storage?.name ?? 'N/A',
+      },
+      {
+        'label': '${localizations.translate('created_at')}:',
+        'value': formatGoodsOpeningDate(currentDocument.date),
       },
       {
         'label': '${localizations.translate('quantity')}:',

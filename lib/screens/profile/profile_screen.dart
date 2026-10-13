@@ -40,6 +40,7 @@ import 'package:crm_task_manager/screens/deal/deal_cache.dart';
 import 'package:crm_task_manager/screens/lead/lead_cache.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/change_password_button.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/biometric_toggle.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/appearance_button_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_button.dart';
@@ -451,6 +452,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileEdit(),
                       LanguageButtonWidget(),
                       PinChangeWidget(),
+                      const ChangePasswordButton(),
                       if (_hasPermissionToAddLeadAndSwitch)
                         ToggleFeatureButton(),
                       BiometricToggleWidget(),

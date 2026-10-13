@@ -8,6 +8,18 @@ class SceneDelegate: FlutterSceneDelegate {
         UIApplication.shared.delegate as? AppDelegate
     }
 
+    override func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        // Холодный запуск с тапа по пушу приходит сюда раньше, чем Dart.
+        if let response = connectionOptions.notificationResponse {
+            appDelegate?.capturePushTap(response.notification.request.content.userInfo)
+        }
+        super.scene(scene, willConnectTo: session, options: connectionOptions)
+    }
+
     override func sceneDidBecomeActive(_ scene: UIScene) {
         super.sceneDidBecomeActive(scene)
         appDelegate?.handleSceneDidBecomeActive()

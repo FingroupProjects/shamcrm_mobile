@@ -368,8 +368,8 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     return CustomDropdownDecoration(
       closedFillColor: context.appColors.fieldBg,
       expandedFillColor: context.appColors.surfacePrimary,
-      closedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
-      expandedBorder: Border.all(color: context.appColors.fieldBg, width: 1),
+      closedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
+      expandedBorder: Border.all(color: context.appColors.borderSubtle, width: 1),
       closedBorderRadius: BorderRadius.circular(12),
       expandedBorderRadius: BorderRadius.circular(12),
     );
@@ -543,7 +543,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                         .firstWhere((s) => s.id == _selectedSupplier!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       _selectedSupplier = value;
                     });
@@ -693,7 +693,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                         .firstWhere((c) => c.id == _selectedCashRegister!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       _selectedCashRegister = value;
                     });
@@ -834,7 +834,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     ? leadsList.firstWhere((c) => c.id == _selectedLead!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       _selectedLead = value;
                     });
@@ -963,7 +963,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                     ? authorsList.firstWhere((a) => a.id == selectedAuthor!.id)
                     : null,
                 onChanged: (value) {
-                  if (value != null && mounted) {
+                  if (mounted) {
                     setState(() {
                       selectedAuthor = value;
                     });
@@ -1121,7 +1121,14 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                                       .translate('not_approved') ??
                                   'Не одобрено',
                             ],
-                            onSelectstatusMethod: (String value) {
+                            onSelectstatusMethod: (value) {
+                              if (value == null) {
+                                if (mounted) {
+                                  setState(() => _selectedStatus = null);
+                                }
+                                return;
+                              }
+
                               if (mounted) {
                                 setState(() {
                                   _selectedStatus = value ==
@@ -1170,7 +1177,14 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                                     : AppLocalizations.of(context)!
                                         .translate('not_deleted'))
                                 : null,
-                            onSelectstatusMethod: (String value) {
+                            onSelectstatusMethod: (value) {
+                              if (value == null) {
+                                if (mounted) {
+                                  setState(() => _isDeleted = null);
+                                }
+                                return;
+                              }
+
                               if (mounted) {
                                 setState(() {
                                   _isDeleted = value ==
@@ -1254,7 +1268,7 @@ class _DatePeriodCell extends StatelessWidget {
 
 class _StatusMethodDropdown extends StatefulWidget {
   final String? selectedstatusMethod;
-  final Function(String) onSelectstatusMethod;
+  final Function(String?) onSelectstatusMethod;
   final List<String> statusMethodsList;
   final String title;
 
@@ -1311,9 +1325,9 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
             closedFillColor: context.appColors.fieldBg,
             expandedFillColor: context.appColors.surfacePrimary,
             closedBorder:
-                Border.all(color: context.appColors.fieldBg, width: 1),
+                Border.all(color: context.appColors.borderSubtle, width: 1),
             expandedBorder:
-                Border.all(color: context.appColors.fieldBg, width: 1),
+                Border.all(color: context.appColors.borderSubtle, width: 1),
             closedBorderRadius: BorderRadius.circular(12),
             expandedBorderRadius: BorderRadius.circular(12),
           ),
@@ -1354,7 +1368,7 @@ class _StatusMethodDropdownState extends State<_StatusMethodDropdown> {
           },
           initialItem: selectedstatusMethod,
           onChanged: (value) {
-            if (value != null && mounted) {
+            if (mounted) {
               widget.onSelectstatusMethod(value);
               setState(() {
                 selectedstatusMethod = value;

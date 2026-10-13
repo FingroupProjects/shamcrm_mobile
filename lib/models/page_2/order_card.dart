@@ -24,6 +24,9 @@ class Order {
   final String? paymentStatus; // Новое поле
   final int? integrationId;
   final DateTime? createdAt;
+  // Дата заказа с сервера. Ключ ответа: date.
+  // Показ на экране просмотра зависит от field position этого поля.
+  final String? date;
   final int?
       storageId; // Новое поле для storage_id (пока используется вместо branchId)
   final String? storageName;
@@ -56,6 +59,7 @@ class Order {
     this.paymentStatus, // Добавляем в конструктор
     this.integrationId,
     this.createdAt,
+    this.date,
     this.storageId,
     this.storageName,
     this.authorName,
@@ -95,6 +99,7 @@ class Order {
         orderStatus: OrderStatusName.fromJson(
             SafeConverters.toMap(json['order_status'])),
         createdAt: SafeConverters.toDateTimeOrNull(json['created_at']),
+        date: _readOrderDate(json['date']),
         goods: SafeConverters.toList(json['order_goods'])
             .map((g) => Good.fromJson(SafeConverters.toMap(g)))
             .toList(),
@@ -153,6 +158,7 @@ class Order {
       'deal': deal?.toJson(),
       'order_status': orderStatus.toJson(),
       'created_at': createdAt?.toIso8601String(),
+      'date': date,
 
       'order_goods': goods.map((g) => g.toJson()).toList(),
       'organization_id': organizationId,
@@ -191,6 +197,7 @@ class Order {
     double? sum,
     String? paymentStatus,
     int? integrationId,
+    String? date,
     int? storageId,
     String? storageName,
     String? authorName,
@@ -219,6 +226,7 @@ class Order {
       sum: sum ?? this.sum,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       integrationId: integrationId ?? this.integrationId,
+      date: date ?? this.date,
       storageId: storageId ?? this.storageId,
       storageName: storageName ?? this.storageName,
       authorName: authorName ?? this.authorName,
@@ -263,6 +271,14 @@ class OrderFile {
       'size': size,
     };
   }
+}
+
+// Сервер отдаёт date строкой. Пустое и "null" не показываем.
+String? _readOrderDate(dynamic raw) {
+  if (raw == null) return null;
+  final text = raw.toString().trim();
+  if (text.isEmpty || text == 'null') return null;
+  return text;
 }
 
 String? _nameFromServer(dynamic raw) {

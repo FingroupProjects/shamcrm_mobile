@@ -11,11 +11,13 @@ import '../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import '../../../custom_widget/custom_app_bar_simple.dart';
+import '../../../models/page_2/openings/goods_opening_filter.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
 import 'supplier/supplier_content.dart';
 import 'client/client_content.dart';
 import 'goods/goods_content.dart';
+import 'goods/goods_opening_filter_screen.dart';
 import 'cash_register/cash_register_content.dart';
 import 'supplier/create_supplier_opening_dialog.dart';
 import 'client/create_client_opening_dialog.dart';
@@ -87,6 +89,7 @@ class _OpeningsScreenState extends State<OpeningsScreen>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String? _currentSearch;
+  GoodsOpeningFilter _goodsFilter = GoodsOpeningFilter.empty;
 
   // Store bloc instances
   late SupplierOpeningsBloc _supplierBloc;
@@ -190,6 +193,9 @@ class _OpeningsScreenState extends State<OpeningsScreen>
             showSearchIcon: !isClickAvatarIcon &&
                 _currentTabIndex !=
                     3, // Показываем поиск на всех вкладках кроме Кассы (id=3)
+            showFilterIcon: !isClickAvatarIcon && _currentTabIndex == 2,
+            filterActive: _goodsFilter.isActive && _currentTabIndex == 2,
+            onFilterTap: _openGoodsFilter,
             onChangedSearchInput: _onSearch,
             textEditingController: _searchController,
             focusNode: _searchFocusNode,
@@ -347,12 +353,30 @@ class _OpeningsScreenState extends State<OpeningsScreen>
       // Client tab - передаем текущий search
       _clientBloc.add(LoadClientOpenings(search: _currentSearch));
     } else if (id == 2) {
-      // Goods tab - передаем текущий search
+      // Goods tab - поиск не сбрасывает уже выбранный фильтр.
       _goodsBloc.add(LoadGoodsOpenings(search: _currentSearch));
     } else if (id == 3) {
       // Cash register tab - поиск не используется, всегда null
       _cashRegisterBloc.add(LoadCashRegisterOpenings(search: null));
     }
+  }
+
+  Future<void> _openGoodsFilter() async {
+    final result = await Navigator.push<GoodsOpeningFilter>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GoodsOpeningFilterScreen(initial: _goodsFilter),
+      ),
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      _goodsFilter = result;
+    });
+    _goodsBloc.add(LoadGoodsOpenings(
+      search: _currentSearch,
+      filters: result,
+      updateFilters: true,
+    ));
   }
 
   void _showCreateDialog() {

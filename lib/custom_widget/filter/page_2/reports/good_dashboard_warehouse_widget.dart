@@ -263,14 +263,11 @@ class _GoodDashboardWarehouseWidgetState extends State<GoodDashboardWarehouseWid
                   if (kDebugMode) {
                     debugPrint('🟢 GoodWidget: onChanged - selected ${value?.name}');
                   }
-
-                  if (value != null) {
-                    widget.onChanged(value.id.toString());
-                    setState(() {
-                      selectedGoodData = value;
-                    });
-                    FocusScope.of(context).unfocus();
-                  }
+                  widget.onChanged(value?.id.toString());
+                  setState(() {
+                    selectedGoodData = value;
+                  });
+                  FocusScope.of(context).unfocus();
                 },
               );
             },

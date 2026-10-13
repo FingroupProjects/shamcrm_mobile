@@ -570,9 +570,9 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
             padding: const EdgeInsets.all(8),
             child: DealStatusRadioGroupWidget(
               selectedStatus: _selectedStatuses?.toString(),
-              onSelectStatus: (DealStatus selectedStatusData) {
+              onSelectStatus: (selectedStatusData) {
                 setState(() {
-                  _selectedStatuses = selectedStatusData.id;
+                  _selectedStatuses = selectedStatusData?.id;
                 });
               },
             ),
@@ -1331,11 +1331,10 @@ class _DealManagerFilterScreenState extends State<DealManagerFilterScreen> {
                                   child: DealStatusRadioGroupWidget(
                                     selectedStatus:
                                         _selectedStatuses?.toString(),
-                                    onSelectStatus:
-                                        (DealStatus selectedStatusData) {
+                                    onSelectStatus: (selectedStatusData) {
                                       setState(() {
                                         _selectedStatuses =
-                                            selectedStatusData.id;
+                                            selectedStatusData?.id;
                                       });
                                     },
                                   ),

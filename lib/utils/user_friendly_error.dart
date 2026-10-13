@@ -35,11 +35,16 @@ String friendlyError(Object error,
 
   // Keep useful server text, but remove Dart's technical "Exception: " prefix
   // and never expose an empty/technical-only value to the user.
-  final cleaned = raw
-      .replaceFirst(
-          RegExp(r'^\s*(?:[A-Za-z_][A-Za-z0-9_.]*Exception|Error)\s*:\s*',
-              caseSensitive: false),
-          '')
+  // Голое "Exception:" раньше не совпадало: шаблон требовал букву перед словом.
+  final prefix = RegExp(
+    r'^\s*(?:(?:[A-Za-z_][A-Za-z0-9_.]*)?Exception|Error)\s*:\s*',
+    caseSensitive: false,
+  );
+  var cleaned = raw;
+  while (prefix.hasMatch(cleaned)) {
+    cleaned = cleaned.replaceFirst(prefix, '');
+  }
+  cleaned = cleaned
       .replaceFirst(RegExp(r'^\s*@e\s*', caseSensitive: false), '')
       .trim();
 
