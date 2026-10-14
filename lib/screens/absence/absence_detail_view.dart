@@ -100,23 +100,60 @@ class _AbsenceDetailScreenState extends State<AbsenceDetailScreen> {
     if (request == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.appColors.surfacePrimary,
-        title: Text(
-          absenceTr(context, 'absence_cancel_confirm'),
-          style: absenceStyle(context, size: 18, weight: FontWeight.w700),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(absenceTr(context, 'cancel')),
+      builder: (dialogContext) {
+        final colors = dialogContext.appColors;
+        return AlertDialog(
+          backgroundColor: colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: colors.borderSubtle),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(absenceTr(context, 'absence_cancel_request')),
+          title: Center(
+            child: Text(
+              absenceTr(dialogContext, 'absence_cancel_request'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+              ),
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            absenceTr(dialogContext, 'absence_cancel_confirm'),
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    buttonText: absenceTr(dialogContext, 'close'),
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    buttonColor: colors.buttonSecondaryBg,
+                    textColor: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CustomButton(
+                    buttonText: absenceTr(dialogContext, 'absence_cancel_request'),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    buttonColor: colors.buttonDangerBg,
+                    textColor: colors.buttonDangerFg,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -398,7 +435,12 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
                 _leadRow(
                   context,
                   absenceTr(context, 'absence_time'),
-                  clock.isEmpty ? absenceTr(context, 'absence_all_day') : clock,
+                  clock.isEmpty
+                      ? absenceTr(
+                          context,
+                          absenceUntimedSpanKey(request.dateFrom, request.dateTo),
+                        )
+                      : clock,
                 ),
                 _leadRow(context, absenceTr(context, 'absence_reason'), request.reason),
                 _leadRow(context, absenceTr(context, 'status'), absenceStatusText(context, request)),
@@ -415,6 +457,12 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
                     absenceTr(context, 'absence_decision'),
                     decision,
                     maxLines: 2,
+                  ),
+                if (request.createdAt != null)
+                  _leadRow(
+                    context,
+                    absenceTr(context, 'absence_created_at'),
+                    formatAbsenceDisplayDateTime(request.createdAt!),
                   ),
                 if (request.limitWarning != null) ...[
                   const SizedBox(height: 8),

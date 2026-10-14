@@ -10,11 +10,11 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_quantity.dart';
 import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
@@ -46,7 +46,8 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
-  final Map<int, int> _selectedQuantities = {};
+  // Количество может быть дробным: 0.5, 1.4.
+  final Map<int, double> _selectedQuantities = {};
   final Map<int, TextEditingController> _quantityControllers = {};
 
   @override
@@ -281,7 +282,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
           _quantityControllers.clear();
         }
         _selectedVariants[variantId] = variant;
-        _selectedQuantities[variantId] = 1;
+        _selectedQuantities[variantId] = 1.0;
       }
     });
 
@@ -297,17 +298,18 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     return _selectedVariants.containsKey(variant.id);
   }
 
-  int _getVariantQuantity(Variant variant) {
+  double _getVariantQuantity(Variant variant) {
     return _selectedQuantities[variant.id] ?? 1;
   }
 
   TextEditingController _getQuantityController(Variant variant) {
     final variantId = variant.id;
-    final currentText = '${_getVariantQuantity(variant)}';
+    final currentText = OrderQuantity.format(_getVariantQuantity(variant));
     final controller = _quantityControllers[variantId];
 
     if (controller != null) {
-      if (controller.text != currentText) {
+      // Не затираем «0.» и «1.», пока человек дописывает дробь.
+      if (!OrderQuantity.shouldKeepText(controller.text, currentText)) {
         controller.value = TextEditingValue(
           text: currentText,
           selection: TextSelection.collapsed(offset: currentText.length),
@@ -325,7 +327,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final controller = _quantityControllers[variantId];
     if (controller == null) return;
 
-    final text = '${_selectedQuantities[variantId] ?? 1}';
+    final text = OrderQuantity.format(_selectedQuantities[variantId] ?? 1);
     if (controller.text == text) return;
 
     controller.value = TextEditingValue(
@@ -334,16 +336,26 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     );
   }
 
-  void _updateVariantQuantity(Variant variant, int quantity) {
+  void _updateVariantQuantity(
+    Variant variant,
+    double quantity, {
+    bool syncText = true,
+  }) {
     if (!_selectedVariants.containsKey(variant.id)) {
       return;
     }
 
-    final normalizedQuantity = quantity < 1 ? 1 : quantity;
+    // Ноль и минус не продаём. 0.5 и 1.4 — можно.
+    if (quantity <= 0) {
+      if (syncText) _syncQuantityController(variant.id);
+      return;
+    }
+
+    final normalizedQuantity = OrderQuantity.round(quantity);
     final currentQuantity = _getVariantQuantity(variant);
 
     if (currentQuantity == normalizedQuantity) {
-      _syncQuantityController(variant.id);
+      if (syncText) _syncQuantityController(variant.id);
       return;
     }
 
@@ -351,21 +363,28 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
       _selectedQuantities[variant.id] = normalizedQuantity;
     });
 
-    _syncQuantityController(variant.id);
+    if (syncText) _syncQuantityController(variant.id);
   }
 
   void _handleQuantityInput(Variant variant, String value) {
-    if (value.isEmpty) {
-      return;
-    }
+    // «0» и «1.» ещё не готовы: ждём следующую цифру, например 0.5.
+    if (OrderQuantity.isTyping(value)) return;
 
-    final parsedValue = int.tryParse(value);
+    final parsedValue = OrderQuantity.tryParse(value);
+    if (parsedValue == null) return;
+
+    _updateVariantQuantity(variant, parsedValue, syncText: false);
+  }
+
+  void _finishQuantityInput(Variant variant) {
+    final text = _quantityControllers[variant.id]?.text ?? '';
+    final parsedValue = OrderQuantity.tryParse(text);
     if (parsedValue == null) {
       _syncQuantityController(variant.id);
-      return;
+    } else {
+      _updateVariantQuantity(variant, parsedValue);
     }
-
-    _updateVariantQuantity(variant, parsedValue);
+    FocusScope.of(context).unfocus();
   }
 
   void _disposeQuantityController(int variantId) {
@@ -382,9 +401,10 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
   void _decrementQuantity(Variant variant) {
     if (_selectedVariants.containsKey(variant.id)) {
-      final currentQty = _getVariantQuantity(variant);
-      if (currentQty > 1) {
-        _updateVariantQuantity(variant, currentQty - 1);
+      final nextQuantity = _getVariantQuantity(variant) - 1;
+      // 1.4 минус 1 даёт 0.4. Ниже нуля не уходим.
+      if (nextQuantity > 0) {
+        _updateVariantQuantity(variant, nextQuantity);
       } else {
         _syncQuantityController(variant.id);
       }
@@ -398,8 +418,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
               'id': variant.id,
               'name': _getDisplayName(variant),
               'price': variant.price ?? 0.0,
-              'quantity':
-                  _isTojsokhtmontjTenant ? 1 : _getVariantQuantity(variant),
+              'quantity': _isTojsokhtmontjTenant
+                  ? 1
+                  : OrderQuantity.compact(_getVariantQuantity(variant)),
               'availabilityStatus': variant.good?.availabilityStatus,
               'imagePath': variant.good?.files.isNotEmpty == true
                   ? variant.good!.files[0].path
@@ -1213,12 +1234,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                                 ),
                               ),
                               SizedBox(
-                                width: 44,
+                                width: 56,
                                 child: TextField(
                                   controller: _getQuantityController(variant),
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          decimal: true),
+                                          decimal: true, signed: false),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 15,
@@ -1236,21 +1257,14 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                                     disabledBorder: InputBorder.none,
                                   ),
                                   inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
+                                    OrderQuantityInputFormatter(),
                                   ],
                                   onChanged: (value) =>
                                       _handleQuantityInput(variant, value),
-                                  onEditingComplete: () {
-                                    if ((_quantityControllers[variant.id]
-                                                ?.text ??
-                                            '')
-                                        .isEmpty) {
-                                      _syncQuantityController(variant.id);
-                                    }
-                                    FocusScope.of(context).unfocus();
-                                  },
-                                  onSubmitted: (value) =>
-                                      _handleQuantityInput(variant, value),
+                                  onEditingComplete: () =>
+                                      _finishQuantityInput(variant),
+                                  onSubmitted: (_) =>
+                                      _finishQuantityInput(variant),
                                 ),
                               ),
                               GestureDetector(

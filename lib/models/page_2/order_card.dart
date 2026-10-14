@@ -422,7 +422,8 @@ class Good {
   final GoodItem? variantGood;
   final int goodId;
   final String goodName;
-  final int quantity;
+  // Дробное количество: 0.5 порции, 1.4 штуки.
+  final double quantity;
   final double price;
   final String? availabilityStatus;
 
@@ -549,7 +550,7 @@ class Good {
           (goodItem.name.isNotEmpty
               ? goodItem.name
               : (variantGoodItem?.name ?? '')),
-      quantity: SafeConverters.toInt(json['quantity']),
+      quantity: SafeConverters.toDouble(json['quantity']),
       availabilityStatus: availabilityStatus,
       price: SafeConverters.toDouble(
         json['price'] ?? variantPriceMap?['price'] ?? goodPriceMap?['price'],

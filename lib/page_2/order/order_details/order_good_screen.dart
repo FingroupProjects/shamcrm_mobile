@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/goods/goods_details/goods_details_screen.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_quantity.dart';
 import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -99,7 +100,7 @@ class _OrderGoodsState extends State<OrderGoodsScreen> {
                       const SizedBox(height: 4),
                       _buildInfoRow(
                         AppLocalizations.of(context)!.translate('counts'),
-                        '${good.quantity}',
+                        OrderQuantity.format(good.quantity),
                       ),
                       const SizedBox(height: 2),
                       _buildInfoRow(

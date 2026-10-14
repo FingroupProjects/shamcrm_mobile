@@ -43,13 +43,11 @@ AbsenceFormErrors validateAbsenceDraft(
 }) {
   final errors = <String, String>{};
   final from = draft.dateFrom == null ? null : dateOnly(draft.dateFrom!);
-  var to = draft.dateTo == null ? null : dateOnly(draft.dateTo!);
+  // Пустая «дата до» — это тот же день. Время при этом можно указать на весь период.
+  final to = draft.dateTo == null ? from : dateOnly(draft.dateTo!);
   final timeFrom = _blank(draft.timeFrom);
   final timeTo = _blank(draft.timeTo);
   final bothTimes = timeFrom != null && timeTo != null;
-
-  // Если время указано, заявка всегда на один день.
-  if (bothTimes) to = from;
 
   if (from == null || to == null) {
     errors['date_from'] = 'absence_err_dates';
@@ -72,13 +70,14 @@ AbsenceFormErrors validateAbsenceDraft(
   return AbsenceFormErrors(errors);
 }
 
-/// Тело POST/PUT. Пустое время не отправляем: бэкенд сам ставит full_day.
+/// Тело POST/PUT. Время необязательно и действует на каждый день периода.
+/// Пустую «дату до» отправляем как «дату от»: это один день.
 Map<String, dynamic> absenceRequestBody(AbsenceDraft draft) {
   final from = draft.dateFrom!;
   final timeFrom = _blank(draft.timeFrom);
   final timeTo = _blank(draft.timeTo);
   final bothTimes = timeFrom != null && timeTo != null;
-  final to = bothTimes ? from : draft.dateTo!;
+  final to = draft.dateTo ?? from;
   final body = <String, dynamic>{
     'date_from': formatAbsenceApiDate(from),
     'date_to': formatAbsenceApiDate(to),
@@ -160,6 +159,13 @@ String formatAbsencePeriod(DateTime from, DateTime to) {
 int absenceDayCount(DateTime from, DateTime to) {
   final days = dateOnly(to).difference(dateOnly(from)).inDays + 1;
   return days < 1 ? 1 : days;
+}
+
+/// Без времени один день — «весь день», несколько дней — «весь период».
+String absenceUntimedSpanKey(DateTime from, DateTime to) {
+  return absenceDayCount(from, to) > 1
+      ? 'absence_whole_period'
+      : 'absence_all_day';
 }
 
 String formatAbsenceClock(String? from, String? to) {

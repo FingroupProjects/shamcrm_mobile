@@ -82,28 +82,46 @@ void main() {
     expect(ok.isEmpty, isTrue);
   });
 
-  test('filled time forces a one-day request and omits empty time', () {
+  test('time can cover a date range, and an empty end date is that one day', () {
     final body = absenceRequestBody(
       draft(
         from: DateTime(2026, 10, 20),
-        to: DateTime(2026, 10, 22),
+        to: DateTime(2026, 10, 29),
         timeFrom: '10:00',
-        timeTo: '12:00',
+        timeTo: '11:00',
       ),
     );
     expect(body['date_from'], '2026-10-20');
-    expect(body['date_to'], '2026-10-20');
+    expect(body['date_to'], '2026-10-29');
     expect(body['time_from'], '10:00');
-    expect(body['time_to'], '12:00');
+    expect(body['time_to'], '11:00');
 
-    final fullDay = absenceRequestBody(
+    final oneDay = absenceRequestBody(
+      draft(
+        from: DateTime(2026, 10, 20),
+        timeFrom: '10:00',
+        timeTo: '11:00',
+      ),
+    );
+    expect(oneDay['date_to'], '2026-10-20');
+    expect(oneDay['time_from'], '10:00');
+
+    final fullPeriod = absenceRequestBody(
       draft(
         from: DateTime(2026, 10, 20),
         to: DateTime(2026, 10, 22),
       ),
     );
-    expect(fullDay.containsKey('time_from'), isFalse);
-    expect(fullDay['date_to'], '2026-10-22');
+    expect(fullPeriod.containsKey('time_from'), isFalse);
+    expect(fullPeriod['date_to'], '2026-10-22');
+    expect(
+      absenceUntimedSpanKey(DateTime(2026, 10, 20), DateTime(2026, 10, 20)),
+      'absence_all_day',
+    );
+    expect(
+      absenceUntimedSpanKey(DateTime(2026, 10, 20), DateTime(2026, 10, 29)),
+      'absence_whole_period',
+    );
   });
 
   test('time list covers the whole day from 00:00 to 24:00', () {

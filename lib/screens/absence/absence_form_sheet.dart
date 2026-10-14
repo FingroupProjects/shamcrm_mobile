@@ -34,9 +34,6 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
 
   bool get _editing => widget.initial != null;
 
-  bool get _timesFilled =>
-      (_timeFrom?.isNotEmpty ?? false) && (_timeTo?.isNotEmpty ?? false);
-
   @override
   void initState() {
     super.initState();
@@ -58,7 +55,7 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
   AbsenceDraft _draft() {
     return AbsenceDraft(
       dateFrom: _dateFrom,
-      dateTo: _timesFilled ? _dateFrom : _dateTo,
+      dateTo: _dateTo,
       timeFrom: _timeFrom,
       timeTo: _timeTo,
       reason: _reason.text,
@@ -196,15 +193,14 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
                   error: _translated(_errors['date_from']),
                   onTap: _saving ? null : () => _pickDate(from: true),
                 ),
-                if (!_timesFilled) ...[
-                  const SizedBox(height: 12),
-                  AbsenceTapField(
-                    label: absenceTr(context, 'absence_date_to'),
-                    value: _dateTo == null ? '' : formatAbsenceDisplayDate(_dateTo!),
-                    error: _translated(_errors['date_to']),
-                    onTap: _saving ? null : () => _pickDate(from: false),
-                  ),
-                ],
+                const SizedBox(height: 12),
+                // Дата до остаётся и вместе со временем: одно время на каждый день периода.
+                AbsenceTapField(
+                  label: absenceTr(context, 'absence_date_to'),
+                  value: _dateTo == null ? '' : formatAbsenceDisplayDate(_dateTo!),
+                  error: _translated(_errors['date_to']),
+                  onTap: _saving ? null : () => _pickDate(from: false),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

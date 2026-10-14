@@ -38,6 +38,7 @@ import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dro
 import 'package:crm_task_manager/page_2/order/order_details/delivery_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_method_dropdown.dart';
 import 'package:crm_task_manager/page_2/order/order_details/goods_selection_sheet_patch.dart';
+import 'package:crm_task_manager/page_2/order/order_details/order_quantity.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_field_config_utils.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/page_2/rmk/rmk_barcode_scanner_screen.dart';
@@ -180,7 +181,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 'id': good.goodId,
                 'name': good.goodName,
                 'price': good.price,
-                'quantity': good.quantity,
+                'quantity': OrderQuantity.compact(good.quantity),
                 'availabilityStatus': good.availabilityStatus,
                 'imagePath': null,
               })
@@ -232,9 +233,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         'price': (item['price'] as num?)?.toDouble() ??
             double.tryParse('${item['price']}') ??
             0.0,
-        'quantity': (item['quantity'] as num?)?.toInt() ??
-            int.tryParse('${item['quantity']}') ??
-            1,
+        'quantity': OrderQuantity.compact(OrderQuantity.read(item['quantity'])),
         'availabilityStatus': item['availabilityStatus'] ??
             item['availability_status'] ??
             item['status'],
@@ -310,9 +309,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       if (existingIndex != -1) {
         setState(() {
           final currentQty =
-              (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0)
-                  .toInt();
-          _items[existingIndex]['quantity'] = currentQty + 1;
+              OrderQuantity.read(_items[existingIndex]['quantity'], fallback: 0);
+          _items[existingIndex]['quantity'] =
+              OrderQuantity.compact(currentQty + 1);
 
           if (_isTotalEdited) {
             final currentTotal = _getCurrentTotal();
@@ -2236,9 +2235,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       if (existingIndex != -1) {
         setState(() {
           final currentQty =
-              (num.tryParse('${_items[existingIndex]['quantity']}') ?? 0)
-                  .toInt();
-          _items[existingIndex]['quantity'] = currentQty + 1;
+              OrderQuantity.read(_items[existingIndex]['quantity'], fallback: 0);
+          _items[existingIndex]['quantity'] =
+              OrderQuantity.compact(currentQty + 1);
 
           if (_isTotalEdited) {
             final currentTotal = _getCurrentTotal();
@@ -2305,7 +2304,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                       id: item['id'],
                       name: item['name'],
                       description: '',
-                      quantity: item['quantity'],
+                      quantity: OrderQuantity.asWholeUnits(item['quantity']),
                       files: item['imagePath'] != null
                           ? [
                               GoodFile(
@@ -2319,7 +2318,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                     goodId: item['id'],
                     goodName: item['name'],
                     price: item['price'],
-                    quantity: item['quantity'],
+                    quantity: OrderQuantity.read(item['quantity']),
                   ))
               .toList(),
           organizationId: widget.organizationId,
@@ -2348,9 +2347,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         0,
         (sum, item) {
           final itemPrice = (item['price'] as num?)?.toDouble() ?? 0;
-          final itemQuantity = (item['quantity'] as num?)?.toInt() ??
-              int.tryParse('${item['quantity']}') ??
-              1;
+          final itemQuantity = OrderQuantity.read(item['quantity']);
           return sum + (itemPrice * itemQuantity);
         },
       );
@@ -2382,10 +2379,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         'Index вне диапазона списка товаров');
     final item = _items[index];
     final key = identityHashCode(item);
-    final currentText = '${item['quantity'] ?? 1}';
+    final currentText = OrderQuantity.format(OrderQuantity.read(item['quantity']));
     final existingController = _quantityControllers[key];
     if (existingController != null) {
-      if (existingController.text != currentText) {
+      // Не сбрасываем поле, пока вводят «0.» или «1.».
+      if (!OrderQuantity.shouldKeepText(existingController.text, currentText)) {
         existingController.value = TextEditingValue(
           text: currentText,
           selection: TextSelection.collapsed(offset: currentText.length),
@@ -2412,9 +2410,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final price = double.tryParse(value.replaceAll(',', '.'));
     if (price == null || index < 0 || index >= _items.length) return;
     final oldPrice = (_items[index]['price'] as num?)?.toDouble() ?? 0;
-    final quantity = (_items[index]['quantity'] as num?)?.toInt() ??
-        int.tryParse('${_items[index]['quantity']}') ??
-        1;
+    final quantity = OrderQuantity.read(_items[index]['quantity']);
     setState(() {
       _items[index]['price'] = price;
       if (_isTotalEdited && price != oldPrice) {
@@ -2566,7 +2562,8 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     final controller = _quantityControllers[key];
     if (controller == null) return;
 
-    final text = '${_items[index]['quantity'] ?? 1}';
+    final text =
+        OrderQuantity.format(OrderQuantity.read(_items[index]['quantity']));
     if (controller.text == text) return;
 
     controller.value = TextEditingValue(
@@ -2576,37 +2573,48 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   void _handleQuantityInput(int index, String value) {
-    if (value.isEmpty) {
-      return;
-    }
+    // «0» и «1.» ещё не готовы — ждём 0.5 или 1.4.
+    if (OrderQuantity.isTyping(value)) return;
 
-    final parsedValue = int.tryParse(value);
-    if (parsedValue == null) {
-      _syncQuantityController(index);
-      return;
-    }
+    final parsedValue = OrderQuantity.tryParse(value);
+    if (parsedValue == null) return;
 
-    _updateQuantity(index, parsedValue);
+    _updateQuantity(index, parsedValue, syncText: false);
   }
 
   void _handleQuantityEditingComplete(int index) {
-    _syncQuantityController(index);
+    if (index < 0 || index >= _items.length) {
+      FocusScope.of(context).unfocus();
+      return;
+    }
+    final key = identityHashCode(_items[index]);
+    final parsedValue =
+        OrderQuantity.tryParse(_quantityControllers[key]?.text ?? '');
+    if (parsedValue == null) {
+      _syncQuantityController(index);
+    } else {
+      _updateQuantity(index, parsedValue);
+    }
     FocusScope.of(context).unfocus();
   }
 
-  void _updateQuantity(int index, int newQuantity) {
+  void _updateQuantity(int index, double newQuantity, {bool syncText = true}) {
     if (!mounted || index < 0 || index >= _items.length) return;
 
+    // Дробь больше нуля допустима. Ноль и минус — нет.
+    if (newQuantity <= 0) {
+      if (syncText) _syncQuantityController(index);
+      return;
+    }
+
     final item = _items[index];
-    final oldQuantity = (item['quantity'] as num?)?.toInt() ??
-        int.tryParse('${item['quantity']}') ??
-        1;
+    final oldQuantity = OrderQuantity.read(item['quantity']);
     final itemPrice = (item['price'] as num?)?.toDouble() ?? 0;
-    final normalizedQuantity = newQuantity < 1 ? 1 : newQuantity;
+    final normalizedQuantity = OrderQuantity.round(newQuantity);
     final deltaQuantity = normalizedQuantity - oldQuantity;
 
     setState(() {
-      _items[index]['quantity'] = normalizedQuantity;
+      _items[index]['quantity'] = OrderQuantity.compact(normalizedQuantity);
       if (_isTotalEdited && deltaQuantity != 0) {
         final currentTotal = _getCurrentTotal();
         final adjustedTotal = currentTotal + (deltaQuantity * itemPrice);
@@ -2614,7 +2622,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       }
     });
 
-    _syncQuantityController(index);
+    if (syncText) _syncQuantityController(index);
   }
 
   void _removeItem(int index) {
@@ -2622,9 +2630,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
     final removedItem = _items[index];
     final removedPrice = (removedItem['price'] as num?)?.toDouble() ?? 0;
-    final removedQuantity = (removedItem['quantity'] as num?)?.toInt() ??
-        int.tryParse('${removedItem['quantity']}') ??
-        1;
+    final removedQuantity = OrderQuantity.read(removedItem['quantity']);
     final removedTotal = removedPrice * removedQuantity;
     final key = identityHashCode(_items[index]);
     final controller = _quantityControllers.remove(key);
@@ -2884,7 +2890,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                                 'id': good.goodId,
                                 'name': good.goodName,
                                 'price': good.price,
-                                'quantity': good.quantity,
+                                'quantity': OrderQuantity.compact(good.quantity),
                                 'imagePath': good.good.files.isNotEmpty
                                     ? good.good.files[0].path
                                     : null,
@@ -3162,7 +3168,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
 
   Widget _buildQuantityStepper({
     required int index,
-    required int quantity,
+    required double quantity,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -3175,7 +3181,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => _updateQuantity(index, quantity - 1),
+            onTap: () {
+              final next = OrderQuantity.round(quantity - 1);
+              if (next <= 0) return;
+              _updateQuantity(index, next);
+            },
             behavior: HitTestBehavior.opaque,
             child: Container(
               width: 42,
@@ -3193,11 +3203,13 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
             ),
           ),
           SizedBox(
-            width: 44,
+            width: 56,
             child: TextField(
               controller: _getQuantityController(index),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: false,
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -3214,15 +3226,16 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                 disabledBorder: InputBorder.none,
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
+                OrderQuantityInputFormatter(),
               ],
               onChanged: (value) => _handleQuantityInput(index, value),
               onEditingComplete: () => _handleQuantityEditingComplete(index),
-              onSubmitted: (value) => _handleQuantityInput(index, value),
+              onSubmitted: (_) => _handleQuantityEditingComplete(index),
             ),
           ),
           GestureDetector(
-            onTap: () => _updateQuantity(index, quantity + 1),
+            onTap: () =>
+                _updateQuantity(index, OrderQuantity.round(quantity + 1)),
             behavior: HitTestBehavior.opaque,
             child: Container(
               width: 42,
@@ -3386,9 +3399,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
   }
 
   Widget _buildItemCard(int index, Map<String, dynamic> item) {
-    final quantity = (item['quantity'] as num?)?.toInt() ??
-        int.tryParse('${item['quantity']}') ??
-        1;
+    final quantity = OrderQuantity.read(item['quantity']);
     final imagePath = item['imagePath']?.toString();
 
     return Container(

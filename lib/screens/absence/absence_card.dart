@@ -29,7 +29,7 @@ class AbsenceRequestCard extends StatelessWidget {
     final period = formatAbsencePeriod(request.dateFrom, request.dateTo);
     final clock = formatAbsenceClock(request.timeFrom, request.timeTo);
     final when = clock.isEmpty
-        ? '$period · ${absenceTr(context, 'absence_all_day')}'
+        ? '$period · ${absenceTr(context, absenceUntimedSpanKey(request.dateFrom, request.dateTo))}'
         : '$period · $clock';
 
     return Container(
