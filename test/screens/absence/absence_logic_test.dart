@@ -237,6 +237,8 @@ void main() {
     });
     expect(canDecideAbsence(access: head, request: own), isFalse);
     expect(canDecideAbsence(access: admin, request: own), isTrue);
+    expect(head.showMenu, isFalse);
+    expect(admin.showMenu, isFalse);
     expect(head.canSubmit, isTrue);
     expect(head.showMy, isTrue);
     expect(admin.canSubmit, isFalse);
@@ -334,7 +336,7 @@ void main() {
     );
     expect(absenceJsonIsHead({'departments': []}), isFalse);
 
-    const employee = AbsenceAccess(
+    const withoutIndex = AbsenceAccess(
       userId: 4,
       canCreatePermission: true,
       canReviewPermission: false,
@@ -342,8 +344,19 @@ void main() {
       isAdminRole: false,
       isHeadOfDepartment: false,
     );
-    expect(employee.showMenu, isTrue);
-    expect(employee.showTeam, isFalse);
+    const withIndex = AbsenceAccess(
+      userId: 4,
+      canIndexPermission: true,
+      canCreatePermission: true,
+      canReviewPermission: false,
+      canSettingsPermission: false,
+      isAdminRole: false,
+      isHeadOfDepartment: false,
+    );
+    // Кнопка раздела только у absence.index. Остальные права её не открывают.
+    expect(withoutIndex.showMenu, isFalse);
+    expect(withIndex.showMenu, isTrue);
+    expect(withIndex.showTeam, isFalse);
     expect(AbsenceAccess.none.showMenu, isFalse);
   });
 }

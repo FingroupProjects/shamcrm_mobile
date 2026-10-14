@@ -4,6 +4,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_preset.dar
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/models/absence/absence_models.dart';
 import 'package:crm_task_manager/screens/absence/absence_form_sheet.dart';
 import 'package:crm_task_manager/screens/absence/absence_logic.dart';
@@ -11,6 +12,7 @@ import 'package:crm_task_manager/screens/absence/absence_reject_dialog.dart';
 import 'package:crm_task_manager/screens/absence/absence_widgets.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Деталь заявки. Из пуша открывается отдельным экраном, из списка — листом.
 class AbsenceDetailScreen extends StatefulWidget {
@@ -383,11 +385,16 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
               ],
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (request.userName.isNotEmpty)
                   _leadRow(context, absenceTr(context, 'employee'), request.userName),
-                _leadRow(context, absenceTr(context, 'absence_type'), absenceTypeText(context, request)),
-                _leadRow(context, absenceTr(context, 'absence_period'), periodText),
+                _leadRow(
+                  context,
+                  absenceTr(context, 'absence_period'),
+                  periodText,
+                  maxLines: 2,
+                ),
                 _leadRow(
                   context,
                   absenceTr(context, 'absence_time'),
@@ -403,12 +410,11 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
                     request.rejectionReason!.trim(),
                   ),
                 if (decision != null)
-                  _leadRow(context, absenceTr(context, 'absence_decision'), decision),
-                if (request.createdAt != null)
                   _leadRow(
                     context,
-                    absenceTr(context, 'absence_submitted'),
-                    formatAbsenceDisplayDateTime(request.createdAt!),
+                    absenceTr(context, 'absence_decision'),
+                    decision,
+                    maxLines: 2,
                   ),
                 if (request.limitWarning != null) ...[
                   const SizedBox(height: 8),
@@ -434,6 +440,8 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
                               ),
                               child: Text(
                                 absenceTr(context, 'absence_approve'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
@@ -459,6 +467,8 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
                               ),
                               child: Text(
                                 absenceTr(context, 'absence_reject'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w600,
@@ -479,35 +489,196 @@ class _AbsenceDetailBodyState extends State<AbsenceDetailBody> {
     );
   }
 
-  Widget _leadRow(BuildContext context, String label, String value) {
+  /// Подпись с двоеточием. Значение в 1 строку, период и решение — в 2.
+  /// Если текст не влезает, в конце три точки, нажатие открывает всё целиком.
+  Widget _leadRow(
+    BuildContext context,
+    String label,
+    String value, {
+    int maxLines = 1,
+  }) {
+    final titled = label.endsWith(':') ? label : '$label:';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            titled,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
               color: context.appColors.fieldHint,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'Gilroy',
-                fontWeight: FontWeight.w500,
-                color: context.appColors.textPrimary,
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final plain = _valueStyle(context);
+                final overflows = _valueOverflows(
+                  value,
+                  plain,
+                  constraints.maxWidth,
+                  maxLines,
+                );
+                if (!overflows) {
+                  return _plainValue(context, value, plain, maxLines);
+                }
+                return _expandableValue(context, titled, value, maxLines);
+              },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  TextStyle _valueStyle(BuildContext context) {
+    return TextStyle(
+      fontSize: 16,
+      fontFamily: 'Gilroy',
+      fontWeight: FontWeight.w600,
+      color: context.appColors.textPrimary,
+    );
+  }
+
+  bool _valueOverflows(
+    String value,
+    TextStyle style,
+    double maxWidth,
+    int maxLines,
+  ) {
+    if (value.isEmpty || maxWidth <= 0) return false;
+    final painter = TextPainter(
+      text: TextSpan(text: value, style: style),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: maxWidth);
+    return painter.didExceedMaxLines;
+  }
+
+  Widget _plainValue(
+    BuildContext context,
+    String value,
+    TextStyle style,
+    int maxLines,
+  ) {
+    return GestureDetector(
+      onLongPress: () => _copyValue(context, value),
+      child: Text(
+        value,
+        style: style,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  /// Длинное значение обрезается тремя точками. Нажатие открывает полный текст.
+  Widget _expandableValue(
+    BuildContext context,
+    String label,
+    String value,
+    int maxLines,
+  ) {
+    return GestureDetector(
+      onTap: () => _showFullTextDialog(
+        context,
+        label.replaceAll(':', ''),
+        value,
+      ),
+      onLongPress: () => _copyValue(context, value),
+      child: Text(
+        value,
+        style: _valueStyle(context).copyWith(
+          fontWeight: FontWeight.w500,
+          decoration: TextDecoration.underline,
+        ),
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  void _copyValue(BuildContext context, String value) {
+    Clipboard.setData(ClipboardData(text: value));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          absenceTr(context, 'copied_to_clipboard'),
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: context.appColors.success,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showFullTextDialog(BuildContext context, String title, String content) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: context.appColors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.appColors.borderSubtle),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: context.appColors.textPrimary,
+                    fontSize: 18,
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 400),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Text(
+                    content,
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(
+                      color: context.appColors.textPrimary,
+                      fontSize: 16,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: CustomButton(
+                  buttonText: absenceTr(context, 'close'),
+                  onPressed: () => Navigator.pop(dialogContext),
+                  buttonColor: context.appColors.buttonPrimaryBg,
+                  textColor: context.appColors.buttonPrimaryFg,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

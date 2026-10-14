@@ -173,10 +173,23 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
                 CashRegisterData(id: cashRegisterId, name: cashRegisterName);
           }
 
-          final leadName = prefs.getString('income_cash_register');
-          final leadId = prefs.getInt('income_cash_register_id');
-          if (leadName != null && leadId != null) {
+          // Клиент хранится отдельно от кассы.
+          // Раньше здесь читались ключи кассы, поэтому её id
+          // уходил в запрос как lead_id и второй раз как client_id,
+          // хотя поле «Клиенты» оставалось пустым.
+          final leadName = prefs.getString('income_lead');
+          final leadId = prefs.getInt('income_lead_id');
+          final leadCopiedFromCashRegister = leadId != null &&
+              cashRegisterId != null &&
+              leadId == cashRegisterId &&
+              leadName == cashRegisterName;
+          if (leadName != null &&
+              leadId != null &&
+              leadId > 0 &&
+              !leadCopiedFromCashRegister) {
             _selectedLead = LeadData(id: leadId, name: leadName);
+          } else {
+            _selectedLead = null;
           }
 
           final authorName = prefs.getString('income_author');
@@ -375,7 +388,35 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
     );
   }
 
+  /// Клиент для запроса.
+  /// Пустое поле «Клиенты» не должно добавлять lead_id и client_id.
+  LeadData? _selectedClientForRequest() {
+    final lead = _selectedLead;
+    if (lead == null || lead.id <= 0) return null;
+
+    if (leadsList.isNotEmpty) {
+      for (final item in leadsList) {
+        if (item.id == lead.id) return item;
+      }
+      // Id есть в состоянии, но в списке клиентов его нет.
+      // На экране при этом видно «Выберите клиента».
+      return null;
+    }
+
+    // Список ещё не загрузился. Не отправляем id кассы вместо клиента.
+    final cashRegister = _selectedCashRegister;
+    if (cashRegister != null &&
+        lead.id == cashRegister.id &&
+        (lead.name == cashRegister.name || lead.name == '${lead.id}')) {
+      return null;
+    }
+
+    return lead;
+  }
+
   _applyFilters() async {
+    final selectedClient = _selectedClientForRequest();
+    _selectedLead = selectedClient;
     await _saveFilterState();
     if (!_isAnyFilterSelected()) {
       widget.onResetFilters?.call();
@@ -398,7 +439,7 @@ class _IncomeFilterScreenState extends State<IncomeFilterScreen> {
         'supplier_id': _selectedSupplier?.id.toString(),
         'storage_id': _selectedCashRegister?.id.toString(),
         'cash_register_id': _selectedCashRegister?.id.toString(),
-        'lead_id': _selectedLead?.id.toString(),
+        if (selectedClient != null) 'lead_id': selectedClient.id.toString(),
         'approved': _selectedStatus,
         'author_id': selectedAuthor?.id.toString(),
         'deleted': _isDeleted == null

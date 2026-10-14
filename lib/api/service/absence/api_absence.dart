@@ -10,7 +10,8 @@ extension ApiAbsenceX on ApiService {
     return permissions.any((permission) => keys.contains(permission.toLowerCase().trim()));
   }
 
-  /// Права, роль и признак руководителя отдела. Без прав раздел не показываем.
+  /// Права, роль и признак руководителя отдела.
+  /// Раздел виден только при `absence.index` в permissions.
   Future<AbsenceAccess> loadAbsenceAccess() async {
     final permissions = await getPermissions();
     final admin = await isAdminRole();
@@ -33,6 +34,7 @@ extension ApiAbsenceX on ApiService {
 
     return AbsenceAccess(
       userId: userId,
+      canIndexPermission: _hasAbsencePermission(permissions, 'index'),
       canReadPermission: _hasAbsencePermission(permissions, 'read') ||
           permissions.any((item) => item.toLowerCase().trim() == 'absence'),
       canCreatePermission: _hasAbsencePermission(permissions, 'create'),

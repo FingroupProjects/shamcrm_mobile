@@ -159,6 +159,7 @@ class AbsenceSettings {
 class AbsenceAccess {
   const AbsenceAccess({
     required this.userId,
+    this.canIndexPermission = false,
     this.canReadPermission = false,
     required this.canCreatePermission,
     required this.canReviewPermission,
@@ -168,6 +169,8 @@ class AbsenceAccess {
   });
 
   final int? userId;
+  /// Право `absence.index` из списка permissions. Без него раздела нет.
+  final bool canIndexPermission;
   final bool canReadPermission;
   final bool canCreatePermission;
   final bool canReviewPermission;
@@ -189,7 +192,8 @@ class AbsenceAccess {
       !isAdminRole &&
       (canCreatePermission || canReadPermission || isHeadOfDepartment);
 
-  bool get showMenu => showMy || showTeam || canSettingsPermission;
+  /// Кнопка в меню и вход в раздел. Только `absence.index`, не роль и не другие права.
+  bool get showMenu => canIndexPermission;
 
   bool get showSettings => isAdmin;
 

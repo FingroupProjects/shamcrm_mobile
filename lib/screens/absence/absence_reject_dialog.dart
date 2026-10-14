@@ -1,10 +1,9 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/lead/reason_for_refusal_model.dart';
-import 'package:crm_task_manager/screens/common/reason_for_refusal_dropdown.dart';
+import 'package:crm_task_manager/screens/absence/absence_widgets.dart';
 import 'package:flutter/material.dart';
 
-/// Та же модалка, что «Причина отказа» у лида.
-/// В заявку уходит текст причины и комментарий.
+/// Причина отклонения заявки. Это ручной текст, не список причин как у лида.
+/// В заявку уходит введённая строка как rejection_reason.
 Future<String?> showAbsenceRejectDialog(BuildContext context) {
   return showDialog<String>(
     context: context,
@@ -21,26 +20,22 @@ class _AbsenceRejectDialog extends StatefulWidget {
 }
 
 class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
-  final TextEditingController _commentController = TextEditingController();
-  ReasonForRefusalData? _selectedReason;
+  final TextEditingController _reasonController = TextEditingController();
   bool _showValidation = false;
 
   @override
   void dispose() {
-    _commentController.dispose();
+    _reasonController.dispose();
     super.dispose();
   }
 
   void _onConfirm() {
-    final reason = _selectedReason;
-    if (reason == null) {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
       setState(() => _showValidation = true);
       return;
     }
-    final comment = _commentController.text.trim();
-    final reasonText = reason.text.trim();
-    final message = comment.isEmpty ? reasonText : '$reasonText. $comment';
-    Navigator.of(context).pop(message);
+    Navigator.of(context).pop(reason);
   }
 
   @override
@@ -75,7 +70,7 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Причина отказа',
+                      absenceTr(context, 'absence_reject_reason'),
                       style: textStyles.titleLg.copyWith(
                         fontSize: 22,
                         height: 1.2,
@@ -86,19 +81,8 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                     const SizedBox(height: 10),
                     Divider(height: 1, color: colors.borderSubtle),
                     const SizedBox(height: 10),
-                    ReasonForRefusalDropdown(
-                      type: 'lead',
-                      showError: _showValidation,
-                      onSelectReason: (reason) {
-                        setState(() {
-                          _selectedReason = reason;
-                          _showValidation = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 10),
                     Text(
-                      'Комментарий',
+                      absenceTr(context, 'absence_reason'),
                       style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
                         color: colors.textPrimary,
@@ -106,19 +90,22 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                     ),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: _commentController,
-                      minLines: 2,
-                      maxLines: 3,
+                      controller: _reasonController,
+                      minLines: 3,
+                      maxLines: 6,
+                      onChanged: (_) {
+                        if (_showValidation) {
+                          setState(() => _showValidation = false);
+                        }
+                      },
                       style: textStyles.bodyLg.copyWith(
                         fontWeight: FontWeight.w500,
                         color: colors.textPrimary,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Введите комментарий',
-                        hintStyle: textStyles.bodyLg.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colors.textSecondary,
-                        ),
+                        errorText: _showValidation
+                            ? absenceTr(context, 'field_required')
+                            : null,
                         filled: true,
                         fillColor: colors.fieldBg,
                         border: OutlineInputBorder(
@@ -130,7 +117,9 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: colors.borderSubtle.withValues(alpha: 0.7),
+                            color: _showValidation
+                                ? colors.error
+                                : colors.borderSubtle.withValues(alpha: 0.7),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -162,7 +151,7 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                               ),
                             ),
                             child: Text(
-                              'Отмена',
+                              absenceTr(context, 'cancel'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -186,7 +175,7 @@ class _AbsenceRejectDialogState extends State<_AbsenceRejectDialog> {
                               ),
                             ),
                             child: Text(
-                              'Подтвердить',
+                              absenceTr(context, 'confirm'),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
