@@ -29,6 +29,18 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        HttpLogger.shouldIgnoreUrl(
+          'https://firebaseinstallations.googleapis.com/v1/projects/shamcrm/installations',
+        ),
+        isTrue,
+      );
+      expect(
+        HttpLogger.shouldIgnoreUrl(
+          'https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log',
+        ),
+        isTrue,
+      );
     });
 
     test('allows normal CRM API and WebSocket URLs', () {

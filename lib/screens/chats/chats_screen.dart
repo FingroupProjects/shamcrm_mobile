@@ -2563,6 +2563,12 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         return true;
       }
 
+      if (currentChat.channel != updatedChat.channel) {
+        debugPrint(
+            '=================-=== _ChatItemsWidget._shouldRefreshData: channel changed for chat ID ${updatedChat.id}: "${currentChat.channel}" -> "${updatedChat.channel}"');
+        return true;
+      }
+
       final currentName = currentChat.displayName ?? currentChat.name;
       final updatedName = updatedChat.displayName ?? updatedChat.name;
       if (currentName != updatedName) {

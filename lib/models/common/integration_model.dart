@@ -4,11 +4,17 @@ import 'package:flutter/material.dart';
 class Channel {
   final int? id;
   final String? name;
+  final String? baseName;
+  final String? sourceKey;
+  final String? label;
   final int? organizationId;
 
   Channel({
     this.id,
     this.name,
+    this.baseName,
+    this.sourceKey,
+    this.label,
     this.organizationId,
   });
 
@@ -16,6 +22,9 @@ class Channel {
     return Channel(
       id: SafeConverters.toIntOrNull(json['id']),
       name: SafeConverters.toStringOrNull(json['name']),
+      baseName: SafeConverters.toStringOrNull(json['base_name']),
+      sourceKey: SafeConverters.toStringOrNull(json['source_key']),
+      label: SafeConverters.toStringOrNull(json['label']),
       organizationId: SafeConverters.toIntOrNull(json['organization_id']),
     );
   }

@@ -360,25 +360,9 @@ class ChatListItem extends StatelessWidget {
       );
     }
 
-    if (isLeadsSection &&
-        (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
-      return CircleAvatar(
-        backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
-        radius: radius,
-        backgroundColor: isSupportAvatar
-            ? context.appColors.textPrimary
-            : context.appColors.surfacePrimary,
-        onBackgroundImageError: (exception, stackTrace) {
-          // print('Error loading asset image: assets/images/AvatarChat.png, $exception');
-        },
-      );
-    }
-
-    // Пустая иконка — это site. Рисуем Icons.language.
-    // Остальные каналы — PNG из assets/icons/leads.
-    // Заглушку default.png здесь не показываем: ниже будет аватар чата.
-    if (isLeadsSection && chatItem.icon != 'assets/icons/leads/default.png') {
-      final isSite = chatItem.icon.isEmpty;
+    // Для раздела "Лиды" аватаркой является иконка канала связи (WhatsApp, Telegram, Instagram, сайт и т.д.)
+    if (isLeadsSection && !chatItem.icon.contains('default')) {
+      final isSite = chatItem.icon.isEmpty || chatItem.icon == 'site';
       return Container(
         width: size,
         height: size,
@@ -397,6 +381,24 @@ class ChatListItem extends StatelessWidget {
             background: context.appColors.backgroundSecondary,
           ),
         ),
+      );
+    }
+
+    // Если канал не распознан, но есть SVG или персональная картинка, они отрисуются ниже.
+    // Если же аватар пуст или дефолтный, возвращаем AvatarChat.png
+    if (isLeadsSection &&
+        (avatar.isEmpty ||
+            avatar.contains('default') ||
+            avatar == 'assets/images/AvatarChat.png')) {
+      return CircleAvatar(
+        backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
+        radius: radius,
+        backgroundColor: isSupportAvatar
+            ? context.appColors.textPrimary
+            : context.appColors.surfacePrimary,
+        onBackgroundImageError: (exception, stackTrace) {
+          // print('Error loading asset image: assets/images/AvatarChat.png, $exception');
+        },
       );
     }
 

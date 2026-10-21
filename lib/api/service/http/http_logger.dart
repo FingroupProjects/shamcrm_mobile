@@ -20,11 +20,13 @@ class HttpLogger {
   /// Stream для подписки на обновления логов
   Stream<List<HttpLogModel>> get logsStream => _logsController.stream;
 
-  /// Список шаблонов URL, которые исключаются из логирования (например, Firebase RTDB)
+  /// Список шаблонов URL, которые исключаются из логирования (например, Firebase RTDB и системные запросы Firebase)
   static const List<String> _ignoredUrlPatterns = [
-    'firebaseio.com',
-    'firebasedatabase.app',
+    'firebaseio',
+    'firebasedatabase',
     'default-rtdb',
+    'firebaselogging',
+    'firebaseinstallations',
   ];
 
   /// Проверяет, нужно ли исключить данный URL из логирования

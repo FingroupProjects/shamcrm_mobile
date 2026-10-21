@@ -632,15 +632,24 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           }
         }
 
-        // 🔹 Обновляем чат, сохраняя старое имя и аватар
+        // 🔹 Обновляем чат, сохраняя старое имя и обновляя данные канала из сокета
+        final effectiveChannel = event.chat.channel.isNotEmpty
+            ? event.chat.channel
+            : oldChat.channel;
         final updatedChat = oldChat.copyWith(
           lastMessage: event.chat.lastMessage,
           unreadCount: newUnreadCount,
           createDate: event.chat.createDate,
           messageType: event.chat.messageType,
+          channel: effectiveChannel,
+          channelObj: event.chat.channelObj ?? oldChat.channelObj,
+          integration: event.chat.integration ?? oldChat.integration,
         );
 
         updatedChats[chatIndex] = updatedChat;
+        if (effectiveChannel.trim().isEmpty && updatedChat.id > 0) {
+          unawaited(_loadMissingChannelName(updatedChat.id));
+        }
 
         // ✅ Если пришло новое сообщение — поднимаем чат наверх (как в мессенджерах)
         if (isNewMessage) {

@@ -69,14 +69,16 @@ class Integration {
   final int? id;
   final String? name;
   final String? username;
+  final String? type;
 
-  Integration({this.id, this.name, this.username});
+  Integration({this.id, this.name, this.username, this.type});
 
   factory Integration.fromJson(Map<String, dynamic> json) {
     return Integration(
       id: SafeConverters.toIntOrNull(json['id']),
       name: SafeConverters.toStringOrNull(json['name']),
       username: SafeConverters.toStringOrNull(json['username']),
+      type: SafeConverters.toStringOrNull(json['type']),
     );
   }
 }
@@ -257,9 +259,17 @@ class Chats {
       chatUsers: users,
       group: group,
       task: task,
-      channelObj: json['channel'] != null
-          ? Channel.fromJson(SafeConverters.toMap(json['channel']))
-          : null,
+      channelObj: () {
+        final map = SafeConverters.toMapOrNull(json['channel']);
+        if (map != null) return Channel.fromJson(map);
+        final chId = SafeConverters.toIntOrNull(json['channel']) ??
+            SafeConverters.toIntOrNull(json['channel_id']);
+        final chName = json['channel'] is String ? json['channel'] as String : null;
+        if (chId != null || chName != null) {
+          return Channel(id: chId, name: chName);
+        }
+        return null;
+      }(),
       integration: json['integration'] != null
           ? Integration.fromJson(SafeConverters.toMap(json['integration']))
           : null,
@@ -273,7 +283,7 @@ class Chats {
     }
     final groupName = group?.name.trim() ?? '';
     if (groupName.isNotEmpty) return groupName;
-    final taskName = task?.name?.trim() ?? '';
+    final taskName = task?.name.trim() ?? '';
     if (taskName.isNotEmpty) return taskName;
     final userName = user?.name.trim() ?? '';
     if (userName.isNotEmpty) return userName;
@@ -282,21 +292,30 @@ class Chats {
   }
 
   /// Имя канала для иконки.
-  /// Сначала channel.name. Если сокет прислал только id,
+  /// Сначала channel.name / base_name / source_key / label. Если сокет прислал только id,
   /// берём имя из справочника интеграций: Telegram, Instagram, YouTube и остальные.
   static String _channelNameFromJson(Map<String, dynamic> json) {
     final channelMap = SafeConverters.toMapOrNull(json['channel']);
     final integrationMap = SafeConverters.toMapOrNull(json['integration']);
     final channelId = SafeConverters.toIntOrNull(channelMap?['id']) ??
-        SafeConverters.toIntOrNull(json['channel_id']);
+        SafeConverters.toIntOrNull(json['channel_id']) ??
+        SafeConverters.toIntOrNull(json['channel']);
     final integrationId = SafeConverters.toIntOrNull(integrationMap?['id']) ??
         SafeConverters.toIntOrNull(json['integration_id']);
 
-    final nestedName = SafeConverters.toStringOrNull(channelMap?['name']);
+    final nestedName = SafeConverters.toStringOrNull(channelMap?['name']) ??
+        SafeConverters.toStringOrNull(channelMap?['base_name']) ??
+        SafeConverters.toStringOrNull(channelMap?['source_key']) ??
+        SafeConverters.toStringOrNull(channelMap?['label']);
     final plainName = json['channel'] is String ? json['channel'] as String : null;
+    final topLevelName = SafeConverters.toStringOrNull(json['channel_name']) ??
+        SafeConverters.toStringOrNull(json['source_key']);
+
     final directName = (nestedName != null && nestedName.trim().isNotEmpty)
         ? nestedName.trim()
-        : plainName?.trim();
+        : (plainName != null && plainName.trim().isNotEmpty)
+            ? plainName.trim()
+            : topLevelName?.trim();
 
     if (directName != null && directName.isNotEmpty && directName != 'null') {
       ChatChannelDirectory.remember(
@@ -326,9 +345,10 @@ class Chats {
     }
 
     // type и name интеграции — короткие подписи канала.
-    // Логин не смотрим: там может быть почта или телефон.
     final fromIntegration = channelIconKey(integrationMap?['type']?.toString()) ??
-        channelIconKey(integrationMap?['name']?.toString());
+        channelIconKey(integrationMap?['name']?.toString()) ??
+        channelIconKey(integrationMap?['base_name']?.toString()) ??
+        channelIconKey(integrationMap?['source_key']?.toString());
     if (fromIntegration != null) {
       ChatChannelDirectory.remember(
         channelId: channelId,
@@ -336,6 +356,42 @@ class Chats {
         name: fromIntegration,
       );
       return fromIntegration;
+    }
+
+    // Fallback: определяем канал из данных лида в lead или chatUsers
+    String? channelFromLead(dynamic leadRaw) {
+      final lead = SafeConverters.toMapOrNull(leadRaw);
+      if (lead == null) return null;
+      if (lead['wa_phone'] != null || lead['wa_name'] != null) return 'whatsapp';
+      if (lead['tg_id'] != null || lead['tg_nick'] != null) return 'telegram';
+      if (lead['insta_login'] != null) return 'instagram';
+      return null;
+    }
+
+    final fromLead = channelFromLead(json['lead']);
+    if (fromLead != null) {
+      ChatChannelDirectory.remember(
+        channelId: channelId,
+        integrationId: integrationId,
+        name: fromLead,
+      );
+      return fromLead;
+    }
+
+    if (json['chatUsers'] is List) {
+      for (final u in json['chatUsers']) {
+        if (u is Map && u['participant'] != null) {
+          final fromP = channelFromLead(u['participant']);
+          if (fromP != null) {
+            ChatChannelDirectory.remember(
+              channelId: channelId,
+              integrationId: integrationId,
+              name: fromP,
+            );
+            return fromP;
+          }
+        }
+      }
     }
 
     return '';
@@ -537,12 +593,27 @@ class Chats {
       avatar = "assets/images/AvatarChat.png";
     }
 
+    if (avatar.isEmpty) {
+      avatar = "assets/images/AvatarChat.png";
+    }
+
+    String effectiveChannel = channel;
+    if (effectiveChannel.trim().isEmpty) {
+      effectiveChannel = channelObj?.name ??
+          channelObj?.baseName ??
+          channelObj?.sourceKey ??
+          channelObj?.label ??
+          integration?.type ??
+          integration?.name ??
+          '';
+    }
+
     return ChatItem(
       displayName!,
       lastMessage,
       createDate,
       avatar,
-      _mapChannelToIcon(channel),
+      _mapChannelToIcon(effectiveChannel),
       unreadCount,
       chatId: id,
       labels: labels,
@@ -558,6 +629,7 @@ class Chats {
         .replaceAll(' ', '_');
     const channelIconMap = {
       'mini_app': 'assets/icons/leads/telegram.png',
+      'telegram': 'assets/icons/leads/telegram.png',
       'telegram_bot': 'assets/icons/leads/telegram.png',
       'custom_telegram_bot': 'assets/icons/leads/telegram.png',
       'telegram_account': 'assets/icons/leads/telegram.png',
@@ -573,6 +645,7 @@ class Chats {
       'facebook': 'assets/icons/leads/messenger.png',
       'messenger': 'assets/icons/leads/messenger.png',
       'phone': 'assets/icons/leads/telefon.png',
+      'call_center': 'assets/icons/leads/telephone-call.png',
       'email': 'assets/icons/leads/email.png',
       'site': '', // Используется Flutter иконка Icons.language
     };
