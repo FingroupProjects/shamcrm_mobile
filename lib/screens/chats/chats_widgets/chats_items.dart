@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -20,6 +21,7 @@ class ChatItem {
   final String icon;
   final bool isGroup;
   final int? chatId;
+  final List<ChatLabel> labels;
 
   ChatItem(
     this.name,
@@ -30,6 +32,7 @@ class ChatItem {
     this.unreadCount, {
     this.isGroup = false,
     this.chatId,
+    this.labels = const [],
   });
 
   get id => null;
@@ -38,37 +41,89 @@ class ChatItem {
 class ChatListItem extends StatelessWidget {
   final ChatItem chatItem;
   final String endPointInTab;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onSelectionToggle;
+  final bool isCompact;
 
   const ChatListItem({
     super.key,
     required this.chatItem,
     required this.endPointInTab,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelectionToggle,
+    this.isCompact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double cardPaddingV = isCompact ? 6 : 10;
+    final double cardPaddingH = isCompact ? 10 : 12;
+    final double cardMarginV = isCompact ? 2.5 : 6;
+    final double radius = isCompact ? 14 : 20;
+    final double checkSize = isCompact ? 20 : 24;
+    final double avatarSize = isCompact ? 36 : 52;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: cardMarginV),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: cardPaddingH, vertical: cardPaddingV),
         decoration: BoxDecoration(
-          color: context.appColors.surfacePrimary.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected
+              ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.1)
+              : context.appColors.surfacePrimary.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(radius),
           border: Border.all(
-            color: context.appColors.borderSubtle.withValues(alpha: 0.7),
+            color: isSelected
+                ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.6)
+                : context.appColors.borderSubtle.withValues(alpha: 0.7),
+            width: isSelected ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: context.appColors.shadow.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: isSelected
+                  ? context.appColors.buttonPrimaryBg.withValues(alpha: 0.12)
+                  : context.appColors.shadow.withValues(alpha: 0.06),
+              blurRadius: isSelected ? (isCompact ? 8 : 14) : (isCompact ? 6 : 12),
+              offset: Offset(0, isCompact ? 2 : 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            _buildAvatar(context, chatItem.avatar),
-            const SizedBox(width: 12),
+            if (isSelectionMode)
+              Padding(
+                padding: EdgeInsets.only(right: isCompact ? 8 : 10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: checkSize,
+                  height: checkSize,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? context.appColors.buttonPrimaryBg
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? context.appColors.buttonPrimaryBg
+                          : context.appColors.textSecondary
+                              .withValues(alpha: 0.5),
+                      width: isCompact ? 1.5 : 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Icon(
+                          Icons.check_rounded,
+                          size: isCompact ? 13 : 16,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+              ),
+            _buildAvatar(context, chatItem.avatar, size: avatarSize),
+            SizedBox(width: isCompact ? 10 : 12),
             Expanded(
               child: ClaritySensitive(
                 child: Column(
@@ -85,9 +140,13 @@ class ChatListItem extends StatelessWidget {
                                     : chatItem.name)
                                 : AppLocalizations.of(context)!
                                     .translate('no_name'),
-                            style: context.appTextStyles.bodyLg.copyWith(
+                            style: (isCompact
+                                    ? context.appTextStyles.bodyMd
+                                    : context.appTextStyles.bodyLg)
+                                .copyWith(
                               fontWeight: FontWeight.w700,
                               color: context.appColors.textPrimary,
+                              fontSize: isCompact ? 14 : null,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -96,25 +155,29 @@ class ChatListItem extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           formatChatTime(chatItem.time),
-                          style: context.appTextStyles.bodySm.copyWith(
+                          style: (isCompact
+                                  ? context.appTextStyles.caption
+                                  : context.appTextStyles.bodySm)
+                              .copyWith(
                             color: context.appColors.textSecondary,
                             fontWeight: FontWeight.w500,
+                            fontSize: isCompact ? 11 : null,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isCompact ? 2 : 4),
                     Row(
                       children: [
                         Expanded(child: _buildPreview(context)),
                         const SizedBox(width: 2),
                         SizedBox(
-                          width: 33,
-                          height: 33,
+                          width: isCompact ? 24 : 33,
+                          height: isCompact ? 24 : 33,
                           child: chatItem.unreadCount > 0
                               ? Container(
                                   alignment: Alignment.center,
-                                  padding: const EdgeInsets.all(8),
+                                  padding: EdgeInsets.all(isCompact ? 4 : 8),
                                   decoration: BoxDecoration(
                                     color: context.appColors.buttonPrimaryBg,
                                     shape: BoxShape.circle,
@@ -127,6 +190,7 @@ class ChatListItem extends StatelessWidget {
                                         context.appTextStyles.caption.copyWith(
                                       color: context.appColors.textInverse,
                                       fontWeight: FontWeight.w700,
+                                      fontSize: isCompact ? 10 : null,
                                     ),
                                   ),
                                 )
@@ -134,6 +198,16 @@ class ChatListItem extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (chatItem.labels.isNotEmpty) ...[
+                      SizedBox(height: isCompact ? 3 : 5),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 3,
+                        children: chatItem.labels.take(3).map((label) {
+                          return _buildLabelChip(context, label);
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -142,6 +216,73 @@ class ChatListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildLabelChip(BuildContext context, ChatLabel label) {
+    final chipColor = _parseColor(label.color);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 6 : 7.5,
+        vertical: isCompact ? 1.5 : 2.5,
+      ),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: chipColor.withValues(alpha: 0.38),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: chipColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4.5),
+          Flexible(
+            child: Text(
+              label.name,
+              style: TextStyle(
+                color: chipColor,
+                fontSize: isCompact ? 10 : 11,
+                fontWeight: FontWeight.w600,
+                height: 1.15,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color _parseColor(String? colorStr) {
+    if (colorStr == null || colorStr.trim().isEmpty) {
+      return const Color(0xFF6B7280);
+    }
+    String hex = colorStr.trim().replaceAll('#', '');
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    } else if (hex.length == 3) {
+      hex = 'FF${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}';
+    } else if (hex.length == 8) {
+      // already 8
+    } else {
+      return const Color(0xFF6B7280);
+    }
+    try {
+      return Color(int.parse(hex, radix: 16));
+    } catch (_) {
+      return const Color(0xFF6B7280);
+    }
   }
 
   Widget _buildPreview(BuildContext context) {
@@ -188,8 +329,12 @@ class ChatListItem extends StatelessWidget {
         children: parseHtmlToTextSpans(
           context,
           message,
-          context.appTextStyles.bodyMd.copyWith(
+          (isCompact
+                  ? context.appTextStyles.caption
+                  : context.appTextStyles.bodyMd)
+              .copyWith(
             color: context.appColors.textPrimary.withValues(alpha: 0.76),
+            fontSize: isCompact ? 12 : null,
           ),
         ),
       ),
@@ -198,15 +343,16 @@ class ChatListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context, String avatar) {
+  Widget _buildAvatar(BuildContext context, String avatar, {double size = 52}) {
     bool isLeadsSection = endPointInTab == 'lead';
     bool isSupportAvatar = avatar == 'assets/icons/Profile/support_chat.png';
     bool isTaskSection = endPointInTab == 'task';
+    final double radius = size / 2;
 
     if (isTaskSection && !avatar.contains('<svg')) {
       return CircleAvatar(
         backgroundImage: const AssetImage('assets/images/AvatarTask.png'),
-        radius: 24,
+        radius: radius,
         backgroundColor: context.appColors.surfacePrimary,
         onBackgroundImageError: (exception, stackTrace) {
           // print('Error loading asset image: assets/images/AvatarTask.png, $exception');
@@ -218,7 +364,7 @@ class ChatListItem extends StatelessWidget {
         (avatar.isEmpty || avatar == 'assets/icons/leads/default.png')) {
       return CircleAvatar(
         backgroundImage: const AssetImage('assets/images/AvatarChat.png'),
-        radius: 24,
+        radius: radius,
         backgroundColor: isSupportAvatar
             ? context.appColors.textPrimary
             : context.appColors.surfacePrimary,
@@ -234,8 +380,8 @@ class ChatListItem extends StatelessWidget {
     if (isLeadsSection && chatItem.icon != 'assets/icons/leads/default.png') {
       final isSite = chatItem.icon.isEmpty;
       return Container(
-        width: 52,
-        height: 52,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: context.appColors.backgroundSecondary,
@@ -247,7 +393,7 @@ class ChatListItem extends StatelessWidget {
         child: Center(
           child: ChannelSourceIcon(
             sourceName: isSite ? 'site' : chatItem.icon,
-            size: isSite ? 32 : 52,
+            size: isSite ? (size * 0.6) : size,
             background: context.appColors.backgroundSecondary,
           ),
         ),
@@ -258,8 +404,8 @@ class ChatListItem extends StatelessWidget {
       final imageUrl = extractImageUrlFromSvg(avatar);
       if (imageUrl != null) {
         return Container(
-          width: 52,
-          height: 52,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             image: DecorationImage(
@@ -274,8 +420,8 @@ class ChatListItem extends StatelessWidget {
 
         if (text != null && backgroundColor != null) {
           return Container(
-            width: 52,
-            height: 52,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: backgroundColor,
@@ -289,7 +435,7 @@ class ChatListItem extends StatelessWidget {
                 text,
                 style: TextStyle(
                   color: context.appColors.textInverse,
-                  fontSize: 20,
+                  fontSize: size * 0.38,
                   fontWeight: FontWeight.w500,
                 ),
                 maxLines: 1,
@@ -301,8 +447,8 @@ class ChatListItem extends StatelessWidget {
         } else {
           return SvgPicture.string(
             avatar,
-            width: 52,
-            height: 52,
+            width: size,
+            height: size,
             placeholderBuilder: (context) => const CircularProgressIndicator(),
           );
         }
@@ -312,7 +458,7 @@ class ChatListItem extends StatelessWidget {
     try {
       return CircleAvatar(
         backgroundImage: AssetImage(avatar),
-        radius: 24,
+        radius: radius,
         backgroundColor: isSupportAvatar
             ? context.appColors.textPrimary
             : context.appColors.surfacePrimary,
@@ -326,7 +472,7 @@ class ChatListItem extends StatelessWidget {
         backgroundImage: AssetImage(isTaskSection
             ? 'assets/images/AvatarTask.png'
             : 'assets/images/AvatarChat.png'),
-        radius: 24,
+        radius: radius,
         backgroundColor: isSupportAvatar
             ? context.appColors.textPrimary
             : context.appColors.surfacePrimary,

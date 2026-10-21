@@ -302,9 +302,10 @@ extension ApiOrganizationX on ApiService {
       final hasAi = SafeConverters.toBool(source['has_ai_integration']);
       final hasGreenApi =
           SafeConverters.toBool(source['has_green_api_integration']);
-      // Нет ключа — права менять менеджера лида нет.
-      final canChangeLeadManager =
-          SafeConverters.toBool(source['change_lead_manager']);
+      // Смотрим весь ответ: строка может лежать в корне или в result.
+      // Строка `change_lead_manager` в permissions — поле можно менять.
+      // Строки в ответе нет — поле остаётся закрытым.
+      final canChangeLeadManager = ChangeLeadManagerStore.allowsChange(data);
       await AiIntegrationStore.save(hasAi);
       await GreenApiIntegrationStore.save(hasGreenApi);
       await ChangeLeadManagerStore.save(canChangeLeadManager);

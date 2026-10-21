@@ -47,5 +47,5 @@ class LeadFilterChannelData {
       };
 
   @override
-  String toString() => 'LeadFilterChannelData{id: $id, type: $type}';
+  String toString() => displayName;
 }

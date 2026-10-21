@@ -33,6 +33,7 @@ class ChatOfflineRepository {
     String? query,
     int? salesFunnelId,
     Map<String, dynamic>? filters,
+    int? tabId,
   }) {
     return jsonEncode({
       'endpoint': endPoint,
@@ -40,6 +41,7 @@ class ChatOfflineRepository {
       'query': query,
       'salesFunnelId': salesFunnelId,
       'filters': filters,
+      'tabId': tabId,
     });
   }
 
@@ -49,6 +51,7 @@ class ChatOfflineRepository {
     String? query,
     int? salesFunnelId,
     Map<String, dynamic>? filters,
+    int? tabId,
   }) async {
     final cacheRepository = _cacheRepository;
     if (cacheRepository == null) {
@@ -63,6 +66,7 @@ class ChatOfflineRepository {
         query: query,
         salesFunnelId: salesFunnelId,
         filters: filters,
+        tabId: tabId,
       ),
     );
     if (entry == null) {
@@ -92,6 +96,7 @@ class ChatOfflineRepository {
     String? query,
     int? salesFunnelId,
     Map<String, dynamic>? filters,
+    int? tabId,
   }) async {
     final runtime = OfflineRuntime.maybeInstance;
     final scheduler = runtime?.requestScheduler;
@@ -104,6 +109,7 @@ class ChatOfflineRepository {
               query,
               salesFunnelId,
               filters,
+              tabId,
             ),
           )
         : await _apiService.getAllChats(
@@ -112,6 +118,7 @@ class ChatOfflineRepository {
             query,
             salesFunnelId,
             filters,
+            tabId,
           );
 
     final cacheRepository = _cacheRepository;
@@ -124,6 +131,7 @@ class ChatOfflineRepository {
           query: query,
           salesFunnelId: salesFunnelId,
           filters: filters,
+          tabId: tabId,
         ),
         payload: _serialize(result),
         lastSyncedAt: DateTime.now(),
@@ -263,6 +271,7 @@ class ChatOfflineRepository {
       'group': chat.group?.toJson(),
       'user': chat.user?.toJson(),
       'chatUsers': chat.chatUsers.map((user) => user.toJson()).toList(),
+      'labels': chat.labels.map((l) => l.toJson()).toList(),
     };
   }
 
@@ -270,6 +279,7 @@ class ChatOfflineRepository {
     final groupJson = json['group'];
     final userJson = json['user'];
     final chatUsersJson = json['chatUsers'];
+    final labelsJson = json['labels'];
     return Chats(
       id: json['id'] as int? ?? 0,
       uniqueId: json['uniqueId'] as String?,
@@ -300,6 +310,12 @@ class ChatOfflineRepository {
           : null,
       customName: json['customName']?.toString(),
       customImage: json['customImage']?.toString(),
+      labels: labelsJson is List
+          ? labelsJson
+              .whereType<Map>()
+              .map((l) => ChatLabel.fromJson(Map<String, dynamic>.from(l)))
+              .toList()
+          : const [],
     );
   }
 }

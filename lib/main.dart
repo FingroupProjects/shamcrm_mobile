@@ -28,7 +28,7 @@ void main() {
   if (kReleaseMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
-  runZonedGuarded(() async {
+  runZonedGuarded(() async { 
     try {
       WidgetsFlutterBinding.ensureInitialized();
       // Новый запуск и Reload не должны открывать прошлую колонку.

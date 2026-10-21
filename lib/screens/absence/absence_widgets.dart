@@ -234,23 +234,134 @@ class AbsenceWarningBanner extends StatelessWidget {
   }
 }
 
-/// Подпись над полем, как в остальных формах приложения.
+/// Текстовый спан для подсказки поля времени с выделением ключевых слов (как в веб-версии)
+InlineSpan absenceTimeTooltipSpan(BuildContext context) {
+  final text = absenceTr(context, 'absence_time_hint');
+  const orange = TextStyle(
+    color: Color(0xFFFB923C),
+    fontWeight: FontWeight.w700,
+  );
+  const white = TextStyle(
+    color: Colors.white,
+    fontFamily: 'Gilroy',
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.35,
+  );
+
+  const keyword1 = 'отсутствие';
+  const keyword2 = 'несколько дней';
+
+  if (text.contains(keyword1) && text.contains(keyword2)) {
+    final idx1 = text.indexOf(keyword1);
+    final idx2 = text.indexOf(keyword2);
+    return TextSpan(
+      style: white,
+      children: [
+        TextSpan(text: text.substring(0, idx1)),
+        TextSpan(text: keyword1, style: orange),
+        TextSpan(text: text.substring(idx1 + keyword1.length, idx2)),
+        TextSpan(text: keyword2, style: orange),
+        TextSpan(text: text.substring(idx2 + keyword2.length)),
+      ],
+    );
+  }
+  return TextSpan(text: text, style: white);
+}
+
+/// Подпись над полем с поддержкой обязательности (*) и подсказки (?) с тултипом.
 class AbsenceFieldLabel extends StatelessWidget {
-  const AbsenceFieldLabel(this.text, {super.key});
+  const AbsenceFieldLabel(
+    this.text, {
+    super.key,
+    this.isRequired = false,
+    this.tooltip,
+    this.richTooltip,
+  });
 
   final String text;
+  final bool isRequired;
+  final String? tooltip;
+  final InlineSpan? richTooltip;
 
   @override
   Widget build(BuildContext context) {
+    final hasTooltip = (tooltip != null && tooltip!.isNotEmpty) || richTooltip != null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Gilroy',
-        ).copyWith(color: context.appColors.textPrimary),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text.rich(
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ).copyWith(color: context.appColors.textPrimary),
+              children: [
+                if (isRequired)
+                  const TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: Color(0xFFEF4444),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (hasTooltip) ...[
+            const SizedBox(width: 6),
+            Tooltip(
+              message: richTooltip == null ? tooltip : null,
+              richMessage: richTooltip,
+              triggerMode: TooltipTriggerMode.tap,
+              preferBelow: false,
+              showDuration: const Duration(seconds: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              textStyle: const TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                height: 1.35,
+              ),
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF22C55E),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  '?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -263,6 +374,10 @@ class AbsenceTapField extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onTap,
+    this.hint,
+    this.isRequired = false,
+    this.tooltip,
+    this.richTooltip,
     this.error,
     this.onClear,
   });
@@ -270,6 +385,10 @@ class AbsenceTapField extends StatelessWidget {
   final String label;
   final String value;
   final VoidCallback? onTap;
+  final String? hint;
+  final bool isRequired;
+  final String? tooltip;
+  final InlineSpan? richTooltip;
   final String? error;
   final VoidCallback? onClear;
 
@@ -277,10 +396,16 @@ class AbsenceTapField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final hasError = error != null && error!.isNotEmpty;
+    final hasValue = value.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AbsenceFieldLabel(label),
+        AbsenceFieldLabel(
+          label,
+          isRequired: isRequired,
+          tooltip: tooltip,
+          richTooltip: richTooltip,
+        ),
         Material(
           color: colors.fieldBg,
           borderRadius: AppFieldStyle.radius,
@@ -300,11 +425,17 @@ class AbsenceTapField extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      value,
-                      style: absenceStyle(context, size: 16),
+                      hasValue ? value : (hint ?? ''),
+                      style: hasValue
+                          ? absenceStyle(context, size: 16)
+                          : absenceStyle(
+                              context,
+                              size: 16,
+                              color: colors.fieldHint,
+                            ),
                     ),
                   ),
-                  if (onClear != null && value.isNotEmpty)
+                  if (onClear != null && hasValue)
                     IconButton(
                       onPressed: onClear,
                       icon: Icon(Icons.close, color: colors.iconSecondary, size: 18),

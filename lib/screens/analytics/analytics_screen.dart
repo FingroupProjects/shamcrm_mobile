@@ -22,7 +22,6 @@ import 'package:crm_task_manager/screens/analytics/charts/telephony_events_chart
 import 'package:crm_task_manager/screens/analytics/models/dashboard_setting_item.dart';
 import 'package:crm_task_manager/screens/analytics/utils/analytics_localization.dart';
 import 'package:crm_task_manager/screens/analytics/utils/chart_request_policy.dart';
-import 'package:crm_task_manager/screens/analytics/utils/responsive_helper.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_filter_sheet.dart';
 import 'package:crm_task_manager/screens/analytics/widgets/analytics_stat_card.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -123,6 +122,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<DashboardSettingItem> _orderedChartSettings = [];
   bool _hasResolvedChartSettings = false;
 
+  // Local reorder state – canonical keys in user-defined order
+  List<String> _localChartOrder = [];
+
   // Stats data
   bool _hasLoadedStatsOnce = false;
   String _totalLeads = '0';
@@ -135,7 +137,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   double _conversionChange = 0.0;
   int _lastFilterTrigger = 0;
   int _lastChartSettingsTrigger = 0;
-  bool _isLoadingLocalChartPrefs = true;
   bool _didNotifyFirstContentReady = false;
   Map<String, bool> _chartVisibility = {};
   late final _ChartRevealController _revealController;
@@ -164,6 +165,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     _loadStats();
     _loadDashboardSettings();
     _loadChartVisibilityPrefs();
+    _loadLocalChartOrder();
   }
 
   void _onRevealControllerChanged() {
@@ -224,6 +226,52 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return 'crm_dashboard_chart_visibility_v1_${userId}_$organizationId';
   }
 
+  Future<String> _chartOrderPrefsKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userID') ?? '0';
+    final organizationId = prefs.getString('selectedOrganization') ?? '0';
+    return 'crm_dashboard_chart_order_v1_${userId}_$organizationId';
+  }
+
+  Future<void> _loadLocalChartOrder() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = await _chartOrderPrefsKey();
+      final raw = prefs.getString(key);
+      if (raw == null || raw.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _localChartOrder = [];
+        });
+        return;
+      }
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        if (!mounted) return;
+        setState(() {
+          _localChartOrder = [];
+        });
+        return;
+      }
+      final order = decoded.whereType<String>().toList();
+      if (!mounted) return;
+      setState(() {
+        _localChartOrder = order;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _localChartOrder = [];
+      });
+    }
+  }
+
+  Future<void> _saveLocalChartOrder(List<String> order) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = await _chartOrderPrefsKey();
+    await prefs.setString(key, jsonEncode(order));
+  }
+
   Future<void> _loadChartVisibilityPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -233,7 +281,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         if (!mounted) return;
         setState(() {
           _chartVisibility = {};
-          _isLoadingLocalChartPrefs = false;
         });
         return;
       }
@@ -243,7 +290,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         if (!mounted) return;
         setState(() {
           _chartVisibility = {};
-          _isLoadingLocalChartPrefs = false;
         });
         return;
       }
@@ -258,13 +304,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (!mounted) return;
       setState(() {
         _chartVisibility = map;
-        _isLoadingLocalChartPrefs = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _chartVisibility = {};
-        _isLoadingLocalChartPrefs = false;
       });
     }
   }
@@ -282,29 +326,43 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   List<_ChartVisibilitySettingEntry> _buildChartSettingsEntries() {
-    final entries = <_ChartVisibilitySettingEntry>[];
-    final added = <String>{};
-
+    // Build the canonical entry map from server/default settings
+    final entryMap = <String, _ChartVisibilitySettingEntry>{};
     for (final item in _orderedChartSettings) {
       final rawKey = item.nameEn.trim();
       if (rawKey.isEmpty) continue;
       final canonicalKey = _chartCanonicalKey(rawKey);
-      if (canonicalKey == null || added.contains(canonicalKey)) {
-        continue;
-      }
-      added.add(canonicalKey);
-      entries.add(
-        _ChartVisibilitySettingEntry(
-          key: canonicalKey,
-          title: analyticsChartTitle(
-            context,
-            canonicalKey,
-            fallback: item.name.trim().isNotEmpty
-                ? item.name
-                : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
-          ),
+      if (canonicalKey == null || entryMap.containsKey(canonicalKey)) continue;
+      entryMap[canonicalKey] = _ChartVisibilitySettingEntry(
+        key: canonicalKey,
+        title: analyticsChartTitle(
+          context,
+          canonicalKey,
+          fallback: item.name.trim().isNotEmpty
+              ? item.name
+              : (_fallbackChartTitles[canonicalKey] ?? canonicalKey),
         ),
       );
+    }
+
+    // Apply user-defined local order if available
+    final entries = <_ChartVisibilitySettingEntry>[];
+    final added = <String>{};
+    if (_localChartOrder.isNotEmpty) {
+      for (final key in _localChartOrder) {
+        final entry = entryMap[key];
+        if (entry != null && !added.contains(key)) {
+          entries.add(entry);
+          added.add(key);
+        }
+      }
+    }
+    // Append any entries not yet added (new charts from server)
+    for (final entry in entryMap.values) {
+      if (!added.contains(entry.key)) {
+        entries.add(entry);
+        added.add(entry.key);
+      }
     }
 
     return entries;
@@ -540,7 +598,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final widgets = <Widget>[];
     final addedCanonicalKeys = <String>{};
 
-    for (final item in _orderedChartSettings) {
+    // Build the ordered list, respecting local user order first
+    final settingsCopy = List<DashboardSettingItem>.from(_orderedChartSettings);
+    List<DashboardSettingItem> orderedItems;
+    if (_localChartOrder.isNotEmpty) {
+      // Re-sort by local order
+      final indexMap = <String, int>{
+        for (var i = 0; i < _localChartOrder.length; i++)
+          _localChartOrder[i]: i,
+      };
+      settingsCopy.sort((a, b) {
+        final aKey = _chartCanonicalKey(a.nameEn.trim());
+        final bKey = _chartCanonicalKey(b.nameEn.trim());
+        final aIdx = aKey != null ? (indexMap[aKey] ?? 9999) : 9999;
+        final bIdx = bKey != null ? (indexMap[bKey] ?? 9999) : 9999;
+        return aIdx.compareTo(bIdx);
+      });
+      orderedItems = settingsCopy;
+    } else {
+      orderedItems = settingsCopy;
+    }
+
+    for (final item in orderedItems) {
       final rawKey = item.nameEn.trim();
       if (rawKey.isEmpty) continue;
 
@@ -903,103 +982,128 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 ),
                               ),
                             )
-                          : ListView.separated(
+                          : ReorderableListView.builder(
                               clipBehavior: Clip.hardEdge,
                               itemCount: entries.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 10),
+                              onReorderItem: (oldIndex, newIndex) {
+                                setSheetState(() {
+                                  final item = entries.removeAt(oldIndex);
+                                  entries.insert(newIndex, item);
+                                });
+                              },
+                              proxyDecorator: (child, index, animation) {
+                                return Material(
+                                  elevation: 6,
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: child,
+                                );
+                              },
                               itemBuilder: (context, index) {
-                                      final entry = entries[index];
-                                      final enabled =
-                                          tempVisibility[entry.key] ?? false;
-                                      return InkWell(
-                                        borderRadius: BorderRadius.circular(14),
-                                        onTap: () {
-                                          setSheetState(() {
-                                            tempVisibility[entry.key] =
-                                                !enabled;
-                                          });
-                                        },
-                                        child: Ink(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 12),
-                                          decoration: BoxDecoration(
-                                            color: colors.surfaceElevated,
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                            border: Border.all(
-                                              color: colors.borderSubtle,
+                                final entry = entries[index];
+                                final enabled =
+                                    tempVisibility[entry.key] ?? false;
+                                return Padding(
+                                  key: ValueKey(entry.key),
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () {
+                                      setSheetState(() {
+                                        tempVisibility[entry.key] = !enabled;
+                                      });
+                                    },
+                                    child: Ink(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: colors.surfaceElevated,
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: colors.borderSubtle,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Transform.scale(
+                                            scale: 1.05,
+                                            child: Switch(
+                                              value: enabled,
+                                              onChanged: (value) {
+                                                setSheetState(() {
+                                                  tempVisibility[
+                                                      entry.key] = value;
+                                                });
+                                              },
+                                              thumbColor:
+                                                  WidgetStateProperty
+                                                      .resolveWith(
+                                                (states) {
+                                                  if (states.contains(
+                                                      WidgetState
+                                                          .selected)) {
+                                                    return Colors.white;
+                                                  }
+                                                  return colors.iconPrimary;
+                                                },
+                                              ),
+                                              activeTrackColor: context
+                                                  .appColors
+                                                  .buttonPrimaryBg,
+                                              inactiveTrackColor: context
+                                                  .appColors.surfacePrimary,
+                                              trackOutlineColor:
+                                                  WidgetStateProperty
+                                                      .resolveWith(
+                                                (states) {
+                                                  if (states.contains(
+                                                      WidgetState
+                                                          .selected)) {
+                                                    return context.appColors
+                                                        .buttonPrimaryBg;
+                                                  }
+                                                  return context.appColors
+                                                      .borderSubtle;
+                                                },
+                                              ),
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
                                             ),
                                           ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Transform.scale(
-                                                scale: 1.05,
-                                                child: Switch(
-                                                  value: enabled,
-                                                  onChanged: (value) {
-                                                    setSheetState(() {
-                                                      tempVisibility[
-                                                          entry.key] = value;
-                                                    });
-                                                  },
-                                                  thumbColor:
-                                                      WidgetStateProperty
-                                                          .resolveWith(
-                                                    (states) {
-                                                      if (states.contains(
-                                                          WidgetState
-                                                              .selected)) {
-                                                        return Colors.white;
-                                                      }
-                                                      return colors.iconPrimary;
-                                                    },
-                                                  ),
-                                                  activeTrackColor: context
-                                                      .appColors
-                                                      .buttonPrimaryBg,
-                                                  inactiveTrackColor: context
-                                                      .appColors.surfacePrimary,
-                                                  trackOutlineColor:
-                                                      WidgetStateProperty
-                                                          .resolveWith(
-                                                    (states) {
-                                                      if (states.contains(
-                                                          WidgetState
-                                                              .selected)) {
-                                                        return context.appColors
-                                                            .buttonPrimaryBg;
-                                                      }
-                                                      return context.appColors
-                                                          .borderSubtle;
-                                                    },
-                                                  ),
-                                                  materialTapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
-                                                ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              entry.title,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: context
+                                                    .appColors.textPrimary,
+                                                fontFamily: 'Gilroy',
                                               ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  entry.title,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: context
-                                                        .appColors.textPrimary,
-                                                    fontFamily: 'Gilroy',
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                          // Drag handle
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 8),
+                                            child: Icon(
+                                              Icons.drag_handle_rounded,
+                                              color: context.appColors.textSecondary
+                                                  .withValues(alpha: 0.6),
+                                              size: 22,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
+                                );
+                              },
+                            ),
                     ),
                     Divider(
                       height: 1,
@@ -1014,10 +1118,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             for (final entry in entries)
                               entry.key: tempVisibility[entry.key] ?? false,
                           };
-                          await _saveChartVisibilityPrefs(saveMap);
+                          final newOrder =
+                              entries.map((e) => e.key).toList();
+                          await Future.wait([
+                            _saveChartVisibilityPrefs(saveMap),
+                            _saveLocalChartOrder(newOrder),
+                          ]);
                           if (!mounted) return;
                           setState(() {
                             _chartVisibility = saveMap;
+                            _localChartOrder = newOrder;
                             _chartsVersion++;
                           });
                           if (Navigator.of(sheetContext).canPop()) {

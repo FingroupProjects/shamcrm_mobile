@@ -9,11 +9,29 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ChannelsMultiSelectWidget extends StatefulWidget {
   final List<String>? selectedChannels;
   final Function(List<LeadFilterChannelData>) onSelectChannels;
+  final String? title;
+  final bool isRequired;
+  final String? hintText;
+  final Color? closedFillColor;
+  final TextStyle? headerStyle;
+  final TextStyle? hintStyle;
+  final double? titleSpacing;
+  final Widget? closedSuffixIcon;
+  final Widget? expandedSuffixIcon;
 
   const ChannelsMultiSelectWidget({
     super.key,
     required this.onSelectChannels,
     this.selectedChannels,
+    this.title,
+    this.isRequired = false,
+    this.hintText,
+    this.closedFillColor,
+    this.headerStyle,
+    this.hintStyle,
+    this.titleSpacing,
+    this.closedSuffixIcon,
+    this.expandedSuffixIcon,
   });
 
   @override
@@ -42,17 +60,23 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final channelTextStyle = context.appTextStyles.bodyLg.copyWith(
+    final defaultChannelTextStyle = context.appTextStyles.bodyLg.copyWith(
       fontWeight: FontWeight.w500,
       color: context.appColors.textPrimary,
     );
-    final hintStyle = channelTextStyle.copyWith(
-      fontSize: 14,
+    final effectiveChannelTextStyle =
+        widget.headerStyle ?? defaultChannelTextStyle;
+    final defaultHintStyle = defaultChannelTextStyle.copyWith(
+      fontSize: 14.0,
       color: context.appColors.textSecondary,
     );
+    final effectiveHintStyle = widget.hintStyle ?? defaultHintStyle;
+    final effectiveFillColor =
+        widget.closedFillColor ?? context.appColors.fieldBg;
+
     return FormField<List<LeadFilterChannelData>>(
       validator: (value) {
-        if (selectedChannelsData.isEmpty) {
+        if (widget.isRequired && selectedChannelsData.isEmpty) {
           return AppLocalizations.of(context)!
               .translate('field_required_project');
         }
@@ -63,13 +87,21 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.translate('channels'),
-              style: channelTextStyle.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 16,
-              ),
+              widget.title ??
+                  AppLocalizations.of(context)!.translate('channels'),
+              style: (widget.title != null)
+                  ? effectiveChannelTextStyle.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.0,
+                    )
+                  : defaultChannelTextStyle.copyWith(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 16.0,
+                    ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(
+              height: widget.titleSpacing ?? (widget.title != null ? 4.0 : 8.0),
+            ),
             // Рамка только на самом дропдауне. Двойная обводка
             // обрезает углы, когда список открыт.
             BlocBuilder<GetAllLeadChannelBloc, GetAllLeadChannelState>(
@@ -93,15 +125,16 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                       LeadFilterChannelData>.multiSelectSearch(
                     items: channelsList,
                     initialItems: selectedChannelsData,
-                    hintText: AppLocalizations.of(context)!
-                        .translate('select_channels'),
+                    hintText: widget.hintText ??
+                        AppLocalizations.of(context)!
+                            .translate('select_channels'),
                     searchHintText:
                         AppLocalizations.of(context)!.translate('search'),
                     noResultFoundText: AppLocalizations.of(context)!
                         .translate('nothing_found'),
                     overlayHeight: 400,
                     decoration: CustomDropdownDecoration(
-                      closedFillColor: context.appColors.fieldBg,
+                      closedFillColor: effectiveFillColor,
                       expandedFillColor: context.appColors.surfacePrimary,
                       closedBorder: Border.all(
                         color: field.hasError
@@ -115,9 +148,21 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                             : context.appColors.borderSubtle,
                       ),
                       expandedBorderRadius: BorderRadius.circular(12),
-                      hintStyle: hintStyle,
-                      headerStyle: channelTextStyle,
-                      listItemStyle: channelTextStyle,
+                      hintStyle: effectiveHintStyle,
+                      headerStyle: effectiveChannelTextStyle,
+                      listItemStyle: effectiveChannelTextStyle,
+                      closedSuffixIcon: widget.closedSuffixIcon ??
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: context.appColors.textSecondary,
+                            size: 18.0,
+                          ),
+                      expandedSuffixIcon: widget.expandedSuffixIcon ??
+                          Icon(
+                            Icons.keyboard_arrow_up_rounded,
+                            color: context.appColors.textSecondary,
+                            size: 18.0,
+                          ),
                       listItemDecoration: ListItemDecoration(
                         selectedColor: context.appColors.buttonPrimaryBg
                             .withValues(alpha: 0.14),
@@ -126,9 +171,9 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                         splashColor: Colors.transparent,
                       ),
                       searchFieldDecoration: SearchFieldDecoration(
-                        fillColor: context.appColors.fieldBg,
-                        textStyle: channelTextStyle.copyWith(fontSize: 14),
-                        hintStyle: hintStyle,
+                        fillColor: effectiveFillColor,
+                        textStyle: effectiveChannelTextStyle.copyWith(fontSize: 14.0),
+                        hintStyle: effectiveHintStyle,
                         prefixIcon: Icon(
                           Icons.search,
                           color: context.appColors.textSecondary,
@@ -171,7 +216,7 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                                       child: Text(
                                         AppLocalizations.of(context)!
                                             .translate('select_all'),
-                                        style: channelTextStyle,
+                                        style: effectiveChannelTextStyle,
                                       ),
                                     ),
                                   ],
@@ -197,15 +242,16 @@ class _ChannelsMultiSelectWidgetState extends State<ChannelsMultiSelectWidget> {
                               .join(', ');
                       return Text(
                         selectedNames,
-                        style: channelTextStyle,
+                        style: effectiveChannelTextStyle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       );
                     },
                     hintBuilder: (context, hint, enabled) => Text(
-                      AppLocalizations.of(context)!
-                          .translate('select_channels'),
-                      style: hintStyle,
+                      widget.hintText ??
+                          AppLocalizations.of(context)!
+                              .translate('select_channels'),
+                      style: effectiveHintStyle,
                     ),
                     onListChanged: (values) {
                       widget.onSelectChannels(values);

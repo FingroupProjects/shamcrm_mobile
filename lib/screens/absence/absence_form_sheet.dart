@@ -190,6 +190,8 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
                 AbsenceTapField(
                   label: absenceTr(context, 'absence_date_from'),
                   value: _dateFrom == null ? '' : formatAbsenceDisplayDate(_dateFrom!),
+                  hint: absenceTr(context, 'select_date'),
+                  isRequired: true,
                   error: _translated(_errors['date_from']),
                   onTap: _saving ? null : () => _pickDate(from: true),
                 ),
@@ -198,6 +200,8 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
                 AbsenceTapField(
                   label: absenceTr(context, 'absence_date_to'),
                   value: _dateTo == null ? '' : formatAbsenceDisplayDate(_dateTo!),
+                  hint: absenceTr(context, 'select_date'),
+                  isRequired: false,
                   error: _translated(_errors['date_to']),
                   onTap: _saving ? null : () => _pickDate(from: false),
                 ),
@@ -211,7 +215,10 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                AbsenceFieldLabel(absenceTr(context, 'absence_reason')),
+                AbsenceFieldLabel(
+                  absenceTr(context, 'absence_reason'),
+                  isRequired: true,
+                ),
                 TextField(
                   controller: _reason,
                   enabled: !_saving,
@@ -224,6 +231,12 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
                     isDense: true,
                     filled: true,
                     fillColor: context.appColors.fieldBg,
+                    hintText: absenceTr(context, 'absence_reason_hint'),
+                    hintStyle: absenceStyle(
+                      context,
+                      size: 16,
+                      color: context.appColors.fieldHint,
+                    ),
                     errorText: _translated(reasonError),
                     errorStyle: AppFieldStyle.errorTextStyle(context),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -286,6 +299,9 @@ class _AbsenceFormSheetState extends State<AbsenceFormSheet> {
     return AbsenceTapField(
       label: absenceTr(context, from ? 'absence_time_from' : 'absence_time_to'),
       value: value ?? '',
+      hint: absenceTr(context, 'select_time'),
+      isRequired: false,
+      richTooltip: from ? absenceTimeTooltipSpan(context) : null,
       error: _translated(error),
       onClear: value == null || _saving
           ? null

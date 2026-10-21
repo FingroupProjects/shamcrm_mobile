@@ -47,6 +47,9 @@ import 'package:crm_task_manager/screens/profile/profile_widget/edit_profile_but
 import 'package:crm_task_manager/screens/profile/languages/languages.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/profile_button_1c.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/switch_button.dart';
+import 'package:crm_task_manager/bloc/permission/permession_bloc.dart';
+import 'package:crm_task_manager/bloc/permission/permession_state.dart';
+import 'package:crm_task_manager/screens/profile/profile_widget/absence_button_widget.dart';
 import 'package:crm_task_manager/screens/profile/profile_widget/workday_card.dart';
 import 'package:crm_task_manager/screens/task/task_cache.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
@@ -82,6 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       PinAdaptiveContrastController();
   bool _hasPermissionToAddLeadAndSwitch = false;
   bool _hasPermissionForOneC = false;
+  bool _canOpenAbsence = false;
   Map<String, dynamic>? tutorialProgress;
   bool _hasSettingsIndexPermission = false;
   bool _isPermissionsChecked = false;
@@ -311,10 +315,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool hasLeadCreatePermission =
         await _apiService.hasPermission('lead.create');
     bool hasLeadOneCPermission = await _apiService.hasPermission('lead.oneC');
-    setState(() {
-      _hasPermissionToAddLeadAndSwitch = hasLeadCreatePermission;
-      _hasPermissionForOneC = hasLeadOneCPermission;
-    });
+    bool canOpenAbsence = await _apiService.canOpenAbsenceRequests();
+    if (mounted) {
+      setState(() {
+        _hasPermissionToAddLeadAndSwitch = hasLeadCreatePermission;
+        _hasPermissionForOneC = hasLeadOneCPermission;
+        _canOpenAbsence = canOpenAbsence;
+      });
+    }
   }
 
   Future<void> _loadSelectedOrganization() async {
@@ -344,6 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     if (newOrganization != null) {
       ApiService().saveSelectedOrganization(newOrganization);
+      await _checkPermission();
 
       await DealCache.clearDealStatuses();
       await DealCache.clearAllDeals();
@@ -413,45 +422,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // an opaque Scaffold color (that caused the white half-screen flash).
     final scrollContent = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 56),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BlocBuilder<OrganizationBloc, OrganizationState>(
-              builder: (context, state) {
-                if (state is OrganizationLoading) {
-                  return SizedBox(
-                    height: MediaQuery.sizeOf(context).height * 0.45,
-                    child: const Center(
-                      child: PlayStoreImageLoading(
-                        size: 80.0,
-                        duration: Duration(milliseconds: 1000),
+      child: BlocListener<PermissionsBloc, PermissionsState>(
+        listener: (context, state) {
+          if (state is PermissionsLoaded) {
+            _checkPermission();
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 56),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BlocBuilder<OrganizationBloc, OrganizationState>(
+                builder: (context, state) {
+                  if (state is OrganizationLoading) {
+                    return SizedBox(
+                      height: MediaQuery.sizeOf(context).height * 0.45,
+                      child: const Center(
+                        child: PlayStoreImageLoading(
+                          size: 80.0,
+                          duration: Duration(milliseconds: 1000),
+                        ),
                       ),
-                    ),
-                  );
-                } else if (state is OrganizationLoaded) {
-                  final selectedOrg = _selectedOrganization != null
-                      ? state.organizations.firstWhere(
-                          (org) => org.id.toString() == _selectedOrganization,
-                          orElse: () => state.organizations.first,
-                        )
-                      : state.organizations.first;
+                    );
+                  } else if (state is OrganizationLoaded) {
+                    final selectedOrg = _selectedOrganization != null
+                        ? state.organizations.firstWhere(
+                            (org) => org.id.toString() == _selectedOrganization,
+                            orElse: () => state.organizations.first,
+                          )
+                        : state.organizations.first;
 
-                  return Column(
-                    children: [
-                      WorkdayCard(
-                        key: ValueKey(_selectedOrganization),
-                        organizationId: _selectedOrganization,
-                      ),
-                      OrganizationWidget(
-                        selectedOrganization: _selectedOrganization,
-                        onChanged: _onOrganizationChanged,
-                      ),
-                      const AppearanceButtonWidget(),
-                      ProfileEdit(),
-                      LanguageButtonWidget(),
-                      PinChangeWidget(),
+                    return Column(
+                      children: [
+                        WorkdayCard(
+                          key: ValueKey(_selectedOrganization),
+                          organizationId: _selectedOrganization,
+                        ),
+                        OrganizationWidget(
+                          selectedOrganization: _selectedOrganization,
+                          onChanged: _onOrganizationChanged,
+                        ),
+                        const AppearanceButtonWidget(),
+                        ProfileEdit(),
+                        if (_canOpenAbsence)
+                          const AbsenceButtonWidget(),
+                        LanguageButtonWidget(),
+                        PinChangeWidget(),
                       const ChangePasswordButton(),
                       if (_hasPermissionToAddLeadAndSwitch)
                         ToggleFeatureButton(),
@@ -528,7 +545,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
 
     final layered = Stack(
       fit: StackFit.expand,

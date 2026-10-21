@@ -384,7 +384,8 @@ class _LeadAddScreenState extends State<LeadAddScreen> {
         );
 
       case 'manager_id':
-        // Только эта форма создания лида. Сделка и остальные экраны не слушают флаг.
+        // Право — строка change_lead_manager в permissions.
+        // Строки нет — менеджером становится текущий пользователь.
         return ValueListenableBuilder<bool?>(
           valueListenable: ChangeLeadManagerStore.canChange,
           builder: (context, canChange, _) {

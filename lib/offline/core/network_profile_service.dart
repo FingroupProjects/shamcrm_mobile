@@ -43,9 +43,10 @@ class NetworkProfileService {
 
   Future<NetworkProfile> _resolveProfile() async {
     final connectivity = await Connectivity().checkConnectivity();
-    final primary = connectivity.isEmpty
-        ? ConnectivityResult.none
-        : connectivity.first;
+    final primary = connectivity.firstWhere(
+      (result) => result != ConnectivityResult.none,
+      orElse: () => ConnectivityResult.none,
+    );
     final autoLowBandwidth = _isLowBandwidth(primary);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_autoLowBandwidthKey, autoLowBandwidth);

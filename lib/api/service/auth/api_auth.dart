@@ -129,6 +129,11 @@ extension ApiAuthX on ApiService {
   Future<void> savePermissions(List<String> permissions) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('permissions', permissions);
+    // Строка в списке прав открывает поле сразу.
+    // Нет строки здесь — не закрываем: это решает только /get-user-data.
+    if (ChangeLeadManagerStore.allowsChangeFromList(permissions)) {
+      await ChangeLeadManagerStore.save(true);
+    }
     // ////debugPrint('Сохранённые права доступа: ${prefs.getStringList('permissions')}');
   }
 

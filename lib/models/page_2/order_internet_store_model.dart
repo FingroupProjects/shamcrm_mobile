@@ -25,4 +25,13 @@ class OrderInternetStore {
       isActive: json['is_active'] == true || json['is_active'] == 1,
     );
   }
+
+  /// Подпись в списке. Имя бота часто пустое, тогда показываем username или id.
+  String get label {
+    final trimmedName = name.trim();
+    if (trimmedName.isNotEmpty) return trimmedName;
+    final trimmedUsername = username.trim();
+    if (trimmedUsername.isNotEmpty) return trimmedUsername;
+    return 'Mini App #$id';
+  }
 }

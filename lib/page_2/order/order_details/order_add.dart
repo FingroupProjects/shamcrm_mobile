@@ -32,6 +32,7 @@ import 'package:crm_task_manager/models/page_2/branch_model.dart';
 import 'package:crm_task_manager/models/page_2/delivery_address_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_internet_store_model.dart';
+import 'package:crm_task_manager/utils/order_mini_app_integration_store.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_details/branch_dropdown_list.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delivery_address_dropdown.dart';
@@ -213,6 +214,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       _loadCurrencyId(); // Загружаем currencyId
       _loadFieldConfiguration();
       _loadTenantFlags();
+      _applyCachedIntegration();
       _loadInternetStores();
       _branchBloc.add(FetchBranches());
 
@@ -371,6 +373,22 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         );
   }
 
+  /// Подставляем id, который уже забрали при входе в раздел заказов.
+  /// Сеть здесь не трогаем: список магазинов грузится отдельно.
+  Future<void> _applyCachedIntegration() async {
+    if (_selectedIntegrationId != null) return;
+    final organizationId = await _apiService.getSelectedOrganization() ?? '';
+    final salesFunnelId = await _apiService.getSelectedSalesFunnel() ?? '';
+    final cachedId = await OrderMiniAppIntegrationStore.readId(
+      organizationId: organizationId,
+      salesFunnelId: salesFunnelId,
+    );
+    if (!mounted || cachedId == null || _selectedIntegrationId != null) return;
+    setState(() {
+      _selectedIntegrationId = cachedId;
+    });
+  }
+
   Future<void> _loadInternetStores() async {
     if (!mounted) return;
     setState(() {
@@ -380,11 +398,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     try {
       final stores = await _apiService.getOrderInternetStores();
       if (!mounted) return;
+      final picked = OrderMiniAppIntegrationStore.pick(stores);
       setState(() {
         _internetStores = stores;
-        if (_selectedIntegrationId == null && stores.isNotEmpty) {
-          _selectedIntegrationId = stores.first.id;
-        }
+        // Поле скрыто, поэтому id выбираем сами.
+        _selectedIntegrationId ??= picked?.id;
         _isLoadingInternetStores = false;
       });
     } catch (_) {
@@ -393,6 +411,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
         _internetStores = [];
         _isLoadingInternetStores = false;
       });
+      await _applyCachedIntegration();
     }
   }
 
@@ -1054,7 +1073,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           ),
           listItemBuilder: (context, item, isSelected, onItemSelect) {
             return Text(
-              item.name,
+              item.label,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontSize: 14,
@@ -1067,9 +1086,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
           },
           headerBuilder: (context, selectedItem, enabled) {
             return Text(
-              selectedItem.name.isNotEmpty
-                  ? selectedItem.name
-                  : 'Выберите интернет магазин',
+              selectedItem.label,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1521,7 +1538,6 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
       return true;
     }
     if (selectedManager != null && selectedManager!.isNotEmpty) return true;
-    if (_selectedIntegrationId != null) return true;
     if (_selectedPaymentType != null && _selectedPaymentType!.isNotEmpty) {
       return true;
     }
@@ -3664,6 +3680,11 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   }
                 }
 
+                // Поле скрыто, но сервер без integration_id заказ не примет.
+                final integrationId = _selectedIntegrationId ??
+                    await _apiService.resolveOrderMiniAppIntegrationId();
+                if (!mounted) return;
+
                 orderBloc.add(CreateOrder(
                   phone: selectedDialCode!,
                   leadId: widget.leadId ??
@@ -3697,7 +3718,7 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                   managerId: selectedManager != null
                       ? int.parse(selectedManager!)
                       : null,
-                  integrationId: _selectedIntegrationId,
+                  integrationId: integrationId,
                   paymentType: _isFieldActiveByNames(
                     {'payment_type', 'payment_method'},
                   )

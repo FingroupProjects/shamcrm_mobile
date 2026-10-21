@@ -25,11 +25,18 @@ import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/widgets/channel_source_style.dart';
 import 'package:crm_task_manager/models/chat/chats_model.dart';
+import 'package:crm_task_manager/models/chat/chat_tab_model.dart';
 import 'package:crm_task_manager/models/lead/lead_filter_channel_model.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chats_items.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_folder_tabs_bar.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_folder_form_sheet.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/add_to_folder_sheet.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/folder_reorder_sheet.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/screens/chats/chat_sms_screen.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,6 +67,49 @@ class _ChatsScreenState extends State<ChatsScreen>
   StreamSubscription<SalesFunnelState>? _salesFunnelSubscription;
   final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
   String endPointInTab = 'lead';
+
+  static final Map<String, List<ChatTab>> _cachedChatTabsByEndpoint = {
+    'lead': [],
+    'task': [],
+    'corporate': [],
+  };
+  static String _kCachedChatTabsKey(String ep) => 'cached_chat_tabs_${ep}_v1';
+  static String _kChatTabsOrderKey(String ep) => 'chat_tabs_order_${ep}_v1';
+
+  final Map<String, List<ChatTab>> _chatTabsByEndpoint = {
+    'lead': List<ChatTab>.from(_cachedChatTabsByEndpoint['lead'] ?? []),
+    'task': List<ChatTab>.from(_cachedChatTabsByEndpoint['task'] ?? []),
+    'corporate': List<ChatTab>.from(_cachedChatTabsByEndpoint['corporate'] ?? []),
+  };
+  final Map<String, int?> _selectedFolderTabIdByEndpoint = {
+    'lead': null,
+    'task': null,
+    'corporate': null,
+  };
+  final Map<String, bool> _isLoadingTabsByEndpoint = {
+    'lead': false,
+    'task': false,
+    'corporate': false,
+  };
+  final Map<String, Set<int>> _selectedChatIdsByEndpoint = {
+    'lead': {},
+    'task': {},
+    'corporate': {},
+  };
+  final Map<String, List<Chats>> _allChatsByEndpoint = {
+    'lead': [],
+    'task': [],
+    'corporate': [],
+  };
+
+  List<ChatTab> get _chatTabs => _chatTabsByEndpoint[endPointInTab] ?? [];
+  int? get _selectedFolderTabId => _selectedFolderTabIdByEndpoint[endPointInTab];
+  bool get _isLoadingTabs => _isLoadingTabsByEndpoint[endPointInTab] ?? false;
+  Set<int> get _selectedChatIds =>
+      _selectedChatIdsByEndpoint[endPointInTab] ?? {};
+
+  bool get _isSelectionMode => _selectedChatIds.isNotEmpty;
+
   final Map<String, Map<String, dynamic>?> _filtersByEndpoint = {
     'lead': null,
     'task': null,
@@ -86,6 +136,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       on(filters['managers']?.isNotEmpty == true);
       on(filters['regions']?.isNotEmpty == true);
       on(filters['sources']?.isNotEmpty == true);
+      on(filters['labels']?.isNotEmpty == true ||
+          filters['label_ids']?.isNotEmpty == true);
       on(filters['statuses'] != null);
       on(filters['fromDate'] != null);
       on(filters['toDate'] != null);
@@ -226,6 +278,9 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
 
     final chatsBloc = _chatsBlocs[endPointInTab]!;
+    _pendingPageRequests[endPointInTab]?.cancel();
+    _lastRequestedPage[endPointInTab] = null;
+    _lastPageRequestTime[endPointInTab] = null;
     chatsBloc.add(ClearChats());
     _pagingControllers[endPointInTab]!.itemList = null;
     _pagingControllers[endPointInTab]!.refresh();
@@ -237,6 +292,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
         filters: hasActive ? normalizedFilters : null,
+        tabId: _selectedFolderTabId,
       ));
     });
   }
@@ -246,6 +302,8 @@ class _ChatsScreenState extends State<ChatsScreen>
       return filters['managers']?.isNotEmpty == true ||
           filters['regions']?.isNotEmpty == true ||
           filters['sources']?.isNotEmpty == true ||
+          filters['labels']?.isNotEmpty == true ||
+          filters['label_ids']?.isNotEmpty == true ||
           filters['statuses'] != null ||
           filters['fromDate'] != null ||
           filters['toDate'] != null ||
@@ -299,6 +357,9 @@ class _ChatsScreenState extends State<ChatsScreen>
     });
 
     final chatsBloc = _chatsBlocs[endPointInTab]!;
+    _pendingPageRequests[endPointInTab]?.cancel();
+    _lastRequestedPage[endPointInTab] = null;
+    _lastPageRequestTime[endPointInTab] = null;
     chatsBloc.add(ClearChats());
     _pagingControllers[endPointInTab]!.itemList = null;
     _pagingControllers[endPointInTab]!.refresh();
@@ -310,8 +371,538 @@ class _ChatsScreenState extends State<ChatsScreen>
         endPoint: endPointInTab,
         salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
         filters: null,
+        tabId: _selectedFolderTabId,
       ));
     });
+  }
+
+  Future<List<ChatTab>> _applySavedTabOrder(List<ChatTab> rawTabs, String ep) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final orderJson = prefs.getString(_kChatTabsOrderKey(ep));
+      if (orderJson == null || orderJson.isEmpty) return rawTabs;
+
+      final List<dynamic> decoded = json.decode(orderJson);
+      final List<int> orderedIds =
+          decoded.map((e) => SafeConverters.toInt(e)).toList();
+
+      final tabMap = {for (final t in rawTabs) t.id: t};
+      final result = <ChatTab>[];
+
+      for (final id in orderedIds) {
+        if (tabMap.containsKey(id)) {
+          result.add(tabMap.remove(id)!);
+        }
+      }
+
+      result.addAll(tabMap.values);
+      return result;
+    } catch (e) {
+      debugPrint('ChatsScreen._applySavedTabOrder ($ep) error: $e');
+      return rawTabs;
+    }
+  }
+
+  Future<void> _saveTabOrder(List<ChatTab> tabs, String ep) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final orderedIds = tabs.map((t) => t.id).toList();
+      await prefs.setString(_kChatTabsOrderKey(ep), json.encode(orderedIds));
+    } catch (e) {
+      debugPrint('ChatsScreen._saveTabOrder ($ep) error: $e');
+    }
+  }
+
+  void _openReorderFoldersSheet() async {
+    final ep = endPointInTab;
+    final currentTabs = _chatTabs;
+    final result = await FolderReorderSheet.show(
+      context,
+      tabs: currentTabs,
+      onReorder: (newOrder) {
+        setState(() {
+          _chatTabsByEndpoint[ep] = newOrder;
+        });
+        _cachedChatTabsByEndpoint[ep] = newOrder;
+        _saveTabOrder(newOrder, ep);
+        _saveCachedChatTabs(newOrder, ep);
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _chatTabsByEndpoint[ep] = result;
+      });
+      _cachedChatTabsByEndpoint[ep] = result;
+      _saveTabOrder(result, ep);
+      _saveCachedChatTabs(result, ep);
+    }
+  }
+
+  Future<void> _loadCachedChatTabs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final ep in ['lead', 'task', 'corporate']) {
+        final jsonStr = prefs.getString(_kCachedChatTabsKey(ep));
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          final List<dynamic> decoded = json.decode(jsonStr);
+          final list = decoded
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ChatTab.fromJson(e))
+              .toList();
+          if (list.isNotEmpty) {
+            final ordered = await _applySavedTabOrder(list, ep);
+            _cachedChatTabsByEndpoint[ep] = ordered;
+            if (mounted && (_chatTabsByEndpoint[ep]?.isEmpty ?? true)) {
+              setState(() {
+                _chatTabsByEndpoint[ep] = ordered;
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('ChatsScreen._loadCachedChatTabs error: $e');
+    }
+  }
+
+  Future<void> _saveCachedChatTabs(List<ChatTab> tabs, String ep) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = json.encode(tabs.map((t) => t.toJson()).toList());
+      await prefs.setString(_kCachedChatTabsKey(ep), encoded);
+    } catch (e) {
+      debugPrint('ChatsScreen._saveCachedChatTabs ($ep) error: $e');
+    }
+  }
+
+  Future<void> _loadChatTabs({bool silent = false, String? endpoint}) async {
+    final ep = endpoint ?? endPointInTab;
+    if (!mounted) return;
+    final currentList = _chatTabsByEndpoint[ep] ?? [];
+    if (!silent && currentList.isEmpty) {
+      setState(() => _isLoadingTabsByEndpoint[ep] = true);
+    }
+    try {
+      final tabs = await apiService.getChatTabs(ep);
+      final orderedTabs = await _applySavedTabOrder(tabs, ep);
+      _cachedChatTabsByEndpoint[ep] = orderedTabs;
+      _saveCachedChatTabs(orderedTabs, ep);
+      if (mounted) {
+        setState(() {
+          _chatTabsByEndpoint[ep] = orderedTabs;
+          _isLoadingTabsByEndpoint[ep] = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('ChatsScreen._loadChatTabs ($ep) error: $e');
+      if (mounted) {
+        setState(() => _isLoadingTabsByEndpoint[ep] = false);
+      }
+    }
+  }
+
+  void _onFolderTabSelected(int? tabId) {
+    if (_selectedFolderTabId == tabId) return;
+
+    final ep = endPointInTab;
+    if (_selectedFolderTabIdByEndpoint[ep] == null) {
+      final currentChats = _pagingControllers[ep]?.itemList;
+      if (currentChats != null && currentChats.isNotEmpty) {
+        _allChatsByEndpoint[ep] = List<Chats>.from(currentChats);
+      }
+    }
+
+    setState(() {
+      _selectedFolderTabIdByEndpoint[ep] = tabId;
+      _selectedChatIdsByEndpoint[ep]?.clear();
+    });
+
+    _pendingPageRequests[ep]?.cancel();
+    _lastRequestedPage[ep] = null;
+    _lastPageRequestTime[ep] = null;
+    _pagingControllers[ep]!.itemList = null;
+
+    final chatsBloc = _chatsBlocs[ep]!;
+    chatsBloc.add(ClearChats());
+    chatsBloc.add(FetchChats(
+      endPoint: ep,
+      salesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+      filters: _filtersFor(ep),
+      tabId: tabId,
+    ));
+  }
+
+  void _openCreateFolderSheet({ChatTab? editTab}) async {
+    final ep = endPointInTab;
+    final currentChats = _pagingControllers[ep]?.itemList;
+    if (_selectedFolderTabId == null && currentChats != null && currentChats.isNotEmpty) {
+      _allChatsByEndpoint[ep] = List<Chats>.from(currentChats);
+    }
+
+    final initialChats = (_allChatsByEndpoint[ep]?.isNotEmpty ?? false)
+        ? _allChatsByEndpoint[ep]!
+        : (_selectedFolderTabId == null ? currentChats : null);
+
+    final result = await ChatFolderFormSheet.show(
+      context,
+      initialTab: editTab,
+      currentSalesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+      initialAvailableChats: initialChats,
+      preselectedChatIds: _selectedChatIds,
+      endpoint: ep,
+    );
+
+    if (result != null && result != false) {
+      await _loadChatTabs(endpoint: ep);
+      if (!mounted) return;
+
+      int? targetTabId = _selectedFolderTabId;
+      if (result is ChatTab) {
+        targetTabId = result.id;
+      } else if (editTab != null) {
+        targetTabId = editTab.id;
+      }
+
+      setState(() {
+        _selectedFolderTabIdByEndpoint[ep] = targetTabId;
+        _selectedChatIdsByEndpoint[ep]?.clear();
+      });
+
+      _pendingPageRequests[ep]?.cancel();
+      _lastRequestedPage[ep] = null;
+      _lastPageRequestTime[ep] = null;
+      _pagingControllers[ep]!.error = null;
+      _pagingControllers[ep]!.itemList = null;
+
+      final chatsBloc = _chatsBlocs[ep]!;
+      chatsBloc.add(ClearChats());
+      chatsBloc.add(FetchChats(
+        endPoint: ep,
+        salesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+        filters: _filtersFor(ep),
+        tabId: targetTabId,
+      ));
+    }
+  }
+
+  void _deleteFolderTab(ChatTab tab) async {
+    final ep = endPointInTab;
+    final localizations = AppLocalizations.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: context.appColors.surfacePrimary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          localizations?.translate('folder_delete') ?? 'Удалить папку',
+          style: context.appTextStyles.titleMd.copyWith(
+            fontWeight: FontWeight.w700,
+            color: context.appColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          localizations?.translate('folder_delete_confirm') ??
+              'Вы уверены, что хотите удалить эту папку?',
+          style: context.appTextStyles.bodyMd.copyWith(
+            color: context.appColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              localizations?.translate('cancel') ?? 'Отмена',
+              style: TextStyle(color: context.appColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              localizations?.translate('folder_delete') ?? 'Удалить',
+              style: TextStyle(
+                color: context.appColors.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await apiService.deleteChatTab(tab.id, ep);
+        if (_selectedFolderTabIdByEndpoint[ep] == tab.id) {
+          _selectedFolderTabIdByEndpoint[ep] = null;
+        }
+        await _loadChatTabs(endpoint: ep);
+        if (!mounted) return;
+        _pendingPageRequests[ep]?.cancel();
+        _lastRequestedPage[ep] = null;
+        _lastPageRequestTime[ep] = null;
+        _pagingControllers[ep]!.itemList = null;
+        final chatsBloc = _chatsBlocs[ep]!;
+        chatsBloc.add(ClearChats());
+        chatsBloc.add(FetchChats(
+          endPoint: ep,
+          salesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+          filters: _filtersFor(ep),
+          tabId: _selectedFolderTabId,
+        ));
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: context.appColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _toggleChatSelection(int chatId) {
+    HapticFeedback.selectionClick();
+    final ep = endPointInTab;
+    final set = _selectedChatIdsByEndpoint.putIfAbsent(ep, () => <int>{});
+    setState(() {
+      if (set.contains(chatId)) {
+        set.remove(chatId);
+      } else {
+        set.add(chatId);
+      }
+    });
+  }
+
+  void _selectAllLeadChats() {
+    final ep = endPointInTab;
+    final currentList = _pagingControllers[ep]?.itemList ?? [];
+    final set = _selectedChatIdsByEndpoint.putIfAbsent(ep, () => <int>{});
+    setState(() {
+      set.addAll(currentList.map((c) => c.id));
+    });
+  }
+
+  void _clearChatSelection() {
+    final ep = endPointInTab;
+    setState(() {
+      _selectedChatIdsByEndpoint[ep]?.clear();
+    });
+  }
+
+  void _openAddToFolderSheet() async {
+    final ep = endPointInTab;
+    final result = await AddToFolderSheet.show(
+      context,
+      tabs: _chatTabs,
+      selectedChatIds: _selectedChatIds.toList(),
+      currentTabId: _selectedFolderTabId,
+      onCreateNewFolder: () => _openCreateFolderSheet(),
+      endpoint: ep,
+    );
+
+    if (result == true) {
+      setState(() {
+        _selectedChatIdsByEndpoint[ep]?.clear();
+      });
+      await _loadChatTabs(endpoint: ep);
+      if (!mounted) return;
+      _pendingPageRequests[ep]?.cancel();
+      _lastRequestedPage[ep] = null;
+      _lastPageRequestTime[ep] = null;
+      _pagingControllers[ep]!.itemList = null;
+      final chatsBloc = _chatsBlocs[ep]!;
+      chatsBloc.add(ClearChats());
+      chatsBloc.add(FetchChats(
+        endPoint: ep,
+        salesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+        filters: _filtersFor(ep),
+        tabId: _selectedFolderTabId,
+      ));
+    }
+  }
+
+  Future<void> _detachSelectedFromCurrentFolder() async {
+    final ep = endPointInTab;
+    final folderId = _selectedFolderTabId;
+    if (folderId == null || _selectedChatIds.isEmpty) return;
+    try {
+      await apiService.detachChatsFromTab(
+        tabId: folderId,
+        chatIds: _selectedChatIds.toList(),
+        type: ep,
+      );
+      setState(() {
+        _selectedChatIdsByEndpoint[ep]?.clear();
+      });
+      await _loadChatTabs(endpoint: ep);
+      if (!mounted) return;
+      _pendingPageRequests[ep]?.cancel();
+      _lastRequestedPage[ep] = null;
+      _lastPageRequestTime[ep] = null;
+      _pagingControllers[ep]!.itemList = null;
+      final chatsBloc = _chatsBlocs[ep]!;
+      chatsBloc.add(ClearChats());
+      chatsBloc.add(FetchChats(
+        endPoint: ep,
+        salesFunnelId: ep == 'lead' ? _selectedFunnel?.id : null,
+        filters: _filtersFor(ep),
+        tabId: _selectedFolderTabId,
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: context.appColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildSelectionTopBar() {
+    final colors = context.appColors;
+    final textStyles = context.appTextStyles;
+    final localizations = AppLocalizations.of(context);
+    final count = _selectedChatIds.length;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colors.buttonPrimaryBg.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+            onPressed: _clearChatSelection,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${localizations?.translate('selected_count') ?? 'Выбрано'}: $count',
+            style: textStyles.labelLg.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: _selectAllLeadChats,
+            child: Text(
+              localizations?.translate('select_all') ?? 'Все',
+              style: textStyles.labelMd.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingSelectionBottomBar() {
+    final colors = context.appColors;
+    final localizations = AppLocalizations.of(context);
+
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: paddingAboveNav(context).bottom + 10,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: colors.borderSubtle),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.18),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            InkWell(
+              onTap: _openAddToFolderSheet,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.folder_outlined,
+                      color: colors.buttonPrimaryBg,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      localizations?.translate('folder_add_to') ?? 'В папку',
+                      style: context.appTextStyles.bodyMd.copyWith(
+                        color: colors.buttonPrimaryBg,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_selectedFolderTabId != null) ...[
+              Container(
+                width: 1,
+                height: 24,
+                color: colors.borderSubtle,
+              ),
+              InkWell(
+                onTap: _detachSelectedFromCurrentFolder,
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.folder_off_outlined,
+                        color: colors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        localizations?.translate('folder_remove_from') ??
+                            'Из папки',
+                        style: context.appTextStyles.bodyMd.copyWith(
+                          color: colors.error,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   void _onSectionScrollToTop() {
@@ -335,6 +926,13 @@ class _ChatsScreenState extends State<ChatsScreen>
     // иначе новый чат на секунду остаётся без иконки.
     _warmChannelIcons();
 
+    // Загружаем кэшированные вкладки папок и параллельно запрашиваем с сервера сразу,
+    // чтобы при появлении вкладок «Лиды, Задачи, Корпоративный чат» папки уже были на экране моментально
+    _loadCachedChatTabs();
+    _loadChatTabs(silent: _chatTabs.isNotEmpty, endpoint: 'lead');
+    _loadChatTabs(silent: true, endpoint: 'task');
+    _loadChatTabs(silent: true, endpoint: 'corporate');
+
     //print('ChatsScreen: initState started');
     _checkPermissions().then((_) {
       if (_isPermissionsChecked) {
@@ -348,6 +946,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           _isTabControllerInitialized = true;
         });
         setUpServices();
+        _loadChatTabs(silent: true);
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
         debugPrint(
           'ChatsScreen.initState: requested unread counts refresh after permissions',
@@ -380,6 +979,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                 endPoint: endPointInTab,
                 salesFunnelId: int.parse(funnelId),
                 filters: _activeFilters,
+                tabId: _selectedFolderTabId,
               ));
             }
           } else {
@@ -395,6 +995,7 @@ class _ChatsScreenState extends State<ChatsScreen>
               _selectedFunnel =
                   state.selectedFunnel ?? state.funnels.firstOrNull;
             });
+            _loadChatTabs(silent: true);
             if (endPointInTab == 'lead' && _selectedFunnel != null) {
               //print(    'ChatsScreen: Dispatching FetchChats with selectedFunnel: ${_selectedFunnel!.id}, filters: $_activeFilters');
               _chatsBlocs[endPointInTab]!.add(ClearChats());
@@ -404,6 +1005,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                 endPoint: endPointInTab,
                 salesFunnelId: _selectedFunnel!.id,
                 filters: _activeFilters,
+                tabId: _selectedFolderTabId,
               ));
             }
           }
@@ -416,7 +1018,6 @@ class _ChatsScreenState extends State<ChatsScreen>
       controller.addPageRequestListener((pageKey) {
         //print( 'ChatsScreen: Page request for endpoint $endPoint, pageKey: $pageKey');
         if (pageKey == 0) {
-          controller.refresh();
           return;
         }
 
@@ -657,6 +1258,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                           endPoint: endPointInTab,
                           salesFunnelId: selected.id,
                           filters: _activeFilters,
+                          tabId: _selectedFolderTabId,
                         ));
                       } catch (e) {
                         //print('ChatsScreen: PopupMenuButton - Error: $e');
@@ -724,6 +1326,14 @@ class _ChatsScreenState extends State<ChatsScreen>
       if (_activeFilters!['sources']?.isNotEmpty == true) {
         activeFiltersList.add(
             '${AppLocalizations.of(context)!.translate('sources')} (${_activeFilters!['sources'].length})');
+      }
+      if (_activeFilters!['labels']?.isNotEmpty == true ||
+          _activeFilters!['label_ids']?.isNotEmpty == true) {
+        final count = (_activeFilters!['labels'] as List?)?.length ??
+            (_activeFilters!['label_ids'] as List?)?.length ??
+            0;
+        activeFiltersList.add(
+            '${AppLocalizations.of(context)!.translate('labels')} ($count)');
       }
       if (_activeFilters!['statuses']?.isNotEmpty == true) {
         activeFiltersList
@@ -958,6 +1568,7 @@ class _ChatsScreenState extends State<ChatsScreen>
         query: query,
         salesFunnelId: endPoint == 'lead' ? _selectedFunnel?.id : null,
         filters: _filtersFor(endPoint),
+        tabId: _selectedFolderTabIdByEndpoint[endPoint],
       ));
     });
   }
@@ -1103,12 +1714,14 @@ class _ChatsScreenState extends State<ChatsScreen>
   void updateChats() {
     final chatsBloc = _chatsBlocs[endPointInTab]!;
     chatsBloc.add(ClearChats());
+    _pagingControllers[endPointInTab]!.error = null;
     _pagingControllers[endPointInTab]!.itemList = null;
     _pagingControllers[endPointInTab]!.refresh();
     chatsBloc.add(FetchChats(
       endPoint: endPointInTab,
       salesFunnelId: endPointInTab == 'lead' ? _selectedFunnel?.id : null,
       filters: _filtersFor(endPointInTab),
+      tabId: _selectedFolderTabId,
     ));
   }
 
@@ -1168,6 +1781,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                       endPoint: endPointInTab,
                       salesFunnelId: _selectedFunnel?.id,
                       filters: _filtersFor(endPointInTab),
+                      tabId: _selectedFolderTabId,
                     ));
                   }
                 });
@@ -1213,6 +1827,7 @@ class _ChatsScreenState extends State<ChatsScreen>
                         endPoint: endPointInTab,
                         salesFunnelId: _selectedFunnel?.id,
                         filters: _filtersFor(endPointInTab),
+                        tabId: _selectedFolderTabId,
                       ));
                     });
                   }
@@ -1320,11 +1935,30 @@ class _ChatsScreenState extends State<ChatsScreen>
                                   },
                                 ),
                               ),
-                              SizedBox(height: 12),
+                              const SizedBox(height: 8),
+                              ChatFolderTabsBar(
+                                tabs: _chatTabs,
+                                selectedTabId: _selectedFolderTabId,
+                                onTabSelected: _onFolderTabSelected,
+                                onCreateTabPressed: () =>
+                                    _openCreateFolderSheet(),
+                                onEditTabPressed: (tab) =>
+                                    _openCreateFolderSheet(editTab: tab),
+                                onDeleteTabPressed: _deleteFolderTab,
+                                onReorderTabsPressed:
+                                    _openReorderFoldersSheet,
+                                isLoading: _isLoadingTabs,
+                              ),
+                              if (_isSelectionMode) ...[
+                                const SizedBox(height: 6),
+                                _buildSelectionTopBar(),
+                              ],
+                              const SizedBox(height: 8),
                               Expanded(child: _buildTabBarView()),
                             ],
                           )
                         : Center(child: CircularProgressIndicator()),
+                    if (_isSelectionMode) _buildFloatingSelectionBottomBar(),
                   ],
                 ),
           floatingActionButton: (selectTabIndex == 2)
@@ -1384,6 +2018,7 @@ class _ChatsScreenState extends State<ChatsScreen>
 
         String newEndPoint = endPoint;
         endPointInTab = newEndPoint;
+        _loadChatTabs(silent: true, endpoint: newEndPoint);
         ChatUnreadCounterService.instance.refreshCounts(silent: true);
 
         final chatsBloc = _chatsBlocs[newEndPoint]!;
@@ -1394,6 +2029,7 @@ class _ChatsScreenState extends State<ChatsScreen>
           endPoint: newEndPoint,
           salesFunnelId: newEndPoint == 'lead' ? _selectedFunnel?.id : null,
           filters: _filtersFor(newEndPoint),
+          tabId: _selectedFolderTabIdByEndpoint[newEndPoint],
         ));
       },
       child: CompositedTransformTarget(
@@ -1589,6 +2225,12 @@ class _ChatsScreenState extends State<ChatsScreen>
               endPointInTab: endPoint,
               pagingController: _pagingControllers[endPoint]!,
               scrollController: _chatListScroll[endPoint]!,
+              isSelectionMode: _isSelectionMode,
+              selectedChatIds: _selectedChatIds,
+              onToggleSelectChat: _toggleChatSelection,
+              onChatLongPress: (chat) {
+                _toggleChatSelection(chat.id);
+              },
             ),
           );
         },
@@ -1649,12 +2291,20 @@ class _ChatItemsWidget extends StatefulWidget {
   final String endPointInTab;
   final PagingController<int, Chats> pagingController;
   final ScrollController scrollController;
+  final bool isSelectionMode;
+  final Set<int> selectedChatIds;
+  final ValueChanged<int>? onToggleSelectChat;
+  final ValueChanged<Chats>? onChatLongPress;
 
   const _ChatItemsWidget({
     required this.updateChats,
     required this.endPointInTab,
     required this.pagingController,
     required this.scrollController,
+    this.isSelectionMode = false,
+    this.selectedChatIds = const {},
+    this.onToggleSelectChat,
+    this.onChatLongPress,
   });
 
   @override
@@ -1734,15 +2384,7 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
   }
 
   void _retryCurrentChatsRequest() {
-    final chatsBloc = context.read<ChatsBloc>();
-    final hasItems = (widget.pagingController.itemList ?? []).isNotEmpty;
-
-    if (hasItems) {
-      chatsBloc.add(RefreshChats());
-      return;
-    }
-
-    chatsBloc.add(FetchChats(endPoint: widget.endPointInTab));
+    widget.updateChats();
   }
 
   String _normalizeErrorMessage(BuildContext context, Object? error) {
@@ -1952,27 +2594,46 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           final currentPage = state.chatsPagination.currentPage;
           final totalPage = state.chatsPagination.totalPage;
 
-          //print('_ChatItemsWidget: Loaded page $currentPage/$totalPage with ${newChats.length} chats');
-
-          // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #1: Первая страница пустая
+          // ✅ Первая страница пустая
           if (currentPage == 1 && newChats.isEmpty) {
-            //print('_ChatItemsWidget: No data, showing empty state');
+            widget.pagingController.itemList = [];
             widget.pagingController.appendLastPage([]);
             return;
           }
 
-          // ✅ КРИТИЧЕСКАЯ ПРОВЕРКА #2: Проверка на изменения
-          final currentItems = widget.pagingController.itemList ?? [];
+          // ✅ Загрузка первой страницы (переключение папки/таба, первоначальная загрузка, socket/pull-to-refresh)
+          if (currentPage == 1) {
+            final currentItems = widget.pagingController.itemList ?? [];
+            if (currentItems.isNotEmpty &&
+                !_shouldRefreshData(currentItems, newChats)) {
+              return;
+            }
 
-          if (!_shouldRefreshData(currentItems, newChats)) {
-            //print('_ChatItemsWidget: No changes detected, skipping update');
-            return;
-          }
+            final currentIds = currentItems.map((c) => c.id).toSet();
+            final newIds = newChats.map((c) => c.id).toSet();
 
-          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если currentItems пуст, это первая загрузка, НЕ merge!
-          if (currentItems.isEmpty && newChats.isNotEmpty) {
-            debugPrint(
-                '_ChatItemsWidget: First load detected (empty -> ${newChats.length}), appending page $currentPage');
+            // Если список уже есть и набор ID тот же - обновляем данные на месте без скачка скролла
+            if (currentItems.length == newChats.length &&
+                currentIds.containsAll(newIds) &&
+                newIds.containsAll(currentIds)) {
+              debugPrint(
+                  '=================-=== _ChatItemsWidget: Only data changes or reorder detected, updating itemList');
+              widget.pagingController.itemList = List<Chats>.from(newChats);
+              return;
+            }
+
+            // Если сокет добавил новый чат в начало
+            if (currentItems.isNotEmpty &&
+                newChats.length > currentItems.length &&
+                newIds.containsAll(currentIds)) {
+              debugPrint(
+                  '=================-=== _ChatItemsWidget: Prepending/Socket update detected (${currentItems.length} -> ${newChats.length}), updating itemList without reset');
+              widget.pagingController.itemList = List<Chats>.from(newChats);
+              return;
+            }
+
+            // Для переключения папок, фильтров или чистой загрузки - полный сброс и установка первой страницы
+            widget.pagingController.itemList = null;
             if (currentPage >= totalPage) {
               widget.pagingController.appendLastPage(newChats);
             } else {
@@ -1981,69 +2642,28 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
             return;
           }
 
-          // ✅ ИСПРАВЛЕНИЕ: Проверяем, не является ли это merge (добавление новых страниц)
-          // Если текущий список является подмножеством нового - это merge, обновляем без сброса
+          // ✅ Пагинация (страницы > 1)
+          final currentItems = widget.pagingController.itemList ?? [];
           final currentIds = currentItems.map((c) => c.id).toSet();
-          final newIds = newChats.map((c) => c.id).toSet();
-          final isSubset = currentIds.every((id) => newIds.contains(id));
-          // ✅ ИСПРАВЛЕНИЕ: Merge только если currentItems НЕ пуст
-          final isMerge = isSubset &&
-              newChats.length > currentItems.length &&
-              currentItems.isNotEmpty;
+          final newItemsOnly = newChats
+              .where((chat) => !currentIds.contains(chat.id))
+              .toList();
 
-          if (isMerge) {
-            // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: При merge извлекаем только НОВЫЕ элементы для добавления
-            // newChats содержит все элементы (старые + новые), нужно добавить только новые
-            final newItemsOnly = newChats
-                .where((chat) => !currentIds.contains(chat.id))
-                .toList();
-
+          if (newItemsOnly.isEmpty) {
             debugPrint(
-                '_ChatItemsWidget: Merge detected - current: ${currentItems.length}, new total: ${newChats.length}, new items only: ${newItemsOnly.length}, appending page $currentPage');
-
-            // ✅ ИСПРАВЛЕНИЕ: Проверяем, не добавляем ли мы уже эту страницу
-            if (newItemsOnly.isEmpty) {
-              debugPrint(
-                  '_ChatItemsWidget: No new items to append (page $currentPage already loaded), skipping');
-              return;
-            }
-
-            if (currentPage >= totalPage) {
-              widget.pagingController.appendLastPage(newItemsOnly);
-            } else {
-              widget.pagingController.appendPage(newItemsOnly, currentPage + 1);
-            }
-          } else {
-            // ✅ Обычное обновление (изменения в существующих чатах или prepending от сокета)
-
-            // Если количество элементов совпадает и IDs те же - это просто обновление данных внутри чатов
-            if (currentItems.length == newChats.length &&
-                currentIds.containsAll(newIds) &&
-                newIds.containsAll(currentIds)) {
-              debugPrint(
-                  '=================-=== _ChatItemsWidget: Only data changes or reorder detected, updating itemList');
-              widget.pagingController.itemList = List<Chats>.from(newChats);
-            } else if (newChats.length > currentItems.length &&
-                newIds.containsAll(currentIds)) {
-              // ✅ КЕЙС: Prepending (новые чаты сверху от сокета)
-              // Мы не сбрасываем itemList в null, а просто заменяем его.
-              // PagingController при замене itemList сохраняет scroll position, если элементы имеют те же Key/ID
-              debugPrint(
-                  '=================-=== _ChatItemsWidget: Prepending/Socket update detected (${currentItems.length} -> ${newChats.length}), updating itemList without reset');
-              widget.pagingController.itemList = List<Chats>.from(newChats);
-            } else {
-              // Структурные изменения (фильтры, переключение табов и т.д.) - нужен полный сброс
-              debugPrint(
-                  '=================-=== _ChatItemsWidget: Structural changes detected, performing full reset');
-              widget.pagingController.itemList = null;
-
-              if (currentPage >= totalPage) {
-                widget.pagingController.appendLastPage(newChats);
-              } else {
-                widget.pagingController.appendPage(newChats, currentPage + 1);
-              }
-            }
+                '_ChatItemsWidget: No new items to append (page $currentPage already loaded), skipping');
+            return;
           }
+
+          if (currentPage >= totalPage) {
+            widget.pagingController.appendLastPage(newItemsOnly);
+          } else {
+            widget.pagingController.appendPage(newItemsOnly, currentPage + 1);
+          }
+        } else if (state is ChatsLoading) {
+          widget.pagingController.itemList = null;
+        } else if (state is ChatsInitial) {
+          widget.pagingController.itemList = null;
         } else if (state is ChatsError) {
           final currentItems =
               widget.pagingController.itemList ?? const <Chats>[];
@@ -2068,9 +2688,6 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
               ),
             );
           }
-        } else if (state is ChatsInitial) {
-          //print('_ChatItemsWidget: Initial state, resetting');
-          widget.pagingController.itemList = null;
         }
       },
       child: PagedListView<int, Chats>(
@@ -2080,17 +2697,21 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
         builderDelegate: PagedChildBuilderDelegate<Chats>(
           noItemsFoundIndicatorBuilder: (context) {
             final l10n = AppLocalizations.of(context)!;
+            final isCorporate = widget.endPointInTab == 'corporate';
             return HelpfulEmptyState(
               icon: Icons.chat_bubble_outline_rounded,
               title: l10n.translate('empty_chats_title'),
               subtitle: l10n.translate('empty_chats_subtitle'),
-              actionLabel: l10n.translate('empty_chats_action'),
-              onAction: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const AddClientDialog(),
-                );
-              },
+              actionLabel:
+                  isCorporate ? l10n.translate('empty_chats_action') : null,
+              onAction: isCorporate
+                  ? () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AddClientDialog(),
+                      );
+                    }
+                  : null,
             );
           },
           firstPageProgressIndicatorBuilder: (context) {
@@ -2134,15 +2755,32 @@ class _ChatItemsWidgetState extends State<_ChatItemsWidget> {
           },
           itemBuilder: (context, item, index) {
             //print('_ChatItemsWidget: Rendering chat ID: ${item.id} at index $index for endpoint ${widget.endPointInTab}, unreadCount: ${item.unreadCount}');
+            final isSelected = widget.selectedChatIds.contains(item.id);
             return InkWell(
               key: ValueKey(item.uniqueId ?? item.id.toString()),
-              onTap: () => onTap(item),
-              onLongPress: () => onLongPress(item),
+              onTap: () {
+                if (widget.isSelectionMode) {
+                  widget.onToggleSelectChat?.call(item.id);
+                } else {
+                  onTap(item);
+                }
+              },
+              onLongPress: () {
+                if (widget.onChatLongPress != null) {
+                  widget.onChatLongPress!.call(item);
+                } else {
+                  onLongPress(item);
+                }
+              },
               splashColor: context.appColors.iconSecondary,
               focusColor: context.appColors.overlay,
               child: ChatListItem(
                 chatItem: item.toChatItem(),
                 endPointInTab: widget.endPointInTab,
+                isSelectionMode: widget.isSelectionMode,
+                isSelected: isSelected,
+                onSelectionToggle: () =>
+                    widget.onToggleSelectChat?.call(item.id),
               ),
             );
           },

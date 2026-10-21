@@ -71,11 +71,41 @@ extension ApiWarehouseOrdersX on ApiService {
       }
     }
 
-    return rawList
+    // Имя часто пустое. Отбрасывать такие записи нельзя:
+    // серверу нужен integration_id, а не название.
+    final stores = rawList
         .whereType<Map<String, dynamic>>()
         .map(OrderInternetStore.fromJson)
-        .where((item) => item.name.trim().isNotEmpty)
+        .where((item) => item.id > 0)
         .toList();
+
+    final picked = OrderMiniAppIntegrationStore.pick(stores);
+    if (picked != null) {
+      final organizationId = await getSelectedOrganization() ?? '';
+      final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+      await OrderMiniAppIntegrationStore.save(
+        store: picked,
+        organizationId: organizationId,
+        salesFunnelId: salesFunnelId,
+      );
+    }
+
+    return stores;
+  }
+
+  /// Id интеграции для тела заказа.
+  /// Сначала берём сохранённый ответ, если его нет — запрашиваем заново.
+  Future<int?> resolveOrderMiniAppIntegrationId() async {
+    final organizationId = await getSelectedOrganization() ?? '';
+    final salesFunnelId = await getSelectedSalesFunnel() ?? '';
+    final cachedId = await OrderMiniAppIntegrationStore.readId(
+      organizationId: organizationId,
+      salesFunnelId: salesFunnelId,
+    );
+    if (cachedId != null) return cachedId;
+
+    final stores = await getOrderInternetStores();
+    return OrderMiniAppIntegrationStore.pick(stores)?.id;
   }
 
   Future<VariantResponse> getVariants({

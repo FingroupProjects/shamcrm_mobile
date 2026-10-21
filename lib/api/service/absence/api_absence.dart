@@ -47,8 +47,8 @@ extension ApiAbsenceX on ApiService {
 
   Future<bool> canOpenAbsenceRequests() async {
     try {
-      final access = await loadAbsenceAccess();
-      return access.showMenu;
+      final permissions = await getPermissions();
+      return _hasAbsencePermission(permissions, 'index');
     } catch (_) {
       return false;
     }

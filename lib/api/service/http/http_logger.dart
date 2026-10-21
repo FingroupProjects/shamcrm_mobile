@@ -20,12 +20,33 @@ class HttpLogger {
   /// Stream для подписки на обновления логов
   Stream<List<HttpLogModel>> get logsStream => _logsController.stream;
 
+  /// Список шаблонов URL, которые исключаются из логирования (например, Firebase RTDB)
+  static const List<String> _ignoredUrlPatterns = [
+    'firebaseio.com',
+    'firebasedatabase.app',
+    'default-rtdb',
+  ];
+
+  /// Проверяет, нужно ли исключить данный URL из логирования
+  static bool shouldIgnoreUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+    final lower = url.toLowerCase();
+    for (final pattern in _ignoredUrlPatterns) {
+      if (lower.contains(pattern)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Получить все логи
-  List<HttpLogModel> get logs => List.unmodifiable(_logs);
+  List<HttpLogModel> get logs =>
+      List.unmodifiable(_logs.where((log) => !shouldIgnoreUrl(log.url)));
 
   /// Добавить новый лог
   void addLog(HttpLogModel log) {
     if (!kDebugMode) return; // Работает только в DEBUG режиме
+    if (shouldIgnoreUrl(log.url)) return;
 
     _logs.insert(0, log); // Добавляем в начало списка (новые сверху)
 
@@ -46,6 +67,11 @@ class HttpLogger {
   /// Обновить существующий лог (например, добавить response данные)
   void updateLog(String id, HttpLogModel updatedLog) {
     if (!kDebugMode) return;
+    if (shouldIgnoreUrl(updatedLog.url)) {
+      _logs.removeWhere((log) => log.id == id);
+      _logsController.add(logs);
+      return;
+    }
 
     final index = _logs.indexWhere((log) => log.id == id);
     if (index != -1) {
@@ -66,7 +92,9 @@ class HttpLogger {
   /// Получить лог по ID
   HttpLogModel? getLogById(String id) {
     try {
-      return _logs.firstWhere((log) => log.id == id);
+      final log = _logs.firstWhere((log) => log.id == id);
+      if (shouldIgnoreUrl(log.url)) return null;
+      return log;
     } catch (e) {
       return null;
     }
@@ -74,10 +102,11 @@ class HttpLogger {
 
   /// Фильтровать логи по тексту (URL или метод)
   List<HttpLogModel> filterLogs(String query) {
-    if (query.isEmpty) return logs;
+    final activeLogs = _logs.where((log) => !shouldIgnoreUrl(log.url));
+    if (query.isEmpty) return activeLogs.toList();
 
     final lowerQuery = query.toLowerCase();
-    return _logs.where((log) {
+    return activeLogs.where((log) {
       return log.url.toLowerCase().contains(lowerQuery) ||
           log.method.toLowerCase().contains(lowerQuery);
     }).toList();

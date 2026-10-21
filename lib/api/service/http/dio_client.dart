@@ -149,6 +149,11 @@ class LoggedDioClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
+          if (HttpLogger.shouldIgnoreUrl(options.uri.toString())) {
+            handler.next(options);
+            return;
+          }
+
           final logId = DateTime.now().millisecondsSinceEpoch.toString();
           options.extra['http_log_id'] = logId;
           options.extra['http_log_start'] = DateTime.now();

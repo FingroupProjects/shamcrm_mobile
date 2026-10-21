@@ -104,6 +104,7 @@ class SocketInspector {
     String? error,
   }) {
     if (!kDebugMode) return;
+    if (HttpLogger.shouldIgnoreUrl(socketUrl)) return;
 
     _events += 1;
     final id = '${DateTime.now().microsecondsSinceEpoch}_$_events';

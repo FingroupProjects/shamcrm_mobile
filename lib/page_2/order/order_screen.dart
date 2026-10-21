@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/utils/nav_list_padding.dart';
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_bloc.dart';
@@ -68,6 +70,17 @@ class _OrderScreenState extends State<OrderScreen>
     SectionScrollBus.instance.tick.addListener(_onSectionScrollToTop);
     _orderBloc = OrderBloc(ApiService())..add(FetchOrderStatuses());
     _checkPermissions();
+    // integration_id обязателен при создании заказа.
+    // Забираем его в фоне, пока пользователь ещё в списке.
+    unawaited(_prefetchMiniAppIntegration());
+  }
+
+  Future<void> _prefetchMiniAppIntegration() async {
+    try {
+      await _apiService.getOrderInternetStores();
+    } catch (error) {
+      debugPrint('OrderScreen: не удалось загрузить интеграцию заказа: $error');
+    }
   }
 
   Future<void> _checkPermissions() async {
@@ -126,6 +139,7 @@ class _OrderScreenState extends State<OrderScreen>
       final orderBloc = _orderBloc;
       await orderBloc.clearAllCountsAndCache();
       orderBloc.add(FetchOrderStatuses(forceRefresh: true));
+      unawaited(_prefetchMiniAppIntegration());
     } catch (e) {
       debugPrint('OrderScreen: Ошибка при обновлении данных: $e');
       if (mounted) {

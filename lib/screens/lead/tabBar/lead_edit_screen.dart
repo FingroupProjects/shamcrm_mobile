@@ -740,7 +740,8 @@ class _LeadEditScreenState extends State<LeadEditScreen> {
         );
 
       case 'manager_id':
-        // Редактирование лида: без права менеджер остаётся тем, кто уже указан.
+        // Право — строка change_lead_manager в permissions.
+        // Строки нет — менеджер остаётся тем, кто уже указан.
         return ValueListenableBuilder<bool?>(
           valueListenable: ChangeLeadManagerStore.canChange,
           builder: (context, canChange, _) {

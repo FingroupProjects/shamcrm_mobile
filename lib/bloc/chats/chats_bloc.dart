@@ -27,7 +27,9 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   Map<String, dynamic>? _currentFilters;
   int? _currentSalesFunnelId;
   String? _currentQuery;
+  int? _currentTabId;
   bool _isFetching = false;
+  int _fetchRequestId = 0;
 
   final Set<int> _prefetchedPages = {};
   final Set<int> _loadingPages = {}; // Страницы, которые сейчас загружаются
@@ -89,6 +91,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
     _currentFilters = event.filters;
     _currentSalesFunnelId = event.salesFunnelId;
     _currentQuery = event.query;
+    _currentTabId = event.tabId;
   }
 
   String _toUserFriendlyErrorMessage(Object error) {
@@ -118,46 +121,17 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
   // Начальная загрузка чатов
   Future<void> _fetchChatsEvent(
       FetchChats event, Emitter<ChatsState> emit) async {
-    if (_isFetching) {
-      debugPrint(
-          '=================-=== ChatsBloc._fetchChatsEvent: Skipping fetch, another fetch is in progress');
-      return;
-    }
+    final requestId = ++_fetchRequestId;
     _isFetching = true;
     debugPrint(
-        'ChatsBloc._fetchChatsEvent: Starting fetch - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}');
+        'ChatsBloc._fetchChatsEvent: Starting fetch #$requestId - endpoint: ${event.endPoint}, query: ${event.query}, salesFunnelId: ${event.salesFunnelId}, tabId: ${event.tabId}');
 
     _updateFetchParameters(event);
     _lastFetchedPage = 0;
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
-    _loadingPages
-        .clear(); // ✅ ИСПРАВЛЕНИЕ: Очищаем список загружающихся страниц
-    final cached = await _offlineRepository.readCachedChats(
-      endPoint: event.endPoint,
-      page: 1,
-      query: event.query,
-      salesFunnelId: event.salesFunnelId,
-      filters: event.filters,
-    );
+    _loadingPages.clear(); // Очищаем список загружающихся страниц
 
-    if (cached != null) {
-      final sortedCached = _applyLocalUnreadOverrides(
-        _sortChatsIfNeeded(cached.data, event.endPoint),
-      );
-      chatsPagination = PaginationDTO(
-        data: sortedCached,
-        count: cached.count,
-        total: cached.total,
-        perPage: cached.perPage,
-        currentPage: cached.currentPage,
-        totalPage: cached.totalPage,
-      );
-      _lastFetchedPage = 1;
-      _prefetchedPages.add(1);
-      emit(ChatsLoaded(chatsPagination!));
-    } else {
-      emit(ChatsLoading());
-    }
+    emit(ChatsLoading());
 
     if (await _checkInternetConnection()) {
       try {
@@ -167,7 +141,15 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           query: event.query,
           salesFunnelId: event.salesFunnelId,
           filters: event.filters,
+          tabId: event.tabId,
         );
+
+        if (requestId != _fetchRequestId) {
+          debugPrint(
+              'ChatsBloc._fetchChatsEvent: Discarding stale fetch response #$requestId (current: $_fetchRequestId)');
+          return;
+        }
+
         debugPrint(
             '=================-=== ChatsBloc._fetchChatsEvent: Fetched ${pagination.data.length} chats for endpoint ${event.endPoint}, page 1');
 
@@ -186,21 +168,110 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         _lastFetchedPage = 1;
         _prefetchedPages.add(1);
         emit(ChatsLoaded(chatsPagination!));
-
-        // ✅ ИСПРАВЛЕНИЕ: Отключена автоматическая предзагрузка для предотвращения бесконечных запросов
-        // _prefetchNextPages(2, emit);
       } catch (e) {
+        if (requestId != _fetchRequestId) return;
         debugPrint(
             '=================-=== ChatsBloc._fetchChatsEvent: Error: $e, Type: ${e.runtimeType}');
-        emit(ChatsError(_toUserFriendlyErrorMessage(e)));
+
+        final cached = await _offlineRepository.readCachedChats(
+          endPoint: event.endPoint,
+          page: 1,
+          query: event.query,
+          salesFunnelId: event.salesFunnelId,
+          filters: event.filters,
+          tabId: event.tabId,
+        );
+
+        if (requestId != _fetchRequestId) return;
+
+        if (cached != null) {
+          final sortedCached = _applyLocalUnreadOverrides(
+            _sortChatsIfNeeded(cached.data, event.endPoint),
+          );
+          chatsPagination = PaginationDTO(
+            data: sortedCached,
+            count: cached.count,
+            total: cached.total,
+            perPage: cached.perPage,
+            currentPage: cached.currentPage,
+            totalPage: cached.totalPage,
+          );
+          _lastFetchedPage = 1;
+          _prefetchedPages.add(1);
+          emit(ChatsLoaded(chatsPagination!));
+        } else {
+          emit(ChatsError(_toUserFriendlyErrorMessage(e)));
+        }
       }
     } else {
       debugPrint('ChatsBloc._fetchChatsEvent: No internet connection');
-      if (cached == null) {
-        emit(ChatsError('Нет подключения к интернету'));
+      final cached = await _offlineRepository.readCachedChats(
+        endPoint: event.endPoint,
+        page: 1,
+        query: event.query,
+        salesFunnelId: event.salesFunnelId,
+        filters: event.filters,
+        tabId: event.tabId,
+      );
+
+      if (requestId != _fetchRequestId) return;
+
+      if (cached != null) {
+        final sortedCached = _applyLocalUnreadOverrides(
+          _sortChatsIfNeeded(cached.data, event.endPoint),
+        );
+        chatsPagination = PaginationDTO(
+          data: sortedCached,
+          count: cached.count,
+          total: cached.total,
+          perPage: cached.perPage,
+          currentPage: cached.currentPage,
+          totalPage: cached.totalPage,
+        );
+        _lastFetchedPage = 1;
+        _prefetchedPages.add(1);
+        emit(ChatsLoaded(chatsPagination!));
+      } else {
+        // Fallback: If no cache exists (e.g. brand new folder), try a direct network fetch
+        // before immediately failing with offline error.
+        try {
+          final pagination = await _offlineRepository.refreshChats(
+            endPoint: event.endPoint,
+            page: 1,
+            query: event.query,
+            salesFunnelId: event.salesFunnelId,
+            filters: event.filters,
+            tabId: event.tabId,
+          );
+
+          if (requestId != _fetchRequestId) return;
+
+          final updatedChats = _applyLocalUnreadOverrides(
+            _sortChatsIfNeeded(pagination.data, event.endPoint),
+          );
+
+          chatsPagination = PaginationDTO(
+            data: updatedChats,
+            count: pagination.count,
+            total: pagination.total,
+            perPage: pagination.perPage,
+            currentPage: pagination.currentPage,
+            totalPage: pagination.totalPage,
+          );
+          _lastFetchedPage = 1;
+          _prefetchedPages.add(1);
+          emit(ChatsLoaded(chatsPagination!));
+        } catch (_) {
+          if (requestId == _fetchRequestId) {
+            emit(ChatsError('Нет подключения к интернету'));
+          }
+        }
       }
     }
-    _isFetching = false;
+
+    if (requestId == _fetchRequestId) {
+      _isFetching = false;
+    }
   }
 
   // Перезагрузка чатов
@@ -220,6 +291,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
             query: _currentQuery,
             salesFunnelId: _currentSalesFunnelId,
             filters: _currentFilters,
+            tabId: _currentTabId,
           );
     if (!hasLiveData) {
       if (cached != null) {
@@ -247,6 +319,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
           query: _currentQuery,
           salesFunnelId: _currentSalesFunnelId,
           filters: _currentFilters,
+          tabId: _currentTabId,
         );
 
         final updatedChats = _applyLocalUnreadOverrides(
@@ -275,7 +348,34 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         }
       }
     } else if (!hasLiveData && cached == null) {
-      emit(ChatsError('Нет подключения к интернету'));
+      try {
+        chatsPagination = await _offlineRepository.refreshChats(
+          endPoint: endPoint,
+          page: 1,
+          query: _currentQuery,
+          salesFunnelId: _currentSalesFunnelId,
+          filters: _currentFilters,
+          tabId: _currentTabId,
+        );
+
+        final updatedChats = _applyLocalUnreadOverrides(
+          _sortChatsIfNeeded(chatsPagination!.data, endPoint),
+        );
+
+        chatsPagination = PaginationDTO(
+          data: updatedChats,
+          count: chatsPagination!.count,
+          total: chatsPagination!.total,
+          perPage: chatsPagination!.perPage,
+          currentPage: chatsPagination!.currentPage,
+          totalPage: chatsPagination!.totalPage,
+        );
+        _lastFetchedPage = 1;
+        _prefetchedPages.add(1);
+        emit(ChatsLoaded(chatsPagination!));
+      } catch (_) {
+        emit(ChatsError('Нет подключения к интернету'));
+      }
     }
   }
 
@@ -307,6 +407,7 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
         _loadingPages.add(nextPage);
 
         if (await _checkInternetConnection()) {
+          final currentRequestId = _fetchRequestId;
           try {
             final nextPageChats = await _offlineRepository.refreshChats(
               endPoint: endPoint,
@@ -314,7 +415,16 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
               query: _currentQuery,
               salesFunnelId: _currentSalesFunnelId,
               filters: _currentFilters,
+              tabId: _currentTabId,
             );
+
+            if (currentRequestId != _fetchRequestId) {
+              debugPrint(
+                  'ChatsBloc._getNextPageChatsEvent: Discarding stale next page');
+              _loadingPages.remove(nextPage);
+              return;
+            }
+
             debugPrint(
                 '=================-=== ChatsBloc._getNextPageChatsEvent: Fetched ${nextPageChats.data.length} chats for page ${nextPageChats.currentPage}');
 
@@ -684,9 +794,12 @@ class ChatsBloc extends Bloc<ChatsEvent, ChatsState> {
       ClearChats event, Emitter<ChatsState> emit) async {
     debugPrint(
         '=================-=== ChatsBloc._clearChatsEvent: Clearing chats and resetting chatsPagination for endpoint $endPoint');
+    _fetchRequestId++;
+    _isFetching = false;
     chatsPagination = null;
     _lastFetchedPage = 0;
     _prefetchedPages.clear(); // Очищаем кеш предзагрузки
+    _loadingPages.clear();
     emit(ChatsInitial());
   }
 

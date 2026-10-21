@@ -68,9 +68,11 @@ extension ApiChatsX on ApiService {
     String? search,
     int? salesFunnelId,
     Map<String, dynamic>? filters,
+    int? tabId,
   ]) async {
     final token = await getToken();
-    String path = '/v2/chat/getMyChats/$endPoint?page=$page';
+    String path =
+        '/v3/chat/getMyChats/$endPoint?page=$page&type=$endPoint${tabId != null ? '&tab_id=$tabId' : ''}';
 
     path = await _appendQueryParams(path);
 
@@ -123,6 +125,23 @@ extension ApiChatsX on ApiService {
           }).toList();
           for (int sourceId in sourceIds) {
             path += '&sources[]=$sourceId';
+          }
+        }
+
+        // Метки (Labels)
+        final rawLabels = filters['label_ids'] ?? filters['labels'];
+        if (rawLabels != null && rawLabels is List && rawLabels.isNotEmpty) {
+          final List<int> labelIds = rawLabels.map((l) {
+            if (l is Map) {
+              return SafeConverters.toInt(l['id']);
+            }
+            if (l is ChatLabel) {
+              return l.id;
+            }
+            return SafeConverters.toInt(l);
+          }).where((id) => id > 0).toList();
+          for (int labelId in labelIds) {
+            path += '&label_ids[]=$labelId';
           }
         }
 
@@ -1644,6 +1663,81 @@ extension ApiChatsX on ApiService {
     return _requestAiDraft('/v3/chat/$chatId/ai-draft');
   }
 
+  /// Выполняет генерацию ответа ИИ по инструкции: POST `/v3/chat/{chatId}/ai-instruct`
+  /// [type] — "draft" (поставить в поле ввода) или "immediate" (отправить сразу клиенту)
+  Future<String?> generateChatAiInstruct({
+    required int chatId,
+    required String instruction,
+    required String type,
+  }) async {
+    final token = await getToken();
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      await initialize();
+    }
+    if (baseUrl == null || baseUrl!.isEmpty || baseUrl == 'null') {
+      throw Exception('Base URL не может быть инициализирован');
+    }
+
+    final path = await _appendQueryParams('/v3/chat/$chatId/ai-instruct');
+    final fullUrl = '$baseUrl$path';
+
+    final body = json.encode({
+      'instruction': instruction.trim(),
+      'type': type,
+    });
+
+    if (kDebugMode) {
+      debugPrint('ApiService: generateChatAiInstruct POST $fullUrl, body: $body');
+    }
+
+    final response = await http
+        .post(
+          Uri.parse(fullUrl),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Device': 'mobile',
+          },
+          body: body,
+        )
+        .timeout(const Duration(seconds: 60));
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = _extractErrorMessageFromResponse(response) ??
+          'Ошибка генерации ответа';
+      throw Exception(message);
+    }
+
+    final decoded = json.decode(response.body);
+    if (decoded is! Map) {
+      return null;
+    }
+
+    final data = Map<String, dynamic>.from(decoded);
+    final errorText = _aiDraftErrorText(data['errors']);
+    if (errorText != null) {
+      throw Exception(errorText);
+    }
+
+    final result = data['result'];
+    if (result is String && result.trim().isNotEmpty) {
+      return result.trim();
+    }
+    if (result is Map) {
+      final text = result['text'] ?? result['message'] ?? result['content'];
+      if (text != null && text.toString().trim().isNotEmpty) {
+        return text.toString().trim();
+      }
+    }
+    final text = data['text'] ?? data['message'];
+    if (text != null && text.toString().trim().isNotEmpty) {
+      return text.toString().trim();
+    }
+
+    return null;
+  }
+
   /// Первое WhatsApp-сообщение, когда чата ещё нет.
   /// POST `/v3/lead/{id}/ai-draft` — тот же ИИ, но по карточке лида.
   Future<String> generateLeadAiDraft(int leadId) async {
@@ -1810,5 +1904,260 @@ extension ApiChatsX on ApiService {
       return errors.values.map((item) => item.toString()).join('\n');
     }
     return null;
+  }
+
+  /// Получение списка табов чата: GET `/v3/chat/tabs`
+  Future<List<ChatTab>> getChatTabs([String? type]) async {
+    try {
+      final query = (type != null && type.isNotEmpty) ? '?type=$type' : '';
+      final response = await _getRequest('/v3/chat/tabs$query');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rawList = data['result'] ?? data['data'] ?? data;
+        if (rawList is List) {
+          return rawList
+              .map((e) => ChatTab.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
+        return [];
+      } else {
+        throw Exception(
+          _extractErrorMessageFromResponse(response) ??
+              'Ошибка загрузки табов (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      debugPrint('ApiService.getChatTabs error: $e');
+      rethrow;
+    }
+  }
+
+  /// Создание таба чата: POST `/v3/chat/tabs`
+  Future<ChatTab> createChatTab({
+    required String name,
+    String? icon,
+    bool isForAll = true,
+    int? salesFunnelId,
+    String? type,
+    String? autoAssignType,
+    List<int>? integrationIds,
+    bool? assignExistingChats,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      if (icon != null && icon.isNotEmpty) 'icon': icon,
+      'is_for_all': isForAll,
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId,
+      if (type != null && type.isNotEmpty) 'type': type,
+      if (autoAssignType != null && autoAssignType.isNotEmpty) ...{
+        'auto_assign_type': autoAssignType,
+        if (integrationIds != null && integrationIds.isNotEmpty)
+          'integration_ids': integrationIds,
+        if (assignExistingChats != null)
+          'assign_existing_chats': assignExistingChats,
+      },
+    };
+    final response = await _postRequest('/v3/chat/tabs', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+      final raw = data['result'] ?? data['data'] ?? data;
+      if (raw is Map) {
+        return ChatTab.fromJson(Map<String, dynamic>.from(raw));
+      }
+      return ChatTab(
+        id: 0,
+        name: name,
+        icon: icon,
+        isForAll: isForAll,
+        salesFunnelId: salesFunnelId,
+        type: type,
+        autoAssignType: autoAssignType,
+        integrationIds: integrationIds ?? const [],
+        assignExistingChats: assignExistingChats,
+      );
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка создания таба (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Редактирование таба: PUT `/v3/chat/tabs/{id}`
+  Future<ChatTab> updateChatTab({
+    required int tabId,
+    required String name,
+    String? icon,
+    bool isForAll = true,
+    int? salesFunnelId,
+    String? type,
+    String? autoAssignType,
+    List<int>? integrationIds,
+    bool? assignExistingChats,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name.trim(),
+      if (icon != null && icon.isNotEmpty) 'icon': icon,
+      'is_for_all': isForAll,
+      if (salesFunnelId != null) 'sales_funnel_id': salesFunnelId,
+      if (type != null && type.isNotEmpty) 'type': type,
+      if (autoAssignType != null && autoAssignType.isNotEmpty) ...{
+        'auto_assign_type': autoAssignType,
+        if (integrationIds != null && integrationIds.isNotEmpty)
+          'integration_ids': integrationIds,
+        if (assignExistingChats != null)
+          'assign_existing_chats': assignExistingChats,
+      },
+    };
+    final response = await _putRequest('/v3/chat/tabs/$tabId', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+      final raw = data['result'] ?? data['data'] ?? data;
+      if (raw is Map) {
+        return ChatTab.fromJson(Map<String, dynamic>.from(raw));
+      }
+      return ChatTab(
+        id: tabId,
+        name: name,
+        icon: icon,
+        isForAll: isForAll,
+        salesFunnelId: salesFunnelId,
+        type: type,
+        autoAssignType: autoAssignType,
+        integrationIds: integrationIds ?? const [],
+        assignExistingChats: assignExistingChats,
+      );
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка обновления таба (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Удаление таба: DELETE `/v3/chat/tabs/{id}`
+  Future<bool> deleteChatTab(int tabId, [String? type]) async {
+    final query = (type != null && type.isNotEmpty) ? '?type=$type' : '';
+    final response = await _deleteRequest('/v3/chat/tabs/$tabId$query');
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка удаления таба (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Прикрепление чатов к табу: POST `/v3/chat/tabs/{id}/attach`
+  Future<bool> attachChatsToTab({
+    required int tabId,
+    required List<int> chatIds,
+    String? type,
+  }) async {
+    final body = <String, dynamic>{
+      'chat_ids': chatIds,
+      if (type != null && type.isNotEmpty) 'type': type,
+    };
+    final response = await _postRequest('/v3/chat/tabs/$tabId/attach', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка добавления чатов в папку (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Открепление чатов от таба: POST `/v3/chat/tabs/{id}/detach`
+  Future<bool> detachChatsFromTab({
+    required int tabId,
+    required List<int> chatIds,
+    String? type,
+  }) async {
+    final body = <String, dynamic>{
+      'chat_ids': chatIds,
+      if (type != null && type.isNotEmpty) 'type': type,
+    };
+    final response = await _postRequest('/v3/chat/tabs/$tabId/detach', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка удаления чатов из папки (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Синхронизация табов конкретного чата: POST `/v3/chat/{chatId}/sync-tabs`
+  Future<bool> syncChatTabs({
+    required int chatId,
+    required List<int> tabIds,
+    String? type,
+  }) async {
+    final body = <String, dynamic>{
+      'tab_ids': tabIds,
+      if (type != null && type.isNotEmpty) 'type': type,
+    };
+    final response = await _postRequest('/v3/chat/$chatId/sync-tabs', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка настройки папок для чата (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Перемещение чатов между табами: POST `/v3/chat/tabs/bulk-move`
+  Future<bool> bulkMoveChats({
+    required int fromTabId,
+    required int toTabId,
+    required List<int> chatIds,
+    String? type,
+  }) async {
+    final body = <String, dynamic>{
+      'from_tab_id': fromTabId,
+      'to_tab_id': toTabId,
+      'chat_ids': chatIds,
+      if (type != null && type.isNotEmpty) 'type': type,
+    };
+    final response = await _postRequest('/v3/chat/tabs/bulk-move', body);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      throw Exception(
+        _extractErrorMessageFromResponse(response) ??
+            'Ошибка перемещения чатов (${response.statusCode})',
+      );
+    }
+  }
+
+  /// Получение списка меток чата: GET `/v3/chat/labels`
+  Future<List<ChatLabel>> getChatLabels() async {
+    try {
+      final response = await _getRequest('/v3/chat/labels');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rawList = data['result'] ?? data['data'] ?? data;
+        if (rawList is List) {
+          return rawList
+              .map((e) => ChatLabel.fromJson(Map<String, dynamic>.from(e)))
+              .toList();
+        }
+        return [];
+      } else {
+        throw Exception(
+          _extractErrorMessageFromResponse(response) ??
+              'Ошибка загрузки меток (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      debugPrint('ApiService.getChatLabels error: $e');
+      rethrow;
+    }
   }
 }

@@ -170,7 +170,8 @@ extension ApiWorkdayX on ApiService {
     }
 
     final requestPath = response.request?.url.path ?? '';
-    return !requestPath.contains('/workday/');
+    return !requestPath.contains('/workday/') &&
+        !requestPath.contains('/absence');
   }
 
   Future<void> _handleWorkdayAccessDenied(String message) async {

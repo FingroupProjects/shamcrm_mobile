@@ -6,6 +6,8 @@ import 'package:crm_task_manager/custom_widget/filter/chat/lead/LeadStatusForFil
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_manager_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_region_list.dart';
 import 'package:crm_task_manager/custom_widget/filter/lead/multi_source_list.dart';
+import 'package:crm_task_manager/custom_widget/filter/chat/lead/chat_label_multi_select_widget.dart';
+import 'package:crm_task_manager/models/chat/chats_model.dart';
 import 'package:crm_task_manager/models/lead/LeadStatusForFilter.dart';
 import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/models/lead/region_model.dart';
@@ -25,6 +27,7 @@ class ChatLeadFilterScreen extends StatefulWidget {
   final List? initialManagers;
   final List? initialRegions;
   final List? initialSources;
+  final List? initialLabels;
   final List<String>? initialStatuses;
   final DateTime? initialFromDate;
   final DateTime? initialToDate;
@@ -48,6 +51,7 @@ class ChatLeadFilterScreen extends StatefulWidget {
     this.initialManagers,
     this.initialRegions,
     this.initialSources,
+    this.initialLabels,
     this.initialStatuses,
     this.initialFromDate,
     this.initialToDate,
@@ -74,6 +78,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
   List<ManagerData> _selectedManagers = [];
   List<RegionData> _selectedRegions = [];
   List<SourceData> _selectedSources = [];
+  List<ChatLabel> _selectedLabels = [];
 
   List<String>? _selectedStatuses;
   DateTime? _fromDate;
@@ -149,6 +154,27 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
       return SourceData.fromJson(stringKeyMap);
     }
     throw Exception('Неподдерживаемый тип источника: ${item.runtimeType}');
+  }
+
+  /// Преобразует dynamic в ChatLabel
+  ChatLabel _parseLabelData(dynamic item) {
+    if (item is ChatLabel) {
+      return item;
+    }
+    if (item is Map<String, dynamic>) {
+      return ChatLabel.fromJson(item);
+    }
+    if (item is Map) {
+      Map<String, dynamic> stringKeyMap = {};
+      item.forEach((key, value) {
+        stringKeyMap[key.toString()] = value;
+      });
+      return ChatLabel.fromJson(stringKeyMap);
+    }
+    if (item is int) {
+      return ChatLabel(id: item, name: '');
+    }
+    throw Exception('Неподдерживаемый тип метки: ${item.runtimeType}');
   }
 
   /// Преобразует ManagerData в Map для отправки
@@ -398,6 +424,13 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
       _selectedSources = [];
     }
 
+    try {
+      _selectedLabels = widget.initialLabels?.map((item) => _parseLabelData(item)).toList() ?? [];
+    } catch (e) {
+      //print('ChatLeadFilterScreen: Error parsing labels: $e');
+      _selectedLabels = [];
+    }
+
     _selectedStatuses = widget.initialStatuses;
     _fromDate = widget.initialFromDate;
     _toDate = widget.initialToDate;
@@ -518,6 +551,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                       _selectedManagers.clear();
                       _selectedRegions.clear();
                       _selectedSources.clear();
+                      _selectedLabels.clear();
                       _selectedStatuses = null;
                       _fromDate = null;
                       _toDate = null;
@@ -540,6 +574,8 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                       'managers': [],
                       'regions': [],
                       'sources': [],
+                      'labels': [],
+                      'label_ids': [],
                       'statuses': null,
                       'fromDate': null,
                       'toDate': null,
@@ -573,6 +609,10 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                           _selectedRegions.map((r) => _regionToMap(r)).toList(),
                       'sources':
                           _selectedSources.map((s) => _sourceToMap(s)).toList(),
+                      'labels':
+                          _selectedLabels.map((l) => l.toJson()).toList(),
+                      'label_ids':
+                          _selectedLabels.map((l) => l.id).toList(),
                       'statuses': _selectedStatuses,
                       'fromDate': _fromDate,
                       'toDate': _toDate,
@@ -605,6 +645,7 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                     if (_selectedManagers.isNotEmpty ||
                         _selectedRegions.isNotEmpty ||
                         _selectedSources.isNotEmpty ||
+                        _selectedLabels.isNotEmpty ||
                         _selectedStatuses != null ||
                         _fromDate != null ||
                         _toDate != null ||
@@ -706,6 +747,20 @@ class _ChatLeadFilterScreenState extends State<ChatLeadFilterScreen> {
                               _selectedStatuses = selectedStatuses
                                   .map((status) => status.id.toString())
                                   .toList();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSectionCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: ChatLabelMultiSelectWidget(
+                          selectedLabels: _selectedLabels,
+                          onSelectLabels: (List<ChatLabel> selectedLabelsData) {
+                            setState(() {
+                              _selectedLabels = selectedLabelsData;
                             });
                           },
                         ),

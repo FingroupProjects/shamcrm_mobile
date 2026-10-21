@@ -447,9 +447,11 @@ class _HttpInspectorScreenState extends State<HttpInspectorScreen> {
   }
 
   Widget _buildRequestsList(bool isDark, Color surfaceColor, Color textColor, Color textSecondary) {
+    final activeLogs =
+        _visibleLogs.where((log) => !HttpLogger.shouldIgnoreUrl(log.url)).toList();
     final logs = _searchQuery.isEmpty
-        ? _visibleLogs
-        : _visibleLogs.where((log) {
+        ? activeLogs
+        : activeLogs.where((log) {
             final query = _searchQuery.toLowerCase();
             return log.url.toLowerCase().contains(query) ||
                 log.method.toLowerCase().contains(query);

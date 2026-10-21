@@ -12,16 +12,19 @@ class FetchChats extends ChatsEvent {
   final String? query;
   final int? salesFunnelId;
   final Map<String, dynamic>? filters;
+  final int? tabId;
 
   const FetchChats({
     required this.endPoint,
     this.query,
     this.salesFunnelId,
     this.filters,
+    this.tabId,
   });
 
   @override
-  List<Object> get props => [endPoint, query ?? '', salesFunnelId ?? 0, filters ?? {}];
+  List<Object> get props =>
+      [endPoint, query ?? '', salesFunnelId ?? 0, filters ?? {}, tabId ?? 0];
 }
 
 class RefreshChats extends ChatsEvent {}

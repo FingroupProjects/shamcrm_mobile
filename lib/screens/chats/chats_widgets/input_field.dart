@@ -5,6 +5,7 @@ import 'package:crm_task_manager/bloc/chats/template_bloc/template_bloc.dart';
 import 'package:crm_task_manager/bloc/chats/template_bloc/template_event.dart';
 import 'package:crm_task_manager/core/theme/components/rich_text_field.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_ai_generate_button.dart';
+import 'package:crm_task_manager/screens/chats/chats_widgets/chat_ai_instruct_sheet.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/chat_html_formatter.dart';
 import 'package:crm_task_manager/screens/chats/chats_widgets/tamplate_chat.dart';
 import 'package:crm_task_manager/screens/chats/chat_appearance.dart';
@@ -36,6 +37,8 @@ class InputField extends StatefulWidget {
   final bool isLeadChat;
   /// POST /v3/chat/{id}/ai-draft. null — кнопку ИИ не показываем.
   final Future<String> Function()? onGenerateAiDraft;
+  /// POST /v3/chat/{id}/ai-instruct. null — опцию инструкций не показываем.
+  final Future<String?> Function(String instruction, String type)? onGenerateAiInstruct;
 
   const InputField({
     super.key,
@@ -47,6 +50,7 @@ class InputField extends StatefulWidget {
     required this.focusNode,
     required this.isLeadChat,
     this.onGenerateAiDraft,
+    this.onGenerateAiInstruct,
   });
 
   @override
@@ -778,35 +782,77 @@ class _InputFieldState extends State<InputField>
     widget.messageController.clear();
   }
 
-  /// Повторное нажатие очищает поле и ставит свежий черновик.
+  /// Открывает модалку подсказки для ИИ.
   Future<void> _onAiGeneratePressed() async {
-    final generate = widget.onGenerateAiDraft;
-    if (generate == null) return;
+    if (widget.onGenerateAiInstruct == null && widget.onGenerateAiDraft == null) return;
 
-    final requestId = ++_aiDraftRequestId;
-    setState(() {
-      _isGeneratingAiDraft = true;
-    });
+    await ChatAiInstructSheet.show(
+      context,
+      onInstruct: (instruction, type) async {
+        final instruct = widget.onGenerateAiInstruct;
+        if (instruct == null) {
+          final generate = widget.onGenerateAiDraft;
+          if (generate != null) {
+            final draft = await generate();
+            if (mounted) _applyAiDraftText(draft);
+          }
+          return;
+        }
 
-    try {
-      final draft = await generate();
-      if (!mounted || requestId != _aiDraftRequestId) return;
-      _applyAiDraftText(draft);
-    } catch (error) {
-      if (!mounted || requestId != _aiDraftRequestId) return;
-      showCustomSnackBar(
-        context: context,
-        message: AppLocalizations.of(context)?.translate('ai_generation_error') ??
-            'Не удалось сгенерировать ответ',
-        isSuccess: false,
-      );
-    } finally {
-      if (mounted && requestId == _aiDraftRequestId) {
+        final requestId = ++_aiDraftRequestId;
         setState(() {
-          _isGeneratingAiDraft = false;
+          _isGeneratingAiDraft = true;
         });
-      }
+
+        try {
+          final text = await instruct(instruction, type);
+          if (!mounted || requestId != _aiDraftRequestId) return;
+
+          if (type == 'immediate') {
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)?.translate('ai_sent_success') ??
+                  'Сообщение успешно отправлено клиенту',
+              isSuccess: true,
+            );
+          } else {
+            if (text != null && text.isNotEmpty) {
+              _applyAiDraftText(text);
+            }
+            showCustomSnackBar(
+              context: context,
+              message: AppLocalizations.of(context)?.translate('ai_draft_applied') ??
+                  'Черновик ответа вставлен в поле ввода',
+              isSuccess: true,
+            );
+          }
+        } catch (error) {
+          if (!mounted || requestId != _aiDraftRequestId) return;
+          showCustomSnackBar(
+            context: context,
+            message: _cleanAiErrorMessage(error),
+            isSuccess: false,
+          );
+        } finally {
+          if (mounted && requestId == _aiDraftRequestId) {
+            setState(() {
+              _isGeneratingAiDraft = false;
+            });
+          }
+        }
+      },
+    );
+  }
+
+  String _cleanAiErrorMessage(dynamic error) {
+    String msg = error.toString();
+    if (msg.startsWith('Exception: ')) {
+      msg = msg.substring(11);
     }
+    return msg.trim().isNotEmpty
+        ? msg
+        : (AppLocalizations.of(context)?.translate('ai_generation_error') ??
+            'Не удалось сгенерировать ответ');
   }
 
   void _applyAiDraftText(String text) {
@@ -1156,8 +1202,8 @@ class _InputFieldState extends State<InputField>
                                             AiIntegrationStore.enabled,
                                         builder: (context, hasAi, _) {
                                           if (!hasAi ||
-                                              widget.onGenerateAiDraft ==
-                                                  null) {
+                                              (widget.onGenerateAiDraft == null &&
+                                                  widget.onGenerateAiInstruct == null)) {
                                             return const SizedBox.shrink();
                                           }
                                           return ChatAiGenerateButton(

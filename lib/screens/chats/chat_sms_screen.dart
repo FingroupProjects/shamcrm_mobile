@@ -3385,6 +3385,23 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
                     // Черновик только когда чат уже есть — ИИ отвечает по истории.
                     return widget.apiService.generateChatAiDraft(widget.chatId);
                   },
+            onGenerateAiInstruct: _isPendingGreenApiChat
+                ? null
+                : (String instruction, String type) async {
+                    final text = await widget.apiService.generateChatAiInstruct(
+                      chatId: widget.chatId,
+                      instruction: instruction,
+                      type: type,
+                    );
+                    if (type == 'immediate') {
+                      await context.read<MessagingCubit>().refreshLatestPage(
+                        widget.chatId,
+                        chatType: widget.endPointInTab,
+                      );
+                      _scrollToBottom(force: true);
+                    }
+                    return text;
+                  },
             onRecordVoice: () {
               debugPrint('Record voice triggered');
             },

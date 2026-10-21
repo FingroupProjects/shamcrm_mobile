@@ -1167,6 +1167,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                                       widget.initialChatFilters?['regions']),
                                   initialSources: _safeConvertToMapList(
                                       widget.initialChatFilters?['sources']),
+                                  initialLabels: _safeConvertToMapList(
+                                      widget.initialChatFilters?['labels']),
                                   initialStatuses:
                                       widget.initialChatFilters?['statuses'],
                                   initialFromDate:

@@ -81,6 +81,55 @@ class Integration {
   }
 }
 
+class ChatLabel {
+  final int id;
+  final String name;
+  final String? color;
+  final bool isAiGenerated;
+
+  const ChatLabel({
+    required this.id,
+    required this.name,
+    this.color,
+    this.isAiGenerated = false,
+  });
+
+  factory ChatLabel.fromJson(Map<String, dynamic> json) {
+    return ChatLabel(
+      id: SafeConverters.toInt(json['id']),
+      name: SafeConverters.toSafeString(json['name']),
+      color: SafeConverters.toStringOrNull(json['color']),
+      isAiGenerated: json['is_ai_generated'] == true ||
+          json['is_ai_generated'] == 1 ||
+          json['is_ai_generated'] == '1',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      if (color != null) 'color': color,
+      'is_ai_generated': isAiGenerated,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatLabel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          color == other.color;
+
+  @override
+  int get hashCode => id.hashCode ^ name.hashCode ^ (color?.hashCode ?? 0);
+
+  @override
+  String toString() => name;
+}
+
 class Chats {
   final int id;
   final String? uniqueId;
@@ -104,6 +153,7 @@ class Chats {
   final String? customImage;
   final Channel? channelObj;
   final Integration? integration;
+  final List<ChatLabel> labels;
 
   Chats({
     required this.id,
@@ -128,6 +178,7 @@ class Chats {
     this.customImage,
     this.channelObj,
     this.integration,
+    this.labels = const [],
   });
 
   factory Chats.fromJson(Map<String, dynamic> json,
@@ -156,6 +207,15 @@ class Chats {
     if (json['type'] == 'support') {
       customName = json['type'];
       customImage = supportChatImage ?? 'assets/icons/Profile/image.png';
+    }
+
+    List<ChatLabel> labels = [];
+    if (json['labels'] != null && json['labels'] is List) {
+      for (var labelJson in json['labels']) {
+        if (labelJson is Map) {
+          labels.add(ChatLabel.fromJson(Map<String, dynamic>.from(labelJson)));
+        }
+      }
     }
 
     return Chats(
@@ -203,6 +263,7 @@ class Chats {
       integration: json['integration'] != null
           ? Integration.fromJson(SafeConverters.toMap(json['integration']))
           : null,
+      labels: labels,
     );
   }
 
@@ -428,6 +489,7 @@ class Chats {
     String? customImage,
     Channel? channelObj,
     Integration? integration,
+    List<ChatLabel>? labels,
   }) {
     return Chats(
       id: id ?? this.id,
@@ -452,6 +514,7 @@ class Chats {
       customImage: customImage ?? this.customImage,
       channelObj: channelObj ?? this.channelObj,
       integration: integration ?? this.integration,
+      labels: labels ?? this.labels,
     );
   }
 
@@ -482,6 +545,7 @@ class Chats {
       _mapChannelToIcon(channel),
       unreadCount,
       chatId: id,
+      labels: labels,
     );
   }
   
