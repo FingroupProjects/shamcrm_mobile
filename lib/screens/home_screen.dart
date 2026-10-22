@@ -42,6 +42,7 @@ import 'package:crm_task_manager/screens/empty_screen.dart';
 import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/chess_grid/chess_grid_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
@@ -603,6 +604,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           widget is WarehouseAccountingScreen) {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found warehouse at index $i');
+        break;
+      } else if ((screenIdentifier == 'chess_grid' ||
+              screenIdentifier == 'shahmatka') &&
+          widget is ChessGridScreen) {
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found chess_grid at index $i');
         break;
       }
     }
@@ -1239,6 +1246,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         inactiveIconsGroup2.add('assets/icons/MyNavBar/category_OFF.png');
       }
     }
+
+    // Шахматка
+    widgetsGroup1.add(const ChessGridScreen());
+    titleKeysGroup1.add('appbar_chess_grid');
+    navBarTitleKeysGroup1.add('appbar_chess_grid');
+    activeIconsGroup1.add('assets/icons/MyNavBar/chess_grid_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/chess_grid_OFF.png');
 
     // ✅ ИСПРАВЛЕНИЕ: Если нет экранов вообще - показываем экран с сообщением об отсутствии доступа
     // НО только если это не сетевая ошибка (при сетевой ошибке используем сохраненные permissions)

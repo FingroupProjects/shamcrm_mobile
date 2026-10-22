@@ -1,6 +1,5 @@
 import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:crm_task_manager/core/platform/app_platform.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,8 +24,8 @@ class ClarityHost extends StatelessWidget {
       app: _ClaritySessionBinder(child: child),
       clarityConfig: ClarityConfig(
         projectId: kClarityProjectId,
-        // В debug смотрим логи инициализации. В релизе SDK сам глушит логи.
-        logLevel: kDebugMode ? LogLevel.Verbose : LogLevel.None,
+        // Отключаем спам логов Clarity в консоль (было LogLevel.Verbose)
+        logLevel: LogLevel.None,
       ),
     );
   }
