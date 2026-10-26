@@ -63,6 +63,7 @@ class MonthData {
   final num salesCount;
   final num totalQuantity;
   final String totalAmount; // Keeping as String to preserve decimal format
+  final String? author;
 
   MonthData({
     required this.month,
@@ -70,6 +71,7 @@ class MonthData {
     required this.salesCount,
     required this.totalQuantity,
     required this.totalAmount,
+    this.author,
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
@@ -84,6 +86,7 @@ class MonthData {
       salesCount: SafeConverters.toNum(json['sales_count']),
       totalQuantity: SafeConverters.toNum(json['total_quantity']),
       totalAmount: totalAmount,
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -94,6 +97,7 @@ class MonthData {
       'sales_count': salesCount,
       'total_quantity': totalQuantity,
       'total_amount': totalAmount,
+      'author': author,
     };
   }
 }

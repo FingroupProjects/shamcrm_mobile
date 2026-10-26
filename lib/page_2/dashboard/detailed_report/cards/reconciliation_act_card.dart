@@ -91,6 +91,33 @@ class ReconciliationActCard extends StatelessWidget {
                     const SizedBox(height: 8),
                   ],
 
+                  // Автор
+                  Row(
+                    children: [
+                      Text(
+                        '${localizations.translate('author')}:',
+                        style: textStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.w400,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          reconciliationItem.author?.trim().isNotEmpty == true
+                              ? reconciliationItem.author!.trim()
+                              : localizations.translate('not_specified'),
+                          style: textStyles.bodyMd.copyWith(
+                            fontWeight: FontWeight.w400,
+                            color: colors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
                   // Сумма
                   Row(
                     children: [

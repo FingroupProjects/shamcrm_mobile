@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
@@ -84,6 +85,16 @@ class GoodsStoragesDetailsDialog extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
               ),
+              if (goods.author != null && goods.author!.trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${AppLocalizations.of(context)!.translate('author')}: ${goods.author!.trim()}',
+                  style: textStyles.bodySm.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               Container(
                 decoration: BoxDecoration(

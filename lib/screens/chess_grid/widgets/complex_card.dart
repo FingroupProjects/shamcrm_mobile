@@ -131,7 +131,15 @@ class ComplexCard extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        '${complex.buildings.length} ${complex.buildings.length == 1 ? "корпус" : "корпуса"}',
+                        () {
+                          final count = complex.buildings.isNotEmpty
+                              ? complex.buildings.length
+                              : complex.buildingCount;
+                          final word = count == 1
+                              ? 'корпус'
+                              : (count >= 2 && count <= 4 ? 'корпуса' : 'корпусов');
+                          return '$count $word';
+                        }(),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,

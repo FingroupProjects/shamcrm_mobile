@@ -35,6 +35,7 @@ class GoodsExpirationItem {
   final int daysLeft;
   final String quantity;
   final String unit;
+  final String? author;
 
   GoodsExpirationItem({
     required this.id,
@@ -46,6 +47,7 @@ class GoodsExpirationItem {
     required this.daysLeft,
     required this.quantity,
     required this.unit,
+    this.author,
   });
 
   factory GoodsExpirationItem.fromJson(Map<String, dynamic> json) {
@@ -59,6 +61,7 @@ class GoodsExpirationItem {
       daysLeft: SafeConverters.toInt(json['days_left']),
       quantity: _formatQuantity(json['quantity']),
       unit: SafeConverters.toSafeString(json['unit']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 

@@ -113,6 +113,8 @@ import 'package:crm_task_manager/models/page_2/openings/client_dialog_model.dart
     as opening_lead;
 import 'package:crm_task_manager/models/page_2/order_status_warehouse_model.dart';
 import 'package:crm_task_manager/models/page_2/expense_article_dashboard_warehouse_model.dart';
+import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart'
+    hide Order, OrderStatus;
 import 'package:crm_task_manager/models/page_2/category_model.dart';
 import 'package:crm_task_manager/models/page_2/character_list_model.dart';
 import 'package:crm_task_manager/models/page_2/dashboard/dashboard_goods_report.dart';
@@ -262,6 +264,7 @@ part 'cash/api_cash.dart';
 part 'sales_plan/api_sales_plan.dart';
 part 'localization/api_localization.dart';
 part 'absence/api_absence.dart';
+part 'chess_grid/api_chess_grid.dart';
 
 class ApiService extends ApiServiceBase {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);

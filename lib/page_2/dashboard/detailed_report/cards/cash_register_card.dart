@@ -75,6 +75,14 @@ class CashRegisterCard extends StatelessWidget {
                     value: parseNumberToString(balance, nullValue: '0'),
                     valueColor: isPositive ? colors.success : colors.error,
                   ),
+                  if (cashRegister.author != null && cashRegister.author!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      label: localizations.translate('author'),
+                      value: cashRegister.author!.trim(),
+                      valueColor: colors.textPrimary,
+                    ),
+                  ],
                 ],
               ),
             ),

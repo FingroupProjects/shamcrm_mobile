@@ -16,13 +16,19 @@ final class SalesDashboardReconciliationActLoading extends SalesDashboardReconci
 
 final class SalesDashboardReconciliationActLoaded extends SalesDashboardReconciliationActState {
   final ActOfReconciliationResponse data;
+  final int currentPage;
+  final int totalPages;
+  final bool hasReachedMax;
 
   const SalesDashboardReconciliationActLoaded({
     required this.data,
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.hasReachedMax = false,
   });
 
   @override
-  List<Object> get props => [data];
+  List<Object> get props => [data, currentPage, totalPages, hasReachedMax];
 }
 
 final class SalesDashboardReconciliationActError extends SalesDashboardReconciliationActState {

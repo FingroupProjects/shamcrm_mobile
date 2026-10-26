@@ -1475,10 +1475,14 @@ extension ApiCashX on ApiService {
   }
 
   Future<ActOfReconciliationResponse> getReconciliationAct({
+    int? page,
+    int? perPage,
     final String? search,
     final Map<String, dynamic>? filters,
   }) async {
     Map<String, String> queryParams = {};
+    if (page != null) queryParams['page'] = page.toString();
+    if (perPage != null) queryParams['per_page'] = perPage.toString();
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
     if (filters != null) {
       if (filters.containsKey('date_from') && filters['date_from'] != null) {
@@ -1506,7 +1510,12 @@ extension ApiCashX on ApiService {
       }
     }
 
-    var type = filters!['lead_id'] != null ? 'lead' : 'supplier';
+    if (filters == null ||
+        (filters['lead_id'] == null && filters['supplier_id'] == null)) {
+      return ActOfReconciliationResponse(result: const []);
+    }
+
+    var type = filters['lead_id'] != null ? 'lead' : 'supplier';
     var id = filters['lead_id'] ?? filters['supplier_id'];
     if (filters['lead_id'] != null) {
       queryParams['lead_id'] = filters['lead_id'].toString();

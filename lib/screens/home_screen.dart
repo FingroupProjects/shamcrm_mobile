@@ -43,6 +43,7 @@ import 'package:crm_task_manager/screens/no_access_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/chess_grid_screen.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/chess_grid_v2_screen.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/task/task_screen.dart';
@@ -610,6 +611,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           widget is ChessGridScreen) {
         targetIndexGroup1 = i;
         debugPrint('HomeScreen: Found chess_grid at index $i');
+        break;
+      } else if ((screenIdentifier == 'chess_grid_v2' ||
+              screenIdentifier == 'shahmatka_2') &&
+          widget is ChessGridV2Screen) {
+        targetIndexGroup1 = i;
+        debugPrint('HomeScreen: Found chess_grid_v2 at index $i');
         break;
       }
     }
@@ -1247,12 +1254,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
 
-    // Шахматка
+    // Шахматка (временно скрыто для публикации)
     widgetsGroup1.add(const ChessGridScreen());
     titleKeysGroup1.add('appbar_chess_grid');
     navBarTitleKeysGroup1.add('appbar_chess_grid');
     activeIconsGroup1.add('assets/icons/MyNavBar/chess_grid_ON.png');
     inactiveIconsGroup1.add('assets/icons/MyNavBar/chess_grid_OFF.png');
+
+    // Шахматка 2 (временно скрыто для публикации)
+    widgetsGroup1.add(const ChessGridV2Screen());
+    titleKeysGroup1.add('appbar_chess_grid_v2');
+    navBarTitleKeysGroup1.add('appbar_chess_grid_v2');
+    activeIconsGroup1.add('assets/icons/MyNavBar/chess_ON.png');
+    inactiveIconsGroup1.add('assets/icons/MyNavBar/chess_OFF.png');
 
     // ✅ ИСПРАВЛЕНИЕ: Если нет экранов вообще - показываем экран с сообщением об отсутствии доступа
     // НО только если это не сетевая ошибка (при сетевой ошибке используем сохраненные permissions)

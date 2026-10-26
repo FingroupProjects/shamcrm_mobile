@@ -80,6 +80,16 @@ class TopSellingCard extends StatelessWidget {
                       color: colors.textPrimary,
                     ),
                   ),
+                  if (product.author != null && product.author!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${localizations.translate('author')}: ${product.author!.trim()}',
+                      style: textStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

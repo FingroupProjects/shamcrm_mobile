@@ -614,6 +614,16 @@ class _SalaryReportContentState extends State<SalaryReportContent>
                             color: colors.textPrimary,
                           ),
                         ),
+                        if (employee.author != null && employee.author!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${localizations.translate('author')}: ${employee.author!.trim()}',
+                            style: textStyles.caption.copyWith(
+                              fontWeight: FontWeight.w400,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Text(
                           '${localizations.translate('current_month')}: $previewMonth',

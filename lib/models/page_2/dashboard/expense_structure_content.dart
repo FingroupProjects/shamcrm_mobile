@@ -66,6 +66,7 @@ class ExpenseItem {
   final num sum;
   final String formattedSum;
   final num percentage;
+  final String? author;
 
   ExpenseItem({
     required this.articleName,
@@ -73,6 +74,7 @@ class ExpenseItem {
     required this.sum,
     required this.formattedSum,
     required this.percentage,
+    this.author,
   });
 
   factory ExpenseItem.fromJson(Map<String, dynamic> json) {
@@ -82,6 +84,7 @@ class ExpenseItem {
       sum: SafeConverters.toNum(json['sum']),
       formattedSum: SafeConverters.toSafeString(json['formatted_sum']),
       percentage: SafeConverters.toNum(json['percentage']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -92,6 +95,7 @@ class ExpenseItem {
       'sum': sum,
       'formatted_sum': formattedSum,
       'percentage': percentage,
+      'author': author,
     };
   }
 }

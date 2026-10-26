@@ -124,7 +124,9 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
 
   void _autoGenerateNumber() {
     final controller = ChessGridController.instance;
-    final b = controller.complex.buildings.firstWhere((x) => x.key == _buildingKey, orElse: () => controller.complex.buildings.first);
+    final buildings = controller.complex.buildings;
+    if (buildings.isEmpty) return;
+    final b = buildings.firstWhere((x) => x.key == _buildingKey, orElse: () => buildings.first);
     if (_isParking) {
       _numberController.text = 'П-${(controller.parkingSpots.length + 1).toString().padLeft(2, '0')}';
     } else {
@@ -169,10 +171,13 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     final controller = ChessGridController.instance;
     final isEditing = widget.existingApartment != null || widget.existingParking != null;
 
-    final building = controller.complex.buildings.firstWhere(
-      (b) => b.key == _buildingKey,
-      orElse: () => controller.complex.buildings.first,
-    );
+    final buildings = controller.complex.buildings;
+    final Building? building = buildings.isNotEmpty
+        ? buildings.firstWhere(
+            (b) => b.key == _buildingKey,
+            orElse: () => buildings.first,
+          )
+        : null;
 
     return Container(
       constraints: BoxConstraints(
@@ -325,9 +330,9 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         Expanded(
                           child: _buildDropdown<int>(
                             label: 'Подъезд',
-                            value: _entrance.clamp(1, building.entranceCount),
+                            value: _entrance.clamp(1, building?.entranceCount ?? 1),
                             items: List.generate(
-                              building.entranceCount,
+                              building?.entranceCount ?? 1,
                               (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
                             ),
                             onChanged: (val) {
@@ -344,9 +349,9 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         Expanded(
                           child: _buildDropdown<int>(
                             label: 'Этаж',
-                            value: _floor.clamp(1, building.floorCount),
+                            value: _floor.clamp(1, building?.floorCount ?? 9),
                             items: List.generate(
-                              building.floorCount,
+                              building?.floorCount ?? 9,
                               (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
                             ),
                             onChanged: (val) {
@@ -588,13 +593,20 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     final kit = double.tryParse(_kitchenAreaController.text) ?? 10.0;
     final pm = double.tryParse(_pricePerM2Controller.text) ?? (area > 0 ? price / area : 800);
 
-    final b = controller.complex.buildings.firstWhere((x) => x.key == _buildingKey);
+    final buildings = controller.complex.buildings;
+    final b = buildings.isNotEmpty
+        ? buildings.firstWhere(
+            (x) => x.key == _buildingKey,
+            orElse: () => buildings.first,
+          )
+        : null;
+    final bName = b?.name ?? 'Корпус';
 
     if (widget.existingApartment != null) {
       controller.updateApartment(widget.existingApartment!.copyWith(
         number: no,
         buildingKey: _buildingKey,
-        buildingName: b.name,
+        buildingName: bName,
         entrance: _entrance,
         floor: _floor,
         rooms: rooms,
@@ -610,7 +622,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
       int maxId = controller.apartments.map((a) => a.id).fold(0, (x, y) => x > y ? x : y);
       List<int>? copyFloorsList;
       if (_copyToFloors) {
-        copyFloorsList = _parseFloors(_copyFloorsController.text, b.floorCount);
+        copyFloorsList = _parseFloors(_copyFloorsController.text, b?.floorCount ?? 9);
       }
 
       controller.addApartment(
@@ -618,7 +630,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
           id: maxId + 1,
           number: no,
           buildingKey: _buildingKey,
-          buildingName: b.name,
+          buildingName: bName,
           entrance: _entrance,
           floor: _floor,
           position: _position,

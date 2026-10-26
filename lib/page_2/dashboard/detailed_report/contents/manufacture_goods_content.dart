@@ -111,7 +111,9 @@ class _ManufactureGoodsCard extends StatelessWidget {
           ),
           _ReportLine(
             label: localizations.translate('author'),
-            value: item.author,
+            value: item.author.trim().isNotEmpty
+                ? item.author.trim()
+                : localizations.translate('not_specified'),
           ),
         ],
       ),

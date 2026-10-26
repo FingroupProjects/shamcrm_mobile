@@ -109,6 +109,61 @@ class SafeConverters {
     return result;
   }
 
+  /// Extract author/user name from various backend formats (String, Map with name/full_name, etc.)
+  static String? toAuthorName(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+    if (value is Map) {
+      final firstName =
+          value['name'] ?? value['first_name'] ?? value['firstName'];
+      final lastName = value['lastname'] ??
+          value['last_name'] ??
+          value['lastName'] ??
+          value['surname'];
+      if (firstName != null && lastName != null) {
+        final fullName = '$firstName $lastName'.trim();
+        if (fullName.isNotEmpty) return fullName;
+      }
+      final name = firstName ??
+          value['full_name'] ??
+          value['fullname'] ??
+          value['fullName'] ??
+          value['fio'] ??
+          value['title'] ??
+          value['username'] ??
+          value['login'];
+      if (name != null) {
+        final s = name.toString().trim();
+        return s.isEmpty ? null : s;
+      }
+    }
+    final s = value.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  /// Find and extract author/user name from a JSON payload across common author keys.
+  static String? findAuthor(dynamic rawJson) {
+    if (rawJson == null) return null;
+    if (rawJson is! Map) return toAuthorName(rawJson);
+    final candidate = rawJson['author'] ??
+        rawJson['author_name'] ??
+        rawJson['authorName'] ??
+        rawJson['user'] ??
+        rawJson['user_name'] ??
+        rawJson['userName'] ??
+        rawJson['creator'] ??
+        rawJson['creator_name'] ??
+        rawJson['creatorName'] ??
+        rawJson['created_by'] ??
+        rawJson['createdBy'] ??
+        rawJson['manager'] ??
+        rawJson['employee'];
+    return toAuthorName(candidate);
+  }
+
   /// Convert to [bool]. Handles 0/1, "true"/"false", "1"/"0".
   static bool toBool(dynamic value, {bool defaultValue = false}) {
     if (value == null) return defaultValue;

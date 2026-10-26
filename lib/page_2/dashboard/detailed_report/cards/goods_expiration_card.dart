@@ -77,6 +77,13 @@ class GoodsExpirationCard extends StatelessWidget {
               color: colors.textPrimary,
             ),
           ),
+          if (item.author != null && item.author!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${localizations.translate('author')}: ${item.author!.trim()}',
+              style: textStyles.bodyMd.copyWith(color: colors.textSecondary),
+            ),
+          ],
         ],
       ),
     );

@@ -128,12 +128,14 @@ class Debtor extends Equatable {
   final String name;
   final String? phone;
   final num debtAmount;
+  final String? author;
 
   const Debtor({
     required this.id,
     required this.name,
     this.phone,
     required this.debtAmount,
+    this.author,
   });
 
   factory Debtor.fromJson(Map<String, dynamic> json) {
@@ -142,6 +144,7 @@ class Debtor extends Equatable {
       name: SafeConverters.toSafeString(json['name']),
       phone: SafeConverters.toStringOrNull(json['phone']),
       debtAmount: SafeConverters.toNum(json['debt_amount']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -151,11 +154,12 @@ class Debtor extends Equatable {
       'name': name,
       'phone': phone,
       'debt_amount': debtAmount,
+      'author': author,
     };
   }
 
   @override
-  List<Object?> get props => [id, name, phone, debtAmount];
+  List<Object?> get props => [id, name, phone, debtAmount, author];
 }
 
 class Period extends Equatable {

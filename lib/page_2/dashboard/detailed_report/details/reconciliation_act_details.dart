@@ -92,6 +92,12 @@ class _ReconciliationActDetailsScreenState
         },
       ],
       {
+        'label': '${localizations.translate('author')}:',
+        'value': currentItem.author?.trim().isNotEmpty == true
+            ? currentItem.author!.trim()
+            : localizations.translate('not_specified'),
+      },
+      {
         'label': '${localizations.translate('sum')}:',
         'value': parseNumberToString(currentItem.sum, nullValue: '0'),
       },

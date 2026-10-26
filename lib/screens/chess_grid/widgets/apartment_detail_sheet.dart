@@ -76,31 +76,42 @@ class ApartmentDetailSheet extends StatelessWidget {
                 children: [
                   // Top Title & Status Badge
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Квартира № ${apartment.number}',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 22,
-                              color: colors.textPrimary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              apartment.number.toLowerCase().startsWith('кв')
+                                  ? apartment.number
+                                  : (apartment.number.startsWith('№')
+                                      ? 'Квартира ${apartment.number}'
+                                      : 'Квартира №${apartment.number}'),
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                color: colors.textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${apartment.buildingName} · ${apartment.floor} этаж · Подъезд ${apartment.entrance}',
-                            style: TextStyle(
-                              fontFamily: 'Golos',
-                              fontSize: 13,
-                              color: colors.textSecondary,
+                            const SizedBox(height: 2),
+                            Text(
+                              '${apartment.buildingName} · ${apartment.floor} этаж · Подъезд ${apartment.entrance}',
+                              style: TextStyle(
+                                fontFamily: 'Golos',
+                                fontSize: 13,
+                                color: colors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -329,7 +340,7 @@ class ApartmentDetailSheet extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,
@@ -339,13 +350,19 @@ class ApartmentDetailSheet extends StatelessWidget {
               color: colors.textSecondary,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: colors.textPrimary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: colors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

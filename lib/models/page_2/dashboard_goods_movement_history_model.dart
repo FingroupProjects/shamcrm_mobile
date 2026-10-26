@@ -10,6 +10,7 @@ class DashboardGoodsMovementHistory {
   final String? counterpartyType;
   final String movementType;
   final String? documentType;
+  final String? author;
 
   DashboardGoodsMovementHistory({
     required this.goodName,
@@ -21,6 +22,7 @@ class DashboardGoodsMovementHistory {
     this.counterpartyType,
     required this.movementType,
     this.documentType,
+    this.author,
   });
 
   factory DashboardGoodsMovementHistory.fromJson(dynamic json) {
@@ -46,6 +48,7 @@ class DashboardGoodsMovementHistory {
       counterpartyType: SafeConverters.toStringOrNull(map['counterparty_type']),
       movementType: SafeConverters.toSafeString(map['movement_type']),
       documentType: SafeConverters.toStringOrNull(map['document_type']),
+      author: SafeConverters.findAuthor(map),
     );
   }
 
@@ -59,5 +62,6 @@ class DashboardGoodsMovementHistory {
         'counterparty_type': counterpartyType,
         'movement_type': movementType,
         'document_type': documentType,
+        'author': author,
       };
 }

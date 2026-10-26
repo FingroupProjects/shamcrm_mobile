@@ -58,11 +58,13 @@ class MonthData {
   final int month;
   final String monthName;
   final num profitabilityPercentage; // Changed to double to handle numeric values
+  final String? author;
 
   MonthData({
     required this.month,
     required this.monthName,
     required this.profitabilityPercentage,
+    this.author,
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
@@ -71,6 +73,7 @@ class MonthData {
       monthName: SafeConverters.toSafeString(json['month_name']),
       profitabilityPercentage:
           SafeConverters.toDouble(json['profitability_percentage']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -79,6 +82,7 @@ class MonthData {
       'month': month,
       'month_name': monthName,
       'profitability_percentage': profitabilityPercentage.toString(), // Convert back to string for JSON
+      'author': author,
     };
   }
 }

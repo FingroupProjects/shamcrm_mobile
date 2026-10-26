@@ -88,6 +88,16 @@ class GoodsCard extends StatelessWidget {
                       color: colors.textPrimary,
                     ),
                   ),
+                  if (goods.author != null && goods.author!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${localizations.translate('author')}: ${goods.author!.trim()}',
+                      style: textStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -79,6 +79,7 @@ class GoodVariantItem {
   final VariantGood? good;
   final List<VariantAttributeValue>? attributeValues;
   final VariantPrice? price;
+  final String? author;
 
   GoodVariantItem({
     this.id,
@@ -92,6 +93,7 @@ class GoodVariantItem {
     this.good,
     this.attributeValues,
     this.price,
+    this.author,
   });
 
   factory GoodVariantItem.fromJson(Map<String, dynamic> json) {
@@ -115,6 +117,8 @@ class GoodVariantItem {
       price: json['price'] == null
           ? null
           : VariantPrice.fromJson(SafeConverters.toMap(json['price'])),
+      author: SafeConverters.findAuthor(json) ??
+          SafeConverters.findAuthor(json['good']),
     );
   }
 }

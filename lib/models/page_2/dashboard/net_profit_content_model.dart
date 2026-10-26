@@ -61,11 +61,13 @@ class MonthData {
   final int month;
   final String monthName;
   final String netProfit; // Keeping as String to preserve decimal format
+  final String? author;
 
   MonthData({
     required this.month,
     required this.monthName,
     required this.netProfit,
+    this.author,
   });
 
   factory MonthData.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,7 @@ class MonthData {
       month: SafeConverters.toInt(json['month']),
       monthName: SafeConverters.toSafeString(json['month_name']),
       netProfit: netProfit,
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -86,6 +89,7 @@ class MonthData {
       'month': month,
       'month_name': monthName,
       'net_profit': netProfit,
+      'author': author,
     };
   }
 }

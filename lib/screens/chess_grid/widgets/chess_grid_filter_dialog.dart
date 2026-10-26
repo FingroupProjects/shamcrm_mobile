@@ -41,7 +41,10 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   void initState() {
     super.initState();
     final f = widget.controller.filter;
-    _buildingKey = f.buildingKey;
+    final buildings = widget.controller.complex.buildings;
+    _buildingKey = f.buildingKey.isNotEmpty
+        ? f.buildingKey
+        : (buildings.isNotEmpty ? buildings.first.key : '');
     _entrance = f.entrance;
     _rooms = Set<int>.from(f.rooms);
     _minPriceController = TextEditingController(text: f.minPrice != null ? '${f.minPrice!.toInt()}' : '');
@@ -64,11 +67,14 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final controller = widget.controller;
+    final buildings = controller.complex.buildings;
 
-    final building = controller.complex.buildings.firstWhere(
-      (b) => b.key == _buildingKey,
-      orElse: () => controller.complex.buildings.first,
-    );
+    final Building? building = buildings.isNotEmpty
+        ? buildings.firstWhere(
+            (b) => b.key == _buildingKey,
+            orElse: () => buildings.first,
+          )
+        : null;
 
     return Container(
       constraints: BoxConstraints(
@@ -134,48 +140,107 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Building
-                  Text('Корпус', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: controller.complex.buildings.map((b) {
-                      final isSelected = _buildingKey == b.key;
-                      return ChoiceChip(
-                        label: Text(b.name),
-                        selected: isSelected,
-                        onSelected: (val) {
-                          if (val) {
+                  if (buildings.isNotEmpty) ...[
+                    Text('Корпус', style: _sectionTitleStyle(colors)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: buildings.map((b) {
+                        final isSelected = _buildingKey == b.key;
+                        return GestureDetector(
+                          onTap: () {
                             setState(() {
                               _buildingKey = b.key;
-                              _entrance = 0; // reset entrance
+                              _entrance = 0;
                             });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 14),
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? colors.buttonPrimaryBg
+                                  : colors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? colors.buttonPrimaryBg
+                                    : colors.borderSubtle.withValues(alpha: 0.6),
+                                width: 1.2,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: colors.buttonPrimaryBg
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.apartment_rounded,
+                                  size: 15,
+                                  color: isSelected
+                                      ? colors.buttonPrimaryFg
+                                      : colors.iconSecondary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  b.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    fontSize: 13,
+                                    color: isSelected
+                                        ? colors.buttonPrimaryFg
+                                        : colors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Entrance
-                  Text('Подъезд', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Все подъезды'),
-                        selected: _entrance == 0,
-                        onSelected: (val) => setState(() => _entrance = 0),
-                      ),
-                      for (int e = 1; e <= building.entranceCount; e++)
-                        ChoiceChip(
-                          label: Text('Подъезд $e'),
-                          selected: _entrance == e,
-                          onSelected: (val) => setState(() => _entrance = e),
+                  if (building != null && building.entranceCount > 0) ...[
+                    Text('Подъезд', style: _sectionTitleStyle(colors)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildEntranceFilterPill(
+                          title: 'Все подъезды',
+                          isSelected: _entrance == 0,
+                          onTap: () => setState(() => _entrance = 0),
+                          colors: colors,
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
+                        for (int e = 1; e <= building.entranceCount; e++)
+                          _buildEntranceFilterPill(
+                            title: 'Подъезд $e',
+                            isSelected: _entrance == e,
+                            onTap: () => setState(() => _entrance = e),
+                            colors: colors,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Rooms
                   Text('Количество комнат', style: _sectionTitleStyle(colors)),
@@ -346,5 +411,48 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
         fontSize: 13,
         color: colors.textPrimary,
       );
+
+  Widget _buildEntranceFilterPill({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required dynamic colors,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.buttonPrimaryBg : colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? colors.buttonPrimaryBg
+                : colors.borderSubtle.withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 12.5,
+            color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
 }
 

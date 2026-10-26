@@ -17,44 +17,94 @@ class ReconciliationActContent extends StatefulWidget {
 }
 
 class _ReconciliationActContentState extends State<ReconciliationActContent> {
-  Widget _buildReconciliationActList(ActOfReconciliationResponse data) {
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    if (currentScroll < maxScroll * 0.9) return;
+
+    final state = context.read<SalesDashboardReconciliationActBloc>().state;
+    if (state is SalesDashboardReconciliationActLoaded && !state.hasReachedMax) {
+      setState(() => _isLoadingMore = true);
+      context.read<SalesDashboardReconciliationActBloc>().add(
+            LoadReconciliationActReport(page: state.currentPage + 1),
+          );
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    context.read<SalesDashboardReconciliationActBloc>().add(
+          const LoadReconciliationActReport(page: 1),
+        );
+  }
+
+  Widget _buildReconciliationActList(
+      ActOfReconciliationResponse data, bool hasReachedMax) {
     final localizations = AppLocalizations.of(context)!;
     final reconciliationItems = data.result ?? [];
+    final colors = context.appColors;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (reconciliationItems.isNotEmpty) ...[
-            ...reconciliationItems
-                .map((item) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ReconciliationActCard(
-                        reconciliationItem: item,
-                        onClick: (reconciliationItem) {
-                          // Навигация к экрану деталей акта сверки
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ReconciliationActDetailsScreen(
-                                reconciliationItem: reconciliationItem,
-                              ),
-                            ),
-                          );
-                        },
-                        onLongPress: (reconciliationItem) {
-                          // Обработка длительного нажатия
-                          debugPrint(
-                              '${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
-                        },
-                        isSelectionMode: false,
-                        isSelected: false,
-                      ),
-                    ))
-                .toList(),
-          ],
-        ],
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: colors.textPrimary,
+      child: ListView.separated(
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        padding: const EdgeInsets.all(16),
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: reconciliationItems.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= reconciliationItems.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: colors.textPrimary,
+                ),
+              ),
+            );
+          }
+
+          final item = reconciliationItems[index];
+          return ReconciliationActCard(
+            reconciliationItem: item,
+            onClick: (reconciliationItem) {
+              // Навигация к экрану деталей акта сверки
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReconciliationActDetailsScreen(
+                    reconciliationItem: reconciliationItem,
+                  ),
+                ),
+              );
+            },
+            onLongPress: (reconciliationItem) {
+              // Обработка длительного нажатия
+              debugPrint(
+                  '${localizations.translate('long_press_reconciliation_item')}: ${reconciliationItem.id}');
+            },
+            isSelectionMode: false,
+            isSelected: false,
+          );
+        },
       ),
     );
   }
@@ -187,8 +237,18 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SalesDashboardReconciliationActBloc,
+    return BlocConsumer<SalesDashboardReconciliationActBloc,
         SalesDashboardReconciliationActState>(
+      listener: (context, state) {
+        if (state is SalesDashboardReconciliationActLoaded ||
+            state is SalesDashboardReconciliationActError) {
+          if (_isLoadingMore) {
+            setState(() {
+              _isLoadingMore = false;
+            });
+          }
+        }
+      },
       builder: (context, state) {
         if (state is SalesDashboardReconciliationActLoading) {
           return _buildLoadingState();
@@ -198,7 +258,7 @@ class _ReconciliationActContentState extends State<ReconciliationActContent> {
           if (state.data.result == null || state.data.result!.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildReconciliationActList(state.data);
+          return _buildReconciliationActList(state.data, state.hasReachedMax);
         }
 
         return _buildEmptyState();

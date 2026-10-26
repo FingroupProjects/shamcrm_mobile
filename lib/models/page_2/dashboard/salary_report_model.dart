@@ -29,11 +29,13 @@ class SalaryEmployeeReport extends Equatable {
   final int employeeId;
   final String employeeName;
   final List<SalaryMonthReport> months;
+  final String? author;
 
   const SalaryEmployeeReport({
     required this.employeeId,
     required this.employeeName,
     required this.months,
+    this.author,
   });
 
   factory SalaryEmployeeReport.fromJson(Map<String, dynamic> json) {
@@ -44,11 +46,12 @@ class SalaryEmployeeReport extends Equatable {
         json['months'],
         SalaryMonthReport.fromJson,
       ),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
   @override
-  List<Object?> get props => [employeeId, employeeName, months];
+  List<Object?> get props => [employeeId, employeeName, months, author];
 }
 
 class SalaryMonthReport extends Equatable {

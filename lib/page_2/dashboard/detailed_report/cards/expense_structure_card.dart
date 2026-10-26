@@ -48,6 +48,16 @@ class ExpenseStructureCard extends StatelessWidget {
                     color: colors.textPrimary,
                   ),
                 ),
+                if (expenseItem.author != null && expenseItem.author!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${localizations.translate('author')}: ${expenseItem.author!.trim()}',
+                    style: textStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

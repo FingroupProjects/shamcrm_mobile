@@ -1,12 +1,101 @@
 import 'package:crm_task_manager/utils/safe_converters.dart';
+import 'package:equatable/equatable.dart';
+
+class ReconciliationPagination extends Equatable {
+  final int currentPage;
+  final int totalPages;
+  final int total;
+  final int perPage;
+
+  const ReconciliationPagination({
+    required this.currentPage,
+    required this.totalPages,
+    required this.total,
+    required this.perPage,
+  });
+
+  factory ReconciliationPagination.fromJson(Map<String, dynamic> json) {
+    final currentPage = SafeConverters.toInt(
+      json['current_page'] ?? json['currentPage'],
+      defaultValue: 1,
+    );
+    final totalPages = SafeConverters.toInt(
+      json['total_pages'] ?? json['last_page'] ?? json['totalPages'],
+      defaultValue: 1,
+    );
+    final total = SafeConverters.toInt(json['total']);
+    final perPage = SafeConverters.toInt(
+      json['per_page'] ?? json['perPage'],
+      defaultValue: 20,
+    );
+
+    return ReconciliationPagination(
+      currentPage: currentPage,
+      totalPages: totalPages,
+      total: total,
+      perPage: perPage,
+    );
+  }
+
+  static ReconciliationPagination? fromJsonMap(Map<String, dynamic> map) {
+    if (map['pagination'] is Map) {
+      return ReconciliationPagination.fromJson(
+        SafeConverters.toMap(map['pagination']),
+      );
+    }
+    if (map['meta'] is Map) {
+      return ReconciliationPagination.fromJson(
+        SafeConverters.toMap(map['meta']),
+      );
+    }
+    if (map['result'] is Map) {
+      final resultMap = SafeConverters.toMap(map['result']);
+      if (resultMap['pagination'] is Map) {
+        return ReconciliationPagination.fromJson(
+          SafeConverters.toMap(resultMap['pagination']),
+        );
+      }
+      if (resultMap['meta'] is Map) {
+        return ReconciliationPagination.fromJson(
+          SafeConverters.toMap(resultMap['meta']),
+        );
+      }
+      if (resultMap['current_page'] != null ||
+          resultMap['total_pages'] != null ||
+          resultMap['last_page'] != null) {
+        return ReconciliationPagination.fromJson(resultMap);
+      }
+    }
+    if (map['current_page'] != null ||
+        map['total_pages'] != null ||
+        map['last_page'] != null) {
+      return ReconciliationPagination.fromJson(map);
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'current_page': currentPage,
+      'total_pages': totalPages,
+      'total': total,
+      'per_page': perPage,
+    };
+  }
+
+  @override
+  List<Object> get props => [currentPage, totalPages, total, perPage];
+}
 
 class ActOfReconciliationResponse {
   final List<ReconciliationItem>? result;
   final String? errors;
+  final ReconciliationPagination? pagination;
 
   ActOfReconciliationResponse({
     this.result,
     this.errors,
+    this.pagination,
   });
 
   factory ActOfReconciliationResponse.fromJson(dynamic json) {
@@ -14,6 +103,7 @@ class ActOfReconciliationResponse {
     return ActOfReconciliationResponse(
       result: _parseItems(map['result']),
       errors: SafeConverters.toStringOrNull(map['errors']),
+      pagination: ReconciliationPagination.fromJsonMap(map),
     );
   }
 
@@ -62,6 +152,7 @@ class ActOfReconciliationResponse {
     return {
       'result': result?.map((e) => e.toJson()).toList(),
       'errors': errors,
+      'pagination': pagination?.toJson(),
     };
   }
 }
@@ -81,6 +172,7 @@ class ReconciliationItem {
   final int? counterpartyId;
   final Counterparty? counterparty;
   final ModelData? model;
+  final String? author;
 
   ReconciliationItem({
     this.id,
@@ -97,6 +189,7 @@ class ReconciliationItem {
     this.counterpartyId,
     this.counterparty,
     this.model,
+    this.author,
   });
 
   factory ReconciliationItem.fromJson(dynamic json) {
@@ -118,7 +211,34 @@ class ReconciliationItem {
       counterpartyId: SafeConverters.toIntOrNull(map['counterparty_id']),
       counterparty: _parseCounterparty(map['counterparty']),
       model: SafeConverters.toModelOrNull(map['model'], ModelData.fromJson),
+      author: _parseAuthor(map['author']) ??
+          _parseAuthor(map['author_name']) ??
+          _parseAuthor(map['user']),
     );
+  }
+
+  static String? _parseAuthor(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) {
+      final trimmed = raw.trim();
+      return trimmed.isNotEmpty ? trimmed : null;
+    }
+    if (raw is Map) {
+      final map = SafeConverters.toMap(raw);
+      final name = map['name'] ??
+          map['full_name'] ??
+          map['fullname'] ??
+          map['username'] ??
+          map['login'];
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString().trim();
+      }
+      final firstName = map['first_name']?.toString().trim() ?? '';
+      final lastName = map['last_name']?.toString().trim() ?? '';
+      final fullName = '$firstName $lastName'.trim();
+      if (fullName.isNotEmpty) return fullName;
+    }
+    return null;
   }
 
   static Counterparty? _parseCounterparty(dynamic raw) {
@@ -149,6 +269,7 @@ class ReconciliationItem {
       'counterparty_id': counterpartyId,
       'counterparty': counterparty?.toJson(),
       'model': model?.toJson(),
+      'author': author,
     };
   }
 }

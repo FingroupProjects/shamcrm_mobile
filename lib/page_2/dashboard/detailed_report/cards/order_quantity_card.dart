@@ -48,6 +48,16 @@ class OrderQuantityCard extends StatelessWidget {
                     color: colors.textPrimary,
                   ),
                 ),
+                if (chartData.author != null && chartData.author!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${localizations.translate('author')}: ${chartData.author!.trim()}',
+                    style: textStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

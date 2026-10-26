@@ -64,6 +64,7 @@ class DashboardGoods {
   final String price;
   final String totalSum;
   final List<Storage> storages; // New field for storages array
+  final String? author;
 
   DashboardGoods({
     required this.id,
@@ -74,6 +75,7 @@ class DashboardGoods {
     required this.price,
     required this.totalSum,
     required this.storages,
+    this.author,
   });
 
   factory DashboardGoods.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class DashboardGoods {
       storages: SafeConverters.toList(json['storages'])
           .map((item) => Storage.fromJson(SafeConverters.toMap(item)))
           .toList(),
+      author: SafeConverters.findAuthor(json),
     );
   }
 }

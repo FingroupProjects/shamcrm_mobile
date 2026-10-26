@@ -34,7 +34,9 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
   final _floorController = TextEditingController(text: '9');
   final _perFloorController = TextEditingController(text: '4');
   final _customTypeController = TextEditingController();
+  bool _isSaving = false;
 
+  static const List<String> _defaultTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
   final List<String> _availableTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
   final Set<String> _selectedTypes = {'Студия', 'Евроремонт'};
 
@@ -54,7 +56,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
       }
     } else {
       final controller = ChessGridController.instance;
-      final nextLetter = ['А', 'Б', 'В', 'Г', 'Д', 'Е'][controller.complex.buildings.length % 6];
+      final nextLetter = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З'][controller.complex.buildings.length % 8];
       _nameController.text = 'Корпус $nextLetter';
     }
   }
@@ -69,6 +71,24 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     super.dispose();
   }
 
+  void _addCustomType() {
+    final text = _customTypeController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      final existingIndex = _availableTypes.indexWhere(
+        (t) => t.toLowerCase() == text.toLowerCase(),
+      );
+      if (existingIndex != -1) {
+        _selectedTypes.add(_availableTypes[existingIndex]);
+      } else {
+        _availableTypes.add(text);
+        _selectedTypes.add(text);
+      }
+      _customTypeController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -76,13 +96,14 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Drag handle
           Center(
@@ -121,7 +142,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
           ),
           const Divider(height: 1),
 
-          Expanded(
+          Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -161,42 +182,40 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   // Apartment Types Multiselect (TZ section 2)
-                  Text(
-                    'Типы квартир в корпусе (мульти-селект)',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: colors.textPrimary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Тип квартир (мульти-селект) *',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Выбрано: ${_selectedTypes.length}',
+                        style: TextStyle(
+                          fontFamily: 'Golos',
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
+
+                  // Interactive chips
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _availableTypes.map((t) {
-                      final isSelected = _selectedTypes.contains(t);
-                      return FilterChip(
-                        label: Text(t),
-                        selected: isSelected,
-                        onSelected: (val) {
-                          setState(() {
-                            if (val) {
-                              _selectedTypes.add(t);
-                            } else {
-                              if (_selectedTypes.length > 1) {
-                                _selectedTypes.remove(t);
-                              }
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                    children: _availableTypes.map((t) => _buildTypeChip(t)).toList(),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   // Add custom type
                   Row(
@@ -204,27 +223,46 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                       Expanded(
                         child: TextField(
                           controller: _customTypeController,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _addCustomType(),
+                          style: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textPrimary),
                           decoration: InputDecoration(
-                            hintText: 'Свой тип, например Пентхаус',
+                            hintText: 'Свой тип, например: Пентхаус',
+                            hintStyle: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textSecondary),
                             isDense: true,
+                            filled: true,
+                            fillColor: colors.surfaceElevated.withValues(alpha: 0.5),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: colors.borderSubtle),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: colors.borderSubtle),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: colors.buttonPrimaryBg, width: 1.5),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () {
-                          final text = _customTypeController.text.trim();
-                          if (text.isNotEmpty && !_availableTypes.contains(text)) {
-                            setState(() {
-                              _availableTypes.add(text);
-                              _selectedTypes.add(text);
-                              _customTypeController.clear();
-                            });
-                          }
-                        },
-                        child: const Text('Добавить'),
+                      ElevatedButton.icon(
+                        onPressed: _addCustomType,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text(
+                          'Добавить',
+                          style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.buttonPrimaryBg,
+                          foregroundColor: colors.buttonPrimaryFg,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        ),
                       ),
                     ],
                   ),
@@ -235,16 +273,25 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: _handleSave,
+                      onPressed: _isSaving ? null : _handleSave,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.buttonPrimaryBg,
                         foregroundColor: colors.buttonPrimaryFg,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(
-                        isEditing ? 'Сохранить корпус' : 'Создать корпус',
-                        style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              isEditing ? 'Сохранить корпус' : 'Создать корпус',
+                              style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
                     ),
                   ),
                 ],
@@ -256,7 +303,89 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     );
   }
 
-  void _handleSave() {
+  Widget _buildTypeChip(String type) {
+    final colors = context.appColors;
+    final isSelected = _selectedTypes.contains(type);
+    final isCustom = !_defaultTypes.contains(type);
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            _selectedTypes.remove(type);
+          } else {
+            _selectedTypes.add(type);
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.buttonPrimaryBg
+              : colors.surfaceElevated.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              Icon(
+                Icons.check_rounded,
+                size: 15,
+                color: colors.buttonPrimaryFg,
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              type,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 13,
+                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+              ),
+            ),
+            if (isCustom) ...[
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _availableTypes.remove(type);
+                    _selectedTypes.remove(type);
+                  });
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: isSelected
+                      ? colors.buttonPrimaryFg.withValues(alpha: 0.8)
+                      : colors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSave() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       showCustomSnackBar(context: context, message: 'Укажите название корпуса', isSuccess: false);
@@ -267,38 +396,62 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     final fl = int.tryParse(_floorController.text) ?? 9;
     final per = int.tryParse(_perFloorController.text) ?? 4;
 
+    if (ent <= 0) {
+      showCustomSnackBar(context: context, message: 'Количество подъездов должно быть больше 0', isSuccess: false);
+      return;
+    }
+    if (fl <= 0) {
+      showCustomSnackBar(context: context, message: 'Количество этажей должно быть больше 0', isSuccess: false);
+      return;
+    }
+    if (per <= 0) {
+      showCustomSnackBar(context: context, message: 'Количество квартир на этаже должно быть больше 0', isSuccess: false);
+      return;
+    }
     if (_selectedTypes.isEmpty) {
       showCustomSnackBar(context: context, message: 'Выберите хотя бы один тип квартир', isSuccess: false);
       return;
     }
 
     final controller = ChessGridController.instance;
+    setState(() => _isSaving = true);
 
-    if (widget.existingBuilding != null) {
-      controller.updateBuilding(widget.existingBuilding!.copyWith(
-        name: name,
-        entranceCount: ent,
-        floorCount: fl,
-        apartsPerFloor: per,
-        apartmentTypes: _selectedTypes.toList(),
-      ));
-    } else {
-      final keys = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-      final existingKeys = controller.complex.buildings.map((b) => b.key).toSet();
-      final newKey = keys.firstWhere((k) => !existingKeys.contains(k), orElse: () => 'X');
+    try {
+      if (widget.existingBuilding != null) {
+        controller.updateBuilding(widget.existingBuilding!.copyWith(
+          name: name,
+          entranceCount: ent,
+          floorCount: fl,
+          apartsPerFloor: per,
+          apartmentTypes: _selectedTypes.toList(),
+        ));
+      } else {
+        final keys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        final existingKeys = controller.complex.buildings.map((b) => b.key).toSet();
+        final newKey = keys.firstWhere((k) => !existingKeys.contains(k), orElse: () => '${controller.complex.buildings.length + 1}');
 
-      controller.addBuilding(Building(
-        key: newKey,
-        name: name,
-        entranceCount: ent,
-        floorCount: fl,
-        apartsPerFloor: per,
-        apartmentTypes: _selectedTypes.toList(),
-      ));
+        await controller.addBuilding(Building(
+          key: newKey,
+          name: name,
+          residentialComplexId: controller.complex.id,
+          entranceCount: ent,
+          floorCount: fl,
+          apartsPerFloor: per,
+          apartmentTypes: _selectedTypes.toList(),
+        ));
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        showCustomSnackBar(context: context, message: 'Корпус успешно сохранён', isSuccess: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        final errText = e.toString().replaceFirst('Exception: ', '');
+        showCustomSnackBar(context: context, message: errText, isSuccess: false);
+      }
     }
-
-    Navigator.pop(context);
-    showCustomSnackBar(context: context, message: 'Корпус успешно сохранён', isSuccess: true);
   }
 
   Widget _buildTextField({
@@ -330,10 +483,17 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: colors.borderSubtle),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: colors.borderSubtle),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: colors.buttonPrimaryBg, width: 1.5),
+            ),
           ),
         ),
       ],
     );
   }
 }
-

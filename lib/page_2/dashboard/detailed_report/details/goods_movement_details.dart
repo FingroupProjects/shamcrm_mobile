@@ -171,13 +171,27 @@ class _GoodsMovementDetailsDialogState extends State<GoodsMovementDetailsDialog>
 
           // Третья строка: Тип документа
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: _buildInfoBox(
               label: AppLocalizations.of(context)!.translate('document_type_label'),
               value: _getDocumentTypeDisplay(movement.documentType),
               fullWidth: true,
             ),
           ),
+
+          // Четвертая строка: Автор (если есть)
+          if (movement.author != null && movement.author!.trim().isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildInfoBox(
+                label: AppLocalizations.of(context)!.translate('author'),
+                value: movement.author!.trim(),
+                fullWidth: true,
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+          ],
 
           // Дата внизу
           Container(

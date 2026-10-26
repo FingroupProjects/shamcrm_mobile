@@ -93,6 +93,12 @@ class _ManufactureMaterialsCard extends StatelessWidget {
             value: parseNumberToString(item.sum.toString()),
             isHighlighted: true,
           ),
+          _ReportLine(
+            label: localizations.translate('author'),
+            value: item.author?.trim().isNotEmpty == true
+                ? item.author!.trim()
+                : localizations.translate('not_specified'),
+          ),
         ],
       ),
     );

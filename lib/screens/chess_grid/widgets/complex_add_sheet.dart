@@ -31,6 +31,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
   final _salesPhoneController = TextEditingController();
   final _salesEmailController = TextEditingController();
   final _salesHoursController = TextEditingController(text: '09:00 – 18:00');
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -171,7 +172,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _handleSubmit,
+                      onPressed: _isSaving ? null : _handleSubmit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.buttonPrimaryBg,
                         foregroundColor: colors.buttonPrimaryFg,
@@ -180,14 +181,23 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                         ),
                         elevation: 2,
                       ),
-                      child: const Text(
-                        'Создать жилой комплекс',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Создать жилой комплекс',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -199,7 +209,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
     );
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
 
@@ -223,22 +233,52 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
 
     final buildingCount = int.tryParse(_buildingCountController.text) ?? 1;
 
-    ChessGridController.instance.addComplex(
-      name: name,
-      address: address,
-      buildingCount: buildingCount,
-      salesAddress: _salesAddressController.text.trim(),
-      phone: _salesPhoneController.text.trim(),
-      email: _salesEmailController.text.trim(),
-      workingHours: _salesHoursController.text.trim(),
-    );
+    String startTime = '09:00';
+    String endTime = '18:00';
+    final rawHours = _salesHoursController.text.trim();
+    if (rawHours.contains('–')) {
+      final parts = rawHours.split('–');
+      startTime = parts[0].trim();
+      endTime = parts[1].trim();
+    } else if (rawHours.contains('-')) {
+      final parts = rawHours.split('-');
+      startTime = parts[0].trim();
+      endTime = parts[1].trim();
+    }
 
-    Navigator.pop(context);
-    showCustomSnackBar(
-      context: context,
-      message: 'Жилой комплекс «$name» успешно создан!',
-      isSuccess: true,
-    );
+    setState(() => _isSaving = true);
+
+    try {
+      await ChessGridController.instance.addComplex(
+        name: name,
+        address: address,
+        buildingCount: buildingCount,
+        salesAddress: _salesAddressController.text.trim(),
+        phone: _salesPhoneController.text.trim(),
+        email: _salesEmailController.text.trim(),
+        workingHours: rawHours,
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        showCustomSnackBar(
+          context: context,
+          message: 'Жилой комплекс «$name» успешно создан!',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        showCustomSnackBar(
+          context: context,
+          message: 'Ошибка при создании ЖК: $e',
+          isSuccess: false,
+        );
+      }
+    }
   }
 }
 

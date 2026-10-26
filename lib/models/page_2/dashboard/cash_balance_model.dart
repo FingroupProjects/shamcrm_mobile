@@ -92,6 +92,7 @@ class CashRegisters {
   num? balance;
   String? updatedAt;
   String? currencyName;
+  String? author;
 
   CashRegisters({
     this.id,
@@ -99,6 +100,7 @@ class CashRegisters {
     this.balance,
     this.updatedAt,
     this.currencyName,
+    this.author,
   });
 
   CashRegisters.fromJson(Map<String, dynamic> json) {
@@ -107,6 +109,7 @@ class CashRegisters {
     balance = SafeConverters.toNumOrNull(json['balance']);
     updatedAt = SafeConverters.toStringOrNull(json['updated_at']);
     currencyName = SafeConverters.toMapOrNull(json['currency']) != null ? SafeConverters.toStringOrNull(SafeConverters.toMap(json['currency'])['name']) : null;
+    author = SafeConverters.findAuthor(json);
   }
 
   Map<String, dynamic> toJson() => {
@@ -115,6 +118,7 @@ class CashRegisters {
         'balance': balance,
         'updated_at': updatedAt,
         'currency_name': currencyName,
+        'author': author,
       };
 }
 

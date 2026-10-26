@@ -55,6 +55,16 @@ class CreditorCard extends StatelessWidget {
               color: colors.textPrimary,
             ),
           ),
+          if (creditor.author != null && creditor.author!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${localizations.translate('author')}: ${creditor.author!.trim()}',
+              style: textStyles.bodyMd.copyWith(
+                fontWeight: FontWeight.w400,
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
         ],
       ),
     );

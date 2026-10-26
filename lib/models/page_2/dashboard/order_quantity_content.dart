@@ -4,11 +4,13 @@ class ChartDataContent {
   final int id;
   final String name;
   final num amount;
+  final String? author;
 
   ChartDataContent({
     required this.id,
     required this.name,
     required this.amount,
+    this.author,
   });
 
   factory ChartDataContent.fromJson(Map<String, dynamic> json) {
@@ -16,6 +18,7 @@ class ChartDataContent {
       id: SafeConverters.toInt(json['id']),
       name: SafeConverters.toSafeString(json['name']),
       amount: SafeConverters.toNum(json['amount']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -24,6 +27,7 @@ class ChartDataContent {
       'id': id,
       'name': name,
       'amount': amount,
+      'author': author,
     };
   }
 }

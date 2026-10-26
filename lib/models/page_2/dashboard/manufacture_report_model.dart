@@ -120,6 +120,7 @@ class ManufactureMaterialsReportItem extends Equatable {
   final String unit;
   final double price;
   final double sum;
+  final String? author;
 
   const ManufactureMaterialsReportItem({
     required this.materialVariantId,
@@ -129,6 +130,7 @@ class ManufactureMaterialsReportItem extends Equatable {
     required this.unit,
     required this.price,
     required this.sum,
+    this.author,
   });
 
   factory ManufactureMaterialsReportItem.fromJson(Map<String, dynamic> json) {
@@ -140,6 +142,8 @@ class ManufactureMaterialsReportItem extends Equatable {
       unit: SafeConverters.toSafeString(json['unit']),
       price: SafeConverters.toDouble(json['price']),
       sum: SafeConverters.toDouble(json['sum']),
+      author: SafeConverters.toStringOrNull(json['author']) ??
+          SafeConverters.toStringOrNull(json['author_name']),
     );
   }
 
@@ -152,6 +156,7 @@ class ManufactureMaterialsReportItem extends Equatable {
         unit,
         price,
         sum,
+        author,
       ];
 }
 

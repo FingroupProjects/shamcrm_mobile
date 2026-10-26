@@ -6,13 +6,17 @@ sealed class SalesDashboardReconciliationActEvent extends Equatable {
 
 class LoadReconciliationActReport extends SalesDashboardReconciliationActEvent {
   const LoadReconciliationActReport({
+    this.page = 1,
+    this.perPage = 20,
     this.search,
     this.filter,
   });
 
+  final int page;
+  final int perPage;
   final String? search;
   final Map<String, dynamic>? filter;
 
   @override
-  List<Object> get props => [search ?? '', filter ?? {}];
+  List<Object?> get props => [page, perPage, search, filter];
 }

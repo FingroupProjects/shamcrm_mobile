@@ -16,6 +16,7 @@ class TopSellingCardModel {
   final num totalQuantity;
   final String totalAmount;
   final String avgPrice;
+  final String? author;
 
   TopSellingCardModel({
     required this.id,
@@ -24,6 +25,7 @@ class TopSellingCardModel {
     required this.totalQuantity,
     required this.totalAmount,
     required this.avgPrice,
+    this.author,
   });
 
   // from json and to json methods
@@ -35,6 +37,7 @@ class TopSellingCardModel {
       totalQuantity: SafeConverters.toNum(json['total_quantity']),
       totalAmount: SafeConverters.toSafeString(json['total_amount']),
       avgPrice: SafeConverters.toSafeString(json['avg_price']),
+      author: SafeConverters.findAuthor(json),
     );
   }
 
@@ -46,6 +49,7 @@ class TopSellingCardModel {
       'total_quantity': totalQuantity,
       'total_amount': totalAmount,
       'avg_price': avgPrice,
+      'author': author,
     };
   }
 }

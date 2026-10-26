@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 
 class ChessGridController extends ChangeNotifier {
@@ -10,25 +11,32 @@ class ChessGridController extends ChangeNotifier {
   ChessGridController._() {
     _initData();
     _startExpirationTimer();
+    loadDataFromApi();
   }
 
-  late List<ResidentialComplex> complexes;
-  late List<Apartment> apartments;
-  late List<ParkingSpot> parkingSpots;
-  late List<Order> orders;
-  late List<RoleBookingSetting> roleSettings;
+  final ApiService _apiService = ApiService();
+
+  List<ResidentialComplex> complexes = [];
+  List<Apartment> apartments = [];
+  List<ParkingSpot> parkingSpots = [];
+  List<Order> orders = [];
+  List<RoleBookingSetting> roleSettings = [];
   late CompanyRequisites requisites;
   int monthlyBookingLimit = 3;
   List<CustomField> customFields = [];
 
-  int _selectedComplexId = 1;
-  String _selectedBuildingKey = 'A';
+  bool isLoading = false;
+  bool isLoadingComplex = false;
+  bool isLoadingApartments = false;
+  String? errorMessage;
+
+  int _selectedComplexId = 0;
+  String _selectedBuildingKey = '';
   ChessGridFilter _filter = const ChessGridFilter();
   Apartment? _selectedApartment;
 
   Timer? _expireTimer;
-  int _orderIdCounter = 1045;
-  int _complexIdCounter = 3;
+  int _orderIdCounter = 1000;
 
   int get selectedComplexId => _selectedComplexId;
   String get selectedBuildingKey => _selectedBuildingKey;
@@ -40,20 +48,11 @@ class ChessGridController extends ChangeNotifier {
         (complexes.isNotEmpty
             ? complexes.first
             : const ResidentialComplex(
-                id: 1,
-                name: 'ЖК',
+                id: 0,
+                name: 'Жилой комплекс',
                 address: '',
-                buildingCount: 1,
-                buildings: [
-                  Building(
-                    key: 'A',
-                    name: 'Блок А',
-                    entranceCount: 1,
-                    floorCount: 1,
-                    apartsPerFloor: 1,
-                    apartmentTypes: ['Студия'],
-                  ),
-                ],
+                buildingCount: 0,
+                buildings: [],
                 salesOffice: SalesOfficeInfo(
                   address: '',
                   email: '',
@@ -72,6 +71,195 @@ class ChessGridController extends ChangeNotifier {
     }
   }
 
+  /// Loads residential complexes from backend API (GET /api/residential-complexes)
+  Future<void> loadDataFromApi({bool showLoading = true}) async {
+    if (showLoading) {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+    }
+
+    try {
+      final fetchedComplexes = await _apiService.getResidentialComplexes();
+      complexes = fetchedComplexes;
+
+      if (complexes.isNotEmpty) {
+        if (_selectedComplexId == 0 || !complexes.any((c) => c.id == _selectedComplexId)) {
+          _selectedComplexId = complexes.first.id;
+        }
+        final c = complex;
+        if (c.buildings.isNotEmpty) {
+          if (_selectedBuildingKey.isEmpty || !c.buildings.any((b) => b.key == _selectedBuildingKey)) {
+            _selectedBuildingKey = c.buildings.first.key;
+          }
+        } else {
+          _selectedBuildingKey = '';
+        }
+        _regenerateApartments();
+      } else {
+        _selectedComplexId = 0;
+        _selectedBuildingKey = '';
+        apartments = [];
+      }
+      errorMessage = null;
+    } catch (e) {
+      errorMessage = e.toString();
+      debugPrint('ChessGridController.loadDataFromApi error: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _regenerateApartments() {
+    apartments = [];
+    orders = [];
+    parkingSpots = [];
+    int aptIdCounter = 1;
+    final rnd = Random(42);
+
+    final sampleBuyers = [
+      'Рахимов Дилшод',
+      'Каримова Нигора',
+      'Ахмедов Фарход',
+      'Юсупова Мадина',
+      'Назаров Бахтиёр',
+      'Иванов Сергей',
+      'Саидова Зарина',
+      'Гафуров Умед',
+      'Холиков Шерзод',
+      'Петрова Анна',
+    ];
+    final sampleManagers = ['Азиза К.', 'Рустам Н.', 'Лола Т.'];
+
+    for (final c in complexes) {
+      for (final b in c.buildings) {
+        final bKey = b.key;
+        final bName = b.name;
+        final perFloor = b.apartsPerFloor > 0 ? b.apartsPerFloor : 4;
+        final floorCount = b.floorCount > 0 ? b.floorCount : 1;
+        final entCount = b.entranceCount > 0 ? b.entranceCount : 1;
+
+        // Generate parking spots for building (TZ section 4)
+        final pCount = (floorCount * entCount).clamp(6, 24);
+        for (int pi = 1; pi <= pCount; pi++) {
+          final pTypes = ['Подземная', 'Открытая', 'Закрытая'];
+          final pType = pTypes[(pi - 1) % 3];
+          final pPrice = pType == 'Подземная' ? 9000.0 : (pType == 'Закрытая' ? 7000.0 : 4500.0);
+          final pArea = pType == 'Закрытая' ? 18.0 : 13.5;
+          final rVal = rnd.nextDouble();
+          final pStatus = rVal < 0.5 ? ApartmentStatus.available : (rVal < 0.75 ? ApartmentStatus.booked : ApartmentStatus.sold);
+
+          parkingSpots.add(ParkingSpot(
+            id: parkingSpots.length + 1,
+            complexId: c.id,
+            number: 'П-${pi.toString().padLeft(2, '0')}',
+            type: pType,
+            buildingKey: bKey,
+            price: pPrice,
+            area: pArea,
+            status: pStatus,
+          ));
+        }
+
+        // Generate apartments (TZ section 3 & 5)
+        for (int e = 1; e <= entCount; e++) {
+          for (int f = 1; f <= floorCount; f++) {
+            for (int p = 0; p < perFloor; p++) {
+              final rooms = (p % 3) + 1;
+              final area = 38.0 + (rooms * 16.0);
+              final priceSqm = 750.0 + (f * 5);
+              final totalPrice = (area * priceSqm).roundToDouble();
+              final aptNumber = '${(e - 1) * floorCount * perFloor + (f - 1) * perFloor + p + 1}';
+
+              // Status distribution matching TZ & HTML prototype:
+              // ~50% free, ~20% booked, ~20% sold, ~10% reserved
+              final r = rnd.nextDouble();
+              ApartmentStatus status;
+              if (r < 0.50) {
+                status = ApartmentStatus.available;
+              } else if (r < 0.70) {
+                status = ApartmentStatus.booked;
+              } else if (r < 0.90) {
+                status = ApartmentStatus.sold;
+              } else {
+                status = ApartmentStatus.reserved;
+              }
+
+              final aptId = aptIdCounter++;
+              final apt = Apartment(
+                id: aptId,
+                complexId: c.id,
+                number: aptNumber,
+                status: status,
+                type: rooms == 1 ? 'Студия' : (rooms == 2 ? 'Евроремонт' : 'Черновая'),
+                rooms: rooms,
+                totalArea: area,
+                livingArea: (area * 0.6).roundToDouble(),
+                kitchenArea: 10.0,
+                pricePerSqm: priceSqm,
+                totalPrice: totalPrice,
+                currency: '\$',
+                floor: f,
+                entrance: e,
+                position: p,
+                buildingKey: bKey,
+                buildingName: bName,
+                bookingCountMonth: status == ApartmentStatus.booked ? 1 : 0,
+              );
+              apartments.add(apt);
+
+              // If booked or sold, generate realistic Order (TZ 5.1 & 5.2)
+              if (status == ApartmentStatus.booked || status == ApartmentStatus.sold) {
+                final oIdx = orders.length;
+                final buyer = sampleBuyers[oIdx % sampleBuyers.length];
+                final mgr = sampleManagers[oIdx % sampleManagers.length];
+                final isSold = status == ApartmentStatus.sold;
+                final dealType = oIdx % 3 == 0
+                    ? DealType.cash
+                    : (oIdx % 3 == 1 ? DealType.installment : DealType.mixed);
+
+                final downPayment = (totalPrice * 0.2).roundToDouble();
+                final barterAmount = dealType == DealType.mixed ? 5000.0 : 0.0;
+                final installmentSum = (totalPrice - downPayment - barterAmount).clamp(0, totalPrice).toDouble();
+                const months = 12;
+                final monthlyPayment = (installmentSum / months).roundToDouble();
+
+                orders.add(Order(
+                  id: 'З-${1040 + oIdx}',
+                  complexId: c.id,
+                  apartmentId: aptId,
+                  buyerName: buyer,
+                  buyerPhone: '+992 92 ${100 + oIdx} ${20 + oIdx} 30',
+                  buyerEmail: 'client${oIdx + 1}@gmail.com',
+                  manager: mgr,
+                  dealType: dealType,
+                  price: totalPrice,
+                  status: isSold ? OrderStatus.success : OrderStatus.inProgress,
+                  reservedUntil: isSold ? null : DateTime.now().add(Duration(days: (oIdx % 5) + 1)),
+                  paymentDetails: dealType != DealType.cash
+                      ? PaymentDetails(
+                          downPayment: downPayment,
+                          months: months,
+                          installmentSum: installmentSum,
+                          monthlyPayment: monthlyPayment,
+                          barterSubject: dealType == DealType.mixed ? 'Автомобиль' : null,
+                          barterAmount: barterAmount,
+                          schedule: PaymentDetails.generateSchedule(
+                            totalInstallmentSum: installmentSum,
+                            months: months,
+                          ),
+                        )
+                      : null,
+                ));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   void selectComplex(int id) {
     if (_selectedComplexId == id) return;
     _selectedComplexId = id;
@@ -86,10 +274,129 @@ class ChessGridController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Loads full complex details & buildings from backend API
+  Future<void> loadComplexDetails(int id, {bool showLoading = true}) async {
+    _selectedComplexId = id;
+    if (showLoading) {
+      isLoadingComplex = true;
+      notifyListeners();
+    }
+
+    try {
+      // 1. Fetch buildings for this complex from API (GET /api/buildings?residential_complex_id={id})
+      List<Building> fetchedBuildings = [];
+      try {
+        fetchedBuildings = await _apiService.getBuildings(residentialComplexId: id);
+      } catch (e) {
+        debugPrint('ChessGridController.loadComplexDetails getBuildings error: $e');
+      }
+
+      // 2. Fetch complex by ID from API (GET /api/residential-complexes/{id})
+      ResidentialComplex? fetchedComplex;
+      try {
+        fetchedComplex = await _apiService.getResidentialComplexById(id);
+      } catch (e) {
+        debugPrint('ChessGridController.loadComplexDetails getResidentialComplexById error: $e');
+      }
+
+      final combinedBuildings = fetchedBuildings.isNotEmpty
+          ? fetchedBuildings
+          : (fetchedComplex != null && fetchedComplex.buildings.isNotEmpty
+              ? fetchedComplex.buildings
+              : <Building>[]);
+
+      final current = findComplexById(id) ?? fetchedComplex;
+      if (current != null) {
+        final updated = current.copyWith(
+          buildings: combinedBuildings,
+          buildingCount: combinedBuildings.isNotEmpty ? combinedBuildings.length : current.buildingCount,
+        );
+
+        final idx = complexes.indexWhere((c) => c.id == id);
+        if (idx != -1) {
+          complexes[idx] = updated;
+        } else {
+          complexes.add(updated);
+        }
+
+        if (combinedBuildings.isNotEmpty) {
+          if (_selectedBuildingKey.isEmpty || !combinedBuildings.any((b) => b.key == _selectedBuildingKey)) {
+            _selectedBuildingKey = combinedBuildings.first.key;
+          }
+        } else {
+          _selectedBuildingKey = '';
+        }
+        _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
+
+        // Fetch real apartments (goods) from server for the selected building
+        final selectedB = combinedBuildings.firstWhereOrNull((b) => b.key == _selectedBuildingKey);
+        if (selectedB != null && selectedB.id != null) {
+          await loadApartmentsForBuilding(buildingId: selectedB.id, buildingKey: selectedB.key);
+        } else {
+          apartments.removeWhere((a) => a.complexId == id);
+        }
+      }
+    } catch (e) {
+      debugPrint('ChessGridController.loadComplexDetails error: $e');
+    } finally {
+      isLoadingComplex = false;
+      notifyListeners();
+    }
+  }
+
+  /// Loads real apartments (goods) for a specific building from GET /good?building_id={id}
+  Future<void> loadApartmentsForBuilding({int? buildingId, String? buildingKey}) async {
+    final bKey = buildingKey ?? _selectedBuildingKey;
+    Building? b;
+    if (complex.buildings.isNotEmpty) {
+      b = complex.buildings.firstWhereOrNull((item) =>
+          item.key == bKey || (buildingId != null && item.id == buildingId));
+    }
+
+    final targetBuildingId = buildingId ?? b?.id;
+    if (targetBuildingId == null) {
+      if (kDebugMode) {
+        debugPrint('ChessGridController.loadApartmentsForBuilding: no buildingId available for $bKey');
+      }
+      return;
+    }
+
+    isLoadingApartments = true;
+    notifyListeners();
+
+    try {
+      final fetchedApts = await _apiService.getApartmentsByBuilding(
+        buildingId: targetBuildingId,
+        residentialComplexId: _selectedComplexId,
+        buildingKey: b?.key ?? bKey,
+        buildingName: b?.name ?? 'Корпус',
+      );
+
+      // Replace existing apartments for this building with real ones from server
+      apartments.removeWhere((a) => a.buildingKey == (b?.key ?? bKey));
+      apartments.addAll(fetchedApts);
+      errorMessage = null;
+
+      if (kDebugMode) {
+        debugPrint('ChessGridController.loadApartmentsForBuilding: successfully loaded ${fetchedApts.length} apartments for building #$targetBuildingId');
+      }
+    } catch (e) {
+      debugPrint('ChessGridController.loadApartmentsForBuilding error: $e');
+    } finally {
+      isLoadingApartments = false;
+      notifyListeners();
+    }
+  }
+
   void selectBuilding(String key) {
     _selectedBuildingKey = key;
     _filter = _filter.copyWith(buildingKey: key);
     notifyListeners();
+
+    final b = complex.buildings.firstWhereOrNull((item) => item.key == key);
+    if (b != null && b.id != null) {
+      loadApartmentsForBuilding(buildingId: b.id, buildingKey: b.key);
+    }
   }
 
   void selectApartment(Apartment? apt) {
@@ -98,8 +405,17 @@ class ChessGridController extends ChangeNotifier {
   }
 
   void setFilter(ChessGridFilter f) {
+    final oldKey = _selectedBuildingKey;
     _filter = f;
+    _selectedBuildingKey = f.buildingKey;
     notifyListeners();
+
+    if (f.buildingKey.isNotEmpty && f.buildingKey != oldKey) {
+      final b = complex.buildings.firstWhereOrNull((item) => item.key == f.buildingKey);
+      if (b != null && b.id != null) {
+        loadApartmentsForBuilding(buildingId: b.id, buildingKey: b.key);
+      }
+    }
   }
 
   void toggleStatusFilter(ApartmentStatus status) {
@@ -156,21 +472,54 @@ class ChessGridController extends ChangeNotifier {
     }).toList();
   }
 
-  void updateComplex(ResidentialComplex updated) {
+  Future<bool> updateComplex(ResidentialComplex updated) async {
     final idx = complexes.indexWhere((c) => c.id == updated.id);
     if (idx != -1) {
       complexes[idx] = updated;
       notifyListeners();
     }
+    try {
+      await _apiService.updateResidentialComplex(updated.id, updated.toUpdateJson());
+      return true;
+    } catch (e) {
+      debugPrint('ChessGridController.updateComplex API error: $e');
+      rethrow;
+    }
   }
 
-  void addBuilding(Building b) {
+  Future<bool> addBuilding(Building b) async {
     final c = complex;
-    final updatedBuildings = List<Building>.from(c.buildings)..add(b);
-    updateComplex(c.copyWith(
-      buildings: updatedBuildings,
-      buildingCount: updatedBuildings.length,
-    ));
+    final complexId = b.residentialComplexId ?? c.id;
+    final selectedTypes = b.apartmentTypes.isNotEmpty ? b.apartmentTypes : ['Студия', 'Евроремонт'];
+    final payload = {
+      'name': b.name,
+      'residential_complex_id': complexId,
+      'number_of_entrances': b.entranceCount,
+      'number_of_floors': b.floorCount,
+      'number_of_apartments_per_floor': b.apartsPerFloor,
+      'type_of_floors': selectedTypes,
+      'apartment_types': selectedTypes,
+    };
+
+    try {
+      final created = await _apiService.createBuilding(payload);
+      final updatedBuildings = List<Building>.from(c.buildings)..add(created);
+      final updatedComplex = c.copyWith(
+        buildings: updatedBuildings,
+        buildingCount: updatedBuildings.length,
+      );
+      final cIdx = complexes.indexWhere((item) => item.id == c.id);
+      if (cIdx != -1) {
+        complexes[cIdx] = updatedComplex;
+      }
+      _selectedBuildingKey = created.key;
+      _regenerateApartments();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('ChessGridController.addBuilding API error: $e');
+      rethrow;
+    }
   }
 
   void updateBuilding(Building b) {
@@ -197,7 +546,7 @@ class ChessGridController extends ChangeNotifier {
     return true;
   }
 
-  void addApartment(Apartment apt, {List<int>? copyToFloors}) {
+  Future<void> addApartment(Apartment apt, {List<int>? copyToFloors}) async {
     apartments.add(apt);
     if (copyToFloors != null && copyToFloors.isNotEmpty) {
       int maxId = apartments.isNotEmpty ? apartments.map((a) => a.id).fold(0, max) : 0;
@@ -211,6 +560,39 @@ class ChessGridController extends ChangeNotifier {
       }
     }
     notifyListeners();
+
+    // Persist to server via API (POST /good)
+    try {
+      final b = complex.buildings.firstWhereOrNull((item) => item.key == apt.buildingKey);
+      final targetBuildingId = b?.id;
+      if (targetBuildingId != null) {
+        final created = await _apiService.createApartmentGood(
+          buildingId: targetBuildingId,
+          residentialComplexId: apt.complexId > 0 ? apt.complexId : complex.id,
+          number: apt.number,
+          floor: apt.floor,
+          entrance: apt.entrance,
+          rooms: apt.rooms,
+          totalArea: apt.totalArea,
+          livingArea: apt.livingArea,
+          kitchenArea: apt.kitchenArea,
+          totalPrice: apt.totalPrice,
+          pricePerSqm: apt.pricePerSqm,
+          type: apt.type,
+          status: apt.status,
+          position: apt.position,
+          buildingKey: apt.buildingKey,
+          buildingName: apt.buildingName,
+        );
+        final idx = apartments.indexOf(apt);
+        if (idx != -1) {
+          apartments[idx] = created;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('ChessGridController.addApartment API error: $e');
+    }
   }
 
   void updateApartment(Apartment apt) {
@@ -226,6 +608,10 @@ class ChessGridController extends ChangeNotifier {
     apartments.removeWhere((a) => a.id == id);
     if (apartments.length != before) {
       notifyListeners();
+      _apiService.deleteApartmentGood(id).catchError((e) {
+        debugPrint('ChessGridController.deleteApartment API error: $e');
+        return false;
+      });
       return true;
     }
     return false;
@@ -298,183 +684,17 @@ class ChessGridController extends ChangeNotifier {
     ];
 
     requisites = const CompanyRequisites(
-      name: 'ООО «Панорама Строй»',
-      address: 'г. Худжанд, ул. Рудаки, 112',
-      phone: '+992 92 000 00 00',
-      email: 'sales@panorama.tj',
-      inn: 'ИНН 030024819',
+      name: 'ООО «Строительная компания»',
+      address: '',
+      phone: '',
+      email: '',
+      inn: '',
     );
 
-    // 1. Complex 1: Панорама Согд
-    final bA1 = Building(
-      key: 'A',
-      name: 'Блок А',
-      entranceCount: 3,
-      floorCount: 9,
-      apartsPerFloor: 4,
-      apartmentTypes: ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'],
-    );
-    final bB1 = Building(
-      key: 'B',
-      name: 'Блок Б',
-      entranceCount: 2,
-      floorCount: 7,
-      apartsPerFloor: 4,
-      apartmentTypes: ['Студия', 'Евроремонт', 'Черновая'],
-    );
-
-    final complex1 = ResidentialComplex(
-      id: 1,
-      name: 'ЖК «Панорама Согд»',
-      address: 'Худжанд, ул. Рудаки, 112',
-      lat: 40.2826,
-      lng: 69.6221,
-      photos: [
-        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=80',
-      ],
-      buildingCount: 2,
-      buildings: [bA1, bB1],
-      salesOffice: const SalesOfficeInfo(
-        address: 'Худжанд, ул. Рудаки, 112, офис 1',
-        email: 'sales@panorama.tj',
-        phone: '+992 92 000 00 00',
-        workingHours: 'Пн–Сб, 9:00–18:00',
-      ),
-    );
-
-    // 2. Complex 2: Бухара Сити
-    final bA2 = Building(
-      key: 'A',
-      name: 'Корпус 1',
-      entranceCount: 2,
-      floorCount: 12,
-      apartsPerFloor: 4,
-      apartmentTypes: ['Евроремонт', 'Студия', 'Премиум'],
-    );
-    final bB2 = Building(
-      key: 'B',
-      name: 'Корпус 2',
-      entranceCount: 2,
-      floorCount: 10,
-      apartsPerFloor: 4,
-      apartmentTypes: ['Евроремонт', 'Черновая'],
-    );
-
-    final complex2 = ResidentialComplex(
-      id: 2,
-      name: 'ЖК «Бухара Сити»',
-      address: 'Бухара, ул. Навои, 45',
-      lat: 39.7747,
-      lng: 64.4286,
-      photos: [
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80',
-      ],
-      buildingCount: 2,
-      buildings: [bA2, bB2],
-      salesOffice: const SalesOfficeInfo(
-        address: 'Бухара, ул. Навои, 45, офис 101',
-        email: 'sales@bukhara-city.uz',
-        phone: '+998 71 200 00 01',
-        workingHours: '09:00 – 18:00',
-      ),
-    );
-
-    // 3. Complex 3: Самарканд Парк
-    final bA3 = Building(
-      key: 'A',
-      name: 'Блок Восток',
-      entranceCount: 2,
-      floorCount: 8,
-      apartsPerFloor: 3,
-      apartmentTypes: ['Студия', 'Евроремонт'],
-    );
-
-    final complex3 = ResidentialComplex(
-      id: 3,
-      name: 'ЖК «Самарканд Парк»',
-      address: 'Самарканд, пр. Амира Темура, 112',
-      lat: 39.6542,
-      lng: 66.9597,
-      photos: [
-        'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&auto=format&fit=crop&q=80',
-      ],
-      buildingCount: 1,
-      buildings: [bA3],
-      salesOffice: const SalesOfficeInfo(
-        address: 'Самарканд, пр. Амира Темура, 112А',
-        email: 'info@samarkand-park.uz',
-        phone: '+998 71 300 00 02',
-        workingHours: '09:00 – 19:00',
-      ),
-    );
-
-    complexes = [complex1, complex2, complex3];
+    complexes = [];
     apartments = [];
     orders = [];
     parkingSpots = [];
-
-    // Pre-populate apartments for each complex
-    final rng = Random(42);
-    final standardTemplates = [
-      [1, 38.0, 'Студия'],
-      [2, 58.5, 'Евроремонт'],
-      [2, 65.0, 'Предчистовая'],
-      [3, 86.0, 'Черновая'],
-    ];
-
-    int aptIdCounter = 1;
-    for (final c in complexes) {
-      for (final b in c.buildings) {
-        final basePrice = b.key == 'A' ? 780.0 : 740.0;
-        for (int e = 1; e <= b.entranceCount; e++) {
-          for (int f = 1; f <= b.floorCount; f++) {
-            for (int p = 0; p < b.apartsPerFloor; p++) {
-              final t = standardTemplates[p % standardTemplates.length];
-              final rooms = t[0] as int;
-              final baseArea = t[1] as double;
-              final type = t[2] as String;
-              final area = double.parse((baseArea + (e - 1) * 0.8).toStringAsFixed(1));
-              final pm = basePrice + f * 5 + (p == 3 ? 20 : 0);
-              final totalPrice = (area * pm / 1000).round() * 1000.0;
-              final aptNumber = '${(e - 1) * b.floorCount * b.apartsPerFloor + (f - 1) * b.apartsPerFloor + p + 1}';
-
-              final r = rng.nextDouble();
-              ApartmentStatus st;
-              if (r < 0.48) {
-                st = ApartmentStatus.available;
-              } else if (r < 0.68) {
-                st = ApartmentStatus.booked;
-              } else if (r < 0.88) {
-                st = ApartmentStatus.sold;
-              } else {
-                st = ApartmentStatus.reserved;
-              }
-
-              apartments.add(Apartment(
-                id: aptIdCounter++,
-                complexId: c.id,
-                number: aptNumber,
-                status: st,
-                type: type,
-                rooms: rooms,
-                totalArea: area,
-                livingArea: double.parse((area * 0.58).toStringAsFixed(1)),
-                kitchenArea: double.parse((8.5 + p * 1.5).toStringAsFixed(1)),
-                pricePerSqm: pm,
-                totalPrice: totalPrice,
-                currency: '\$',
-                floor: f,
-                entrance: e,
-                position: p,
-                buildingKey: b.key,
-                buildingName: b.name,
-                bookingCountMonth: st == ApartmentStatus.booked ? 1 : 0,
-              ));
-            }
-          }
-        }
-      }
-    }
   }
 
   void _startExpirationTimer() {
@@ -494,7 +714,7 @@ class ChessGridController extends ChangeNotifier {
   // Complex Management (TZ section 1)
   // ─────────────────────────────────────────────────────────────────────────
 
-  void addComplex({
+  Future<bool> addComplex({
     required String name,
     required String address,
     int buildingCount = 1,
@@ -502,72 +722,44 @@ class ChessGridController extends ChangeNotifier {
     String? email,
     String? salesAddress,
     String? workingHours,
-  }) {
-    final newId = ++_complexIdCounter;
-    final defaultBuildings = List.generate(buildingCount, (i) {
-      final key = String.fromCharCode(65 + i); // A, B, C...
-      return Building(
-        key: key,
-        name: 'Корпус $key',
-        entranceCount: 2,
-        floorCount: 9,
-        apartsPerFloor: 4,
-        apartmentTypes: ['Студия', 'Евроремонт'],
-      );
-    });
+    String? startTime,
+    String? endTime,
+    double? lat,
+    double? lng,
+  }) async {
+    final payload = {
+      'name': name,
+      'address': address,
+      'latitude': (lat ?? 41.311081).toString(),
+      'longitude': (lng ?? 69.240562).toString(),
+      'number_of_buildings': buildingCount,
+      'sales_department_address': (salesAddress != null && salesAddress.isNotEmpty)
+          ? salesAddress
+          : address,
+      'sales_department_mail': (email != null && email.isNotEmpty)
+          ? email
+          : 'sales@panorama.uz',
+      'sales_department_phone': (phone != null && phone.isNotEmpty)
+          ? phone
+          : '+998901234567',
+      'start_time': (startTime != null && startTime.isNotEmpty)
+          ? startTime
+          : '09:00',
+      'end_time': (endTime != null && endTime.isNotEmpty)
+          ? endTime
+          : '18:00',
+    };
 
-    final newComplex = ResidentialComplex(
-      id: newId,
-      name: name,
-      address: address,
-      buildingCount: buildingCount,
-      buildings: defaultBuildings,
-      salesOffice: SalesOfficeInfo(
-        address: salesAddress ?? address,
-        email: email ?? 'sales@shamcrm.com',
-        phone: phone ?? '+992 ...',
-        workingHours: workingHours ?? '09:00 – 18:00',
-      ),
-    );
-
-    complexes.insert(0, newComplex);
-
-    // Pre-create apartments for this new complex
-    int maxAptId = apartments.isNotEmpty ? apartments.map((a) => a.id).fold(0, max) : 0;
-    for (final b in defaultBuildings) {
-      for (int e = 1; e <= b.entranceCount; e++) {
-        for (int f = 1; f <= b.floorCount; f++) {
-          for (int p = 0; p < b.apartsPerFloor; p++) {
-            final rooms = (p % 3) + 1;
-            final area = 40.0 + rooms * 18.0;
-            final pm = 750.0 + f * 5;
-            final total = (area * pm).roundToDouble();
-            final aptNumber = '${(e - 1) * b.floorCount * b.apartsPerFloor + (f - 1) * b.apartsPerFloor + p + 1}';
-            apartments.add(Apartment(
-              id: ++maxAptId,
-              complexId: newId,
-              number: aptNumber,
-              status: ApartmentStatus.available,
-              type: rooms == 1 ? 'Студия' : 'Евроремонт',
-              rooms: rooms,
-              totalArea: area,
-              livingArea: double.parse((area * 0.6).toStringAsFixed(1)),
-              kitchenArea: 10.0,
-              pricePerSqm: pm,
-              totalPrice: total,
-              currency: '\$',
-              floor: f,
-              entrance: e,
-              position: p,
-              buildingKey: b.key,
-              buildingName: b.name,
-            ));
-          }
-        }
-      }
+    try {
+      final created = await _apiService.createResidentialComplex(payload);
+      complexes.insert(0, created);
+      selectComplex(created.id);
+      await loadDataFromApi(showLoading: false);
+      return true;
+    } catch (e) {
+      debugPrint('ChessGridController.addComplex API error: $e');
+      rethrow;
     }
-
-    notifyListeners();
   }
 
   // ─────────────────────────────────────────────────────────────────────────

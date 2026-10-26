@@ -441,7 +441,7 @@ class _CashRegisterDetailsScreenState extends State<CashRegisterDetailsScreen> {
           if (author.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              author,
+              '${localizations.translate('author')}: $author',
               style: textStyles.bodySm.copyWith(color: colors.textSecondary),
             ),
           ],
