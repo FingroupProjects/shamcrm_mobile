@@ -1,17 +1,17 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:flutter/material.dart';
 
 /// Quick selector bottom sheet for Building & Entrance.
 /// Allows fast switching without cluttering the main screen header.
 class SectionBuildingSheetV2 extends StatelessWidget {
-  final ChessGridController controller;
+  final ChessGridV2Controller controller;
 
   const SectionBuildingSheetV2({super.key, required this.controller});
 
   static Future<void> show({
     required BuildContext context,
-    required ChessGridController controller,
+    required ChessGridV2Controller controller,
   }) {
     return showModalBottomSheet(
       context: context,

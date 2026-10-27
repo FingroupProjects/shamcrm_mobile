@@ -345,8 +345,13 @@ extension _SipMainViewsExtension on _SipScreenState {
             state.errorMessage != null &&
             state.errorMessage!.trim().isNotEmpty;
 
+    final themeController = context.watch<AppThemeController>();
+    final hasWallpaper = themeController.hasCustomWallpaper ||
+        themeController.backgroundPreset != AppBackgroundPreset.none;
     return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
+      backgroundColor: hasWallpaper
+          ? Colors.transparent
+          : context.appColors.backgroundPrimary,
       body: _TelephonyBackground(
         child: SafeArea(
           child: Center(

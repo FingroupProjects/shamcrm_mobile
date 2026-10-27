@@ -808,6 +808,8 @@ object NativeSipBridge {
         return prefs
     }
 
+    fun getAppContext(): Context? = appContext
+
     private fun requireContext(): Context {
         return requireNotNull(appContext) {
             "NativeSipBridge is not initialized"

@@ -1,10 +1,12 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_room_layout_view.dart';
 import 'package:flutter/material.dart';
 
 /// Floating docked bottom card shown when an apartment is selected in Chessboard 2.0.
-/// Provides instant access to unit stats and actions without covering the entire screen.
-class ApartmentQuickDockV2 extends StatelessWidget {
+/// Provides instant access to unit stats, architectural room layout plan,
+/// and fast actions without covering the entire screen.
+class ApartmentQuickDockV2 extends StatefulWidget {
   final Apartment apartment;
   final VoidCallback onClose;
   final VoidCallback onOpenDetail;
@@ -21,8 +23,16 @@ class ApartmentQuickDockV2 extends StatelessWidget {
   });
 
   @override
+  State<ApartmentQuickDockV2> createState() => _ApartmentQuickDockV2State();
+}
+
+class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
+  bool _showLayout = true;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final apartment = widget.apartment;
     final status = apartment.status;
     final priceStr = _formatPriceFull(apartment.totalPrice);
     final roomsLabel = apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}-комн.';
@@ -59,8 +69,8 @@ class ApartmentQuickDockV2 extends StatelessWidget {
             children: [
               // Status colored icon badge
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: status.bgColor,
                   borderRadius: BorderRadius.circular(10),
@@ -74,7 +84,7 @@ class ApartmentQuickDockV2 extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // Title and specs
               Expanded(
@@ -147,11 +157,11 @@ class ApartmentQuickDockV2 extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
 
               // Close button
               GestureDetector(
-                onTap: onClose,
+                onTap: widget.onClose,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -169,6 +179,54 @@ class ApartmentQuickDockV2 extends StatelessWidget {
           ),
 
           const SizedBox(height: 10),
+
+          // Collapsible Plan & Layout Scheme Section
+          GestureDetector(
+            onTap: () => setState(() => _showLayout = !_showLayout),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.architecture_rounded,
+                      size: 15,
+                      color: colors.buttonPrimaryBg,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Планировка комнат',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  _showLayout
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: colors.iconSecondary,
+                ),
+              ],
+            ),
+          ),
+
+          if (_showLayout) ...[
+            const SizedBox(height: 6),
+            ApartmentRoomLayoutView(
+              apartment: apartment,
+              compact: true,
+              onTap: widget.onOpenDetail,
+            ),
+          ],
+
+          const SizedBox(height: 10),
           const Divider(height: 1),
           const SizedBox(height: 10),
 
@@ -178,7 +236,7 @@ class ApartmentQuickDockV2 extends StatelessWidget {
               // Reserve / Unreserve button
               Expanded(
                 child: OutlinedButton(
-                  onPressed: onToggleReserve,
+                  onPressed: widget.onToggleReserve,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     side: BorderSide(
@@ -211,7 +269,7 @@ class ApartmentQuickDockV2 extends StatelessWidget {
               // Create Order
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onCreateOrder,
+                  onPressed: widget.onCreateOrder,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.buttonPrimaryBg,
                     foregroundColor: colors.buttonPrimaryFg,
@@ -240,32 +298,38 @@ class ApartmentQuickDockV2 extends StatelessWidget {
               ),
               const SizedBox(width: 8),
 
-              // Open Full Passport
-              InkWell(
-                onTap: onOpenDetail,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
+              // Open Full Detail Sheet
+              OutlinedButton(
+                onPressed: widget.onOpenDetail,
+                style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceElevated,
+                  side: BorderSide(
+                    color: colors.borderSubtle.withValues(alpha: 0.8),
+                    width: 1.2,
+                  ),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.6)),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Паспорт',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          color: colors.textPrimary,
-                        ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Паспорт',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: colors.textPrimary,
                       ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: colors.iconSecondary),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: colors.iconSecondary,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -288,4 +352,3 @@ class ApartmentQuickDockV2 extends StatelessWidget {
     return buffer.toString();
   }
 }
-

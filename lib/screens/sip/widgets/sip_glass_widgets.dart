@@ -40,18 +40,36 @@ class _TelephonyBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeController = context.watch<AppThemeController>();
+    final hasCustomWallpaper = themeController.hasCustomWallpaper;
+    final hasWallpaper = hasCustomWallpaper ||
+        themeController.backgroundPreset != AppBackgroundPreset.none;
     const readability = 0.08;
+
+    final baseColor = hasWallpaper
+        ? (isDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.35))
+        : colors.backgroundPrimary;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
-      color: colors.backgroundPrimary,
+      color: baseColor,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const AppBackgroundOverlay(
-            preset: AppBackgroundPreset.none,
+          AppBackgroundOverlay(
+            preset: themeController.backgroundPreset == AppBackgroundPreset.none
+                ? AppBackgroundPreset.aurora
+                : themeController.backgroundPreset,
+            imagePath: themeController.backgroundImagePath,
+            assetPath: themeController.backgroundAssetPath ??
+                (themeController.backgroundPreset == AppBackgroundPreset.none
+                    ? AppThemeController.defaultBackgroundAssetPath
+                    : null),
             blurSigma: 18,
+            forceRender: true,
           ),
           IgnorePointer(
             child: DecoratedBox(
@@ -60,13 +78,22 @@ class _TelephonyBackground extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    colors.backgroundPrimary.withValues(
+                    (hasWallpaper
+                            ? (isDark ? Colors.black : Colors.white)
+                            : colors.backgroundPrimary)
+                        .withValues(
                       alpha: isDark ? readability + 0.16 : readability,
                     ),
-                    colors.surfacePrimary.withValues(
+                    (hasWallpaper
+                            ? (isDark ? Colors.black : Colors.white)
+                            : colors.surfacePrimary)
+                        .withValues(
                       alpha: isDark ? 0.12 : 0.04,
                     ),
-                    colors.backgroundSecondary.withValues(
+                    (hasWallpaper
+                            ? (isDark ? Colors.black : Colors.white)
+                            : colors.backgroundSecondary)
+                        .withValues(
                       alpha: isDark ? readability + 0.12 : readability + 0.03,
                     ),
                   ],

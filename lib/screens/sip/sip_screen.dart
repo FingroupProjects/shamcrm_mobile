@@ -12,9 +12,10 @@ import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/core/theme/app_theme_controller.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
-import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:provider/provider.dart';
 import 'package:crm_task_manager/models/lead/leadById_model.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
 import 'package:crm_task_manager/models/page_2/call_center_model.dart';
@@ -249,7 +250,10 @@ class _SipScreenState extends State<SipScreen>
         await prefs.remove(_sipPinRequiredAfterCallKey);
         _sipService.forcePinPrompt();
         if (!mounted) return;
-        await Navigator.of(context).pushNamed('/pin_screen');
+        await Navigator.of(context).pushNamedAndRemoveUntil(
+          '/pin_screen',
+          (route) => false,
+        );
         return;
       }
 
@@ -264,6 +268,21 @@ class _SipScreenState extends State<SipScreen>
     _sipService.setCallUiMinimizedByUser(true);
     if (!mounted) return;
 
+    final prefs = await SharedPreferences.getInstance();
+    final requiresPin = prefs.getBool(_sipPinRequiredAfterCallKey) ?? false;
+    final isColdCallRoute =
+        ModalRoute.of(context)?.settings.name == '/sip_call_only';
+
+    if (requiresPin || isColdCallRoute) {
+      _sipService.forcePinPrompt();
+      if (!mounted) return;
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        '/pin_screen',
+        (route) => false,
+      );
+      return;
+    }
+
     final route = ModalRoute.of(context);
     final isRootCallRoute = route == null ||
         route.isFirst ||
@@ -274,6 +293,32 @@ class _SipScreenState extends State<SipScreen>
     }
 
     _popSipScreenRoute();
+  }
+
+  Future<void> _checkAndRedirectToPinIfCallEnded() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final requiresPin = prefs.getBool(_sipPinRequiredAfterCallKey) ?? false;
+      final isColdCallRoute =
+          ModalRoute.of(context)?.settings.name == '/sip_call_only';
+      if (!requiresPin && !isColdCallRoute) return;
+
+      final isActive = _isActiveCallState(_sipService.state.callStatus) ||
+          _leadAutoCallPending;
+      if (isActive) return;
+
+      await prefs.remove(_sipPinRequiredAfterCallKey);
+      _sipService.forcePinPrompt();
+      if (!mounted) return;
+
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+
+      await Navigator.of(context).pushNamedAndRemoveUntil(
+        '/pin_screen',
+        (route) => false,
+      );
+    } catch (_) {}
   }
 
   void _popSipScreenRoute() {
@@ -342,7 +387,17 @@ class _SipScreenState extends State<SipScreen>
       _hangupEnabledAfter =
           DateTime.now().add(const Duration(milliseconds: 2000));
     }
+    if (!AppThemeController.instance.isInitialized) {
+      unawaited(AppThemeController.instance.initialize().then((_) {
+        if (mounted) setState(() {});
+      }));
+    }
     _initializeSip();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkAndRedirectToPinIfCallEnded();
+      }
+    });
   }
 
   Future<void> _startAutoCallIfNeeded() async {
@@ -483,9 +538,14 @@ class _SipScreenState extends State<SipScreen>
       child: AnimatedBuilder(
         animation: _sipService,
         builder: (context, child) {
+          final themeController = context.watch<AppThemeController>();
+          final hasWallpaper = themeController.hasCustomWallpaper ||
+              themeController.backgroundPreset != AppBackgroundPreset.none;
           if (!_sipService.isConfigLoaded) {
             return Scaffold(
-              backgroundColor: context.appColors.backgroundPrimary,
+              backgroundColor: hasWallpaper
+                  ? Colors.transparent
+                  : context.appColors.backgroundPrimary,
               body: _TelephonyBackground(
                 child: const Center(
                   child: CircularProgressIndicator.adaptive(),
@@ -509,7 +569,9 @@ class _SipScreenState extends State<SipScreen>
 
           return Scaffold(
             resizeToAvoidBottomInset: false,
-            backgroundColor: context.appColors.backgroundPrimary,
+            backgroundColor: hasWallpaper
+                ? Colors.transparent
+                : context.appColors.backgroundPrimary,
             body: _TelephonyBackground(
               child: SafeArea(
                 child: Center(

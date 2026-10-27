@@ -1,3 +1,4 @@
+import 'package:flutter/painting.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/vector_3d.dart';
 
@@ -72,8 +73,9 @@ class Scene3DState {
         return const Camera3D(
           yaw: 0.58,
           pitch: 0.65,
-          zoom: 1.85,
+          zoom: 1.65,
           target: Vector3D(0, 15, 0),
+          panOffset: Offset(0, -120),
         );
     }
   }

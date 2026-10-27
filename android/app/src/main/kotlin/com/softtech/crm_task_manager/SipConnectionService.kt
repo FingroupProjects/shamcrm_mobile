@@ -1,5 +1,6 @@
 package com.softtech.crm_task_manager
 
+import android.content.Context
 import android.telecom.Connection
 import android.telecom.ConnectionRequest
 import android.telecom.ConnectionService
@@ -15,7 +16,7 @@ class SipConnectionService : ConnectionService() {
     ): Connection {
         val remote = request?.extras?.getString(SipTelecom.EXTRA_REMOTE_IDENTITY)
             ?: request?.address?.schemeSpecificPart
-        val connection = SipConnection(remote, outgoing = false)
+        val connection = SipConnection(remote, outgoing = false, service = this)
         SipTelecom.attachConnection(connection)
         return connection
     }
@@ -26,7 +27,7 @@ class SipConnectionService : ConnectionService() {
     ): Connection {
         val remote = request?.extras?.getString(SipTelecom.EXTRA_REMOTE_IDENTITY)
             ?: request?.address?.schemeSpecificPart
-        val connection = SipConnection(remote, outgoing = true)
+        val connection = SipConnection(remote, outgoing = true, service = this)
         SipTelecom.attachConnection(connection)
         return connection
     }
@@ -53,6 +54,7 @@ class SipConnectionService : ConnectionService() {
 class SipConnection(
     remoteIdentity: String?,
     private val outgoing: Boolean,
+    private val service: Context? = null,
 ) : Connection() {
     init {
         connectionProperties = PROPERTY_SELF_MANAGED
@@ -85,7 +87,7 @@ class SipConnection(
     }
 
     override fun onAnswer() {
-        SipTelecom.onUserAnsweredFromSystem()
+        SipTelecom.onUserAnsweredFromSystem(service)
         setActive()
     }
 

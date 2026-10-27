@@ -30,11 +30,20 @@ class AppLogoutService {
   static const Set<String> _appearanceKeys = <String>{
     'app_theme_mode_v1',
     'app_palette_preset_v1',
+    'app_palette_seed_color_v1',
     'app_background_preset_v1',
     'app_background_image_path_v1',
     'app_background_asset_path_v1',
     'app_background_blur_v1',
-    'app_palette_seed_color_v1',
+    'app_background_opacity_v1',
+    'app_login_intro_animation_v1',
+    'app_wallpaper_library_v1',
+    'app_wallpaper_carousel_v1',
+    'app_wallpaper_rotation_mode_v1',
+    'app_wallpaper_interval_minutes_v1',
+    'app_wallpaper_carousel_index_v1',
+    'app_wallpaper_last_rotate_ms_v1',
+    'app_legacy_default_bg_cleared_v1',
   };
 
   static bool _isBusy = false;

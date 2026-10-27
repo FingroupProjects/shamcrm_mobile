@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 // import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crm_task_manager/app/analytics/clarity_host.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
@@ -101,6 +102,9 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
     // Face ID / PIN must finish first. Do not show the update dialog here.
     AppUpdateGate.setHomeVisible(false);
+    if (SipService().isPinPromptForced) {
+      _showIntro = false;
+    }
     _startIntroAndInitialize();
   }
 
@@ -116,7 +120,13 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _startIntroAndInitialize() async {
-    final introEnabled = AppThemeController.instance.loginIntroAnimationEnabled;
+    final sipService = SipService();
+    // If an incoming or ongoing call is present, immediately bypass PIN to open call UI.
+    await _maybeBypassPinForActiveCall();
+    if (_didNavigateToSipCall || !mounted) return;
+
+    final introEnabled = !sipService.isPinPromptForced &&
+        AppThemeController.instance.loginIntroAnimationEnabled;
     try {
       final initFuture = _initializeMinimal();
 
@@ -276,8 +286,21 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
 
   Future<bool> _shouldBypassPinForActiveSipCall() async {
     if (!sipEnabled) return false;
+    final sipService = SipService();
+    if (sipService.isPinPromptForced) {
+      return false;
+    }
     try {
-      final sipService = SipService();
+      if (Platform.isAndroid || Platform.isIOS) {
+        await sipService.syncNativeStateForDiagnostics();
+        final status = sipService.state.callStatus;
+        if (status == SipCallUiStatus.incoming ||
+            status == SipCallUiStatus.calling ||
+            status == SipCallUiStatus.ringing ||
+            status == SipCallUiStatus.inCall) {
+          return true;
+        }
+      }
       await sipService.initialize();
       final status = sipService.state.callStatus;
       return status == SipCallUiStatus.incoming ||
@@ -400,7 +423,7 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
   void _navigateToSipCallOnly() {
     if (!sipEnabled || !mounted) return;
 
-    Future.delayed(const Duration(milliseconds: 50), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(
@@ -467,6 +490,11 @@ class _PinScreenState extends State<PinScreen> with TickerProviderStateMixin {
     setState(() {
       _isPinVerified = true;
     });
+    final sipService = SipService();
+    sipService.clearForcedPinPrompt();
+    unawaited(SharedPreferences.getInstance().then((prefs) {
+      prefs.remove(_sipPinRequiredAfterCallKey);
+    }));
     // Блокировку аккаунта проверяем уже после открытия главной.
     // Сеть больше не стоит между правильным PIN и экраном.
     unawaited(_logoutIfAccountBlocked(api));

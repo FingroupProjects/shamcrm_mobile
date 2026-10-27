@@ -2,7 +2,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_add_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_card.dart';
@@ -21,7 +21,7 @@ class ChessGridV2Screen extends StatefulWidget {
 }
 
 class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
-  late final ChessGridController _controller;
+  late final ChessGridV2Controller _controller;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -30,7 +30,7 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
   @override
   void initState() {
     super.initState();
-    _controller = ChessGridController.instance;
+    _controller = ChessGridV2Controller.instance;
     _controller.addListener(_onControllerUpdate);
   }
 

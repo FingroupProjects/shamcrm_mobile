@@ -54,11 +54,24 @@ class Building3DPainter {
 
     final buildingApts = allApartments.where((a) => a.buildingKey == building.key).toList();
 
+    final shape = building.buildingShape ??
+        (entrances >= 3 && floors >= 12
+            ? 'cascading'
+            : (entrances <= 2 && floors >= 15 ? 'curvedTower' : 'standard'));
+    final isCascading = shape == 'cascading';
+    final isCurvedTower = shape == 'curvedTower';
+
     // 1. Construct solid geometry for each entrance/section
     for (int e = 1; e <= entrances; e++) {
       final double posX = (e - (entrances + 1) / 2.0) * (sectionWidth + 1.5);
       const double posZ = 0.0;
       final isSelected = selectedEntrance == e;
+
+      // Cascading height adjustment per entrance section (Media 1)
+      final double sectionFloors = isCascading
+          ? (floors * (1.0 - ((e - 1) * 0.16))).clamp(5.0, floors.toDouble())
+          : floors.toDouble();
+      final double sectionTotalHeight = sectionFloors * floorHeight;
 
       // Stats for this entrance
       final entApts = buildingApts.where((a) => a.entrance == e).toList();
@@ -72,9 +85,9 @@ class Building3DPainter {
       // Basement (Цоколь)
       allPolys.addAll(Poly3D.createBox(
         center: Vector3D(posX, plinthHeight / 2, posZ),
-        width: sectionWidth + 1.0,
+        width: sectionWidth + (isCurvedTower ? 4.0 : 1.0),
         height: plinthHeight,
-        depth: bDepth + 1.0,
+        depth: bDepth + (isCurvedTower ? 6.0 : 1.0),
         topColor: const Color(0xFF6A7982),
         frontColor: cPlinthFront,
         sideColor: cPlinthSide,
@@ -84,7 +97,7 @@ class Building3DPainter {
       ));
 
       // Main Facade Section (Стены секции)
-      final facadeHeight = totalHeight - plinthHeight;
+      final facadeHeight = sectionTotalHeight - plinthHeight;
       final facadeCenterY = plinthHeight + (facadeHeight / 2);
 
       allPolys.addAll(Poly3D.createBox(
@@ -101,7 +114,7 @@ class Building3DPainter {
       ));
 
       // Rooftop Green Lawn with Parapet
-      final roofCenterY = totalHeight + (parapetHeight / 2);
+      final roofCenterY = sectionTotalHeight + (parapetHeight / 2);
       allPolys.addAll(Poly3D.createBox(
         center: Vector3D(posX, roofCenterY, posZ),
         width: sectionWidth + 2.5,
@@ -116,7 +129,7 @@ class Building3DPainter {
       ));
 
       // Badge Position (Floating above roof)
-      final badgePoint = Vector3D(posX, totalHeight + 16.0, posZ);
+      final badgePoint = Vector3D(posX, sectionTotalHeight + 16.0, posZ);
       final badgeScreenPos = camera.project(badgePoint, size);
 
       // Hit area for tapping

@@ -2,7 +2,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_preview_tooltip.dart';
@@ -14,6 +14,7 @@ import 'package:crm_task_manager/screens/chess_grid_v2/widgets/apartment_quick_d
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/catalog_list_view_v2.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/chess_cell_v2.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/complex_analytics_view_v2.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/widgets/interactive_facade_view.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/section_building_sheet_v2.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'package:flutter/services.dart';
 
 enum ComplexViewMode {
   model3D,   // Интерактивная 3D шахматка (Media 1-4)
+  facade,    // Интерактивный фасад по фото / схеме дома
   matrix,    // Интерактивная 2D шахматка
   catalog,   // Список квартир
   analytics, // Аналитика и прогресс ЖК
@@ -46,7 +48,7 @@ class ComplexChessV2Screen extends StatefulWidget {
 }
 
 class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
-  late final ChessGridController _controller;
+  late final ChessGridV2Controller _controller;
   ComplexViewMode _viewMode = ComplexViewMode.model3D;
   ChessZoomLevel _zoomLevel = ChessZoomLevel.standard100;
   ApartmentStatus? _quickStatusFilter;
@@ -55,7 +57,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
   @override
   void initState() {
     super.initState();
-    _controller = ChessGridController.instance;
+    _controller = ChessGridV2Controller.instance;
     _controller.addListener(_onControllerUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -207,6 +209,33 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
         return ChessGrid3DView(
           complex: widget.complex,
           onSwitchTo2D: () {
+            setState(() {
+              _viewMode = ComplexViewMode.matrix;
+            });
+          },
+        );
+
+      case ComplexViewMode.facade:
+        if (building == null) {
+          return Center(
+            child: Text(
+              'Корпус не выбран',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 16,
+                color: colors.textSecondary,
+              ),
+            ),
+          );
+        }
+        return InteractiveFacadeView(
+          building: building,
+          apartments: allApts,
+          onSelectFloor: (floor, entrance) {
+            _controller.setFilter(_controller.filter.copyWith(entrance: entrance));
+          },
+          onSelectApartment: (apt) => _openApartmentDetail(apt),
+          onSwitchToMatrix: () {
             setState(() {
               _viewMode = ComplexViewMode.matrix;
             });
@@ -552,8 +581,14 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                 children: [
                   _buildModeSegment(
                     mode: ComplexViewMode.model3D,
-                    title: '3D Модель',
+                    title: '3D',
                     icon: Icons.view_in_ar_rounded,
+                    colors: colors,
+                  ),
+                  _buildModeSegment(
+                    mode: ComplexViewMode.facade,
+                    title: 'Фасад',
+                    icon: Icons.apartment_rounded,
                     colors: colors,
                   ),
                   _buildModeSegment(
@@ -570,7 +605,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                   ),
                   _buildModeSegment(
                     mode: ComplexViewMode.analytics,
-                    title: 'Аналитика',
+                    title: 'Анализ',
                     icon: Icons.insights_rounded,
                     colors: colors,
                   ),

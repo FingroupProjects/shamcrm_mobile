@@ -1,11 +1,11 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:flutter/material.dart';
 
 /// Analytics & Stats View for the Complex (MacroCRM & Profitbase style)
 class ComplexAnalyticsViewV2 extends StatelessWidget {
-  final ChessGridController controller;
+  final ChessGridV2Controller controller;
 
   const ComplexAnalyticsViewV2({super.key, required this.controller});
 

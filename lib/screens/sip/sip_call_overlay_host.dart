@@ -338,6 +338,7 @@ class _SipCallOverlayHostState extends State<SipCallOverlayHost>
 
       _pinRedirectInProgress = true;
       await prefs.remove(_sipPinRequiredAfterCallKey);
+      _sipService.forcePinPrompt();
 
       final navigator = navigatorKey.currentState;
       if (navigator == null || !mounted) return;

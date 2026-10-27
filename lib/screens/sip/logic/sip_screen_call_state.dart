@@ -133,6 +133,7 @@ extension _SipScreenCallStateExtension on _SipScreenState {
               _dialSuggestions = const [];
               _dialSuggestionTotalCount = 0;
             });
+            unawaited(_checkAndRedirectToPinIfCallEnded());
           });
         }
         break;

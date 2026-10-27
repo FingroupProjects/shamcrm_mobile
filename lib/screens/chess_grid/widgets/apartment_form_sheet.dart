@@ -61,8 +61,11 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
   late bool _isParking;
   late String _buildingKey;
   late int _entrance;
+  int? _selectedEntranceId;
   late int _floor;
   late int _position;
+  List<Entrance> _entrances = [];
+  bool _isLoadingEntrances = false;
 
   final _numberController = TextEditingController();
   final _roomsController = TextEditingController(text: '1');
@@ -95,8 +98,11 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
         (controller.complex.buildings.isNotEmpty ? controller.complex.buildings.first.key : 'A');
 
     _entrance = widget.existingApartment?.entrance ?? widget.initialEntrance ?? 1;
+    _selectedEntranceId = widget.existingApartment?.entranceId;
     _floor = widget.existingApartment?.floor ?? widget.initialFloor ?? 1;
     _position = widget.existingApartment?.position ?? widget.initialPosition ?? 0;
+
+    _fetchEntrances();
 
     if (widget.existingApartment != null) {
       final a = widget.existingApartment!;
@@ -132,6 +138,37 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     } else {
       final slotNo = (_entrance - 1) * b.floorCount * b.apartsPerFloor + (_floor - 1) * b.apartsPerFloor + _position + 1;
       _numberController.text = '$slotNo';
+    }
+  }
+
+  Future<void> _fetchEntrances() async {
+    final controller = ChessGridController.instance;
+    final buildings = controller.complex.buildings;
+    if (buildings.isEmpty) return;
+    final b = buildings.firstWhereOrNull((x) => x.key == _buildingKey) ?? buildings.first;
+    if (b.id == null) return;
+
+    setState(() => _isLoadingEntrances = true);
+    try {
+      final fetched = await controller.loadBuildingEntrances(b.id!);
+      if (mounted) {
+        setState(() {
+          _entrances = fetched;
+          if (_entrances.isNotEmpty) {
+            Entrance? match;
+            if (_selectedEntranceId != null) {
+              match = _entrances.firstWhereOrNull((e) => e.id == _selectedEntranceId);
+            }
+            match ??= _entrances.firstWhereOrNull((e) => e.number == _entrance) ?? _entrances.first;
+            _selectedEntranceId = match.id;
+            _entrance = match.number;
+          }
+        });
+      }
+    } catch (_) {
+      // ignore, fallback to default entrance counts
+    } finally {
+      if (mounted) setState(() => _isLoadingEntrances = false);
     }
   }
 
@@ -280,8 +317,10 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                             if (val != null) {
                               setState(() {
                                 _buildingKey = val;
+                                _selectedEntranceId = null;
                                 _autoGenerateNumber();
                               });
+                              _fetchEntrances();
                             }
                           },
                         ),
@@ -328,22 +367,43 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildDropdown<int>(
-                            label: 'Подъезд',
-                            value: _entrance.clamp(1, building?.entranceCount ?? 1),
-                            items: List.generate(
-                              building?.entranceCount ?? 1,
-                              (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
-                            ),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _entrance = val;
-                                  _autoGenerateNumber();
-                                });
-                              }
-                            },
-                          ),
+                          child: _entrances.isNotEmpty
+                              ? _buildDropdown<int>(
+                                  label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
+                                  value: _selectedEntranceId ?? _entrances.first.id,
+                                  items: _entrances.map((e) {
+                                    return DropdownMenuItem<int>(
+                                      value: e.id,
+                                      child: Text(e.name),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      final ent = _entrances.firstWhereOrNull((e) => e.id == val);
+                                      setState(() {
+                                        _selectedEntranceId = val;
+                                        _entrance = ent?.number ?? 1;
+                                        _autoGenerateNumber();
+                                      });
+                                    }
+                                  },
+                                )
+                              : _buildDropdown<int>(
+                                  label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
+                                  value: _entrance.clamp(1, building?.entranceCount ?? 1),
+                                  items: List.generate(
+                                    building?.entranceCount ?? 1,
+                                    (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+                                  ),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() {
+                                        _entrance = val;
+                                        _autoGenerateNumber();
+                                      });
+                                    }
+                                  },
+                                ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -608,6 +668,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
         buildingKey: _buildingKey,
         buildingName: bName,
         entrance: _entrance,
+        entranceId: _selectedEntranceId,
         floor: _floor,
         rooms: rooms,
         type: type,
@@ -632,6 +693,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
           buildingKey: _buildingKey,
           buildingName: bName,
           entrance: _entrance,
+          entranceId: _selectedEntranceId,
           floor: _floor,
           position: _position,
           rooms: rooms,

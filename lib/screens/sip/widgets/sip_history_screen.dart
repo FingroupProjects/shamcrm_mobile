@@ -101,8 +101,13 @@ class _SipCallHistoryScreenState extends State<_SipCallHistoryScreen> {
         ? widget.entry.dialTarget
         : '${widget.entry.target} • ${widget.entry.dialTarget}';
 
+    final themeController = context.watch<AppThemeController>();
+    final hasWallpaper = themeController.hasCustomWallpaper ||
+        themeController.backgroundPreset != AppBackgroundPreset.none;
     return Scaffold(
-      backgroundColor: context.appColors.backgroundPrimary,
+      backgroundColor: hasWallpaper
+          ? Colors.transparent
+          : context.appColors.backgroundPrimary,
       appBar: AppBar(
         backgroundColor:
             context.appColors.surfacePrimary.withValues(alpha: 0.82),

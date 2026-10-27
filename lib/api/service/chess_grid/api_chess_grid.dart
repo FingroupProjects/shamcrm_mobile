@@ -277,43 +277,91 @@ extension ApiChessGridX on ApiService {
     }
   }
 
-  /// POST /good - creates an apartment good in the CRM
+  /// GET /buildings/{building_id}/entrances
+  /// Fetches real entrances for a specific building
+  Future<List<Entrance>> getBuildingEntrances(int buildingId) async {
+    final path = '/buildings/$buildingId/entrances';
+    if (kDebugMode) {
+      debugPrint('ApiService: getBuildingEntrances - path: $path');
+    }
+
+    final response = await _getRequest(path);
+    if (kDebugMode) {
+      debugPrint('ApiService: getBuildingEntrances status: ${response.statusCode}');
+      debugPrint('ApiService: getBuildingEntrances body: ${response.body}');
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception('Ошибка загрузки подъездов корпуса #$buildingId (${response.statusCode}): ${response.body}');
+    }
+
+    final decoded = json.decode(response.body);
+    final list = _extractList(decoded);
+
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Entrance.fromJson(e))
+        .toList();
+  }
+
+  /// POST /good - creates an apartment good in the CRM matching exact backend schema:
+  /// {
+  ///   "name": "Квартира № 45, 2-комнатная",
+  ///   "building_id": 3,
+  ///   "entrance_id": 5,
+  ///   "apartment_type": "2-комнатная",
+  ///   "type": "apartment",
+  ///   "status": "Свободно",
+  ///   "floor": 7,
+  ///   "total_area": 68.50,
+  ///   "price_per_m2": 1200.00,
+  ///   "price": 82200.00,
+  ///   "description": "...",
+  ///   "is_active": true
+  /// }
   Future<Apartment> createApartmentGood({
     required int buildingId,
-    required int residentialComplexId,
+    int? entranceId,
+    int entrance = 1,
     required String number,
     required int floor,
-    required int entrance,
-    required int rooms,
+    int rooms = 1,
     required double totalArea,
-    required double livingArea,
-    required double kitchenArea,
+    double? livingArea,
+    double? kitchenArea,
     required double totalPrice,
     required double pricePerSqm,
     required String type,
+    String? apartmentType,
     required ApartmentStatus status,
+    String? description,
+    int? residentialComplexId,
     int position = 0,
     String buildingKey = '',
     String buildingName = '',
   }) async {
+    final effectiveType = apartmentType ?? type;
+    final aptName = 'Квартира № $number, $effectiveType';
+
     final body = <String, dynamic>{
-      'name': 'Квартира №$number',
-      'number': number,
+      'name': aptName,
       'building_id': buildingId,
-      'residential_complex_id': residentialComplexId,
-      'price': totalPrice.round(),
+      if (entranceId != null) 'entrance_id': entranceId,
+      'apartment_type': effectiveType,
+      'type': 'apartment',
+      'status': status.labelRu, // "Свободно", "Бронь", "Продано", "Резерв"
       'floor': floor,
+      'total_area': totalArea,
+      'price_per_m2': pricePerSqm,
+      'price': totalPrice,
+      'description': description ?? '$effectiveType с панорамными окнами на $floor этаже.',
+      'is_active': true,
+      if (residentialComplexId != null) 'residential_complex_id': residentialComplexId,
       'entrance': entrance,
       'rooms': rooms,
-      'total_area': totalArea,
-      'living_area': livingArea,
-      'kitchen_area': kitchenArea,
-      'price_per_sqm': pricePerSqm.round(),
-      'type': type,
-      'status': status.name,
+      'living_area': livingArea ?? (totalArea * 0.6).roundToDouble(),
+      'kitchen_area': kitchenArea ?? 10.0,
       'position': position,
-      'is_service': 0,
-      'is_active': 1,
     };
 
     if (kDebugMode) {
@@ -330,7 +378,7 @@ extension ApiChessGridX on ApiService {
     final map = _extractMap(decoded);
     return Apartment.fromGood(
       map,
-      complexId: residentialComplexId,
+      complexId: residentialComplexId ?? 1,
       buildingKey: buildingKey,
       buildingName: buildingName,
     );

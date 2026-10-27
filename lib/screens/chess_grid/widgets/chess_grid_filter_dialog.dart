@@ -1,16 +1,15 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridFilterDialog extends StatefulWidget {
-  final ChessGridController controller;
+  final dynamic controller;
 
   const ChessGridFilterDialog({super.key, required this.controller});
 
   static Future<void> show({
     required BuildContext context,
-    required ChessGridController controller,
+    required dynamic controller,
   }) {
     return showModalBottomSheet(
       context: context,

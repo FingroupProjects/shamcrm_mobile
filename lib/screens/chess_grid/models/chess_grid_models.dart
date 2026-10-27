@@ -244,6 +244,7 @@ class Apartment {
   final List<String> plans;
   final int floor;
   final int entrance;
+  final int? entranceId;
   final int position;
   final String buildingKey;
   final String buildingName;
@@ -267,6 +268,7 @@ class Apartment {
     this.plans = const [],
     required this.floor,
     required this.entrance,
+    this.entranceId,
     this.position = 0,
     required this.buildingKey,
     required this.buildingName,
@@ -333,8 +335,10 @@ class Apartment {
         SafeConverters.toIntOrNull(findAttr(['этаж', 'floor'])) ?? 1;
 
     // Entrance
+    final entranceIdVal = SafeConverters.toIntOrNull(data['entrance_id'] ?? json['entrance_id']);
     final entranceVal = SafeConverters.toIntOrNull(data['entrance'] ?? json['entrance'] ?? data['porch'] ?? data['entrance_number']) ??
-        SafeConverters.toIntOrNull(findAttr(['подъезд', 'entrance', 'секция'])) ?? 1;
+        SafeConverters.toIntOrNull(findAttr(['подъезд', 'entrance', 'секция'])) ??
+        (entranceIdVal ?? 1);
 
     // Rooms
     final roomsVal = SafeConverters.toIntOrNull(data['rooms'] ?? json['rooms'] ?? data['room_count'] ?? data['number_of_rooms']) ??
@@ -426,6 +430,7 @@ class Apartment {
       plans: plansList,
       floor: floorVal > 0 ? floorVal : 1,
       entrance: entranceVal > 0 ? entranceVal : 1,
+      entranceId: entranceIdVal,
       position: posVal >= 0 ? posVal : 0,
       buildingKey: effectiveBKey,
       buildingName: effectiveBName,
@@ -450,6 +455,7 @@ class Apartment {
       'layout_image_url': layoutImageUrl,
       'floor': floor,
       'entrance': entrance,
+      if (entranceId != null) 'entrance_id': entranceId,
       'position': position,
       'building_key': buildingKey,
       'building_name': buildingName,
@@ -473,6 +479,7 @@ class Apartment {
     List<String>? plans,
     int? floor,
     int? entrance,
+    int? entranceId,
     int? position,
     String? buildingKey,
     String? buildingName,
@@ -496,12 +503,58 @@ class Apartment {
       plans: plans ?? this.plans,
       floor: floor ?? this.floor,
       entrance: entrance ?? this.entrance,
+      entranceId: entranceId ?? this.entranceId,
       position: position ?? this.position,
       buildingKey: buildingKey ?? this.buildingKey,
       buildingName: buildingName ?? this.buildingName,
       bookingCountMonth: bookingCountMonth ?? this.bookingCountMonth,
       customFields: customFields ?? this.customFields,
     );
+  }
+}
+
+class Entrance {
+  final int id;
+  final int buildingId;
+  final int number;
+  final String name;
+
+  const Entrance({
+    required this.id,
+    required this.buildingId,
+    required this.number,
+    required this.name,
+  });
+
+  factory Entrance.fromJson(Map<String, dynamic> json) {
+    final id = SafeConverters.toInt(json['id']);
+    final bId = SafeConverters.toInt(json['building_id'] ?? json['buildingId']);
+    final rawNum = json['number'] ?? json['entrance_number'] ?? json['name'];
+    int numVal = SafeConverters.toInt(rawNum);
+    if (numVal == 0 && json['name'] != null) {
+      final match = RegExp(r'\d+').firstMatch(json['name'].toString());
+      if (match != null) numVal = int.tryParse(match.group(0)!) ?? 0;
+    }
+    final nameStr = SafeConverters.toSafeString(
+      json['name'] ?? 'Подъезд ${numVal > 0 ? numVal : id}',
+      defaultValue: 'Подъезд $id',
+    );
+
+    return Entrance(
+      id: id,
+      buildingId: bId,
+      number: numVal > 0 ? numVal : id,
+      name: nameStr,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'building_id': buildingId,
+      'number': number,
+      'name': name,
+    };
   }
 }
 
@@ -567,6 +620,8 @@ class Building {
   final int apartsPerFloor;
   final List<String> apartmentTypes;
   final dynamic floors;
+  final String? imageUrl;
+  final String? buildingShape;
 
   const Building({
     this.id,
@@ -578,7 +633,17 @@ class Building {
     required this.apartsPerFloor,
     required this.apartmentTypes,
     this.floors,
+    this.imageUrl,
+    this.buildingShape,
   });
+
+  String get effectiveImage {
+    if (imageUrl != null && imageUrl!.isNotEmpty) return imageUrl!;
+    if (buildingShape == 'curvedTower' || (floorCount >= 16 && entranceCount <= 2)) {
+      return 'assets/images/building_tower.jpg';
+    }
+    return 'assets/images/building_cascade.jpg';
+  }
 
   factory Building.fromJson(Map<String, dynamic> json) {
     final rawId = json['id'];
@@ -608,6 +673,8 @@ class Building {
     }
 
     final key = json['key']?.toString() ?? (id != null ? id.toString() : name);
+    final img = json['image_url'] ?? json['photo'] ?? json['image'];
+    final shape = json['building_shape'] ?? json['shape'];
 
     return Building(
       id: id,
@@ -619,6 +686,8 @@ class Building {
       apartsPerFloor: aparts > 0 ? aparts : 4,
       apartmentTypes: types,
       floors: json['floors'],
+      imageUrl: img?.toString(),
+      buildingShape: shape?.toString(),
     );
   }
 
@@ -632,6 +701,8 @@ class Building {
       'number_of_apartments_per_floor': apartsPerFloor,
       'type_of_floors': apartmentTypes,
       'apartment_types': apartmentTypes,
+      if (imageUrl != null) 'image_url': imageUrl,
+      if (buildingShape != null) 'building_shape': buildingShape,
     };
   }
 
@@ -645,6 +716,8 @@ class Building {
     int? apartsPerFloor,
     List<String>? apartmentTypes,
     dynamic floors,
+    String? imageUrl,
+    String? buildingShape,
   }) {
     return Building(
       id: id ?? this.id,
@@ -656,6 +729,8 @@ class Building {
       apartsPerFloor: apartsPerFloor ?? this.apartsPerFloor,
       apartmentTypes: apartmentTypes ?? this.apartmentTypes,
       floors: floors ?? this.floors,
+      imageUrl: imageUrl ?? this.imageUrl,
+      buildingShape: buildingShape ?? this.buildingShape,
     );
   }
 }

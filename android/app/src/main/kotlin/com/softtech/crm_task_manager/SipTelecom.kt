@@ -1,8 +1,12 @@
 package com.softtech.crm_task_manager
 
+import android.app.ActivityOptions
+import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -111,9 +115,62 @@ object SipTelecom {
         pendingOutgoing = false
     }
 
-    fun onUserAnsweredFromSystem() {
+    fun onUserAnsweredFromSystem(context: Context? = null) {
         NativeSipBridge.acceptCall()
         NativeSipBridge.requestFlutterCallUi("telecom-answer")
+        launchMainActivityForAnswer(context)
+    }
+
+    private fun launchMainActivityForAnswer(context: Context?) {
+        val ctx = context ?: NativeSipBridge.getAppContext()
+        if (ctx == null) {
+            Log.w(TAG, "Cannot launch MainActivity on answer: context is null")
+            return
+        }
+        try {
+            val intent = Intent(ctx, MainActivity::class.java).apply {
+                action = NativeSipActionReceiver.ACTION_ANSWER
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+                )
+                putExtra("open_sip_call", true)
+                putExtra("sip_notification_action", "answer")
+            }
+
+            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                ActivityOptions.makeBasic()
+                    .setPendingIntentCreatorBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
+                    )
+                    .toBundle()
+            } else null
+
+            val pendingIntent = PendingIntent.getActivity(
+                ctx,
+                1006,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                options,
+            )
+            try {
+                pendingIntent.send()
+                Log.d(TAG, "Launched MainActivity via PendingIntent on telecom-answer")
+            } catch (e: Throwable) {
+                Log.w(TAG, "PendingIntent.send failed on telecom-answer, fallback to startActivity: ${e.message}")
+                ctx.startActivity(intent)
+            }
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to launch MainActivity on telecom-answer: ${error.message}", error)
+            NativeSipBridge.recordDiagnosticEvent(
+                event = "telecom_answer_launch_failed",
+                details = hashMapOf(
+                    "error" to (error.message ?: error.javaClass.simpleName),
+                ),
+            )
+        }
     }
 
     fun onUserRejectedFromSystem() {

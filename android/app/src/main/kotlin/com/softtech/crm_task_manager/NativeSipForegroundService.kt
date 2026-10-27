@@ -925,7 +925,12 @@ class NativeSipForegroundService : Service() {
     private fun answerActivityPendingIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
             action = NativeSipActionReceiver.ACTION_ANSWER
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+            )
             putExtra("open_sip_call", true)
             putExtra("sip_notification_action", "answer")
         }

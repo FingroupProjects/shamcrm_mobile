@@ -12,6 +12,10 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+export 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
+export 'package:crm_task_manager/core/theme/background/wallpaper_rotation_mode.dart';
+export 'package:crm_task_manager/core/theme/background/wallpaper_source.dart';
+
 enum WallpaperAdvanceReason { launch, resume, tick, manual }
 
 class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
@@ -142,7 +146,13 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
 
     await _sanitizeStoredWallpapers(prefs);
 
-    if (_backgroundPreset == AppBackgroundPreset.custom &&
+    await _migrateLegacyWallpaperIntoCarousel(prefs);
+    _normalizeCarouselIndex();
+    _syncCurrentWallpaperFromCarousel();
+
+    if (_carouselItems.isNotEmpty) {
+      _backgroundPreset = AppBackgroundPreset.custom;
+    } else if (_backgroundPreset == AppBackgroundPreset.custom &&
         ((_backgroundImagePath == null || _backgroundImagePath!.isEmpty) &&
             (_backgroundAssetPath == null || _backgroundAssetPath!.isEmpty))) {
       _backgroundPreset = AppBackgroundPreset.none;
@@ -160,9 +170,6 @@ class AppThemeController extends ChangeNotifier with WidgetsBindingObserver {
       await prefs.setBool(_legacyDefaultBackgroundClearedKey, true);
     }
 
-    await _migrateLegacyWallpaperIntoCarousel(prefs);
-    _normalizeCarouselIndex();
-    _syncCurrentWallpaperFromCarousel();
     await _persistCarouselState(prefs);
 
     _isInitialized = true;

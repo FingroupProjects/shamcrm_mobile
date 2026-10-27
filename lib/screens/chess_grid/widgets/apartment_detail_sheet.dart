@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_room_layout_view.dart';
 import 'package:flutter/material.dart';
 
 class ApartmentDetailSheet extends StatelessWidget {
@@ -252,6 +253,13 @@ class ApartmentDetailSheet extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Room Floor Plan Layout Section
+                  ApartmentRoomLayoutView(
+                    apartment: apartment,
+                    compact: false,
                   ),
                   const SizedBox(height: 22),
 

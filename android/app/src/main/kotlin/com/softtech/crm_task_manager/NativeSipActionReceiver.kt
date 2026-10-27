@@ -1,8 +1,11 @@
 package com.softtech.crm_task_manager
 
+import android.app.ActivityOptions
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 
 class NativeSipActionReceiver : BroadcastReceiver() {
     companion object {
@@ -25,15 +28,35 @@ class NativeSipActionReceiver : BroadcastReceiver() {
                 )
                 if (accepted) {
                     try {
-                        context.startActivity(
-                            Intent(context, MainActivity::class.java).apply {
-                                addFlags(
-                                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                        val activityIntent = Intent(context, MainActivity::class.java).apply {
+                            addFlags(
+                                Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+                            )
+                            putExtra("open_sip_call", true)
+                            putExtra("sip_notification_action", "answer")
+                        }
+                        val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            ActivityOptions.makeBasic()
+                                .setPendingIntentCreatorBackgroundActivityStartMode(
+                                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
                                 )
-                                putExtra("open_sip_call", true)
-                            },
+                                .toBundle()
+                        } else null
+                        val pendingIntent = PendingIntent.getActivity(
+                            context,
+                            1007,
+                            activityIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                            options,
                         )
+                        try {
+                            pendingIntent.send()
+                        } catch (_: Throwable) {
+                            context.startActivity(activityIntent)
+                        }
                     } catch (error: Throwable) {
                         NativeSipBridge.recordDiagnosticEvent(
                             event = "incoming_call_ui_open_failed",

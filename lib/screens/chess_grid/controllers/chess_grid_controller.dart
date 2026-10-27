@@ -87,19 +87,27 @@ class ChessGridController extends ChangeNotifier {
         if (_selectedComplexId == 0 || !complexes.any((c) => c.id == _selectedComplexId)) {
           _selectedComplexId = complexes.first.id;
         }
+        apartments = [];
+        orders = [];
+        parkingSpots = [];
         final c = complex;
         if (c.buildings.isNotEmpty) {
           if (_selectedBuildingKey.isEmpty || !c.buildings.any((b) => b.key == _selectedBuildingKey)) {
             _selectedBuildingKey = c.buildings.first.key;
           }
+          final firstB = c.buildings.firstWhereOrNull((b) => b.key == _selectedBuildingKey);
+          if (firstB != null && firstB.id != null) {
+            await loadApartmentsForBuilding(buildingId: firstB.id, buildingKey: firstB.key);
+          }
         } else {
           _selectedBuildingKey = '';
         }
-        _regenerateApartments();
       } else {
         _selectedComplexId = 0;
         _selectedBuildingKey = '';
         apartments = [];
+        orders = [];
+        parkingSpots = [];
       }
       errorMessage = null;
     } catch (e) {
@@ -111,154 +119,6 @@ class ChessGridController extends ChangeNotifier {
     }
   }
 
-  void _regenerateApartments() {
-    apartments = [];
-    orders = [];
-    parkingSpots = [];
-    int aptIdCounter = 1;
-    final rnd = Random(42);
-
-    final sampleBuyers = [
-      'Рахимов Дилшод',
-      'Каримова Нигора',
-      'Ахмедов Фарход',
-      'Юсупова Мадина',
-      'Назаров Бахтиёр',
-      'Иванов Сергей',
-      'Саидова Зарина',
-      'Гафуров Умед',
-      'Холиков Шерзод',
-      'Петрова Анна',
-    ];
-    final sampleManagers = ['Азиза К.', 'Рустам Н.', 'Лола Т.'];
-
-    for (final c in complexes) {
-      for (final b in c.buildings) {
-        final bKey = b.key;
-        final bName = b.name;
-        final perFloor = b.apartsPerFloor > 0 ? b.apartsPerFloor : 4;
-        final floorCount = b.floorCount > 0 ? b.floorCount : 1;
-        final entCount = b.entranceCount > 0 ? b.entranceCount : 1;
-
-        // Generate parking spots for building (TZ section 4)
-        final pCount = (floorCount * entCount).clamp(6, 24);
-        for (int pi = 1; pi <= pCount; pi++) {
-          final pTypes = ['Подземная', 'Открытая', 'Закрытая'];
-          final pType = pTypes[(pi - 1) % 3];
-          final pPrice = pType == 'Подземная' ? 9000.0 : (pType == 'Закрытая' ? 7000.0 : 4500.0);
-          final pArea = pType == 'Закрытая' ? 18.0 : 13.5;
-          final rVal = rnd.nextDouble();
-          final pStatus = rVal < 0.5 ? ApartmentStatus.available : (rVal < 0.75 ? ApartmentStatus.booked : ApartmentStatus.sold);
-
-          parkingSpots.add(ParkingSpot(
-            id: parkingSpots.length + 1,
-            complexId: c.id,
-            number: 'П-${pi.toString().padLeft(2, '0')}',
-            type: pType,
-            buildingKey: bKey,
-            price: pPrice,
-            area: pArea,
-            status: pStatus,
-          ));
-        }
-
-        // Generate apartments (TZ section 3 & 5)
-        for (int e = 1; e <= entCount; e++) {
-          for (int f = 1; f <= floorCount; f++) {
-            for (int p = 0; p < perFloor; p++) {
-              final rooms = (p % 3) + 1;
-              final area = 38.0 + (rooms * 16.0);
-              final priceSqm = 750.0 + (f * 5);
-              final totalPrice = (area * priceSqm).roundToDouble();
-              final aptNumber = '${(e - 1) * floorCount * perFloor + (f - 1) * perFloor + p + 1}';
-
-              // Status distribution matching TZ & HTML prototype:
-              // ~50% free, ~20% booked, ~20% sold, ~10% reserved
-              final r = rnd.nextDouble();
-              ApartmentStatus status;
-              if (r < 0.50) {
-                status = ApartmentStatus.available;
-              } else if (r < 0.70) {
-                status = ApartmentStatus.booked;
-              } else if (r < 0.90) {
-                status = ApartmentStatus.sold;
-              } else {
-                status = ApartmentStatus.reserved;
-              }
-
-              final aptId = aptIdCounter++;
-              final apt = Apartment(
-                id: aptId,
-                complexId: c.id,
-                number: aptNumber,
-                status: status,
-                type: rooms == 1 ? 'Студия' : (rooms == 2 ? 'Евроремонт' : 'Черновая'),
-                rooms: rooms,
-                totalArea: area,
-                livingArea: (area * 0.6).roundToDouble(),
-                kitchenArea: 10.0,
-                pricePerSqm: priceSqm,
-                totalPrice: totalPrice,
-                currency: '\$',
-                floor: f,
-                entrance: e,
-                position: p,
-                buildingKey: bKey,
-                buildingName: bName,
-                bookingCountMonth: status == ApartmentStatus.booked ? 1 : 0,
-              );
-              apartments.add(apt);
-
-              // If booked or sold, generate realistic Order (TZ 5.1 & 5.2)
-              if (status == ApartmentStatus.booked || status == ApartmentStatus.sold) {
-                final oIdx = orders.length;
-                final buyer = sampleBuyers[oIdx % sampleBuyers.length];
-                final mgr = sampleManagers[oIdx % sampleManagers.length];
-                final isSold = status == ApartmentStatus.sold;
-                final dealType = oIdx % 3 == 0
-                    ? DealType.cash
-                    : (oIdx % 3 == 1 ? DealType.installment : DealType.mixed);
-
-                final downPayment = (totalPrice * 0.2).roundToDouble();
-                final barterAmount = dealType == DealType.mixed ? 5000.0 : 0.0;
-                final installmentSum = (totalPrice - downPayment - barterAmount).clamp(0, totalPrice).toDouble();
-                const months = 12;
-                final monthlyPayment = (installmentSum / months).roundToDouble();
-
-                orders.add(Order(
-                  id: 'З-${1040 + oIdx}',
-                  complexId: c.id,
-                  apartmentId: aptId,
-                  buyerName: buyer,
-                  buyerPhone: '+992 92 ${100 + oIdx} ${20 + oIdx} 30',
-                  buyerEmail: 'client${oIdx + 1}@gmail.com',
-                  manager: mgr,
-                  dealType: dealType,
-                  price: totalPrice,
-                  status: isSold ? OrderStatus.success : OrderStatus.inProgress,
-                  reservedUntil: isSold ? null : DateTime.now().add(Duration(days: (oIdx % 5) + 1)),
-                  paymentDetails: dealType != DealType.cash
-                      ? PaymentDetails(
-                          downPayment: downPayment,
-                          months: months,
-                          installmentSum: installmentSum,
-                          monthlyPayment: monthlyPayment,
-                          barterSubject: dealType == DealType.mixed ? 'Автомобиль' : null,
-                          barterAmount: barterAmount,
-                          schedule: PaymentDetails.generateSchedule(
-                            totalInstallmentSum: installmentSum,
-                            months: months,
-                          ),
-                        )
-                      : null,
-                ));
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 
   void selectComplex(int id) {
     if (_selectedComplexId == id) return;
@@ -513,7 +373,11 @@ class ChessGridController extends ChangeNotifier {
         complexes[cIdx] = updatedComplex;
       }
       _selectedBuildingKey = created.key;
-      _regenerateApartments();
+      if (created.id != null) {
+        await loadApartmentsForBuilding(buildingId: created.id, buildingKey: created.key);
+      } else {
+        apartments = [];
+      }
       notifyListeners();
       return true;
     } catch (e) {
@@ -546,6 +410,16 @@ class ChessGridController extends ChangeNotifier {
     return true;
   }
 
+  /// Loads entrances for a building: GET /buildings/{building_id}/entrances
+  Future<List<Entrance>> loadBuildingEntrances(int buildingId) async {
+    try {
+      return await _apiService.getBuildingEntrances(buildingId);
+    } catch (e) {
+      debugPrint('ChessGridController.loadBuildingEntrances error: $e');
+      return [];
+    }
+  }
+
   Future<void> addApartment(Apartment apt, {List<int>? copyToFloors}) async {
     apartments.add(apt);
     if (copyToFloors != null && copyToFloors.isNotEmpty) {
@@ -568,10 +442,11 @@ class ChessGridController extends ChangeNotifier {
       if (targetBuildingId != null) {
         final created = await _apiService.createApartmentGood(
           buildingId: targetBuildingId,
+          entranceId: apt.entranceId,
+          entrance: apt.entrance,
           residentialComplexId: apt.complexId > 0 ? apt.complexId : complex.id,
           number: apt.number,
           floor: apt.floor,
-          entrance: apt.entrance,
           rooms: apt.rooms,
           totalArea: apt.totalArea,
           livingArea: apt.livingArea,
@@ -579,6 +454,7 @@ class ChessGridController extends ChangeNotifier {
           totalPrice: apt.totalPrice,
           pricePerSqm: apt.pricePerSqm,
           type: apt.type,
+          apartmentType: apt.type,
           status: apt.status,
           position: apt.position,
           buildingKey: apt.buildingKey,

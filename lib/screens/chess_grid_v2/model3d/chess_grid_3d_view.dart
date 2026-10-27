@@ -1,4 +1,4 @@
-import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
@@ -34,7 +34,7 @@ class ChessGrid3DView extends StatefulWidget {
 
 class _ChessGrid3DViewState extends State<ChessGrid3DView>
     with TickerProviderStateMixin {
-  late final ChessGridController _controller;
+  late final ChessGridV2Controller _controller;
   late Scene3DState _state;
 
   late final AnimationController _animController;
@@ -54,7 +54,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   @override
   void initState() {
     super.initState();
-    _controller = ChessGridController.instance;
+    _controller = ChessGridV2Controller.instance;
 
     final initialBuilding = widget.complex.buildings.isNotEmpty
         ? widget.complex.buildings.first
@@ -266,7 +266,12 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           if (info.hitBounds.contains(tapPos)) {
             HapticFeedback.mediumImpact();
             setState(() {
-              _state = _state.copyWith(selectedApartment: info.apartment);
+              _state = _state.copyWith(
+                selectedApartment: info.apartment,
+                camera: _state.camera.copyWith(
+                  panOffset: const Offset(0, -120),
+                ),
+              );
             });
             return;
           }
@@ -367,7 +372,12 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
             bottom: MediaQuery.paddingOf(context).bottom + 4,
             child: ApartmentQuickDockV2(
               apartment: _state.selectedApartment!,
-              onClose: () => setState(() => _state = _state.copyWith(clearApartment: true)),
+              onClose: () => setState(() {
+                _state = _state.copyWith(
+                  clearApartment: true,
+                  camera: _state.camera.copyWith(panOffset: const Offset(0, -30)),
+                );
+              }),
               onOpenDetail: () {
                 ApartmentDetailSheet.show(
                   context: context,
