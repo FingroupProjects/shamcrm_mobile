@@ -18,11 +18,15 @@ class VariantSelectionBottomSheet extends StatefulWidget {
   final bool? isService;
   final int? storageId;
 
+  /// Первоначальный остаток вводит цену и количество сам, там они не нужны.
+  final bool showPriceAndRemainder;
+
   const VariantSelectionBottomSheet({
     required this.existingItems,
     this.forceReload = true,
     this.isService,
     this.storageId,
+    this.showPriceAndRemainder = true,
     super.key,
   });
 
@@ -876,7 +880,7 @@ class _VariantSelectionBottomSheetState
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (variant.price != null)
+                    if (widget.showPriceAndRemainder && variant.price != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
@@ -889,10 +893,11 @@ class _VariantSelectionBottomSheetState
                           ),
                         ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: _buildRemainderText(variant, localizations),
-                    ),
+                    if (widget.showPriceAndRemainder)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildRemainderText(variant, localizations),
+                      ),
                   ],
                 ),
               ),

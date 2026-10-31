@@ -1,7 +1,11 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/payment_schedule_sheet.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -44,24 +48,28 @@ class OrderCreateDialog extends StatefulWidget {
 class _OrderCreateDialogState extends State<OrderCreateDialog> {
   final _buyerNameController = TextEditingController();
   final _buyerPhoneController = TextEditingController();
+  String _formattedBuyerPhone = '';
   final _buyerEmailController = TextEditingController();
   final _commentController = TextEditingController();
   final _downPaymentController = TextEditingController();
-  final _monthsController = TextEditingController(text: '12');
+  final _monthsController = TextEditingController();
   final _barterSubjectController = TextEditingController();
-  final _barterAmountController = TextEditingController(text: '0');
+  final _barterAmountController = TextEditingController();
+  String? _selectedSourceId;
 
   final Map<int, TextEditingController> _customFieldControllers = {};
 
   DealType _selectedDealType = DealType.cash;
   int _selectedRoleIndex = 0;
 
+  // Required fields validation like LeadAddScreen
+  Set<String> _missingFields = {};
+  String? _firstMissingField;
+  int _fieldErrorPulse = 0;
+
   @override
   void initState() {
     super.initState();
-    final totalPrice = widget.apartment?.totalPrice ?? widget.parking?.price ?? 0;
-    _downPaymentController.text = (totalPrice * 0.20).round().toString();
-
     for (final cf in ChessGridController.instance.customFields.where((f) => f.scope == 'order')) {
       _customFieldControllers[cf.id] = TextEditingController();
     }
@@ -107,7 +115,12 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final controller = ChessGridController.instance;
-    final role = controller.roleSettings[_selectedRoleIndex];
+    final safeRoleIndex = controller.roleSettings.isNotEmpty
+        ? _selectedRoleIndex.clamp(0, controller.roleSettings.length - 1)
+        : 0;
+    final role = controller.roleSettings.isNotEmpty
+        ? controller.roleSettings[safeRoleIndex]
+        : const RoleBookingSetting(roleName: 'Менеджер', durationDays: 3);
     final reservedUntil = DateTime.now().add(Duration(days: role.durationDays));
     final dateFormat = DateFormat('dd.MM.yyyy');
 
@@ -218,48 +231,99 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextField(
-                          controller: _buyerNameController,
-                          label: 'ФИО покупателя *',
-                          hint: 'Например: Рахимов Дилшод',
+                        RequiredFieldSlot(
+                          invalid: _missingFields.contains('buyerName'),
+                          focus: _firstMissingField == 'buyerName',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите ФИО покупателя',
+                          child: CustomTextField(
+                            controller: _buyerNameController,
+                            label: 'ФИО покупателя *',
+                            hintText: 'Введите ФИО покупателя',
+                            hasError: _missingFields.contains('buyerName'),
+                            onChanged: (val) {
+                              if (val.trim().isNotEmpty && _missingFields.contains('buyerName')) {
+                                setState(() {
+                                  _missingFields.remove('buyerName');
+                                  if (_firstMissingField == 'buyerName') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _buyerPhoneController,
-                                label: 'Телефон',
-                                hint: '+992 ...',
-                                keyboardType: TextInputType.phone,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _buyerEmailController,
-                                label: 'Почта',
-                                hint: 'email@domain.com',
-                                keyboardType: TextInputType.emailAddress,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 12),
+                        RequiredFieldSlot(
+                          invalid: _missingFields.contains('buyerPhone'),
+                          focus: _firstMissingField == 'buyerPhone',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите номер телефона',
+                          child: CustomPhoneNumberInput(
+                            controller: _buyerPhoneController,
+                            label: 'Телефон *',
+                            onInputChanged: (val) {
+                              _formattedBuyerPhone = val;
+                              if (val.trim().isNotEmpty && _missingFields.contains('buyerPhone')) {
+                                setState(() {
+                                  _missingFields.remove('buyerPhone');
+                                  if (_firstMissingField == 'buyerPhone') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        _buildTextField(
+                        const SizedBox(height: 12),
+                        CustomTextField(
+                          controller: _buyerEmailController,
+                          label: 'Почта',
+                          hintText: 'Введите email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 12),
+                        CustomTextField(
                           controller: _commentController,
                           label: 'Комментарий',
-                          hint: 'Примечание к заказу',
+                          hintText: 'Введите комментарий',
+                        ),
+                        const SizedBox(height: 12),
+                        SourceLeadWidget(
+                          selectedSourceLead: _selectedSourceId,
+                          onChanged: (val) {
+                            setState(() => _selectedSourceId = val);
+                          },
                         ),
 
                         // Custom fields for orders
                         for (final cf in controller.customFields.where((f) => f.scope == 'order')) ...[
-                          const SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _customFieldControllers[cf.id]!,
-                            label: cf.name + (cf.isRequired ? ' *' : ''),
-                            hint: 'Введите ${cf.name.toLowerCase()}',
-                          ),
+                          const SizedBox(height: 12),
+                          if (cf.isRequired)
+                            RequiredFieldSlot(
+                              invalid: _missingFields.contains('custom_${cf.id}'),
+                              focus: _firstMissingField == 'custom_${cf.id}',
+                              pulse: _fieldErrorPulse,
+                              message: 'Поле «${cf.name}» обязательно',
+                              child: CustomTextField(
+                                controller: _customFieldControllers[cf.id]!,
+                                label: '${cf.name} *',
+                                hintText: 'Введите ${cf.name.toLowerCase()}',
+                                keyboardType: cf.type == 'number' ? TextInputType.number : TextInputType.text,
+                                hasError: _missingFields.contains('custom_${cf.id}'),
+                                onChanged: (val) {
+                                  if (val.trim().isNotEmpty && _missingFields.contains('custom_${cf.id}')) {
+                                    setState(() {
+                                      _missingFields.remove('custom_${cf.id}');
+                                      if (_firstMissingField == 'custom_${cf.id}') _firstMissingField = null;
+                                    });
+                                  }
+                                },
+                              ),
+                            )
+                          else
+                            CustomTextField(
+                              controller: _customFieldControllers[cf.id]!,
+                              label: cf.name,
+                              hintText: 'Введите ${cf.name.toLowerCase()}',
+                              keyboardType: cf.type == 'number' ? TextInputType.number : TextInputType.text,
+                            ),
                         ],
                         const SizedBox(height: 14),
 
@@ -283,7 +347,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<int>(
-                              value: _selectedRoleIndex,
+                              value: controller.roleSettings.isNotEmpty ? safeRoleIndex : null,
                               isExpanded: true,
                               items: List.generate(
                                 controller.roleSettings.length,
@@ -292,7 +356,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                                   child: Text(
                                     '${controller.roleSettings[i].roleName}: бронь ${controller.roleSettings[i].durationDays} дн.',
                                     style: TextStyle(
-                                      fontFamily: 'Golos',
+                                      fontFamily: 'Gilroy',
                                       fontSize: 13,
                                       color: colors.textPrimary,
                                     ),
@@ -390,15 +454,16 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                         // Mixed payment barter fields
                         if (_selectedDealType == DealType.mixed) ...[
                           const SizedBox(height: 12),
-                          _buildTextField(
+                          CustomTextField(
                             controller: _barterSubjectController,
                             label: 'Предмет бартера',
-                            hint: 'Например: Автомобиль Toyota, недвижимость',
+                            hintText: 'Введите предмет бартера',
                           ),
-                          const SizedBox(height: 8),
-                          _buildTextField(
+                          const SizedBox(height: 10),
+                          CustomTextField(
                             controller: _barterAmountController,
-                            label: 'Сумма бартера, \$',
+                            label: 'Сумма бартера',
+                            hintText: 'Введите сумму',
                             keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
                           ),
@@ -408,22 +473,40 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                         if (_selectedDealType != DealType.cash) ...[
                           const SizedBox(height: 12),
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: _buildTextField(
+                                child: CustomTextField(
                                   controller: _downPaymentController,
-                                  label: 'Первоначальный взнос, \$',
+                                  label: 'Первый взнос',
+                                  hintText: 'Введите сумму',
                                   keyboardType: TextInputType.number,
                                   onChanged: (_) => setState(() {}),
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: _buildTextField(
-                                  controller: _monthsController,
-                                  label: 'Срок рассрочки, мес.',
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
+                                child: RequiredFieldSlot(
+                                  invalid: _missingFields.contains('months'),
+                                  focus: _firstMissingField == 'months',
+                                  pulse: _fieldErrorPulse,
+                                  message: 'Укажите срок',
+                                  child: CustomTextField(
+                                    controller: _monthsController,
+                                    label: 'Срок рассрочки, мес. *',
+                                    hintText: 'Введите кол-во',
+                                    keyboardType: TextInputType.number,
+                                    hasError: _missingFields.contains('months'),
+                                    onChanged: (val) {
+                                      if (val.trim().isNotEmpty && _missingFields.contains('months')) {
+                                        setState(() {
+                                          _missingFields.remove('months');
+                                          if (_firstMissingField == 'months') _firstMissingField = null;
+                                        });
+                                      }
+                                      setState(() {});
+                                    },
+                                  ),
                                 ),
                               ),
                             ],
@@ -530,16 +613,47 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
 
   void _handleSubmit() {
     final buyerName = _buyerNameController.text.trim();
-    if (buyerName.isEmpty) {
+    final buyerPhone = _formattedBuyerPhone.isNotEmpty
+        ? _formattedBuyerPhone
+        : _buyerPhoneController.text.trim();
+
+    final missing = <String>[];
+    if (buyerName.isEmpty) missing.add('buyerName');
+    if (buyerPhone.isEmpty) missing.add('buyerPhone');
+    if (_selectedDealType != DealType.cash) {
+      if (_months <= 0) missing.add('months');
+    }
+
+    final controller = ChessGridController.instance;
+
+    // Validate required custom fields for orders
+    for (final cf in controller.customFields.where((f) => f.scope == 'order' && f.isRequired)) {
+      final ctrl = _customFieldControllers[cf.id];
+      if (ctrl == null || ctrl.text.trim().isEmpty) {
+        missing.add('custom_${cf.id}');
+      }
+    }
+
+    if (missing.isNotEmpty) {
+      setState(() {
+        _missingFields = missing.toSet();
+        _firstMissingField = missing.first;
+        _fieldErrorPulse++;
+      });
       showCustomSnackBar(
         context: context,
-        message: 'Пожалуйста, укажите ФИО покупателя',
+        message: 'Заполните обязательные поля',
         isSuccess: false,
       );
       return;
     }
 
-    final controller = ChessGridController.instance;
+    if (_missingFields.isNotEmpty) {
+      setState(() {
+        _missingFields = {};
+        _firstMissingField = null;
+      });
+    }
 
     // Collect custom fields
     final Map<int, String> customFieldsMap = {};
@@ -547,20 +661,30 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
       customFieldsMap[entry.key] = entry.value.text.trim();
     }
 
+    final safeRoleIndex = controller.roleSettings.isNotEmpty
+        ? _selectedRoleIndex.clamp(0, controller.roleSettings.length - 1)
+        : 0;
+    final roleName = controller.roleSettings.isNotEmpty
+        ? controller.roleSettings[safeRoleIndex].roleName
+        : 'Менеджер';
+
     final err = controller.createOrder(
       apartment: widget.apartment,
       parking: widget.parking,
       buyerName: buyerName,
-      buyerPhone: _buyerPhoneController.text.trim(),
+      buyerPhone: _formattedBuyerPhone.isNotEmpty
+          ? _formattedBuyerPhone
+          : _buyerPhoneController.text.trim(),
       buyerEmail: _buyerEmailController.text.trim(),
       comment: _commentController.text.trim(),
-      roleName: controller.roleSettings[_selectedRoleIndex].roleName,
+      roleName: roleName,
       dealType: _selectedDealType,
       downPayment: _downPayment,
       months: _months,
       barterSubject: _barterSubjectController.text.trim(),
       barterAmount: _barterAmount,
       customFields: customFieldsMap,
+      sourceId: _selectedSourceId,
     );
 
     if (err != null) {
@@ -610,64 +734,6 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
           child,
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    TextInputType? keyboardType,
-    ValueChanged<String>? onChanged,
-  }) {
-    final colors = context.appColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Golos',
-            fontSize: 11.5,
-            color: colors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          onChanged: onChanged,
-          style: TextStyle(
-            fontFamily: 'Golos',
-            fontSize: 13,
-            color: colors.textPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              fontFamily: 'Golos',
-              fontSize: 12,
-              color: colors.textMuted,
-            ),
-            isDense: true,
-            filled: true,
-            fillColor: colors.surfacePrimary,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderSubtle),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderSubtle),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.buttonPrimaryBg),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

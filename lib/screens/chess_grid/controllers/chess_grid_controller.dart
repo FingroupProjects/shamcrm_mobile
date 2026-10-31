@@ -12,6 +12,7 @@ class ChessGridController extends ChangeNotifier {
     _initData();
     _startExpirationTimer();
     loadDataFromApi();
+    loadRolesFromApi();
   }
 
   final ApiService _apiService = ApiService();
@@ -529,10 +530,42 @@ class ChessGridController extends ChangeNotifier {
   void updateRoleDuration(int index, int days) {
     if (index >= 0 && index < roleSettings.length) {
       roleSettings[index] = RoleBookingSetting(
+        roleId: roleSettings[index].roleId,
         roleName: roleSettings[index].roleName,
         durationDays: days,
       );
       notifyListeners();
+    }
+  }
+
+  Future<void> loadRolesFromApi() async {
+    try {
+      final roles = await _apiService.getRoles();
+      if (roles.isNotEmpty) {
+        final existingDurations = {
+          for (final r in roleSettings) r.roleName.toLowerCase(): r.durationDays
+        };
+        roleSettings = roles.map((role) {
+          final rName = role.name;
+          final dur = existingDurations[rName.toLowerCase()] ??
+              (rName.toLowerCase().contains('admin') ||
+                      rName.toLowerCase().contains('роп') ||
+                      rName.toLowerCase().contains('rop')
+                  ? 7
+                  : (rName.toLowerCase().contains('man') ||
+                          rName.toLowerCase().contains('мен')
+                      ? 3
+                      : 1));
+          return RoleBookingSetting(
+            roleId: role.id,
+            roleName: rName,
+            durationDays: dur,
+          );
+        }).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('ChessGridController.loadRolesFromApi: $e');
     }
   }
 
@@ -550,13 +583,25 @@ class ChessGridController extends ChangeNotifier {
     customFields = [
       const CustomField(id: 1, scope: 'flat', name: 'Вид из окна', type: 'текст'),
       const CustomField(id: 2, scope: 'flat', name: 'Высота потолков', type: 'число'),
-      const CustomField(id: 3, scope: 'order', name: 'Источник лида', type: 'текст'),
     ];
 
     roleSettings = [
-      const RoleBookingSetting(roleName: 'Менеджер', durationDays: 3),
-      const RoleBookingSetting(roleName: 'Руководитель', durationDays: 7),
-      const RoleBookingSetting(roleName: 'Агент', durationDays: 1),
+      const RoleBookingSetting(roleId: 1, roleName: 'user', durationDays: 3),
+      const RoleBookingSetting(roleId: 2, roleName: 'manager', durationDays: 3),
+      const RoleBookingSetting(roleId: 3, roleName: 'admin', durationDays: 7),
+      const RoleBookingSetting(roleId: 4, roleName: 'client', durationDays: 1),
+      const RoleBookingSetting(roleId: 5, roleName: 'оператор', durationDays: 2),
+      const RoleBookingSetting(roleId: 6, roleName: 'menejer', durationDays: 3),
+      const RoleBookingSetting(roleId: 7, roleName: 'sas', durationDays: 1),
+      const RoleBookingSetting(roleId: 8, roleName: 'Test', durationDays: 1),
+      const RoleBookingSetting(roleId: 9, roleName: 'Тест 2', durationDays: 1),
+      const RoleBookingSetting(roleId: 10, roleName: 'Тест', durationDays: 1),
+      const RoleBookingSetting(roleId: 11, roleName: 'Тест новой роли', durationDays: 1),
+      const RoleBookingSetting(roleId: 12, roleName: 'Новый роли', durationDays: 1),
+      const RoleBookingSetting(roleId: 13, roleName: 'Роли', durationDays: 1),
+      const RoleBookingSetting(roleId: 14, roleName: 'РОП', durationDays: 7),
+      const RoleBookingSetting(roleId: 15, roleName: 'rop', durationDays: 7),
+      const RoleBookingSetting(roleId: 16, roleName: 'task', durationDays: 1),
     ];
 
     requisites = const CompanyRequisites(
@@ -602,6 +647,7 @@ class ChessGridController extends ChangeNotifier {
     String? endTime,
     double? lat,
     double? lng,
+    List<String>? photos,
   }) async {
     final payload = {
       'name': name,
@@ -627,7 +673,10 @@ class ChessGridController extends ChangeNotifier {
     };
 
     try {
-      final created = await _apiService.createResidentialComplex(payload);
+      final created = await _apiService.createResidentialComplex(
+        payload,
+        filePaths: photos,
+      );
       complexes.insert(0, created);
       selectComplex(created.id);
       await loadDataFromApi(showLoading: false);
@@ -688,6 +737,7 @@ class ChessGridController extends ChangeNotifier {
     double barterAmount = 0,
     ParkingSpot? parking,
     Map<int, String>? customFields,
+    String? sourceId,
   }) {
     if (apartment == null && parking == null) {
       return 'Выберите помещение или паркинг для создания заказа';
@@ -701,6 +751,12 @@ class ChessGridController extends ChangeNotifier {
 
       if (apartment.bookingCountMonth >= monthlyBookingLimit) {
         return 'Лимит исчерпан: одну квартиру нельзя бронировать более $monthlyBookingLimit раз в месяц';
+      }
+    }
+
+    if (parking != null && apartment == null) {
+      if (parking.status != ApartmentStatus.available) {
+        return 'Заказ доступен только для свободных парковочных мест!';
       }
     }
 
@@ -745,6 +801,7 @@ class ChessGridController extends ChangeNotifier {
       reservedUntil: reservedUntil,
       paymentDetails: pay,
       customFields: customFields ?? const {},
+      sourceId: sourceId,
     );
 
     orders.insert(0, newOrder);

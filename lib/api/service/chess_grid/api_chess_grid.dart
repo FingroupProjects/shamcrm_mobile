@@ -77,14 +77,74 @@ extension ApiChessGridX on ApiService {
     return ResidentialComplex.fromJson(map);
   }
 
-  /// POST /api/residential-complexes
-  Future<ResidentialComplex> createResidentialComplex(Map<String, dynamic> body) async {
+  /// POST /api/residential-complexes (Multipart with files, matching tasks pattern)
+  Future<ResidentialComplex> createResidentialComplex(
+    Map<String, dynamic> body, {
+    List<String>? filePaths,
+  }) async {
     const path = '/residential-complexes';
-    if (kDebugMode) {
-      debugPrint('ApiService: createResidentialComplex - path: $path, body: $body');
+    final allFiles = <String>[];
+    if (filePaths != null && filePaths.isNotEmpty) {
+      allFiles.addAll(filePaths);
+    }
+    if (body.containsKey('photos') && body['photos'] is List) {
+      for (final p in (body['photos'] as List)) {
+        if (p is String && p.isNotEmpty) allFiles.add(p);
+      }
+      body.remove('photos');
+    }
+    if (body.containsKey('files') && body['files'] is List) {
+      for (final f in (body['files'] as List)) {
+        if (f is String && f.isNotEmpty) allFiles.add(f);
+      }
+      body.remove('files');
     }
 
-    final response = await _postRequest(path, body);
+    if (kDebugMode) {
+      debugPrint('ApiService: createResidentialComplex - path: $path, body: $body, files count: ${allFiles.length}');
+    }
+
+    final token = await getToken();
+    final updatedPath = await _appendQueryParams(path);
+    final uri = Uri.parse('$baseUrl$updatedPath');
+
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    });
+
+    body.forEach((key, val) {
+      if (val != null) {
+        request.fields[key] = val.toString();
+      }
+    });
+
+    for (final filePath in allFiles) {
+      try {
+        final f = File(filePath);
+        if (f.existsSync()) {
+          final fileName = filePath.split(Platform.pathSeparator).last;
+          // Send as 'files[]' (tasks format)
+          request.files.add(await http.MultipartFile.fromPath(
+            'files[]',
+            filePath,
+            filename: fileName,
+          ));
+          // Send as 'photos[]' (backend validation format)
+          request.files.add(await http.MultipartFile.fromPath(
+            'photos[]',
+            filePath,
+            filename: fileName,
+          ));
+        }
+      } catch (e) {
+        debugPrint('Error attaching complex photo file $filePath: $e');
+      }
+    }
+
+    final response = await _multipartPostRequest('', request);
     if (response.statusCode != 200 && response.statusCode != 201) {
       final msg = _extractErrorMessageFromResponse(response) ?? response.body;
       throw Exception('Ошибка создания ЖК (${response.statusCode}): $msg');
@@ -96,14 +156,74 @@ extension ApiChessGridX on ApiService {
     return ResidentialComplex.fromJson(map);
   }
 
-  /// PUT /api/residential-complexes/{id}
-  Future<ResidentialComplex> updateResidentialComplex(int id, Map<String, dynamic> body) async {
+  /// PUT /api/residential-complexes/{id} (Multipart with files)
+  Future<ResidentialComplex> updateResidentialComplex(
+    int id,
+    Map<String, dynamic> body, {
+    List<String>? filePaths,
+  }) async {
     final path = '/residential-complexes/$id';
-    if (kDebugMode) {
-      debugPrint('ApiService: updateResidentialComplex - path: $path, body: $body');
+    final allFiles = <String>[];
+    if (filePaths != null && filePaths.isNotEmpty) {
+      allFiles.addAll(filePaths);
+    }
+    if (body.containsKey('photos') && body['photos'] is List) {
+      for (final p in (body['photos'] as List)) {
+        if (p is String && p.isNotEmpty) allFiles.add(p);
+      }
+      body.remove('photos');
+    }
+    if (body.containsKey('files') && body['files'] is List) {
+      for (final f in (body['files'] as List)) {
+        if (f is String && f.isNotEmpty) allFiles.add(f);
+      }
+      body.remove('files');
     }
 
-    final response = await _putRequest(path, body);
+    if (kDebugMode) {
+      debugPrint('ApiService: updateResidentialComplex - path: $path, body: $body, files count: ${allFiles.length}');
+    }
+
+    final token = await getToken();
+    final updatedPath = await _appendQueryParams(path);
+    final uri = Uri.parse('$baseUrl$updatedPath');
+
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    });
+    request.fields['_method'] = 'PUT';
+
+    body.forEach((key, val) {
+      if (val != null) {
+        request.fields[key] = val.toString();
+      }
+    });
+
+    for (final filePath in allFiles) {
+      try {
+        final f = File(filePath);
+        if (f.existsSync()) {
+          final fileName = filePath.split(Platform.pathSeparator).last;
+          request.files.add(await http.MultipartFile.fromPath(
+            'files[]',
+            filePath,
+            filename: fileName,
+          ));
+          request.files.add(await http.MultipartFile.fromPath(
+            'photos[]',
+            filePath,
+            filename: fileName,
+          ));
+        }
+      } catch (e) {
+        debugPrint('Error attaching complex photo file $filePath: $e');
+      }
+    }
+
+    final response = await _multipartPostRequest('', request);
     if (response.statusCode != 200) {
       final msg = _extractErrorMessageFromResponse(response) ?? response.body;
       throw Exception('Ошибка обновления ЖК #$id (${response.statusCode}): $msg');

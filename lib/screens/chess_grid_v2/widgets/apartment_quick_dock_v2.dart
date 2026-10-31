@@ -34,6 +34,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
     final colors = context.appColors;
     final apartment = widget.apartment;
     final status = apartment.status;
+    final isAvailable = status == ApartmentStatus.available;
     final priceStr = _formatPriceFull(apartment.totalPrice);
     final roomsLabel = apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}-комн.';
 
@@ -266,27 +267,32 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
               ),
               const SizedBox(width: 8),
 
-              // Create Order
+              // Create Order (Strictly disabled if status != available)
               Expanded(
                 child: ElevatedButton(
-                  onPressed: widget.onCreateOrder,
+                  onPressed: isAvailable ? widget.onCreateOrder : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.buttonPrimaryBg,
                     foregroundColor: colors.buttonPrimaryFg,
+                    disabledBackgroundColor: colors.borderSubtle,
+                    disabledForegroundColor: colors.textMuted,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_shopping_cart_rounded, size: 14),
-                      SizedBox(width: 5),
+                      Icon(
+                        isAvailable ? Icons.add_shopping_cart_rounded : Icons.lock_outline_rounded,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 5),
                       Text(
-                        'Заказ',
-                        style: TextStyle(
+                        isAvailable ? 'Заказ' : 'Недоступно',
+                        style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
                           fontSize: 12,

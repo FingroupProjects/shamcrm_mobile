@@ -136,10 +136,10 @@ class FloorPlan3DPainter {
           sideColor = const Color(0xFF475569);
           break;
         case ApartmentStatus.reserved:
-          // Deep Teal
-          topColor = const Color(0xFF0D9488);
-          frontColor = const Color(0xFF0F766E);
-          sideColor = const Color(0xFF115E59);
+          // Royal Blue
+          topColor = const Color(0xFF3B82F6);
+          frontColor = const Color(0xFF2563EB);
+          sideColor = const Color(0xFF1D4ED8);
           break;
       }
 

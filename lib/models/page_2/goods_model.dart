@@ -321,7 +321,12 @@ class Goods {
       }
 
       final attributesRaw = SafeConverters.toList(
-          json['attribute_values'] ?? data['attributes']);
+          data['attribute_values'] ??
+          json['attribute_values'] ??
+          data['attributes'] ??
+          json['attributes'] ??
+          data['category_attributes'] ??
+          json['category_attributes']);
 
       return Goods(
         id: SafeConverters.toInt(json['id'] != null ? json['id'] : data['id']),
@@ -342,7 +347,8 @@ class Goods {
         attributes: attributesRaw
             .map((attr) => GoodsAttribute.fromJson(SafeConverters.toMap(attr)))
             .toList(),
-        variants: _nullableList(SafeConverters.toList(json['variants'])
+        variants: _nullableList(SafeConverters.toList(
+                data['variants'] ?? json['variants'])
             .map((v) => GoodsVariant.fromJson(SafeConverters.toMap(v)))
             .toList()),
         branches: _nullableList(SafeConverters.toList(data['branches'])
@@ -636,39 +642,43 @@ class GoodsAttribute {
   });
 
   factory GoodsAttribute.fromJson(Map<String, dynamic> json) {
-    String attributeName = 'Неизвестная характеристика';
     final categoryAttribute = SafeConverters.toMapOrNull(json['category_attribute']);
-    if (categoryAttribute != null) {
-      final attribute = SafeConverters.toMapOrNull(categoryAttribute['attribute']);
-      if (attribute != null) {
-        attributeName = SafeConverters.toSafeString(attribute['name'],
-            defaultValue: 'Неизвестная характеристика');
-      }
-    } else {
-      final attribute = SafeConverters.toMapOrNull(json['attribute']);
-      if (attribute != null) {
-        final nestedAttribute = SafeConverters.toMapOrNull(attribute['attribute']);
-        if (nestedAttribute != null) {
-          attributeName = SafeConverters.toSafeString(nestedAttribute['name'],
-              defaultValue: 'Неизвестная характеристика');
-        }
-      }
-    }
+    final attributeMap = SafeConverters.toMapOrNull(categoryAttribute?['attribute']) ??
+        SafeConverters.toMapOrNull(json['attribute']);
+    final nestedAttribute = SafeConverters.toMapOrNull(attributeMap?['attribute']);
 
-    final nestedAttributeId = SafeConverters.toMapOrNull(json['attribute']);
-    final deepAttributeId =
-        nestedAttributeId != null
-            ? SafeConverters.toMapOrNull(nestedAttributeId['attribute'])
-            : null;
+    final attributeName = SafeConverters.toSafeString(
+      nestedAttribute?['name'] ??
+          attributeMap?['name'] ??
+          categoryAttribute?['name'] ??
+          json['attribute_name'] ??
+          json['name'],
+      defaultValue: 'Неизвестная характеристика',
+    );
+
+    final attrId = SafeConverters.toInt(
+      json['category_attribute_id'] ??
+          categoryAttribute?['id'] ??
+          json['attribute_id'] ??
+          attributeMap?['id'] ??
+          nestedAttribute?['id'] ??
+          json['id'] ??
+          0,
+    );
+
+    final isIndiv = SafeConverters.toBool(
+      json['is_individual'] ??
+          categoryAttribute?['is_individual'] ??
+          attributeMap?['is_individual'] ??
+          nestedAttribute?['is_individual'] ??
+          false,
+    );
 
     return GoodsAttribute(
-      id: SafeConverters.toInt(json['attribute_id'] != null
-          ? json['attribute_id']
-          : deepAttributeId?['id']),
+      id: attrId,
       name: attributeName,
       value: SafeConverters.toSafeString(json['value']),
-      isIndividual: SafeConverters.toBool(
-          categoryAttribute?['is_individual'] ?? nestedAttributeId?['is_individual']),
+      isIndividual: isIndiv,
       images: _parseStringList(json['images']),
     );
   }
@@ -702,7 +712,8 @@ class GoodsVariant {
   });
 
   factory GoodsVariant.fromJson(Map<String, dynamic> json) {
-    final attributeValues = SafeConverters.toList(json['attributes'])
+    final attributeValues = SafeConverters.toList(
+            json['attributes'] ?? json['attribute_values'] ?? json['variant_attributes'])
         .map((v) => AttributeValue.fromJson(SafeConverters.toMap(v)))
         .toList();
 
@@ -740,16 +751,26 @@ class AttributeValue {
   });
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
+    final catAttrMap = SafeConverters.toMapOrNull(json['category_attribute']);
+    final attrMap = SafeConverters.toMapOrNull(catAttrMap?['attribute']) ??
+        SafeConverters.toMapOrNull(json['attribute']);
     return AttributeValue(
       id: SafeConverters.toInt(json['id']),
-      categoryAttributeId: SafeConverters.toInt(json['category_attribute_id']),
+      categoryAttributeId: SafeConverters.toInt(
+          json['category_attribute_id'] ?? catAttrMap?['id'] ?? 0),
       value: SafeConverters.toSafeString(json['value']),
       unitId: SafeConverters.toIntOrNull(json['unit_id']),
       files: _parseStringList(json['files']),
-      categoryAttribute: SafeConverters.toMapOrNull(json['category_attribute']) != null
-          ? CategoryAttribute.fromJson(
-              SafeConverters.toMap(json['category_attribute']))
-          : null,
+      categoryAttribute: catAttrMap != null
+          ? CategoryAttribute.fromJson(catAttrMap)
+          : (attrMap != null
+              ? CategoryAttribute(
+                  id: SafeConverters.toInt(json['category_attribute_id'] ?? catAttrMap?['id'] ?? 0),
+                  attribute: Attribute.fromJson(attrMap),
+                  isIndividual: SafeConverters.toBool(
+                      json['is_individual'] ?? attrMap['is_individual']),
+                )
+              : null),
     );
   }
 }
@@ -766,11 +787,17 @@ class CategoryAttribute {
   });
 
   factory CategoryAttribute.fromJson(Map<String, dynamic> json) {
+    final attrMap = SafeConverters.toMapOrNull(json['attribute']);
     return CategoryAttribute(
       id: SafeConverters.toInt(json['id']),
-      attribute: SafeConverters.toMapOrNull(json['attribute']) != null
-          ? Attribute.fromJson(SafeConverters.toMap(json['attribute']))
-          : null,
+      attribute: attrMap != null
+          ? Attribute.fromJson(attrMap)
+          : (json['name'] != null
+              ? Attribute(
+                  id: SafeConverters.toInt(json['attribute_id'] ?? json['id']),
+                  name: SafeConverters.toSafeString(json['name']),
+                )
+              : null),
       isIndividual: SafeConverters.toBool(json['is_individual']),
     );
   }

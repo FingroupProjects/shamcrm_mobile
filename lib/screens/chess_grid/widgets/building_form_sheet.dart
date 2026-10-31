@@ -1,6 +1,8 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -30,15 +32,20 @@ class BuildingFormSheet extends StatefulWidget {
 
 class _BuildingFormSheetState extends State<BuildingFormSheet> {
   final _nameController = TextEditingController();
-  final _entranceController = TextEditingController(text: '2');
-  final _floorController = TextEditingController(text: '9');
-  final _perFloorController = TextEditingController(text: '4');
+  final _entranceController = TextEditingController();
+  final _floorController = TextEditingController();
+  final _perFloorController = TextEditingController();
   final _customTypeController = TextEditingController();
   bool _isSaving = false;
 
+  // Required fields validation like LeadAddScreen
+  Set<String> _missingFields = {};
+  String? _firstMissingField;
+  int _fieldErrorPulse = 0;
+
   static const List<String> _defaultTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
   final List<String> _availableTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
-  final Set<String> _selectedTypes = {'Студия', 'Евроремонт'};
+  final Set<String> _selectedTypes = {};
 
   @override
   void initState() {
@@ -54,10 +61,6 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
       for (final t in b.apartmentTypes) {
         if (!_availableTypes.contains(t)) _availableTypes.add(t);
       }
-    } else {
-      final controller = ChessGridController.instance;
-      final nextLetter = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З'][controller.complex.buildings.length % 8];
-      _nameController.text = 'Корпус $nextLetter';
     }
   }
 
@@ -148,104 +151,193 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTextField(
-                    controller: _nameController,
-                    label: 'Название корпуса *',
-                    hint: 'Блок А, Корпус 1 и т.д.',
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('name'),
+                    focus: _firstMissingField == 'name',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите название корпуса',
+                    child: CustomTextField(
+                      controller: _nameController,
+                      label: 'Название корпуса *',
+                      hintText: 'Введите название корпуса',
+                      hasError: _missingFields.contains('name'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('name')) {
+                          setState(() {
+                            _missingFields.remove('name');
+                            if (_firstMissingField == 'name') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: _buildTextField(
-                          controller: _entranceController,
-                          label: 'Подъездов *',
-                          keyboardType: TextInputType.number,
+                        child: RequiredFieldSlot(
+                          invalid: _missingFields.contains('entrance'),
+                          focus: _firstMissingField == 'entrance',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите кол-во',
+                          child: CustomTextField(
+                            controller: _entranceController,
+                            label: 'Подъездов *',
+                            hintText: 'Введите кол-во',
+                            keyboardType: TextInputType.number,
+                            hasError: _missingFields.contains('entrance'),
+                            onChanged: (val) {
+                              if (val.trim().isNotEmpty && _missingFields.contains('entrance')) {
+                                setState(() {
+                                  _missingFields.remove('entrance');
+                                  if (_firstMissingField == 'entrance') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildTextField(
-                          controller: _floorController,
-                          label: 'Этажей *',
-                          keyboardType: TextInputType.number,
+                        child: RequiredFieldSlot(
+                          invalid: _missingFields.contains('floor'),
+                          focus: _firstMissingField == 'floor',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите кол-во',
+                          child: CustomTextField(
+                            controller: _floorController,
+                            label: 'Этажей *',
+                            hintText: 'Введите кол-во',
+                            keyboardType: TextInputType.number,
+                            hasError: _missingFields.contains('floor'),
+                            onChanged: (val) {
+                              if (val.trim().isNotEmpty && _missingFields.contains('floor')) {
+                                setState(() {
+                                  _missingFields.remove('floor');
+                                  if (_firstMissingField == 'floor') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildTextField(
-                          controller: _perFloorController,
-                          label: 'Кв. на этаже *',
-                          keyboardType: TextInputType.number,
+                        child: RequiredFieldSlot(
+                          invalid: _missingFields.contains('perFloor'),
+                          focus: _firstMissingField == 'perFloor',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите кол-во',
+                          child: CustomTextField(
+                            controller: _perFloorController,
+                            label: 'Кв. на этаже *',
+                            hintText: 'Введите кол-во',
+                            keyboardType: TextInputType.number,
+                            hasError: _missingFields.contains('perFloor'),
+                            onChanged: (val) {
+                              if (val.trim().isNotEmpty && _missingFields.contains('perFloor')) {
+                                setState(() {
+                                  _missingFields.remove('perFloor');
+                                  if (_firstMissingField == 'perFloor') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 18),
 
-                  // Apartment Types Multiselect (TZ section 2)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Тип квартир (мульти-селект) *',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: colors.textPrimary,
+                  // Apartment Types Multiselect
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('types'),
+                    focus: _firstMissingField == 'types',
+                    pulse: _fieldErrorPulse,
+                    message: 'Выберите хотя бы один тип квартир',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Тип квартир *',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: _missingFields.contains('types')
+                                ? Colors.red
+                                : colors.textPrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Выбрано: ${_selectedTypes.length}',
-                        style: TextStyle(
-                          fontFamily: 'Golos',
-                          fontSize: 12,
-                          color: colors.textSecondary,
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            ..._availableTypes.map((t) {
+                              final isSelected = _selectedTypes.contains(t);
+                              final isCustom = !_defaultTypes.contains(t);
+                              return FilterChip(
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(t),
+                                    if (isCustom) ...[
+                                      const SizedBox(width: 4),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _availableTypes.remove(t);
+                                            _selectedTypes.remove(t);
+                                          });
+                                        },
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          size: 14,
+                                          color: isSelected
+                                              ? colors.buttonPrimaryFg
+                                              : colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                selected: isSelected,
+                                onSelected: (val) {
+                                  setState(() {
+                                    if (val) {
+                                      _selectedTypes.add(t);
+                                    } else {
+                                      _selectedTypes.remove(t);
+                                    }
+                                    if (_selectedTypes.isNotEmpty &&
+                                        _missingFields.contains('types')) {
+                                      _missingFields.remove('types');
+                                      if (_firstMissingField == 'types') {
+                                        _firstMissingField = null;
+                                      }
+                                    }
+                                  });
+                                },
+                              );
+                            }),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
-
-                  // Interactive chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _availableTypes.map((t) => _buildTypeChip(t)).toList(),
-                  ),
-                  const SizedBox(height: 14),
 
                   // Add custom type
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: CustomTextField(
                           controller: _customTypeController,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _addCustomType(),
-                          style: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textPrimary),
-                          decoration: InputDecoration(
-                            hintText: 'Свой тип, например: Пентхаус',
-                            hintStyle: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textSecondary),
-                            isDense: true,
-                            filled: true,
-                            fillColor: colors.surfaceElevated.withValues(alpha: 0.5),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: colors.borderSubtle),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: colors.borderSubtle),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: colors.buttonPrimaryBg, width: 1.5),
-                            ),
-                          ),
+                          label: '',
+                          hintText: 'Введите тип (напр. Пентхаус)',
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -260,8 +352,8 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: colors.buttonPrimaryFg,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                         ),
                       ),
                     ],
@@ -303,114 +395,38 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     );
   }
 
-  Widget _buildTypeChip(String type) {
-    final colors = context.appColors;
-    final isSelected = _selectedTypes.contains(type);
-    final isCustom = !_defaultTypes.contains(type);
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedTypes.remove(type);
-          } else {
-            _selectedTypes.add(type);
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.buttonPrimaryBg
-              : colors.surfaceElevated.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: colors.buttonPrimaryBg.withValues(alpha: 0.25),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected) ...[
-              Icon(
-                Icons.check_rounded,
-                size: 15,
-                color: colors.buttonPrimaryFg,
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              type,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 13,
-                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
-              ),
-            ),
-            if (isCustom) ...[
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _availableTypes.remove(type);
-                    _selectedTypes.remove(type);
-                  });
-                },
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 14,
-                  color: isSelected
-                      ? colors.buttonPrimaryFg.withValues(alpha: 0.8)
-                      : colors.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleSave() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      showCustomSnackBar(context: context, message: 'Укажите название корпуса', isSuccess: false);
+    final ent = int.tryParse(_entranceController.text) ?? 0;
+    final fl = int.tryParse(_floorController.text) ?? 0;
+    final per = int.tryParse(_perFloorController.text) ?? 0;
+
+    final missing = <String>[];
+    if (name.isEmpty) missing.add('name');
+    if (ent <= 0) missing.add('entrance');
+    if (fl <= 0) missing.add('floor');
+    if (per <= 0) missing.add('perFloor');
+    if (_selectedTypes.isEmpty) missing.add('types');
+
+    if (missing.isNotEmpty) {
+      setState(() {
+        _missingFields = missing.toSet();
+        _firstMissingField = missing.first;
+        _fieldErrorPulse++;
+      });
+      showCustomSnackBar(
+        context: context,
+        message: 'Заполните обязательные поля',
+        isSuccess: false,
+      );
       return;
     }
 
-    final ent = int.tryParse(_entranceController.text) ?? 1;
-    final fl = int.tryParse(_floorController.text) ?? 9;
-    final per = int.tryParse(_perFloorController.text) ?? 4;
-
-    if (ent <= 0) {
-      showCustomSnackBar(context: context, message: 'Количество подъездов должно быть больше 0', isSuccess: false);
-      return;
-    }
-    if (fl <= 0) {
-      showCustomSnackBar(context: context, message: 'Количество этажей должно быть больше 0', isSuccess: false);
-      return;
-    }
-    if (per <= 0) {
-      showCustomSnackBar(context: context, message: 'Количество квартир на этаже должно быть больше 0', isSuccess: false);
-      return;
-    }
-    if (_selectedTypes.isEmpty) {
-      showCustomSnackBar(context: context, message: 'Выберите хотя бы один тип квартир', isSuccess: false);
-      return;
+    if (_missingFields.isNotEmpty) {
+      setState(() {
+        _missingFields = {};
+        _firstMissingField = null;
+      });
     }
 
     final controller = ChessGridController.instance;
@@ -452,48 +468,5 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
         showCustomSnackBar(context: context, message: errText, isSuccess: false);
       }
     }
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    String? hint,
-    TextInputType? keyboardType,
-  }) {
-    final colors = context.appColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          style: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            isDense: true,
-            filled: true,
-            fillColor: colors.surfaceElevated.withValues(alpha: 0.5),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderSubtle),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderSubtle),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.buttonPrimaryBg, width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

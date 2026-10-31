@@ -35,7 +35,7 @@ extension ApartmentStatusX on ApartmentStatus {
       case ApartmentStatus.sold:
         return const Color(0xFFD0463C);
       case ApartmentStatus.reserved:
-        return const Color(0xFF3A7BD5);
+        return const Color(0xFF2563EB);
     }
   }
 
@@ -48,7 +48,7 @@ extension ApartmentStatusX on ApartmentStatus {
       case ApartmentStatus.sold:
         return const Color(0xFFD0463C).withValues(alpha: 0.12);
       case ApartmentStatus.reserved:
-        return const Color(0xFF3A7BD5).withValues(alpha: 0.12);
+        return const Color(0xFF2563EB).withValues(alpha: 0.12);
     }
   }
 
@@ -242,6 +242,9 @@ class Apartment {
   final String currency;
   final String? layoutImageUrl;
   final List<String> plans;
+  final String? layoutType;
+  final int balconiesCount;
+  final int combinedBathroomsCount;
   final int floor;
   final int entrance;
   final int? entranceId;
@@ -266,6 +269,9 @@ class Apartment {
     required this.currency,
     this.layoutImageUrl,
     this.plans = const [],
+    this.layoutType,
+    this.balconiesCount = 0,
+    this.combinedBathroomsCount = 1,
     required this.floor,
     required this.entrance,
     this.entranceId,
@@ -413,6 +419,18 @@ class Apartment {
     final effectiveBKey = buildingKey.isNotEmpty ? buildingKey : (rawBKey ?? 'A');
     final effectiveBName = buildingName.isNotEmpty ? buildingName : (data['building_name'] ?? json['building_name'] ?? 'Корпус').toString();
 
+    final layoutTypeVal = SafeConverters.toStringOrNull(
+      data['layout_type'] ?? json['layout_type'] ?? findAttr(['тип планировки', 'планировка']),
+    ) ?? (roomsVal == 1 ? 'A' : (roomsVal == 2 ? 'B' : (roomsVal == 3 ? 'C' : 'D')));
+
+    final balconiesVal = SafeConverters.toIntOrNull(
+      data['balconies_count'] ?? json['balconies_count'] ?? findAttr(['балкон', 'лоджия', 'балконов']),
+    ) ?? (totalAreaVal > 50 ? 1 : 0);
+
+    final bathroomsVal = SafeConverters.toIntOrNull(
+      data['combined_bathrooms_count'] ?? data['bathrooms_count'] ?? json['bathrooms_count'] ?? findAttr(['санузел', 'санузлов', 'ванная']),
+    ) ?? 1;
+
     return Apartment(
       id: id,
       complexId: cId,
@@ -428,6 +446,9 @@ class Apartment {
       currency: SafeConverters.toSafeString(data['currency'] ?? json['currency'], defaultValue: '\$'),
       layoutImageUrl: layoutImg,
       plans: plansList,
+      layoutType: layoutTypeVal,
+      balconiesCount: balconiesVal,
+      combinedBathroomsCount: bathroomsVal,
       floor: floorVal > 0 ? floorVal : 1,
       entrance: entranceVal > 0 ? entranceVal : 1,
       entranceId: entranceIdVal,
@@ -453,6 +474,10 @@ class Apartment {
       'price': totalPrice,
       'currency': currency,
       'layout_image_url': layoutImageUrl,
+      'plans': plans,
+      'layout_type': layoutType,
+      'balconies_count': balconiesCount,
+      'combined_bathrooms_count': combinedBathroomsCount,
       'floor': floor,
       'entrance': entrance,
       if (entranceId != null) 'entrance_id': entranceId,
@@ -477,6 +502,9 @@ class Apartment {
     String? currency,
     String? layoutImageUrl,
     List<String>? plans,
+    String? layoutType,
+    int? balconiesCount,
+    int? combinedBathroomsCount,
     int? floor,
     int? entrance,
     int? entranceId,
@@ -501,6 +529,9 @@ class Apartment {
       currency: currency ?? this.currency,
       layoutImageUrl: layoutImageUrl ?? this.layoutImageUrl,
       plans: plans ?? this.plans,
+      layoutType: layoutType ?? this.layoutType,
+      balconiesCount: balconiesCount ?? this.balconiesCount,
+      combinedBathroomsCount: combinedBathroomsCount ?? this.combinedBathroomsCount,
       floor: floor ?? this.floor,
       entrance: entrance ?? this.entrance,
       entranceId: entranceId ?? this.entranceId,
@@ -900,6 +931,7 @@ class Order {
   final DateTime? reservedUntil;
   final PaymentDetails? paymentDetails;
   final Map<int, String> customFields;
+  final String? sourceId;
 
   const Order({
     required this.id,
@@ -917,6 +949,7 @@ class Order {
     this.reservedUntil,
     this.paymentDetails,
     this.customFields = const {},
+    this.sourceId,
   });
 
   Order copyWith({
@@ -935,6 +968,7 @@ class Order {
     DateTime? reservedUntil,
     PaymentDetails? paymentDetails,
     Map<int, String>? customFields,
+    String? sourceId,
   }) {
     return Order(
       id: id ?? this.id,
@@ -952,15 +986,18 @@ class Order {
       reservedUntil: reservedUntil ?? this.reservedUntil,
       paymentDetails: paymentDetails ?? this.paymentDetails,
       customFields: customFields ?? this.customFields,
+      sourceId: sourceId ?? this.sourceId,
     );
   }
 }
 
 class RoleBookingSetting {
+  final int? roleId;
   final String roleName;
   final int durationDays;
 
   const RoleBookingSetting({
+    this.roleId,
     required this.roleName,
     required this.durationDays,
   });

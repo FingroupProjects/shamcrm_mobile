@@ -1,5 +1,7 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridFilterDialog extends StatefulWidget {
@@ -40,7 +42,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   void initState() {
     super.initState();
     final f = widget.controller.filter;
-    final buildings = widget.controller.complex.buildings;
+    final List<Building> buildings = (widget.controller.complex.buildings as Iterable).cast<Building>().toList();
     _buildingKey = f.buildingKey.isNotEmpty
         ? f.buildingKey
         : (buildings.isNotEmpty ? buildings.first.key : '');
@@ -62,18 +64,58 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
     super.dispose();
   }
 
+  ButtonStyle _buildActionButtonStyle() {
+    return TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      backgroundColor:
+          context.appColors.buttonSecondaryBg.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      side: BorderSide(color: context.appColors.buttonPrimaryBg, width: 0.5),
+    );
+  }
+
+  void _applyFilters() {
+    final minP = double.tryParse(_minPriceController.text);
+    final maxP = double.tryParse(_maxPriceController.text);
+    final minA = double.tryParse(_minAreaController.text);
+    final maxA = double.tryParse(_maxAreaController.text);
+
+    widget.controller.setFilter(widget.controller.filter.copyWith(
+      buildingKey: _buildingKey,
+      entrance: _entrance,
+      rooms: _rooms,
+      minPrice: minP,
+      maxPrice: maxP,
+      minArea: minA,
+      maxArea: maxA,
+      statuses: _statuses,
+    ));
+
+    Navigator.pop(context);
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _entrance = 0;
+      _rooms.clear();
+      _minPriceController.clear();
+      _maxPriceController.clear();
+      _minAreaController.clear();
+      _maxAreaController.clear();
+      _statuses = Set<ApartmentStatus>.from(ApartmentStatus.values);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final controller = widget.controller;
-    final buildings = controller.complex.buildings;
+    final List<Building> buildings = (controller.complex.buildings as Iterable).cast<Building>().toList();
 
-    final Building? building = buildings.isNotEmpty
-        ? buildings.firstWhere(
-            (b) => b.key == _buildingKey,
-            orElse: () => buildings.first,
-          )
-        : null;
+    final Building? building = buildings.firstWhereOrNull((b) => b.key == _buildingKey) ??
+        (buildings.isNotEmpty ? buildings.first : null);
 
     return Container(
       constraints: BoxConstraints(
@@ -98,34 +140,44 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
             ),
           ),
 
-          // Title
+          // Header in the exact CRM style (Лиды / Сделки / Задачи)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Фильтры шахматки',
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 17,
-                    color: colors.textPrimary,
+                Expanded(
+                  child: Text(
+                    'Фильтр',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                      fontFamily: 'Gilroy',
+                    ),
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _entrance = 0;
-                      _rooms.clear();
-                      _minPriceController.clear();
-                      _maxPriceController.clear();
-                      _minAreaController.clear();
-                      _maxAreaController.clear();
-                      _statuses = Set<ApartmentStatus>.from(ApartmentStatus.values);
-                    });
-                  },
-                  child: const Text('Сбросить'),
+                  onPressed: _resetFilters,
+                  style: _buildActionButtonStyle(),
+                  child: Text(
+                    'Сбросить',
+                    style: context.appTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.buttonPrimaryBg,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _applyFilters,
+                  style: _buildActionButtonStyle(),
+                  child: Text(
+                    'Применить',
+                    style: context.appTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.buttonPrimaryBg,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -139,13 +191,13 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Building
-                  if (buildings.isNotEmpty) ...[
-                    Text('Корпус', style: _sectionTitleStyle(colors)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: buildings.map((b) {
+                  Text('Корпус', style: _sectionTitleStyle(colors)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ...buildings.map((b) {
                         final isSelected = _buildingKey == b.key;
                         return GestureDetector(
                           onTap: () {
@@ -210,10 +262,51 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                             ),
                           ),
                         );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                      }),
+                      // Quick Add Building button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          BuildingFormSheet.show(context: context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colors.buttonPrimaryBg.withValues(alpha: 0.4),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.add_rounded,
+                                size: 16,
+                                color: colors.buttonPrimaryBg,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Добавить корпус',
+                                style: TextStyle(
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: colors.buttonPrimaryBg,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
                   // Entrance
                   if (building != null && building.entranceCount > 0) ...[
@@ -266,33 +359,26 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   const SizedBox(height: 14),
 
                   // Price Range
-                  Text('Цена, \$', style: _sectionTitleStyle(colors)),
+                  Text('Цена', style: _sectionTitleStyle(colors)),
                   const SizedBox(height: 6),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: CustomTextField(
                           controller: _minPriceController,
+                          label: 'От',
+                          hintText: 'Введите сумму',
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'От',
-                            prefixText: '\$ ',
-                            isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: TextField(
+                        child: CustomTextField(
                           controller: _maxPriceController,
+                          label: 'До',
+                          hintText: 'Введите сумму',
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'До',
-                            prefixText: '\$ ',
-                            isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
                         ),
                       ),
                     ],
@@ -303,28 +389,23 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   Text('Общая площадь, м²', style: _sectionTitleStyle(colors)),
                   const SizedBox(height: 6),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: CustomTextField(
                           controller: _minAreaController,
+                          label: 'От, м²',
+                          hintText: 'Введите площадь',
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'От, м²',
-                            isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: TextField(
+                        child: CustomTextField(
                           controller: _maxAreaController,
+                          label: 'До, м²',
+                          hintText: 'Введите площадь',
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'До, м²',
-                            isDense: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
                         ),
                       ),
                     ],
@@ -359,42 +440,6 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                     }).toList(),
                   ),
                   const SizedBox(height: 24),
-
-                  // Apply button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final minP = double.tryParse(_minPriceController.text);
-                        final maxP = double.tryParse(_maxPriceController.text);
-                        final minA = double.tryParse(_minAreaController.text);
-                        final maxA = double.tryParse(_maxAreaController.text);
-
-                        controller.setFilter(controller.filter.copyWith(
-                          buildingKey: _buildingKey,
-                          entrance: _entrance,
-                          rooms: _rooms,
-                          minPrice: minP,
-                          maxPrice: maxP,
-                          minArea: minA,
-                          maxArea: maxA,
-                          statuses: _statuses,
-                        ));
-
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.buttonPrimaryBg,
-                        foregroundColor: colors.buttonPrimaryFg,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text(
-                        'Применить фильтры',
-                        style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

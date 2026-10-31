@@ -16,7 +16,8 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_task_manager/screens/chess_grid/chess_grid_screen.dart';
+// Шахматка скрыта для релиза.
+// import 'package:crm_task_manager/screens/chess_grid/chess_grid_screen.dart';
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -260,14 +261,15 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       );
     }
 
-    allReferences.add(
-      ReferenceItem(
-        keyName: 'chess_grid',
-        title: AppLocalizations.of(context)!.translate('chess_grid_title'),
-        icon: Icons.grid_view_rounded,
-        color: refColor,
-      ),
-    );
+    // Шахматка скрыта для релиза.
+    // allReferences.add(
+    //   ReferenceItem(
+    //     keyName: 'chess_grid',
+    //     title: AppLocalizations.of(context)!.translate('chess_grid_title'),
+    //     icon: Icons.grid_view_rounded,
+    //     color: refColor,
+    //   ),
+    // );
 
     setState(() {
       _references = allReferences;
@@ -366,16 +368,18 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
         context,
         MaterialPageRoute(builder: (context) => const OpeningsScreen()),
       );
-    } else if (reference.keyName == 'chess_grid') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ChessGridScreen(
-            initialTab: ChessGridTab.admin,
-          ),
-        ),
-      );
     }
+    // Шахматка скрыта для релиза.
+    // else if (reference.keyName == 'chess_grid') {
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(
+    //       builder: (context) => const ChessGridScreen(
+    //         initialTab: ChessGridTab.admin,
+    //       ),
+    //     ),
+    //   );
+    // }
   }
 
   Widget _buildReferenceCard(ReferenceItem reference) {

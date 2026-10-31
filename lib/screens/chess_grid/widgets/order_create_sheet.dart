@@ -1,8 +1,11 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/payment_schedule_sheet.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -33,21 +36,26 @@ class OrderCreateSheet extends StatefulWidget {
 class _OrderCreateSheetState extends State<OrderCreateSheet> {
   final _buyerNameController = TextEditingController();
   final _buyerPhoneController = TextEditingController();
+  String _formattedBuyerPhone = '';
   final _buyerEmailController = TextEditingController();
   final _commentController = TextEditingController();
   final _downPaymentController = TextEditingController();
-  final _monthsController = TextEditingController(text: '12');
+  final _monthsController = TextEditingController();
   final _barterSubjectController = TextEditingController();
-  final _barterAmountController = TextEditingController(text: '0');
+  final _barterAmountController = TextEditingController();
+  String? _selectedSourceId;
 
   DealType _selectedDealType = DealType.cash;
   int _selectedRoleIndex = 0;
 
+  // Required fields validation like LeadAddScreen
+  Set<String> _missingFields = {};
+  String? _firstMissingField;
+  int _fieldErrorPulse = 0;
+
   @override
   void initState() {
     super.initState();
-    final totalPrice = widget.apartment.totalPrice;
-    _downPaymentController.text = (totalPrice * 0.20).round().toString();
   }
 
   @override
@@ -80,7 +88,12 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final controller = ChessGridController.instance;
-    final role = controller.roleSettings[_selectedRoleIndex];
+    final safeRoleIndex = controller.roleSettings.isNotEmpty
+        ? _selectedRoleIndex.clamp(0, controller.roleSettings.length - 1)
+        : 0;
+    final role = controller.roleSettings.isNotEmpty
+        ? controller.roleSettings[safeRoleIndex]
+        : const RoleBookingSetting(roleName: 'Менеджер', durationDays: 3);
 
     return Container(
       constraints: BoxConstraints(
@@ -150,24 +163,52 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CustomTextField(
-                    controller: _buyerNameController,
-                    hintText: 'Фамилия Имя Отчество',
-                    label: 'ФИО покупателя *',
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('buyerName'),
+                    focus: _firstMissingField == 'buyerName',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите ФИО покупателя',
+                    child: CustomTextField(
+                      controller: _buyerNameController,
+                      hintText: 'Введите ФИО покупателя',
+                      label: 'ФИО покупателя *',
+                      hasError: _missingFields.contains('buyerName'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('buyerName')) {
+                          setState(() {
+                            _missingFields.remove('buyerName');
+                            if (_firstMissingField == 'buyerName') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
 
-                  CustomTextField(
-                    controller: _buyerPhoneController,
-                    hintText: '+992 ...',
-                    label: 'Номер телефона *',
-                    keyboardType: TextInputType.phone,
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('buyerPhone'),
+                    focus: _firstMissingField == 'buyerPhone',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите номер телефона',
+                    child: CustomPhoneNumberInput(
+                      controller: _buyerPhoneController,
+                      label: 'Номер телефона *',
+                      onInputChanged: (val) {
+                        _formattedBuyerPhone = val;
+                        if (val.trim().isNotEmpty && _missingFields.contains('buyerPhone')) {
+                          setState(() {
+                            _missingFields.remove('buyerPhone');
+                            if (_firstMissingField == 'buyerPhone') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   CustomTextField(
                     controller: _buyerEmailController,
-                    hintText: 'email@domain.com',
+                    hintText: 'Введите email',
                     label: 'Электронная почта',
                     keyboardType: TextInputType.emailAddress,
                   ),
@@ -175,8 +216,16 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
 
                   CustomTextField(
                     controller: _commentController,
-                    hintText: 'Примечание к сделке',
+                    hintText: 'Введите комментарий',
                     label: 'Комментарий',
+                  ),
+                  const SizedBox(height: 14),
+
+                  SourceLeadWidget(
+                    selectedSourceLead: _selectedSourceId,
+                    onChanged: (val) {
+                      setState(() => _selectedSourceId = val);
+                    },
                   ),
                   const SizedBox(height: 18),
 
@@ -200,7 +249,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
-                        value: _selectedRoleIndex,
+                        value: controller.roleSettings.isNotEmpty ? safeRoleIndex : null,
                         isExpanded: true,
                         items: List.generate(
                           controller.roleSettings.length,
@@ -209,7 +258,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                             child: Text(
                               '${controller.roleSettings[i].roleName}: бронь на ${controller.roleSettings[i].durationDays} дн.',
                               style: TextStyle(
-                                fontFamily: 'Golos',
+                                fontFamily: 'Gilroy',
                                 fontSize: 13.5,
                                 color: colors.textPrimary,
                               ),
@@ -251,14 +300,14 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   if (_selectedDealType == DealType.mixed) ...[
                     CustomTextField(
                       controller: _barterSubjectController,
-                      hintText: 'Автомобиль, земельный участок и др.',
+                      hintText: 'Введите предмет бартера',
                       label: 'Предмет бартера',
                     ),
                     const SizedBox(height: 12),
                     CustomTextField(
                       controller: _barterAmountController,
-                      hintText: '0',
-                      label: 'Сумма бартера, \$',
+                      hintText: 'Введите сумму',
+                      label: 'Сумма бартера',
                       keyboardType: TextInputType.number,
                       onChanged: (_) => setState(() {}),
                     ),
@@ -268,24 +317,40 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   // Installment calculation block
                   if (_selectedDealType != DealType.cash) ...[
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: CustomTextField(
                             controller: _downPaymentController,
-                            hintText: '0',
-                            label: 'Первый взнос, \$',
+                            hintText: 'Введите сумму',
+                            label: 'Первый взнос',
                             keyboardType: TextInputType.number,
                             onChanged: (_) => setState(() {}),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: CustomTextField(
-                            controller: _monthsController,
-                            hintText: '12',
-                            label: 'Срок, мес.',
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => setState(() {}),
+                          child: RequiredFieldSlot(
+                            invalid: _missingFields.contains('months'),
+                            focus: _firstMissingField == 'months',
+                            pulse: _fieldErrorPulse,
+                            message: 'Укажите срок',
+                            child: CustomTextField(
+                              controller: _monthsController,
+                              hintText: 'Введите кол-во',
+                              label: 'Срок рассрочки, мес. *',
+                              keyboardType: TextInputType.number,
+                              hasError: _missingFields.contains('months'),
+                              onChanged: (val) {
+                                if (val.trim().isNotEmpty && _missingFields.contains('months')) {
+                                  setState(() {
+                                    _missingFields.remove('months');
+                                    if (_firstMissingField == 'months') _firstMissingField = null;
+                                  });
+                                }
+                                setState(() {});
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -465,29 +530,61 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
 
   void _handleSubmit() {
     final buyerName = _buyerNameController.text.trim();
-    if (buyerName.isEmpty) {
+    final buyerPhone = _formattedBuyerPhone.isNotEmpty
+        ? _formattedBuyerPhone
+        : _buyerPhoneController.text.trim();
+
+    final missing = <String>[];
+    if (buyerName.isEmpty) missing.add('buyerName');
+    if (buyerPhone.isEmpty) missing.add('buyerPhone');
+    if (_selectedDealType != DealType.cash) {
+      if (_months <= 0) missing.add('months');
+    }
+
+    if (missing.isNotEmpty) {
+      setState(() {
+        _missingFields = missing.toSet();
+        _firstMissingField = missing.first;
+        _fieldErrorPulse++;
+      });
       showCustomSnackBar(
         context: context,
-        message: 'Пожалуйста, укажите ФИО покупателя',
+        message: 'Заполните обязательные поля',
         isSuccess: false,
       );
       return;
     }
 
+    if (_missingFields.isNotEmpty) {
+      setState(() {
+        _missingFields = {};
+        _firstMissingField = null;
+      });
+    }
+
     final controller = ChessGridController.instance;
+    final safeRoleIndex = controller.roleSettings.isNotEmpty
+        ? _selectedRoleIndex.clamp(0, controller.roleSettings.length - 1)
+        : 0;
+    final roleName = controller.roleSettings.isNotEmpty
+        ? controller.roleSettings[safeRoleIndex].roleName
+        : 'Менеджер';
 
     final err = controller.createOrder(
       apartment: widget.apartment,
       buyerName: buyerName,
-      buyerPhone: _buyerPhoneController.text.trim(),
+      buyerPhone: _formattedBuyerPhone.isNotEmpty
+          ? _formattedBuyerPhone
+          : _buyerPhoneController.text.trim(),
       buyerEmail: _buyerEmailController.text.trim(),
       comment: _commentController.text.trim(),
-      roleName: controller.roleSettings[_selectedRoleIndex].roleName,
+      roleName: roleName,
       dealType: _selectedDealType,
       downPayment: _downPayment,
       months: _months,
       barterSubject: _barterSubjectController.text.trim(),
       barterAmount: _barterAmount,
+      sourceId: _selectedSourceId,
     );
 
     if (err != null) {

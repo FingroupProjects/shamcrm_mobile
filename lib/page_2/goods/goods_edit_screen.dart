@@ -78,6 +78,7 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
   void initState() {
     super.initState();
     _initializeFieldsWithDefaults();
+    _initializeFieldsWithData();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAllDataSequentially();
     });
@@ -168,7 +169,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       await fetchSubCategories();
       context.read<UnitsBloc>().add(FetchUnits());
 
-      _initializeFieldsWithData();
+      if (mounted) {
+        setState(() {
+          _initializeFieldsWithData();
+        });
+      }
     } catch (e) {
       debugPrint('❌ Error in _loadAllDataSequentially: $e');
       if (mounted) {
@@ -345,108 +350,56 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     });
   }
 
-  void _initializeFieldsWithData() {
-    Map<String, Map<String, dynamic>> individualAttributesMap = {};
-    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
-      for (var variant in widget.goods.variants!) {
-        if (variant.attributeValues != null) {
-          for (var attrValue in variant.attributeValues!) {
-            if (attrValue.categoryAttribute?.attribute != null &&
-                attrValue.categoryAttribute!.isIndividual == true) {
-              final attrName = attrValue.categoryAttribute!.attribute!.name;
-              if (!individualAttributesMap.containsKey(attrName)) {
-                individualAttributesMap[attrName] = {
-                  'id': attrValue.categoryAttribute!.id,
-                  'attribute_id': attrValue.categoryAttribute!.attribute!.id,
-                  'name': attrName,
-                  'isIndividual': true,
-                  'value': null,
-                };
-              }
-            }
-          }
-        }
-      }
-    }
-
-    List<Map<String, dynamic>> individualAttributes =
-        individualAttributesMap.values.toList();
-
-    final allAttributes = [
-      ...widget.goods.attributes
-          .where((attr) => !attr.isIndividual)
-          .map((attr) => subCatAttr.Attribute(
-                id: attr.id,
-                name: attr.name,
-                value: attr.value,
-                isIndividual: attr.isIndividual,
-              )),
-      ...individualAttributes.map((attr) => subCatAttr.Attribute(
-            id: attr['id'],
-            name: attr['name'],
-            value: attr['value'],
-            isIndividual: attr['isIndividual'],
-          )),
-    ].toSet().toList();
-
-    selectedCategory = subCatAttr.SubCategoryAttributesData(
-      id: widget.goods.category.id,
-      name: widget.goods.category.name,
-      parent: subCatAttr.ParentCategory(
-        id: widget.goods.category.id,
-        name: widget.goods.category.name,
-      ),
-      attributes: allAttributes,
-      hasPriceCharacteristics: widget.goods.attributes
-              .any((attr) => attr.name.toLowerCase() == 'price') ||
-          individualAttributes
-              .any((attr) => attr['name'].toLowerCase() == 'price'),
-    );
-
-    attributeControllers.clear();
+  void _populateVariantsFromGoods(subCatAttr.SubCategoryAttributesData category) {
     tableAttributes.clear();
-
-    for (var attribute
-        in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
-      attributeControllers[attribute.name] =
-          TextEditingController(text: attribute.value ?? '');
-    }
+    // Deduplicate by name to prevent DataTable column/cell count mismatch
+    final seenPopNames = <String>{};
+    final individualAttrs = category.attributes
+        .where((a) => a.isIndividual)
+        .where((a) {
+          final key = a.name.trim().toLowerCase();
+          if (seenPopNames.contains(key)) return false;
+          seenPopNames.add(key);
+          return true;
+        })
+        .toList();
 
     if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
       for (var variant in widget.goods.variants!) {
         Map<String, dynamic> newRow = {
           'id': variant.id,
-          'attribute_ids': {},
-          'is_active': variant.isActive ?? true,
+          'attribute_ids': <String, dynamic>{},
+          'is_active': variant.isActive,
         };
 
-        var individualAttrs =
-            selectedCategory!.attributes.where((a) => a.isIndividual).toList();
         for (var attr in individualAttrs) {
           newRow[attr.name] = TextEditingController();
         }
         newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
 
-        if (variant.attributeValues != null &&
-            variant.attributeValues!.isNotEmpty) {
-          for (var attrValue in variant.attributeValues!) {
-            if (attrValue.categoryAttribute?.attribute != null) {
-              final attrName = attrValue.categoryAttribute!.attribute!.name;
-              if (newRow.containsKey(attrName)) {
-                newRow[attrName].text = attrValue.value ?? '';
-                if (attrValue.id != 0) {
-                  newRow['attribute_ids'][attrName] = attrValue.id;
-                }
+        for (var attrValue in variant.attributeValues) {
+          String? attrName = attrValue.categoryAttribute?.attribute?.name;
+          if (attrName == null || !newRow.containsKey(attrName)) {
+            for (var attr in individualAttrs) {
+              if (attr.id == attrValue.categoryAttributeId ||
+                  attr.id == attrValue.id) {
+                attrName = attr.name;
+                break;
               }
+            }
+          }
+
+          if (attrName != null && newRow.containsKey(attrName)) {
+            (newRow[attrName] as TextEditingController).text = attrValue.value;
+            if (attrValue.id != 0) {
+              newRow['attribute_ids'][attrName] = attrValue.id;
             }
           }
         }
 
-        newRow['barcode'] = TextEditingController(text: variant.barcode ?? '');
-
-        if (selectedCategory!.hasPriceCharacteristics) {
+        if (category.hasPriceCharacteristics) {
           newRow['price'] = TextEditingController(
-            text: variant.price.toString() ?? '0.0',
+            text: variant.price.isNotEmpty ? variant.price : '0.0',
           );
         }
 
@@ -455,8 +408,134 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         tableAttributes.add(newRow);
       }
     } else {
-      addTableRow();
+      if (individualAttrs.isNotEmpty) {
+        addTableRow();
+      }
     }
+  }
+
+  void _initializeFieldsWithData() {
+    subCatAttr.SubCategoryAttributesData? matchedCategory;
+    if (subCategories.isNotEmpty) {
+      for (final cat in subCategories) {
+        if (cat.id == widget.goods.category.id) {
+          matchedCategory = cat;
+          break;
+        }
+      }
+      if (matchedCategory == null) {
+        for (final cat in subCategories) {
+          if (cat.name.trim().toLowerCase() ==
+              widget.goods.category.name.trim().toLowerCase()) {
+            matchedCategory = cat;
+            break;
+          }
+        }
+      }
+    }
+
+    final List<subCatAttr.Attribute> allAttributes = [];
+    if (matchedCategory != null && matchedCategory.attributes.isNotEmpty) {
+      allAttributes.addAll(matchedCategory.attributes);
+    }
+
+    for (var goodAttr in widget.goods.attributes.where((a) => !a.isIndividual)) {
+      final exists = allAttributes.any((a) =>
+          (goodAttr.id != 0 && a.id == goodAttr.id) ||
+          a.name.trim().toLowerCase() == goodAttr.name.trim().toLowerCase());
+      if (!exists) {
+        allAttributes.add(subCatAttr.Attribute(
+          id: goodAttr.id,
+          name: goodAttr.name,
+          value: goodAttr.value,
+          isIndividual: false,
+        ));
+      }
+    }
+
+    Map<String, Map<String, dynamic>> individualAttributesMap = {};
+    if (widget.goods.variants != null && widget.goods.variants!.isNotEmpty) {
+      for (var variant in widget.goods.variants!) {
+        for (var attrValue in variant.attributeValues) {
+          String? attrName = attrValue.categoryAttribute?.attribute?.name;
+          if (attrName == null) {
+            for (var a in allAttributes) {
+              if (a.id == attrValue.categoryAttributeId || a.id == attrValue.id) {
+                attrName = a.name;
+                break;
+              }
+            }
+          }
+          if (attrName != null && attrName.isNotEmpty) {
+            if (!individualAttributesMap.containsKey(attrName)) {
+              individualAttributesMap[attrName] = {
+                'id': attrValue.categoryAttribute?.id ?? attrValue.categoryAttributeId,
+                'name': attrName,
+                'isIndividual': true,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    for (var indAttr in individualAttributesMap.values) {
+      final exists = allAttributes.any((a) =>
+          a.name.trim().toLowerCase() ==
+          indAttr['name'].toString().trim().toLowerCase());
+      if (!exists) {
+        allAttributes.add(subCatAttr.Attribute(
+          id: indAttr['id'] as int,
+          name: indAttr['name'] as String,
+          value: null,
+          isIndividual: true,
+        ));
+      }
+    }
+
+    // Deduplicate allAttributes by name to prevent DataTable column/cell count mismatch
+    final seenAttrNames = <String>{};
+    allAttributes.removeWhere((a) {
+      final key = a.name.trim().toLowerCase();
+      if (seenAttrNames.contains(key)) return true;
+      seenAttrNames.add(key);
+      return false;
+    });
+
+    final hasPriceChars = matchedCategory?.hasPriceCharacteristics ??
+        (widget.goods.attributes.any((attr) => attr.name.toLowerCase() == 'price') ||
+            individualAttributesMap.values
+                .any((attr) => attr['name'].toString().toLowerCase() == 'price'));
+
+    selectedCategory = subCatAttr.SubCategoryAttributesData(
+      id: matchedCategory?.id ?? widget.goods.category.id,
+      name: matchedCategory?.name ?? widget.goods.category.name,
+      parent: matchedCategory?.parent ??
+          subCatAttr.ParentCategory(
+            id: widget.goods.category.id,
+            name: widget.goods.category.name,
+          ),
+      attributes: allAttributes,
+      hasPriceCharacteristics: hasPriceChars,
+    );
+
+    attributeControllers.clear();
+    for (var attribute
+        in selectedCategory!.attributes.where((attr) => !attr.isIndividual)) {
+      String initialValue = attribute.value ?? '';
+      for (var goodAttr in widget.goods.attributes) {
+        if ((goodAttr.id != 0 && goodAttr.id == attribute.id) ||
+            goodAttr.name.trim().toLowerCase() ==
+                attribute.name.trim().toLowerCase()) {
+          initialValue = goodAttr.value;
+          break;
+        }
+      }
+      attributeControllers[attribute.name] =
+          TextEditingController(text: initialValue);
+    }
+
+    _populateVariantsFromGoods(selectedCategory!);
   }
 
   Future<void> fetchSubCategories() async {
@@ -1340,17 +1419,42 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                               selectedCategory: selectedCategory?.name,
                               onSelectCategory: (category) {
                                 setState(() {
-                                  selectedCategory = category
-                                      as subCatAttr.SubCategoryAttributesData?;
+                                  selectedCategory = category;
                                   isCategoryValid = category != null;
                                   attributeControllers.clear();
                                   tableAttributes.clear();
                                   if (category != null &&
                                       category.attributes.isNotEmpty) {
+                                    final isOriginalCategory =
+                                        category.id == widget.goods.category.id ||
+                                        category.name.trim().toLowerCase() ==
+                                            widget.goods.category.name.trim().toLowerCase();
+
                                     for (var attribute in category.attributes
                                         .where((a) => !a.isIndividual)) {
+                                      String initialText = '';
+                                      if (isOriginalCategory) {
+                                        for (var goodAttr in widget.goods.attributes) {
+                                          if ((goodAttr.id != 0 && goodAttr.id == attribute.id) ||
+                                              goodAttr.name.trim().toLowerCase() ==
+                                                  attribute.name.trim().toLowerCase()) {
+                                            initialText = goodAttr.value;
+                                            break;
+                                          }
+                                        }
+                                      }
                                       attributeControllers[attribute.name] =
-                                          TextEditingController();
+                                          TextEditingController(text: initialText);
+                                    }
+
+                                    if (category.attributes.any((a) => a.isIndividual)) {
+                                      if (isOriginalCategory &&
+                                          widget.goods.variants != null &&
+                                          widget.goods.variants!.isNotEmpty) {
+                                        _populateVariantsFromGoods(category);
+                                      } else {
+                                        addTableRow();
+                                      }
                                     }
                                   }
                                 });
@@ -1442,10 +1546,17 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                 child: Column(
                                   children: [
                                     () {
-                                      final individualAttrs = selectedCategory!
+                                      // Deduplicate by name to prevent DataTable column/cell count mismatch
+    final seenIndividualNames = <String>{};
+    final individualAttrs = selectedCategory!
                                           .attributes
                                           .where((attr) => attr.isIndividual)
-                                          .toSet()
+                                          .where((attr) {
+                                            final key = attr.name.trim().toLowerCase();
+                                            if (seenIndividualNames.contains(key)) return false;
+                                            seenIndividualNames.add(key);
+                                            return true;
+                                          })
                                           .toList();
 
                                       List<DataColumn> columns = [
@@ -1708,42 +1819,6 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
                                                         size: 20),
                                                     onPressed: () =>
                                                         _scanRowBarcode(index),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          DataCell(
-                                            SizedBox(
-                                              width: 190,
-                                              child: TextField(
-                                                controller: row['barcode'] ??
-                                                    TextEditingController(),
-                                                decoration: InputDecoration(
-                                                  hintText: 'Штрих код',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontFamily: 'Gilroy',
-                                                    color: Color(0xff99A4BA),
-                                                  ),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                  contentPadding:
-                                                      EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 16),
-                                                  suffixIcon: IconButton(
-                                                    onPressed: () =>
-                                                        _scanRowBarcode(index),
-                                                    icon: const Icon(
-                                                      Icons.qr_code_scanner,
-                                                      size: 18,
-                                                      color: Color(0xff1E2E52),
-                                                    ),
                                                   ),
                                                 ),
                                               ),

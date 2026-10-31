@@ -4148,10 +4148,34 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         '=================-=== 🔌 ChatSmsScreen: setUpServices() COMPLETED');
   }
 
+  /// Instagram отвечает в комментарий только на комментарий клиента.
+  /// Если отвечаем на свой ответ, идём по цепочке до сообщения клиента.
+  String? _resolveInstagramCommentReplyId(String? replyMessageId) {
+    if (!_isInstagramCommentChannel || _instagramResponseType != 'comment') {
+      return replyMessageId;
+    }
+    var currentId = int.tryParse(replyMessageId ?? '');
+    if (currentId == null) return replyMessageId;
+
+    final cubit = context.read<MessagingCubit>();
+    final visited = <int>{};
+    while (visited.add(currentId!)) {
+      final message = cubit.findMessageById(currentId);
+      if (message == null || !message.isMyMessage) break;
+      final parentId = message.forwardedMessage?.id ??
+          int.tryParse(message.localReplyMessageId ?? '');
+      if (parentId == null || parentId <= 0) break;
+      currentId = parentId;
+    }
+    return currentId.toString();
+  }
+
   Future<void> _onSendInButton(
       String messageText, String? replyMessageId) async {
     final normalizedMessageText = messageText.trim();
     if (normalizedMessageText.isNotEmpty) {
+      final resolvedReplyMessageId =
+          _resolveInstagramCommentReplyId(replyMessageId);
       final myName = await _getMyDisplayName();
       final localMessage = Message(
         id: -DateTime.now().microsecondsSinceEpoch,
@@ -4161,7 +4185,7 @@ class _ChatSmsScreenState extends State<ChatSmsScreen>
         isMyMessage: true,
         senderName: myName,
         deliveryStatus: MessageDeliveryStatus.pending,
-        localReplyMessageId: replyMessageId,
+        localReplyMessageId: resolvedReplyMessageId,
         localResponseType:
             _isInstagramCommentChannel ? _instagramResponseType : null,
       );

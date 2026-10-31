@@ -1,8 +1,11 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_form_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/work_schedule_selector.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +29,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
   late TextEditingController _salesAddrController;
   late TextEditingController _salesMailController;
   late TextEditingController _salesPhoneController;
+  String _formattedSalesPhone = '';
   late TextEditingController _salesHoursController;
 
   // Nomenclature filter
@@ -182,15 +186,17 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               const SizedBox(height: 8),
               _buildTextField(_salesAddrController, 'Адрес офиса'),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(child: _buildTextField(_salesMailController, 'Email')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildTextField(_salesPhoneController, 'Телефон')),
-                ],
+              _buildTextField(_salesMailController, 'Email'),
+              const SizedBox(height: 10),
+              CustomPhoneNumberInput(
+                controller: _salesPhoneController,
+                label: 'Телефон',
+                onInputChanged: (val) {
+                  _formattedSalesPhone = val;
+                },
               ),
               const SizedBox(height: 10),
-              _buildTextField(_salesHoursController, 'Режим работы'),
+              _buildWorkingHoursField(context),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -204,7 +210,9 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
                       salesOffice: controller.complex.salesOffice.copyWith(
                         address: _salesAddrController.text.trim(),
                         email: _salesMailController.text.trim(),
-                        phone: _salesPhoneController.text.trim(),
+                        phone: _formattedSalesPhone.isNotEmpty
+                            ? _formattedSalesPhone
+                            : _salesPhoneController.text.trim(),
                         workingHours: _salesHoursController.text.trim(),
                       ),
                     ));
@@ -647,20 +655,36 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, {TextInputType? keyboardType}) {
+  Widget _buildWorkingHoursField(BuildContext context) {
     final colors = context.appColors;
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        filled: true,
-        fillColor: colors.surfaceElevated.withValues(alpha: 0.4),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    return CustomTextField(
+      controller: _salesHoursController,
+      label: 'Режим работы',
+      hintText: 'Например: Пн–Пт: 09:00 – 18:00',
+      suffixIcon: IconButton(
+        icon: Icon(Icons.edit_calendar_rounded, color: colors.buttonPrimaryBg, size: 20),
+        tooltip: 'Настроить режим работы',
+        onPressed: () async {
+          final res = await WorkScheduleSelector.showPickerBottomSheet(
+            context: context,
+            currentSchedule: _salesHoursController.text.trim(),
+          );
+          if (res != null && res.isNotEmpty) {
+            setState(() {
+              _salesHoursController.text = res;
+            });
+          }
+        },
       ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, {TextInputType? keyboardType}) {
+    return CustomTextField(
+      controller: controller,
+      label: label,
+      hintText: 'Введите ${label.toLowerCase()}',
+      keyboardType: keyboardType ?? TextInputType.text,
     );
   }
 }

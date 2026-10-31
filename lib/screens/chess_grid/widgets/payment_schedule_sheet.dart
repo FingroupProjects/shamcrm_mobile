@@ -1,9 +1,9 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/services/payment_schedule_pdf_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 
 class PaymentScheduleSheet extends StatelessWidget {
   final Order order;
@@ -343,20 +343,49 @@ class PaymentScheduleSheet extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
+                // Print PDF Button
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final text = 'График платежей по рассрочке для заказа ${order.id}\n'
-                          'Покупатель: ${order.buyerName}\n'
-                          'Общая сумма: ${order.price} \$\n'
-                          'Первоначальный взнос: ${pay?.downPayment ?? 0} \$\n'
-                          'Ежемесячный платёж: ${pay?.monthlyPayment.toStringAsFixed(2) ?? 0} \$\n'
-                          'Срок: ${pay?.months ?? 12} месяцев.\n'
-                          'Сформировано в shamCRM.';
-                      Share.share(text, subject: 'График платежей ${order.id}');
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      if (pay == null) return;
+                      await PaymentSchedulePdfService.printSchedule(
+                        order: order,
+                        apartment: apt,
+                        parking: park,
+                        complex: controller.complex,
+                        requisites: req,
+                        details: pay,
+                      );
                     },
-                    icon: const Icon(Icons.share_rounded, size: 18),
-                    label: const Text('Поделиться'),
+                    icon: const Icon(Icons.print_rounded, size: 18),
+                    label: const Text('Печать'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.buttonPrimaryBg,
+                      side: BorderSide(color: colors.buttonPrimaryBg, width: 1.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Share / Download PDF Button
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      if (pay == null) return;
+                      await PaymentSchedulePdfService.shareSchedule(
+                        order: order,
+                        apartment: apt,
+                        parking: park,
+                        complex: controller.complex,
+                        requisites: req,
+                        details: pay,
+                      );
+                    },
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                    label: const Text('Скачать PDF'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.buttonPrimaryBg,
                       foregroundColor: colors.buttonPrimaryFg,
@@ -365,16 +394,14 @@ class PaymentScheduleSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                OutlinedButton(
+                const SizedBox(width: 8),
+
+                // Close Button
+                IconButton(
                   onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.textPrimary,
-                    side: BorderSide(color: colors.borderSubtle),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: const Text('Закрыть'),
+                  icon: const Icon(Icons.close_rounded),
+                  color: colors.iconSecondary,
+                  tooltip: 'Закрыть',
                 ),
               ],
             ),

@@ -30,6 +30,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  int _scopeTabIndex = 0; // 0 = Мои объекты, 1 = Доступные мне
   bool isClickAvatarIcon = false;
 
   @override
@@ -209,6 +210,72 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+
+                    // TZ Section 1/2: «Мои объекты» / «Доступные мне» tab selector
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceElevated.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _scopeTabIndex = 0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _scopeTabIndex == 0 ? colors.buttonPrimaryBg : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(9),
+                                    boxShadow: _scopeTabIndex == 0
+                                        ? [BoxShadow(color: colors.buttonPrimaryBg.withValues(alpha: 0.25), blurRadius: 4)]
+                                        : null,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Мои объекты',
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                      color: _scopeTabIndex == 0 ? Colors.white : colors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => setState(() => _scopeTabIndex = 1),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _scopeTabIndex == 1 ? colors.buttonPrimaryBg : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(9),
+                                    boxShadow: _scopeTabIndex == 1
+                                        ? [BoxShadow(color: colors.buttonPrimaryBg.withValues(alpha: 0.25), blurRadius: 4)]
+                                        : null,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Доступные мне',
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                      color: _scopeTabIndex == 1 ? Colors.white : colors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 

@@ -2417,10 +2417,12 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
 
                 _applyDealTabMemory();
 
-                // Прокручиваем к активному табу
-                if (_tabScrollController.hasClients) {
-                  _scrollToActiveTab();
-                }
+                // Табы только что пересозданы, их ключи получат context
+                // лишь после отрисовки. Иначе после refresh лента остаётся
+                // в начале и активный статус не виден.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _scrollToActiveTab();
+                });
 
                 if (_skipNextTabListener) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {

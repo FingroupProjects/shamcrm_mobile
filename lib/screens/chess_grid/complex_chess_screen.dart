@@ -7,6 +7,7 @@ import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dar
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_form_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_admin_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_preview_tooltip.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_catalog_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_cell.dart';
@@ -24,6 +25,7 @@ enum ChessViewMode {
   list,
   orders,
   parking,
+  admin,
   settings,
 }
 
@@ -87,6 +89,23 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: _buildAppBar(context, complex, building, hasActiveFilter),
+      floatingActionButton: (_currentView == ChessViewMode.matrix || _currentView == ChessViewMode.list)
+          ? FloatingActionButton.extended(
+              onPressed: () => _showQuickCreateMenu(context),
+              backgroundColor: colors.buttonPrimaryBg,
+              foregroundColor: colors.buttonPrimaryFg,
+              elevation: 4,
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text(
+                'Добавить',
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            )
+          : null,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -230,6 +249,12 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
             ),
             const SizedBox(width: 4),
             _buildNavTabItem(
+              mode: ChessViewMode.admin,
+              label: 'Управление',
+              icon: Icons.domain_add_rounded,
+            ),
+            const SizedBox(width: 4),
+            _buildNavTabItem(
               mode: ChessViewMode.settings,
               label: 'Настройки',
               icon: Icons.tune_rounded,
@@ -334,6 +359,9 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
             isParkingMode: true,
           ),
         );
+
+      case ChessViewMode.admin:
+        return ChessGridAdminView(controller: _controller);
 
       case ChessViewMode.settings:
         return ChessGridSettingsView(controller: _controller);
@@ -891,6 +919,146 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
                     ),
                   ),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQuickCreateMenu(BuildContext context) {
+    final colors = context.appColors;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: colors.borderSubtle,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              'Добавить в объект',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildCreateMenuItem(
+              context: ctx,
+              icon: Icons.domain_rounded,
+              color: colors.buttonPrimaryBg,
+              title: 'Добавить корпус',
+              subtitle: 'Создать новый блок, этажи и квартиры на этаже',
+              onTap: () {
+                Navigator.pop(ctx);
+                BuildingFormSheet.show(context: context);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildCreateMenuItem(
+              context: ctx,
+              icon: Icons.meeting_room_rounded,
+              color: ApartmentStatus.available.color,
+              title: 'Добавить квартиру',
+              subtitle: 'Указать номер, комнатность, площадь, цену и фото',
+              onTap: () {
+                Navigator.pop(ctx);
+                ApartmentFormSheet.show(context: context);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildCreateMenuItem(
+              context: ctx,
+              icon: Icons.local_parking_rounded,
+              color: Colors.blueAccent,
+              title: 'Добавить парковочное место',
+              subtitle: 'Подземная, крытая или открытая парковка',
+              onTap: () {
+                Navigator.pop(ctx);
+                ApartmentFormSheet.show(context: context, isParkingMode: true);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateMenuItem({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.appColors;
+    return Material(
+      color: colors.surfaceElevated.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontFamily: 'Golos',
+                        fontSize: 11.5,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.iconSecondary, size: 20),
             ],
           ),
         ),

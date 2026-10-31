@@ -8,9 +8,12 @@ import '../../../bloc/page_2_BLOC/openings/client/client_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/client/client_openings_event.dart';
 import '../../../bloc/page_2_BLOC/openings/goods/goods_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/goods/goods_openings_event.dart';
+import '../../../bloc/page_2_BLOC/openings/goods/goods_list_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_bloc.dart';
 import '../../../bloc/page_2_BLOC/openings/cash_register/cash_register_openings_event.dart';
 import '../../../custom_widget/custom_app_bar_simple.dart';
+import '../../../models/page_2/good_variants_model.dart';
+import '../../../models/page_2/goods_model.dart' as goods_model;
 import '../../../models/page_2/openings/goods_opening_filter.dart';
 import '../../../screens/profile/languages/app_localizations.dart';
 import '../../../screens/profile/profile_screen.dart';
@@ -21,8 +24,9 @@ import 'goods/goods_opening_filter_screen.dart';
 import 'cash_register/cash_register_content.dart';
 import 'supplier/create_supplier_opening_dialog.dart';
 import 'client/create_client_opening_dialog.dart';
-import 'goods/create_goods_opening_dialog.dart';
+import 'goods/add_goods_opening_screen.dart';
 import 'cash_register/create_cash_register_opening_dialog.dart';
+import '../incoming/variant_selection_bottom_sheet.dart';
 
 class TaskStyles {
   static const TextStyle tabTextStyle = TextStyle(
@@ -399,13 +403,7 @@ class _OpeningsScreenState extends State<OpeningsScreen>
         ),
       );
     } else if (id == 2) {
-      showDialog(
-        context: context,
-        builder: (dialogContext) => BlocProvider.value(
-          value: _goodsBloc,
-          child: const CreateGoodsOpeningDialog(),
-        ),
-      );
+      _showGoodsOpeningPicker();
     } else if (id == 3) {
       showDialog(
         context: context,
@@ -417,5 +415,64 @@ class _OpeningsScreenState extends State<OpeningsScreen>
     } else {
       return;
     }
+  }
+
+  /// Тот же выбор товара с картинками, что и в документах учёта.
+  Future<void> _showGoodsOpeningPicker() async {
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const VariantSelectionBottomSheet(
+        existingItems: [],
+        showPriceAndRemainder: false,
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    final selectedGood = _goodVariantFromPicker(picked);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider<GoodsOpeningsBloc>.value(value: _goodsBloc),
+            BlocProvider<GetAllGoodsListBloc>(
+              create: (_) => GetAllGoodsListBloc(),
+            ),
+          ],
+          child: AddGoodsOpeningScreen(
+            goodName: selectedGood.fullName ?? 'Неизвестный товар',
+            goodVariantId: selectedGood.id ?? 0,
+            selectedGood: selectedGood,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Экран остатка берёт единицы измерения из GoodVariantItem.
+  GoodVariantItem _goodVariantFromPicker(Map<String, dynamic> picked) {
+    final goodId = picked['id'] as int?;
+    final name = picked['name']?.toString();
+    final units = (picked['availableUnits'] as List? ?? const [])
+        .whereType<goods_model.Unit>()
+        .map(
+          (unit) => VariantUnit(
+            id: unit.id,
+            name: unit.name,
+            shortName: unit.shortName,
+            isBase: unit.isBase,
+            amount: unit.amount?.toString(),
+          ),
+        )
+        .toList();
+
+    return GoodVariantItem(
+      id: picked['variantId'] as int?,
+      goodId: goodId,
+      fullName: name,
+      good: VariantGood(id: goodId, name: name, units: units),
+    );
   }
 }

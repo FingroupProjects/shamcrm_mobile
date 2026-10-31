@@ -887,11 +887,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ),
         // SMS и карандаш статуса в одном столбце и одного размера.
-        if (isPhone)
+        if (isPhone) ...[
+          _buildTrailingActionIcon(
+            icon: Icons.phone_in_talk_rounded,
+            onTap: () => _handlePhoneTap(profile, value),
+          ),
           _buildTrailingActionIcon(
             icon: Icons.sms_rounded,
             onTap: () => _openLeadSms(profile, value),
           ),
+        ],
       ],
     );
   }

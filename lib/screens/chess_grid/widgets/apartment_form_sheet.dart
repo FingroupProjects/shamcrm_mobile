@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ApartmentFormSheet extends StatefulWidget {
   final Apartment? existingApartment;
@@ -68,13 +73,21 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
   bool _isLoadingEntrances = false;
 
   final _numberController = TextEditingController();
-  final _roomsController = TextEditingController(text: '1');
-  final _typeController = TextEditingController(text: 'Студия');
-  final _totalAreaController = TextEditingController(text: '45.0');
-  final _livingAreaController = TextEditingController(text: '26.0');
-  final _kitchenAreaController = TextEditingController(text: '10.0');
-  final _pricePerM2Controller = TextEditingController(text: '800');
-  final _totalPriceController = TextEditingController(text: '36000');
+  final _roomsController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _totalAreaController = TextEditingController();
+  final _livingAreaController = TextEditingController();
+  final _kitchenAreaController = TextEditingController();
+  final _pricePerM2Controller = TextEditingController();
+  final _totalPriceController = TextEditingController();
+
+  // TZ section 3 new fields
+  final _layoutTypeController = TextEditingController(text: 'A');
+  final _balconiesController = TextEditingController(text: '0');
+  final _bathroomsController = TextEditingController(text: '1');
+  String _currency = '\$';
+  final List<String> _planImages = [];
+  final Map<int, TextEditingController> _customFieldControllers = {};
 
   // Parking fields
   String _parkingType = 'Подземная';
@@ -82,9 +95,14 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
 
   // Copy to floors feature (TZ section 3)
   bool _copyToFloors = false;
-  final _copyFloorsController = TextEditingController(text: '2-9');
+  final _copyFloorsController = TextEditingController();
 
   ApartmentStatus _status = ApartmentStatus.available;
+
+  // Required fields validation like LeadAddScreen
+  Set<String> _missingFields = {};
+  String? _firstMissingField;
+  int _fieldErrorPulse = 0;
 
   @override
   void initState() {
@@ -104,6 +122,12 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
 
     _fetchEntrances();
 
+    // Initialize custom field controllers
+    for (final cf in controller.customFields.where((f) => f.scope == 'flat')) {
+      final initialVal = widget.existingApartment?.customFields[cf.id] ?? '';
+      _customFieldControllers[cf.id] = TextEditingController(text: initialVal);
+    }
+
     if (widget.existingApartment != null) {
       final a = widget.existingApartment!;
       _numberController.text = a.number;
@@ -114,6 +138,11 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
       _kitchenAreaController.text = '${a.kitchenArea}';
       _pricePerM2Controller.text = a.pricePerSqm.toStringAsFixed(0);
       _totalPriceController.text = a.totalPrice.toStringAsFixed(0);
+      _layoutTypeController.text = a.layoutType ?? 'A';
+      _balconiesController.text = '${a.balconiesCount}';
+      _bathroomsController.text = '${a.combinedBathroomsCount}';
+      _currency = a.currency.isNotEmpty ? a.currency : '\$';
+      _planImages.addAll(a.plans);
       _status = a.status;
     } else if (widget.existingParking != null) {
       final p = widget.existingParking!;
@@ -123,21 +152,6 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
       _parkingType = p.type;
       _linkedApartmentId = p.linkedApartmentId;
       _status = p.status;
-    } else {
-      _autoGenerateNumber();
-    }
-  }
-
-  void _autoGenerateNumber() {
-    final controller = ChessGridController.instance;
-    final buildings = controller.complex.buildings;
-    if (buildings.isEmpty) return;
-    final b = buildings.firstWhere((x) => x.key == _buildingKey, orElse: () => buildings.first);
-    if (_isParking) {
-      _numberController.text = 'П-${(controller.parkingSpots.length + 1).toString().padLeft(2, '0')}';
-    } else {
-      final slotNo = (_entrance - 1) * b.floorCount * b.apartsPerFloor + (_floor - 1) * b.apartsPerFloor + _position + 1;
-      _numberController.text = '$slotNo';
     }
   }
 
@@ -188,6 +202,20 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     }
   }
 
+  Future<void> _pickPlanImages() async {
+    try {
+      final picker = ImagePicker();
+      final images = await picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _planImages.addAll(images.map((img) => img.path));
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+    }
+  }
+
   @override
   void dispose() {
     _numberController.dispose();
@@ -198,7 +226,13 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     _kitchenAreaController.dispose();
     _pricePerM2Controller.dispose();
     _totalPriceController.dispose();
+    _layoutTypeController.dispose();
+    _balconiesController.dispose();
+    _bathroomsController.dispose();
     _copyFloorsController.dispose();
+    for (final c in _customFieldControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -209,12 +243,8 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     final isEditing = widget.existingApartment != null || widget.existingParking != null;
 
     final buildings = controller.complex.buildings;
-    final Building? building = buildings.isNotEmpty
-        ? buildings.firstWhere(
-            (b) => b.key == _buildingKey,
-            orElse: () => buildings.first,
-          )
-        : null;
+    final Building? building = buildings.firstWhereOrNull((b) => b.key == _buildingKey) ??
+        (buildings.isNotEmpty ? buildings.first : null);
 
     return Container(
       constraints: BoxConstraints(
@@ -273,30 +303,26 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                   if (!isEditing) ...[
                     Row(
                       children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(child: Text('Квартира')),
-                            selected: !_isParking,
-                            onSelected: (val) {
-                              setState(() {
-                                _isParking = false;
-                                _autoGenerateNumber();
-                              });
-                            },
-                          ),
+                        _buildTypeTab(
+                          label: 'Квартира',
+                          icon: Icons.apartment_rounded,
+                          isSelected: !_isParking,
+                          onTap: () {
+                            if (_isParking) {
+                              setState(() => _isParking = false);
+                            }
+                          },
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(child: Text('Парковочное место')),
-                            selected: _isParking,
-                            onSelected: (val) {
-                              setState(() {
-                                _isParking = true;
-                                _autoGenerateNumber();
-                              });
-                            },
-                          ),
+                        _buildTypeTab(
+                          label: 'Парковка',
+                          icon: Icons.local_parking_rounded,
+                          isSelected: _isParking,
+                          onTap: () {
+                            if (!_isParking) {
+                              setState(() => _isParking = true);
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -305,6 +331,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
 
                   // Common: Building selector & Number
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _buildDropdown<String>(
@@ -318,7 +345,6 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                               setState(() {
                                 _buildingKey = val;
                                 _selectedEntranceId = null;
-                                _autoGenerateNumber();
                               });
                               _fetchEntrances();
                             }
@@ -327,14 +353,30 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildTextField(
-                          controller: _numberController,
-                          label: 'Номер *',
+                        child: RequiredFieldSlot(
+                          invalid: _missingFields.contains('number'),
+                          focus: _firstMissingField == 'number',
+                          pulse: _fieldErrorPulse,
+                          message: 'Укажите номер',
+                          child: CustomTextField(
+                            controller: _numberController,
+                            label: 'Номер *',
+                            hintText: 'Введите номер',
+                            hasError: _missingFields.contains('number'),
+                            onChanged: (val) {
+                              if (val.trim().isNotEmpty && _missingFields.contains('number')) {
+                                setState(() {
+                                  _missingFields.remove('number');
+                                  if (_firstMissingField == 'number') _firstMissingField = null;
+                                });
+                              }
+                            },
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   // Status
                   _buildDropdown<ApartmentStatus>(
@@ -365,6 +407,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                   // APARTMENT FIELDS
                   if (!_isParking) ...[
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: _entrances.isNotEmpty
@@ -383,7 +426,6 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                                       setState(() {
                                         _selectedEntranceId = val;
                                         _entrance = ent?.number ?? 1;
-                                        _autoGenerateNumber();
                                       });
                                     }
                                   },
@@ -399,7 +441,6 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                                     if (val != null) {
                                       setState(() {
                                         _entrance = val;
-                                        _autoGenerateNumber();
                                       });
                                     }
                                   },
@@ -418,7 +459,6 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                               if (val != null) {
                                 setState(() {
                                   _floor = val;
-                                  _autoGenerateNumber();
                                 });
                               }
                             },
@@ -426,74 +466,310 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _buildTextField(
+                          child: CustomTextField(
                             controller: _roomsController,
                             label: 'Комнат',
+                            hintText: 'Введите кол-во',
                             keyboardType: TextInputType.number,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
-                    _buildTextField(
+                    CustomTextField(
                       controller: _typeController,
                       label: 'Тип квартиры (отделка)',
-                      hint: 'Студия, Евроремонт, Черновая',
+                      hintText: 'Введите тип отделки',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _buildTextField(
-                            controller: _totalAreaController,
-                            label: 'Общая, м² *',
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculatePriceFromM2(),
+                          child: RequiredFieldSlot(
+                            invalid: _missingFields.contains('totalArea'),
+                            focus: _firstMissingField == 'totalArea',
+                            pulse: _fieldErrorPulse,
+                            message: 'Укажите площадь',
+                            child: CustomTextField(
+                              controller: _totalAreaController,
+                              label: 'Общая, м² *',
+                              hintText: 'Введите площадь',
+                              keyboardType: TextInputType.number,
+                              hasError: _missingFields.contains('totalArea'),
+                              onChanged: (_) {
+                                if (_totalAreaController.text.trim().isNotEmpty &&
+                                    _missingFields.contains('totalArea')) {
+                                  setState(() {
+                                    _missingFields.remove('totalArea');
+                                    if (_firstMissingField == 'totalArea') _firstMissingField = null;
+                                  });
+                                }
+                                _calculatePriceFromM2();
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _buildTextField(
+                          child: CustomTextField(
                             controller: _livingAreaController,
                             label: 'Жилая, м²',
+                            hintText: 'Введите площадь',
                             keyboardType: TextInputType.number,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _buildTextField(
+                          child: CustomTextField(
                             controller: _kitchenAreaController,
                             label: 'Кухня, м²',
+                            hintText: 'Введите площадь',
                             keyboardType: TextInputType.number,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _buildTextField(
-                            controller: _pricePerM2Controller,
-                            label: 'Цена за м², \$ *',
-                            keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculatePriceFromM2(),
+                          child: CustomTextField(
+                            controller: _layoutTypeController,
+                            label: 'Тип планировки',
+                            hintText: 'A, B, C...',
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _buildTextField(
-                            controller: _totalPriceController,
-                            label: 'Общая цена, \$ *',
+                          child: CustomTextField(
+                            controller: _balconiesController,
+                            label: 'Балконов / лоджий',
+                            hintText: '0, 1...',
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateM2FromPrice(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _bathroomsController,
+                            label: 'Санузлов',
+                            hintText: '1, 2...',
+                            keyboardType: TextInputType.number,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 14),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: RequiredFieldSlot(
+                            invalid: _missingFields.contains('pricePerM2'),
+                            focus: _firstMissingField == 'pricePerM2',
+                            pulse: _fieldErrorPulse,
+                            message: 'Укажите цену',
+                            child: CustomTextField(
+                              controller: _pricePerM2Controller,
+                              label: 'Цена за м² *',
+                              hintText: 'Введите цену',
+                              keyboardType: TextInputType.number,
+                              hasError: _missingFields.contains('pricePerM2'),
+                              onChanged: (_) {
+                                if (_pricePerM2Controller.text.trim().isNotEmpty &&
+                                    _missingFields.contains('pricePerM2')) {
+                                  setState(() {
+                                    _missingFields.remove('pricePerM2');
+                                    if (_firstMissingField == 'pricePerM2') _firstMissingField = null;
+                                  });
+                                }
+                                _calculatePriceFromM2();
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 3,
+                          child: RequiredFieldSlot(
+                            invalid: _missingFields.contains('totalPrice'),
+                            focus: _firstMissingField == 'totalPrice',
+                            pulse: _fieldErrorPulse,
+                            message: 'Укажите сумму',
+                            child: CustomTextField(
+                              controller: _totalPriceController,
+                              label: 'Общая цена *',
+                              hintText: 'Введите сумму',
+                              keyboardType: TextInputType.number,
+                              hasError: _missingFields.contains('totalPrice'),
+                              onChanged: (_) {
+                                if (_totalPriceController.text.trim().isNotEmpty &&
+                                    _missingFields.contains('totalPrice')) {
+                                  setState(() {
+                                    _missingFields.remove('totalPrice');
+                                    if (_firstMissingField == 'totalPrice') _firstMissingField = null;
+                                  });
+                                }
+                                _calculateM2FromPrice();
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: _buildDropdown<String>(
+                            label: 'Валюта',
+                            value: _currency,
+                            items: const [
+                              DropdownMenuItem(value: '\$', child: Text('\$ (USD)')),
+                              DropdownMenuItem(value: 'сом.', child: Text('сом.')),
+                              DropdownMenuItem(value: 'руб.', child: Text('руб.')),
+                              DropdownMenuItem(value: '€', child: Text('€ (EUR)')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _currency = val);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Photos of Floor Plan Section (TZ Section 3)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Фотографии планировки (${_planImages.length})',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: _pickPlanImages,
+                              icon: const Icon(Icons.add_photo_alternate_rounded, size: 18),
+                              label: const Text('Добавить', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5)),
+                              style: TextButton.styleFrom(foregroundColor: colors.buttonPrimaryBg),
+                            ),
+                          ],
+                        ),
+                        if (_planImages.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 70,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _planImages.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (ctx, idx) {
+                                final path = _planImages[idx];
+                                final isLocal = File(path).existsSync();
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        width: 70,
+                                        height: 70,
+                                        color: colors.surfaceElevated,
+                                        child: isLocal
+                                            ? Image.file(File(path), fit: BoxFit.cover)
+                                            : Image.network(
+                                                path,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Icon(
+                                                  Icons.broken_image_rounded,
+                                                  color: colors.iconSecondary,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _planImages.removeAt(idx)),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.black54,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ],
+                    ),
+
+                    // Custom fields section (TZ Section 5.5)
+                    if (_customFieldControllers.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Дополнительные поля',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                          color: colors.buttonPrimaryBg,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final cf in controller.customFields.where((f) => f.scope == 'flat')) ...[
+                        if (cf.isRequired)
+                          RequiredFieldSlot(
+                            invalid: _missingFields.contains('custom_${cf.id}'),
+                            focus: _firstMissingField == 'custom_${cf.id}',
+                            pulse: _fieldErrorPulse,
+                            message: 'Поле «${cf.name}» обязательно',
+                            child: CustomTextField(
+                              controller: _customFieldControllers[cf.id]!,
+                              label: '${cf.name} *',
+                              hintText: 'Введите ${cf.name.toLowerCase()}',
+                              keyboardType: cf.type == 'number' ? TextInputType.number : TextInputType.text,
+                              hasError: _missingFields.contains('custom_${cf.id}'),
+                              onChanged: (val) {
+                                if (val.trim().isNotEmpty && _missingFields.contains('custom_${cf.id}')) {
+                                  setState(() {
+                                    _missingFields.remove('custom_${cf.id}');
+                                    if (_firstMissingField == 'custom_${cf.id}') _firstMissingField = null;
+                                  });
+                                }
+                              },
+                            ),
+                          )
+                        else
+                          CustomTextField(
+                            controller: _customFieldControllers[cf.id]!,
+                            label: cf.name,
+                            hintText: 'Введите ${cf.name.toLowerCase()}',
+                            keyboardType: cf.type == 'number' ? TextInputType.number : TextInputType.text,
+                          ),
+                        const SizedBox(height: 10),
+                      ],
+                      const SizedBox(height: 6),
+                    ],
                     const SizedBox(height: 14),
 
                     // Copy to other floors feature (from TZ section 3)
@@ -513,12 +789,12 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
                       if (_copyToFloors) ...[
-                        _buildTextField(
+                        CustomTextField(
                           controller: _copyFloorsController,
                           label: 'Номера этажей (например: 2-9 или 2,4,6)',
-                          hint: '2-9',
+                          hintText: 'Введите этажи',
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 14),
                       ],
                     ],
                   ] else ...[
@@ -533,28 +809,46 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         if (val != null) setState(() => _parkingType = val);
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _buildTextField(
+                          child: CustomTextField(
                             controller: _totalAreaController,
                             label: 'Площадь, м²',
+                            hintText: 'Введите площадь',
                             keyboardType: TextInputType.number,
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _buildTextField(
-                            controller: _totalPriceController,
-                            label: 'Цена, \$ *',
-                            keyboardType: TextInputType.number,
+                          child: RequiredFieldSlot(
+                            invalid: _missingFields.contains('parkingPrice'),
+                            focus: _firstMissingField == 'parkingPrice',
+                            pulse: _fieldErrorPulse,
+                            message: 'Укажите цену',
+                            child: CustomTextField(
+                              controller: _totalPriceController,
+                              label: 'Цена *',
+                              hintText: 'Введите цену',
+                              keyboardType: TextInputType.number,
+                              hasError: _missingFields.contains('parkingPrice'),
+                              onChanged: (val) {
+                                if (val.trim().isNotEmpty && _missingFields.contains('parkingPrice')) {
+                                  setState(() {
+                                    _missingFields.remove('parkingPrice');
+                                    if (_firstMissingField == 'parkingPrice') _firstMissingField = null;
+                                  });
+                                }
+                              },
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     // Linked apartment selector
                     _buildDropdown<int?>(
@@ -604,17 +898,46 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
   void _handleSave() {
     final controller = ChessGridController.instance;
     final no = _numberController.text.trim();
-    if (no.isEmpty) {
-      showCustomSnackBar(context: context, message: 'Укажите номер или название', isSuccess: false);
-      return;
-    }
-
     final price = double.tryParse(_totalPriceController.text) ?? 0;
     final area = double.tryParse(_totalAreaController.text) ?? 0;
 
-    if (price <= 0) {
-      showCustomSnackBar(context: context, message: 'Укажите корректную цену', isSuccess: false);
+    final missing = <String>[];
+    if (no.isEmpty) missing.add('number');
+
+    if (!_isParking) {
+      if (area <= 0) missing.add('totalArea');
+      final pm = double.tryParse(_pricePerM2Controller.text) ?? 0;
+      if (pm <= 0) missing.add('pricePerM2');
+      if (price <= 0) missing.add('totalPrice');
+      for (final cf in controller.customFields.where((f) => f.scope == 'flat' && f.isRequired)) {
+        final ctrl = _customFieldControllers[cf.id];
+        if (ctrl == null || ctrl.text.trim().isEmpty) {
+          missing.add('custom_${cf.id}');
+        }
+      }
+    } else {
+      if (price <= 0) missing.add('parkingPrice');
+    }
+
+    if (missing.isNotEmpty) {
+      setState(() {
+        _missingFields = missing.toSet();
+        _firstMissingField = missing.first;
+        _fieldErrorPulse++;
+      });
+      showCustomSnackBar(
+        context: context,
+        message: 'Заполните обязательные поля',
+        isSuccess: false,
+      );
       return;
+    }
+
+    if (_missingFields.isNotEmpty) {
+      setState(() {
+        _missingFields = {};
+        _firstMissingField = null;
+      });
     }
 
     if (_isParking) {
@@ -654,13 +977,20 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     final pm = double.tryParse(_pricePerM2Controller.text) ?? (area > 0 ? price / area : 800);
 
     final buildings = controller.complex.buildings;
-    final b = buildings.isNotEmpty
-        ? buildings.firstWhere(
-            (x) => x.key == _buildingKey,
-            orElse: () => buildings.first,
-          )
-        : null;
+    final b = buildings.firstWhereOrNull((x) => x.key == _buildingKey) ??
+        (buildings.isNotEmpty ? buildings.first : null);
     final bName = b?.name ?? 'Корпус';
+
+    final customFieldMap = <int, String>{};
+    for (final e in _customFieldControllers.entries) {
+      if (e.value.text.trim().isNotEmpty) {
+        customFieldMap[e.key] = e.value.text.trim();
+      }
+    }
+
+    final layoutType = _layoutTypeController.text.trim().isNotEmpty ? _layoutTypeController.text.trim() : 'A';
+    final balconies = int.tryParse(_balconiesController.text) ?? 0;
+    final bathrooms = int.tryParse(_bathroomsController.text) ?? 1;
 
     if (widget.existingApartment != null) {
       controller.updateApartment(widget.existingApartment!.copyWith(
@@ -677,6 +1007,12 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
         kitchenArea: kit,
         pricePerSqm: pm,
         totalPrice: price,
+        currency: _currency,
+        layoutType: layoutType,
+        balconiesCount: balconies,
+        combinedBathroomsCount: bathrooms,
+        plans: _planImages,
+        customFields: customFieldMap,
         status: _status,
       ));
     } else {
@@ -703,7 +1039,12 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
           kitchenArea: kit,
           pricePerSqm: pm,
           totalPrice: price,
-          currency: '\$',
+          currency: _currency,
+          layoutType: layoutType,
+          balconiesCount: balconies,
+          combinedBathroomsCount: bathrooms,
+          plans: _planImages,
+          customFields: customFieldMap,
           status: _status,
         ),
         copyToFloors: copyFloorsList,
@@ -740,40 +1081,55 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     return result.toList();
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
+  Widget _buildTypeTab({
     required String label,
-    String? hint,
-    TextInputType? keyboardType,
-    ValueChanged<String>? onChanged,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
   }) {
     final colors = context.appColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
-        ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          onChanged: onChanged,
-          style: TextStyle(fontFamily: 'Golos', fontSize: 13, color: colors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            isDense: true,
-            filled: true,
-            fillColor: colors.surfaceElevated.withValues(alpha: 0.5),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderSubtle),
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colors.buttonPrimaryBg
+                : colors.surfaceElevated.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
             ),
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? colors.buttonPrimaryFg : colors.iconSecondary,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 14,
+                      color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
@@ -784,27 +1140,51 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     required ValueChanged<T?> onChanged,
   }) {
     final colors = context.appColors;
+    final hasMatch = items.any((item) => item.value == value);
+    final effectiveValue = hasMatch ? value : (items.isNotEmpty ? items.first.value : null);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colors.borderSubtle),
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: colors.textPrimary,
+            ),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              items: items,
-              onChanged: onChanged,
+          const SizedBox(height: 4),
+        ],
+        DropdownButtonFormField<T>(
+          key: ValueKey(effectiveValue),
+          initialValue: effectiveValue,
+          isExpanded: true,
+          isDense: true,
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 16,
+            color: colors.textPrimary,
+          ),
+          dropdownColor: colors.surfacePrimary,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.iconSecondary),
+          items: items,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: colors.fieldBg,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            border: AppFieldStyle.outline(context),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppFieldStyle.radius,
+              borderSide: AppFieldStyle.side(context),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppFieldStyle.radius,
+              borderSide: AppFieldStyle.side(context, focused: true),
             ),
           ),
         ),

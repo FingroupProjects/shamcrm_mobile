@@ -244,8 +244,12 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
       Map<String, dynamic> newRow = {
         'is_active': true,
       };
+      final seenAddNames = <String>{};
       for (var attr
           in selectedCategory!.attributes.where((a) => a.isIndividual)) {
+        final key = attr.name.trim().toLowerCase();
+        if (seenAddNames.contains(key)) continue;
+        seenAddNames.add(key);
         newRow[attr.name] = TextEditingController();
       }
 
@@ -1116,18 +1120,27 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                       fontFamily: 'Gilroy',
                                                       color:
                                                           colors.textPrimary))),
-                                          ...selectedCategory!.attributes
-                                              .where(
-                                                  (attr) => attr.isIndividual)
-                                              .map((attr) => DataColumn(
-                                                  label: Text(attr.name,
-                                                      style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          fontFamily: 'Gilroy',
-                                                          color: colors
-                                                              .textPrimary)))),
+                                          ...() {
+                                                final seenColNames = <String>{};
+                                                return selectedCategory!.attributes
+                                                    .where((attr) => attr.isIndividual)
+                                                    .where((attr) {
+                                                      final key = attr.name.trim().toLowerCase();
+                                                      if (seenColNames.contains(key)) return false;
+                                                      seenColNames.add(key);
+                                                      return true;
+                                                    })
+                                                    .map((attr) => DataColumn(
+                                                        label: Text(attr.name,
+                                                            style: TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight.w500,
+                                                                fontFamily: 'Gilroy',
+                                                                color: colors
+                                                                    .textPrimary))))
+                                                    .toList();
+                                              }(),
                                           if (selectedCategory!
                                               .hasPriceCharacteristics)
                                             DataColumn(
@@ -1265,44 +1278,53 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                   ],
                                                 ),
                                               ),
-                                              ...selectedCategory!.attributes
-                                                  .where((attr) =>
-                                                      attr.isIndividual)
-                                                  .map((attr) => DataCell(
-                                                        SizedBox(
-                                                          width: 150,
-                                                          child: TextField(
-                                                            controller:
-                                                                row[attr.name],
-                                                            decoration:
-                                                                InputDecoration(
-                                                              hintText:
-                                                                  '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
-                                                              hintStyle: TextStyle(
-                                                                  fontSize: 12,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  fontFamily:
-                                                                      'Gilroy',
-                                                                  color: colors
-                                                                      .textMuted),
-                                                              border: OutlineInputBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              12)),
-                                                              contentPadding:
-                                                                  const EdgeInsets
-                                                                      .symmetric(
-                                                                      horizontal:
-                                                                          12,
-                                                                      vertical:
-                                                                          16),
+                                              ...() {
+                                                  final seenCellNames = <String>{};
+                                                  return selectedCategory!.attributes
+                                                      .where((attr) => attr.isIndividual)
+                                                      .where((attr) {
+                                                        final key = attr.name.trim().toLowerCase();
+                                                        if (seenCellNames.contains(key)) return false;
+                                                        seenCellNames.add(key);
+                                                        return true;
+                                                      })
+                                                      .map((attr) => DataCell(
+                                                            SizedBox(
+                                                              width: 150,
+                                                              child: TextField(
+                                                                controller:
+                                                                    row[attr.name],
+                                                                decoration:
+                                                                    InputDecoration(
+                                                                  hintText:
+                                                                      '${AppLocalizations.of(context)!.translate('please_enter')} ${attr.name}',
+                                                                  hintStyle: TextStyle(
+                                                                      fontSize: 12,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w500,
+                                                                      fontFamily:
+                                                                          'Gilroy',
+                                                                      color: colors
+                                                                          .textMuted),
+                                                                  border: OutlineInputBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius
+                                                                              .circular(
+                                                                                  12)),
+                                                                  contentPadding:
+                                                                      const EdgeInsets
+                                                                          .symmetric(
+                                                                          horizontal:
+                                                                              12,
+                                                                          vertical:
+                                                                              16),
+                                                                ),
+                                                              ),
                                                             ),
-                                                          ),
-                                                        ),
-                                                      )),
+                                                          ))
+                                                      .toList();
+                                                }(),
                                               if (selectedCategory!
                                                   .hasPriceCharacteristics)
                                                 DataCell(
@@ -1381,46 +1403,6 @@ class _GoodsAddScreenState extends State<GoodsAddScreen> {
                                                         onPressed: () =>
                                                             _scanRowBarcode(
                                                                 index),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              DataCell(
-                                                SizedBox(
-                                                  width: 190,
-                                                  child: TextField(
-                                                    controller: row['barcode'],
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Штрих код',
-                                                      hintStyle: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontFamily: 'Gilroy',
-                                                        color:
-                                                            Color(0xff99A4BA),
-                                                      ),
-                                                      border:
-                                                          OutlineInputBorder(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                      ),
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 16),
-                                                      suffixIcon: IconButton(
-                                                        onPressed: () =>
-                                                            _scanRowBarcode(
-                                                                index),
-                                                        icon: const Icon(
-                                                          Icons.qr_code_scanner,
-                                                          size: 18,
-                                                          color:
-                                                              Color(0xff1E2E52),
-                                                        ),
                                                       ),
                                                     ),
                                                   ),

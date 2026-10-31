@@ -46,12 +46,20 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   bool isInitialized = false;
   bool _resolvingLockedManager = false;
   int? _pinnedManagerId;
+  late final bool _openedWithoutManager;
+  ManagerData? _selfManager;
 
   bool get _isLocked => widget.canChange == false;
+
+  /// Редактирование лида без менеджера и без права: выбрать можно только себя.
+  bool get _selfOnly =>
+      _isLocked && !widget.assignCurrentUser && _openedWithoutManager;
 
   @override
   void initState() {
     super.initState();
+    final initialId = int.tryParse(widget.selectedManager ?? '');
+    _openedWithoutManager = initialId == null || initialId <= 0;
     managersList = [
       ManagerData(
         id: 0,
@@ -71,7 +79,8 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
   void didUpdateWidget(covariant ManagerRadioGroupWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     final accessChanged = oldWidget.canChange != widget.canChange;
-    final selectionChanged = oldWidget.selectedManager != widget.selectedManager;
+    final selectionChanged =
+        oldWidget.selectedManager != widget.selectedManager;
     if (accessChanged || selectionChanged) {
       _scheduleLockedResolve();
     }
@@ -90,6 +99,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     if (!_isLocked || _resolvingLockedManager || !mounted) return;
     _resolvingLockedManager = true;
     try {
+      if (_selfOnly) {
+        await _loadSelfManager();
+        return;
+      }
+
       int? targetId;
       if (widget.assignCurrentUser) {
         final prefs = await SharedPreferences.getInstance();
@@ -138,6 +152,41 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
     } finally {
       _resolvingLockedManager = false;
     }
+  }
+
+  Future<void> _loadSelfManager() async {
+    if (_selfManager != null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final selfId = int.tryParse(prefs.getString('userID') ?? '');
+    if (selfId == null || selfId <= 0 || !mounted) return;
+
+    var manager = _managerById(selfId);
+    if (manager == null) {
+      final profile = await _apiService.getUserById(selfId);
+      manager = ManagerData(
+        id: profile.id > 0 ? profile.id : selfId,
+        name: profile.name,
+        lastname: profile.lastname,
+      );
+    }
+    if (!mounted || !_selfOnly) return;
+    final self = manager;
+    setState(() => _selfManager = self);
+  }
+
+  Future<CustomDropdownPaginatedResponse<ManagerData>> _searchSelf(
+    String query,
+    int page,
+  ) async {
+    final self = _selfManager;
+    final needle = query.trim().toLowerCase();
+    final matches = self != null &&
+        page == 1 &&
+        '${self.name} ${self.lastname ?? ''}'.toLowerCase().contains(needle);
+    return CustomDropdownPaginatedResponse<ManagerData>(
+      items: matches ? [self] : <ManagerData>[],
+      hasMore: false,
+    );
   }
 
   /// Создание лида без права: форма должна уйти с id текущего пользователя.
@@ -271,6 +320,11 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
 
             debugPrint("ManagerList managerList dropdown : $managersList");
 
+            final selfOnly = _selfOnly;
+            final self = _selfManager;
+            final selfPicked =
+                self != null && selectedManagerData?.id == self.id;
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -285,15 +339,16 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                 ),
                 const SizedBox(height: 4),
                 CustomDropdown<ManagerData>.searchRequestPaginated(
-                  paginatedRequest: _searchManagers,
+                  paginatedRequest: selfOnly ? _searchSelf : _searchManagers,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
-                  items: managersList,
+                  items: selfOnly ? [if (self != null) self] : managersList,
                   searchHintText:
                       AppLocalizations.of(context)!.translate('search'),
                   overlayHeight: 400,
                   // false и null: список не открывается, значение только смотрим.
-                  enabled: widget.canChange == true,
+                  enabled:
+                      widget.canChange == true || (selfOnly && self != null),
                   disabledDecoration: CustomDropdownDisabledDecoration(
                     fillColor: fieldFill,
                     border: Border.all(
@@ -444,7 +499,9 @@ class _ManagerRadioGroupWidgetState extends State<ManagerRadioGroupWidget> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   excludeSelected: false,
-                  initialItem: selectedManagerData,
+                  initialItem: selfOnly
+                      ? (selfPicked ? selectedManagerData : null)
+                      : selectedManagerData,
                   onChanged: (value) {
                     if (value != null) {
                       widget.onSelectManager(value);

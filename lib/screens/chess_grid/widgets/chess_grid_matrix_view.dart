@@ -1,7 +1,9 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_form_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_cell.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_dialog.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridMatrixView extends StatelessWidget {
@@ -145,9 +147,214 @@ class ChessGridMatrixView extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                 ],
+
+                // Divider before Parking level (TZ Section 5 / Image 3)
+                const SizedBox(height: 6),
+                Container(
+                  margin: const EdgeInsets.only(left: 52),
+                  height: 1.5,
+                  width: entrances.length * building.apartsPerFloor * 82.0,
+                  color: colors.borderSubtle.withValues(alpha: 0.8),
+                ),
+                const SizedBox(height: 6),
+
+                // Floor -1: Parking spots row
+                _buildParkingRow(context, building, entrances),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParkingRow(
+    BuildContext context,
+    Building building,
+    List<int> entrances,
+  ) {
+    final colors = context.appColors;
+    final spots = controller.parkingSpots.where((p) => p.buildingKey == building.key).toList();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Parking level label
+        SizedBox(
+          width: 44,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '-1 эт.',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                  color: colors.textSecondary,
+                ),
+              ),
+              Text(
+                'Паркинг',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontFamily: 'Golos',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 8.5,
+                  color: colors.buttonPrimaryBg,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // Spots list horizontally aligned with the building width
+        Row(
+          children: [
+            ...spots.map((spot) => _buildParkingCell(context, spot)),
+            // Add parking button
+            GestureDetector(
+              onTap: () {
+                ApartmentFormSheet.show(
+                  context: context,
+                  initialBuildingKey: building.key,
+                  isParkingMode: true,
+                );
+              },
+              child: Container(
+                width: 78,
+                height: 54,
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: colors.surfaceElevated.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colors.borderSubtle.withValues(alpha: 0.7),
+                    style: BorderStyle.solid,
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.local_parking_rounded, size: 14, color: colors.buttonPrimaryBg),
+                      const SizedBox(width: 2),
+                      Icon(Icons.add_rounded, size: 14, color: colors.iconSecondary),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildParkingCell(BuildContext context, ParkingSpot spot) {
+    final colors = context.appColors;
+    final isAvailable = spot.status == ApartmentStatus.available;
+
+    return GestureDetector(
+      onTap: () {
+        if (isAvailable) {
+          OrderCreateDialog.show(context: context, parking: spot);
+        } else {
+          // Open edit or show status
+          ApartmentFormSheet.show(
+            context: context,
+            existingParking: spot,
+            isParkingMode: true,
+          );
+        }
+      },
+      child: Container(
+        width: 78,
+        height: 54,
+        margin: const EdgeInsets.all(2),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        decoration: BoxDecoration(
+          color: spot.status.bgColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: spot.status.color.withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: spot.status.color,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const Text(
+                        'P',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 9,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '№${spot.number}',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: spot.status.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${spot.area.toStringAsFixed(0)} м²',
+                  style: TextStyle(
+                    fontFamily: 'Golos',
+                    fontSize: 9,
+                    color: colors.textSecondary,
+                  ),
+                ),
+                Text(
+                  '${spot.price.toStringAsFixed(0)} \$',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

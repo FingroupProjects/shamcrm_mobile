@@ -175,7 +175,7 @@ class Section3DPainter {
               unitColor = const Color(0xFF94A3B8); // Slate Gray
               break;
             case ApartmentStatus.reserved:
-              unitColor = const Color(0xFF0D9488); // Deep Teal
+              unitColor = const Color(0xFF3B82F6); // Royal Blue
               break;
           }
         } else {
@@ -183,7 +183,7 @@ class Section3DPainter {
           if (hash == 0) unitColor = const Color(0xFF10B981);
           if (hash == 1) unitColor = const Color(0xFFF59E0B);
           if (hash == 2) unitColor = const Color(0xFF94A3B8);
-          if (hash == 3) unitColor = const Color(0xFF0D9488);
+          if (hash == 3) unitColor = const Color(0xFF3B82F6);
         }
 
         final p0 = camera.project(Vector3D(posX - unitW / 2, floorCenterY - unitH / 2, posZ), size);
