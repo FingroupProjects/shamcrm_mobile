@@ -329,52 +329,44 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Common: Building selector & Number
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _buildDropdown<String>(
-                          label: 'Корпус',
-                          value: _buildingKey,
-                          items: controller.complex.buildings.map((b) {
-                            return DropdownMenuItem(value: b.key, child: Text(b.name));
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _buildingKey = val;
-                                _selectedEntranceId = null;
-                              });
-                              _fetchEntrances();
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: RequiredFieldSlot(
-                          invalid: _missingFields.contains('number'),
-                          focus: _firstMissingField == 'number',
-                          pulse: _fieldErrorPulse,
-                          message: 'Укажите номер',
-                          child: CustomTextField(
-                            controller: _numberController,
-                            label: 'Номер *',
-                            hintText: 'Введите номер',
-                            hasError: _missingFields.contains('number'),
-                            onChanged: (val) {
-                              if (val.trim().isNotEmpty && _missingFields.contains('number')) {
-                                setState(() {
-                                  _missingFields.remove('number');
-                                  if (_firstMissingField == 'number') _firstMissingField = null;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
+                  // Common: Building selector & Number (каждое поле на отдельной строке)
+                  _buildDropdown<String>(
+                    label: 'Корпус',
+                    value: _buildingKey,
+                    items: controller.complex.buildings.map((b) {
+                      return DropdownMenuItem(value: b.key, child: Text(b.name));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _buildingKey = val;
+                          _selectedEntranceId = null;
+                        });
+                        _fetchEntrances();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('number'),
+                    focus: _firstMissingField == 'number',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите номер',
+                    child: CustomTextField(
+                      controller: _numberController,
+                      label: 'Номер *',
+                      hintText: 'Введите номер',
+                      hasError: _missingFields.contains('number'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('number')) {
+                          setState(() {
+                            _missingFields.remove('number');
+                            if (_firstMissingField == 'number') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
 
@@ -404,242 +396,204 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // APARTMENT FIELDS
+                  // APARTMENT FIELDS (каждое поле на отдельной строке)
                   if (!_isParking) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _entrances.isNotEmpty
-                              ? _buildDropdown<int>(
-                                  label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
-                                  value: _selectedEntranceId ?? _entrances.first.id,
-                                  items: _entrances.map((e) {
-                                    return DropdownMenuItem<int>(
-                                      value: e.id,
-                                      child: Text(e.name),
-                                    );
-                                  }).toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      final ent = _entrances.firstWhereOrNull((e) => e.id == val);
-                                      setState(() {
-                                        _selectedEntranceId = val;
-                                        _entrance = ent?.number ?? 1;
-                                      });
-                                    }
-                                  },
-                                )
-                              : _buildDropdown<int>(
-                                  label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
-                                  value: _entrance.clamp(1, building?.entranceCount ?? 1),
-                                  items: List.generate(
-                                    building?.entranceCount ?? 1,
-                                    (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
-                                  ),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() {
-                                        _entrance = val;
-                                      });
-                                    }
-                                  },
-                                ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildDropdown<int>(
-                            label: 'Этаж',
-                            value: _floor.clamp(1, building?.floorCount ?? 9),
+                    _entrances.isNotEmpty
+                        ? _buildDropdown<int>(
+                            label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
+                            value: _selectedEntranceId ?? _entrances.first.id,
+                            items: _entrances.map((e) {
+                              return DropdownMenuItem<int>(
+                                value: e.id,
+                                child: Text(e.name),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                final ent = _entrances.firstWhereOrNull((e) => e.id == val);
+                                setState(() {
+                                  _selectedEntranceId = val;
+                                  _entrance = ent?.number ?? 1;
+                                });
+                              }
+                            },
+                          )
+                        : _buildDropdown<int>(
+                            label: _isLoadingEntrances ? 'Подъезд...' : 'Подъезд',
+                            value: _entrance.clamp(1, building?.entranceCount ?? 1),
                             items: List.generate(
-                              building?.floorCount ?? 9,
+                              building?.entranceCount ?? 1,
                               (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
                             ),
                             onChanged: (val) {
                               if (val != null) {
                                 setState(() {
-                                  _floor = val;
+                                  _entrance = val;
                                 });
                               }
                             },
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _roomsController,
-                            label: 'Комнат',
-                            hintText: 'Введите кол-во',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 14),
+
+                    _buildDropdown<int>(
+                      label: 'Этаж',
+                      value: _floor.clamp(1, building?.floorCount ?? 9),
+                      items: List.generate(
+                        building?.floorCount ?? 9,
+                        (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+                      ),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _floor = val;
+                          });
+                        }
+                      },
                     ),
                     const SizedBox(height: 14),
 
                     CustomTextField(
-                      controller: _typeController,
-                      label: 'Тип квартиры (отделка)',
-                      hintText: 'Введите тип отделки',
+                      controller: _roomsController,
+                      label: 'Комнат',
+                      hintText: 'Введите кол-во',
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 14),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: RequiredFieldSlot(
-                            invalid: _missingFields.contains('totalArea'),
-                            focus: _firstMissingField == 'totalArea',
-                            pulse: _fieldErrorPulse,
-                            message: 'Укажите площадь',
-                            child: CustomTextField(
-                              controller: _totalAreaController,
-                              label: 'Общая, м² *',
-                              hintText: 'Введите площадь',
-                              keyboardType: TextInputType.number,
-                              hasError: _missingFields.contains('totalArea'),
-                              onChanged: (_) {
-                                if (_totalAreaController.text.trim().isNotEmpty &&
-                                    _missingFields.contains('totalArea')) {
-                                  setState(() {
-                                    _missingFields.remove('totalArea');
-                                    if (_firstMissingField == 'totalArea') _firstMissingField = null;
-                                  });
-                                }
-                                _calculatePriceFromM2();
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _livingAreaController,
-                            label: 'Жилая, м²',
-                            hintText: 'Введите площадь',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _kitchenAreaController,
-                            label: 'Кухня, м²',
-                            hintText: 'Введите площадь',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
+                    // [Тип квартиры закомментирован по требованию]
+                    // CustomTextField(
+                    //   controller: _typeController,
+                    //   label: 'Тип квартиры (отделка)',
+                    //   hintText: 'Введите тип отделки',
+                    // ),
+                    // const SizedBox(height: 14),
+
+                    RequiredFieldSlot(
+                      invalid: _missingFields.contains('totalArea'),
+                      focus: _firstMissingField == 'totalArea',
+                      pulse: _fieldErrorPulse,
+                      message: 'Укажите площадь',
+                      child: CustomTextField(
+                        controller: _totalAreaController,
+                        label: 'Общая, м² *',
+                        hintText: 'Введите площадь',
+                        keyboardType: TextInputType.number,
+                        hasError: _missingFields.contains('totalArea'),
+                        onChanged: (_) {
+                          if (_totalAreaController.text.trim().isNotEmpty &&
+                              _missingFields.contains('totalArea')) {
+                            setState(() {
+                              _missingFields.remove('totalArea');
+                              if (_firstMissingField == 'totalArea') _firstMissingField = null;
+                            });
+                          }
+                          _calculatePriceFromM2();
+                        },
+                      ),
                     ),
                     const SizedBox(height: 14),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _layoutTypeController,
-                            label: 'Тип планировки',
-                            hintText: 'A, B, C...',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _balconiesController,
-                            label: 'Балконов / лоджий',
-                            hintText: '0, 1...',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: CustomTextField(
-                            controller: _bathroomsController,
-                            label: 'Санузлов',
-                            hintText: '1, 2...',
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
+                    CustomTextField(
+                      controller: _livingAreaController,
+                      label: 'Жилая, м²',
+                      hintText: 'Введите площадь',
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 14),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: RequiredFieldSlot(
-                            invalid: _missingFields.contains('pricePerM2'),
-                            focus: _firstMissingField == 'pricePerM2',
-                            pulse: _fieldErrorPulse,
-                            message: 'Укажите цену',
-                            child: CustomTextField(
-                              controller: _pricePerM2Controller,
-                              label: 'Цена за м² *',
-                              hintText: 'Введите цену',
-                              keyboardType: TextInputType.number,
-                              hasError: _missingFields.contains('pricePerM2'),
-                              onChanged: (_) {
-                                if (_pricePerM2Controller.text.trim().isNotEmpty &&
-                                    _missingFields.contains('pricePerM2')) {
-                                  setState(() {
-                                    _missingFields.remove('pricePerM2');
-                                    if (_firstMissingField == 'pricePerM2') _firstMissingField = null;
-                                  });
-                                }
-                                _calculatePriceFromM2();
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 3,
-                          child: RequiredFieldSlot(
-                            invalid: _missingFields.contains('totalPrice'),
-                            focus: _firstMissingField == 'totalPrice',
-                            pulse: _fieldErrorPulse,
-                            message: 'Укажите сумму',
-                            child: CustomTextField(
-                              controller: _totalPriceController,
-                              label: 'Общая цена *',
-                              hintText: 'Введите сумму',
-                              keyboardType: TextInputType.number,
-                              hasError: _missingFields.contains('totalPrice'),
-                              onChanged: (_) {
-                                if (_totalPriceController.text.trim().isNotEmpty &&
-                                    _missingFields.contains('totalPrice')) {
-                                  setState(() {
-                                    _missingFields.remove('totalPrice');
-                                    if (_firstMissingField == 'totalPrice') _firstMissingField = null;
-                                  });
-                                }
-                                _calculateM2FromPrice();
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: _buildDropdown<String>(
-                            label: 'Валюта',
-                            value: _currency,
-                            items: const [
-                              DropdownMenuItem(value: '\$', child: Text('\$ (USD)')),
-                              DropdownMenuItem(value: 'сом.', child: Text('сом.')),
-                              DropdownMenuItem(value: 'руб.', child: Text('руб.')),
-                              DropdownMenuItem(value: '€', child: Text('€ (EUR)')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setState(() => _currency = val);
-                            },
-                          ),
-                        ),
+                    CustomTextField(
+                      controller: _kitchenAreaController,
+                      label: 'Кухня, м²',
+                      hintText: 'Введите площадь',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 14),
+
+                    CustomTextField(
+                      controller: _layoutTypeController,
+                      label: 'Тип планировки',
+                      hintText: 'A, B, C...',
+                    ),
+                    const SizedBox(height: 14),
+
+                    CustomTextField(
+                      controller: _balconiesController,
+                      label: 'Балконов / лоджий',
+                      hintText: '0, 1...',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 14),
+
+                    CustomTextField(
+                      controller: _bathroomsController,
+                      label: 'Санузлов',
+                      hintText: '1, 2...',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 14),
+
+                    RequiredFieldSlot(
+                      invalid: _missingFields.contains('pricePerM2'),
+                      focus: _firstMissingField == 'pricePerM2',
+                      pulse: _fieldErrorPulse,
+                      message: 'Укажите цену',
+                      child: CustomTextField(
+                        controller: _pricePerM2Controller,
+                        label: 'Цена за м² *',
+                        hintText: 'Введите цену',
+                        keyboardType: TextInputType.number,
+                        hasError: _missingFields.contains('pricePerM2'),
+                        onChanged: (_) {
+                          if (_pricePerM2Controller.text.trim().isNotEmpty &&
+                              _missingFields.contains('pricePerM2')) {
+                            setState(() {
+                              _missingFields.remove('pricePerM2');
+                              if (_firstMissingField == 'pricePerM2') _firstMissingField = null;
+                            });
+                          }
+                          _calculatePriceFromM2();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    RequiredFieldSlot(
+                      invalid: _missingFields.contains('totalPrice'),
+                      focus: _firstMissingField == 'totalPrice',
+                      pulse: _fieldErrorPulse,
+                      message: 'Укажите сумму',
+                      child: CustomTextField(
+                        controller: _totalPriceController,
+                        label: 'Общая цена *',
+                        hintText: 'Введите сумму',
+                        keyboardType: TextInputType.number,
+                        hasError: _missingFields.contains('totalPrice'),
+                        onChanged: (_) {
+                          if (_totalPriceController.text.trim().isNotEmpty &&
+                              _missingFields.contains('totalPrice')) {
+                            setState(() {
+                              _missingFields.remove('totalPrice');
+                              if (_firstMissingField == 'totalPrice') _firstMissingField = null;
+                            });
+                          }
+                          _calculateM2FromPrice();
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    _buildDropdown<String>(
+                      label: 'Валюта',
+                      value: _currency,
+                      items: const [
+                        DropdownMenuItem(value: '\$', child: Text('\$ (USD)')),
+                        DropdownMenuItem(value: 'сом.', child: Text('сом.')),
+                        DropdownMenuItem(value: 'руб.', child: Text('руб.')),
+                        DropdownMenuItem(value: '€', child: Text('€ (EUR)')),
                       ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _currency = val);
+                      },
                     ),
                     const SizedBox(height: 14),
 

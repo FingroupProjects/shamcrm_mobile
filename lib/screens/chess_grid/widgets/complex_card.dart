@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:flutter/material.dart';
 
 class ComplexCard extends StatefulWidget {
@@ -172,23 +173,39 @@ class _ComplexCardState extends State<ComplexCard> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 14, color: colors.buttonPrimaryBg),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            complex.address,
-                            style: TextStyle(
-                              fontFamily: 'Golos',
-                              fontSize: 12,
-                              color: colors.textSecondary,
+                    GestureDetector(
+                      onTap: () {
+                        ComplexMapPickerScreen.show(
+                          context: context,
+                          initialLat: complex.lat,
+                          initialLng: complex.lng,
+                          initialAddress: complex.address,
+                          complexName: complex.name,
+                          buildingCount: complex.buildingCount,
+                          buildings: complex.buildings,
+                          isReadOnly: true,
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 14, color: colors.buttonPrimaryBg),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              complex.address,
+                              style: TextStyle(
+                                fontFamily: 'Golos',
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Icon(Icons.open_in_new_rounded, size: 12, color: colors.buttonPrimaryBg),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 

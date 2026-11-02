@@ -27,6 +27,7 @@ class Section3DPainter {
     required int entrance,
     required int selectedFloor,
     required List<Apartment> allApartments,
+    bool isNightMode = false,
   }) {
     final result = <FloorRenderInfo>[];
     final allPolys = <Poly3D>[];
@@ -48,10 +49,10 @@ class Section3DPainter {
       width: secWidth + 6.0,
       height: 4.5,
       depth: secDepth + 6.0,
-      topColor: const Color(0xFF475560),
-      frontColor: const Color(0xFF37444D),
-      sideColor: const Color(0xFF2C373E),
-      strokeColor: const Color(0xFF1E262B),
+      topColor: isNightMode ? const Color(0xFF2C3843) : const Color(0xFF475560),
+      frontColor: isNightMode ? const Color(0xFF222D36) : const Color(0xFF37444D),
+      sideColor: isNightMode ? const Color(0xFF1B242C) : const Color(0xFF2C373E),
+      strokeColor: isNightMode ? const Color(0xFF151C22) : const Color(0xFF1E262B),
       strokeWidth: 0.8,
       camera: camera,
     ));
@@ -61,16 +62,16 @@ class Section3DPainter {
       final floorBottomY = (f - 1) * floorHeight;
       final floorCenterY = floorBottomY + (floorHeight / 2);
 
-      // Floor slab (pure white solid plate)
+      // Floor slab
       allPolys.addAll(Poly3D.createBox(
         center: Vector3D(0, floorBottomY + (slabHeight / 2), 0),
         width: secWidth,
         height: slabHeight,
         depth: secDepth,
-        topColor: const Color(0xFFFFFFFF),
-        frontColor: const Color(0xFFF1F5F4),
-        sideColor: const Color(0xFFDEE5E3),
-        strokeColor: const Color(0xFFC5CECC),
+        topColor: isNightMode ? const Color(0xFF334351) : const Color(0xFFFFFFFF),
+        frontColor: isNightMode ? const Color(0xFF283643) : const Color(0xFFF1F5F4),
+        sideColor: isNightMode ? const Color(0xFF1E2933) : const Color(0xFFDEE5E3),
+        strokeColor: isNightMode ? const Color(0xFF172028) : const Color(0xFFC5CECC),
         strokeWidth: 0.6,
         camera: camera,
       ));
@@ -81,10 +82,10 @@ class Section3DPainter {
         width: secWidth - 1.5,
         height: floorHeight - slabHeight,
         depth: secDepth - 1.5,
-        topColor: const Color(0xFFECEFEF),
-        frontColor: const Color(0xFFE2E7E6),
-        sideColor: const Color(0xFFBAC6C4),
-        strokeColor: const Color(0xFFAEBDBA),
+        topColor: isNightMode ? const Color(0xFF2A3742) : const Color(0xFFECEFEF),
+        frontColor: isNightMode ? const Color(0xFF202C36) : const Color(0xFFE2E7E6),
+        sideColor: isNightMode ? const Color(0xFF19232B) : const Color(0xFFBAC6C4),
+        strokeColor: isNightMode ? const Color(0xFF131B21) : const Color(0xFFAEBDBA),
         strokeWidth: 0.5,
         camera: camera,
       ));

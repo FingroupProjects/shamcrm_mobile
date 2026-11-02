@@ -43,7 +43,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
   String? _firstMissingField;
   int _fieldErrorPulse = 0;
 
-  static const List<String> _defaultTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
+  // static const List<String> _defaultTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
   final List<String> _availableTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
   final Set<String> _selectedTypes = {};
 
@@ -74,6 +74,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     super.dispose();
   }
 
+  /*
   void _addCustomType() {
     final text = _customTypeController.text.trim();
     if (text.isEmpty) return;
@@ -91,6 +92,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
       _customTypeController.clear();
     });
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -173,85 +175,78 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: RequiredFieldSlot(
-                          invalid: _missingFields.contains('entrance'),
-                          focus: _firstMissingField == 'entrance',
-                          pulse: _fieldErrorPulse,
-                          message: 'Укажите кол-во',
-                          child: CustomTextField(
-                            controller: _entranceController,
-                            label: 'Подъездов *',
-                            hintText: 'Введите кол-во',
-                            keyboardType: TextInputType.number,
-                            hasError: _missingFields.contains('entrance'),
-                            onChanged: (val) {
-                              if (val.trim().isNotEmpty && _missingFields.contains('entrance')) {
-                                setState(() {
-                                  _missingFields.remove('entrance');
-                                  if (_firstMissingField == 'entrance') _firstMissingField = null;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: RequiredFieldSlot(
-                          invalid: _missingFields.contains('floor'),
-                          focus: _firstMissingField == 'floor',
-                          pulse: _fieldErrorPulse,
-                          message: 'Укажите кол-во',
-                          child: CustomTextField(
-                            controller: _floorController,
-                            label: 'Этажей *',
-                            hintText: 'Введите кол-во',
-                            keyboardType: TextInputType.number,
-                            hasError: _missingFields.contains('floor'),
-                            onChanged: (val) {
-                              if (val.trim().isNotEmpty && _missingFields.contains('floor')) {
-                                setState(() {
-                                  _missingFields.remove('floor');
-                                  if (_firstMissingField == 'floor') _firstMissingField = null;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: RequiredFieldSlot(
-                          invalid: _missingFields.contains('perFloor'),
-                          focus: _firstMissingField == 'perFloor',
-                          pulse: _fieldErrorPulse,
-                          message: 'Укажите кол-во',
-                          child: CustomTextField(
-                            controller: _perFloorController,
-                            label: 'Кв. на этаже *',
-                            hintText: 'Введите кол-во',
-                            keyboardType: TextInputType.number,
-                            hasError: _missingFields.contains('perFloor'),
-                            onChanged: (val) {
-                              if (val.trim().isNotEmpty && _missingFields.contains('perFloor')) {
-                                setState(() {
-                                  _missingFields.remove('perFloor');
-                                  if (_firstMissingField == 'perFloor') _firstMissingField = null;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
+                  // Каждое поле на отдельной строке
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('entrance'),
+                    focus: _firstMissingField == 'entrance',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите кол-во',
+                    child: CustomTextField(
+                      controller: _entranceController,
+                      label: 'Подъездов *',
+                      hintText: 'Введите кол-во',
+                      keyboardType: TextInputType.number,
+                      hasError: _missingFields.contains('entrance'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('entrance')) {
+                          setState(() {
+                            _missingFields.remove('entrance');
+                            if (_firstMissingField == 'entrance') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('floor'),
+                    focus: _firstMissingField == 'floor',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите кол-во',
+                    child: CustomTextField(
+                      controller: _floorController,
+                      label: 'Этажей *',
+                      hintText: 'Введите кол-во',
+                      keyboardType: TextInputType.number,
+                      hasError: _missingFields.contains('floor'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('floor')) {
+                          setState(() {
+                            _missingFields.remove('floor');
+                            if (_firstMissingField == 'floor') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  RequiredFieldSlot(
+                    invalid: _missingFields.contains('perFloor'),
+                    focus: _firstMissingField == 'perFloor',
+                    pulse: _fieldErrorPulse,
+                    message: 'Укажите кол-во',
+                    child: CustomTextField(
+                      controller: _perFloorController,
+                      label: 'Кв. на этаже *',
+                      hintText: 'Введите кол-во',
+                      keyboardType: TextInputType.number,
+                      hasError: _missingFields.contains('perFloor'),
+                      onChanged: (val) {
+                        if (val.trim().isNotEmpty && _missingFields.contains('perFloor')) {
+                          setState(() {
+                            _missingFields.remove('perFloor');
+                            if (_firstMissingField == 'perFloor') _firstMissingField = null;
+                          });
+                        }
+                      },
+                    ),
                   ),
                   const SizedBox(height: 18),
 
-                  // Apartment Types Multiselect
+                  // [Тип квартир закомментирован по требованию]
+                  /*
                   RequiredFieldSlot(
                     invalid: _missingFields.contains('types'),
                     focus: _firstMissingField == 'types',
@@ -358,6 +353,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                       ),
                     ],
                   ),
+                  */
                   const SizedBox(height: 24),
 
                   // Save button
@@ -406,7 +402,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     if (ent <= 0) missing.add('entrance');
     if (fl <= 0) missing.add('floor');
     if (per <= 0) missing.add('perFloor');
-    if (_selectedTypes.isEmpty) missing.add('types');
+    // if (_selectedTypes.isEmpty) missing.add('types');
 
     if (missing.isNotEmpty) {
       setState(() {

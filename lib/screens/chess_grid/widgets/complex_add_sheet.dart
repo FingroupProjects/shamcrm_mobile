@@ -130,6 +130,8 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
   Future<void> _pickFromMap() async {
     final lat = double.tryParse(_latController.text) ?? 41.311081;
     final lng = double.tryParse(_lngController.text) ?? 69.240562;
+    final bCount = int.tryParse(_buildingCountController.text) ?? 3;
+    final name = _nameController.text.trim();
     final result = await ComplexMapPickerScreen.show(
       context: context,
       initialLat: lat,
@@ -137,6 +139,8 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
       initialAddress: _addressController.text.trim().isNotEmpty
           ? _addressController.text.trim()
           : null,
+      complexName: name.isNotEmpty ? name : 'Новый ЖК',
+      buildingCount: bCount,
     );
 
     if (result != null && mounted) {
@@ -257,13 +261,14 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  CustomTextField(
-                    controller: _buildingCountController,
-                    hintText: 'Введите количество корпусов',
-                    label: 'Количество корпусов ЖК',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 20),
+                  // [Количество корпусов закомментировано по требованию]
+                  // CustomTextField(
+                  //   controller: _buildingCountController,
+                  //   hintText: 'Введите количество корпусов',
+                  //   label: 'Количество корпусов ЖК',
+                  //   keyboardType: TextInputType.number,
+                  // ),
+                  // const SizedBox(height: 20),
 
                   // Geolocation Block (TZ Section 1: GPS & Google Satellite Map)
                   Row(
@@ -317,27 +322,56 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _latController,
-                          label: 'Широта (Lat)',
-                          hintText: '41.311081',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
+                  // [Ручной ввод широты и долготы закомментирован, задается через GPS или Карту]
+                  if (_latController.text.isNotEmpty && _lngController.text.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _lngController,
-                          label: 'Долгота (Lng)',
-                          hintText: '69.240562',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, size: 18, color: colors.buttonPrimaryBg),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Координаты: ${_latController.text}, ${_lngController.text}',
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                  // Row(
+                  //   children: [
+                  //     Expanded(
+                  //       child: CustomTextField(
+                  //         controller: _latController,
+                  //         label: 'Широта (Lat)',
+                  //         hintText: '41.311081',
+                  //         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  //       ),
+                  //     ),
+                  //     const SizedBox(width: 10),
+                  //     Expanded(
+                  //       child: CustomTextField(
+                  //         controller: _lngController,
+                  //         label: 'Долгота (Lng)',
+                  //         hintText: '69.240562',
+                  //         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
                   const SizedBox(height: 20),
 
                   // Photos of Complex (TZ Section 1)

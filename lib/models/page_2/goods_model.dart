@@ -752,25 +752,44 @@ class AttributeValue {
 
   factory AttributeValue.fromJson(Map<String, dynamic> json) {
     final catAttrMap = SafeConverters.toMapOrNull(json['category_attribute']);
-    final attrMap = SafeConverters.toMapOrNull(catAttrMap?['attribute']) ??
-        SafeConverters.toMapOrNull(json['attribute']);
+    final attrMap = SafeConverters.toMapOrNull(json['attribute']);
+
+    CategoryAttribute? categoryAttr;
+    int catAttrId = SafeConverters.toInt(
+        json['category_attribute_id'] ?? catAttrMap?['id'] ?? 0);
+
+    if (catAttrMap != null) {
+      categoryAttr = CategoryAttribute.fromJson(catAttrMap);
+      if (catAttrId == 0) catAttrId = categoryAttr.id;
+    } else if (attrMap != null) {
+      if (attrMap.containsKey('attribute') ||
+          attrMap.containsKey('is_individual') ||
+          attrMap.containsKey('show_to_site')) {
+        categoryAttr = CategoryAttribute.fromJson(attrMap);
+        if (catAttrId == 0) catAttrId = categoryAttr.id;
+      } else {
+        categoryAttr = CategoryAttribute(
+          id: catAttrId != 0 ? catAttrId : SafeConverters.toInt(attrMap['id']),
+          attribute: Attribute.fromJson(attrMap),
+          isIndividual: SafeConverters.toBool(
+              json['is_individual'] ?? attrMap['is_individual'] ?? true),
+        );
+      }
+    } else if (json['name'] != null || json['attribute_name'] != null) {
+      categoryAttr = CategoryAttribute(
+        id: catAttrId,
+        attribute: Attribute.fromJson(json),
+        isIndividual: SafeConverters.toBool(json['is_individual'] ?? true),
+      );
+    }
+
     return AttributeValue(
       id: SafeConverters.toInt(json['id']),
-      categoryAttributeId: SafeConverters.toInt(
-          json['category_attribute_id'] ?? catAttrMap?['id'] ?? 0),
+      categoryAttributeId: catAttrId,
       value: SafeConverters.toSafeString(json['value']),
       unitId: SafeConverters.toIntOrNull(json['unit_id']),
       files: _parseStringList(json['files']),
-      categoryAttribute: catAttrMap != null
-          ? CategoryAttribute.fromJson(catAttrMap)
-          : (attrMap != null
-              ? CategoryAttribute(
-                  id: SafeConverters.toInt(json['category_attribute_id'] ?? catAttrMap?['id'] ?? 0),
-                  attribute: Attribute.fromJson(attrMap),
-                  isIndividual: SafeConverters.toBool(
-                      json['is_individual'] ?? attrMap['is_individual']),
-                )
-              : null),
+      categoryAttribute: categoryAttr,
     );
   }
 }
@@ -792,10 +811,11 @@ class CategoryAttribute {
       id: SafeConverters.toInt(json['id']),
       attribute: attrMap != null
           ? Attribute.fromJson(attrMap)
-          : (json['name'] != null
+          : (json['name'] != null || json['attribute_name'] != null
               ? Attribute(
                   id: SafeConverters.toInt(json['attribute_id'] ?? json['id']),
-                  name: SafeConverters.toSafeString(json['name']),
+                  name: SafeConverters.toSafeString(
+                      json['name'] ?? json['attribute_name']),
                 )
               : null),
       isIndividual: SafeConverters.toBool(json['is_individual']),
@@ -813,10 +833,20 @@ class Attribute {
   });
 
   factory Attribute.fromJson(Map<String, dynamic> json) {
+    final nestedAttr = SafeConverters.toMapOrNull(json['attribute']);
+    final attrName = SafeConverters.toSafeString(
+      nestedAttr?['name'] ??
+          json['name'] ??
+          json['attribute_name'] ??
+          json['title'],
+      defaultValue: 'Неизвестная характеристика',
+    );
+    final attrId = SafeConverters.toInt(
+      nestedAttr?['id'] ?? json['id'] ?? json['attribute_id'] ?? 0,
+    );
     return Attribute(
-      id: SafeConverters.toInt(json['id']),
-      name: SafeConverters.toSafeString(json['name'],
-          defaultValue: 'Неизвестная характеристика'),
+      id: attrId,
+      name: attrName,
     );
   }
 }

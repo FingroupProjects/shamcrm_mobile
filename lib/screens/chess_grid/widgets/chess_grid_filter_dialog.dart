@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
@@ -32,11 +33,13 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   late String _buildingKey;
   late int _entrance;
   late Set<int> _rooms;
+  int _selectedRoom = 0;
   late TextEditingController _minPriceController;
   late TextEditingController _maxPriceController;
   late TextEditingController _minAreaController;
   late TextEditingController _maxAreaController;
   late Set<ApartmentStatus> _statuses;
+  ApartmentStatus? _selectedStatus;
 
   @override
   void initState() {
@@ -48,11 +51,13 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
         : (buildings.isNotEmpty ? buildings.first.key : '');
     _entrance = f.entrance;
     _rooms = Set<int>.from(f.rooms);
+    _selectedRoom = _rooms.length == 1 ? _rooms.first : 0;
     _minPriceController = TextEditingController(text: f.minPrice != null ? '${f.minPrice!.toInt()}' : '');
     _maxPriceController = TextEditingController(text: f.maxPrice != null ? '${f.maxPrice!.toInt()}' : '');
     _minAreaController = TextEditingController(text: f.minArea != null ? '${f.minArea}' : '');
     _maxAreaController = TextEditingController(text: f.maxArea != null ? '${f.maxArea}' : '');
     _statuses = Set<ApartmentStatus>.from(f.statuses);
+    _selectedStatus = _statuses.length == 1 ? _statuses.first : null;
   }
 
   @override
@@ -100,11 +105,13 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
     setState(() {
       _entrance = 0;
       _rooms.clear();
+      _selectedRoom = 0;
       _minPriceController.clear();
       _maxPriceController.clear();
       _minAreaController.clear();
       _maxAreaController.clear();
       _statuses = Set<ApartmentStatus>.from(ApartmentStatus.values);
+      _selectedStatus = null;
     });
   }
 
@@ -190,254 +197,184 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Building
-                  Text('Корпус', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  // 1. Building Dropdown + Add button
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      ...buildings.map((b) {
-                        final isSelected = _buildingKey == b.key;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _buildingKey = b.key;
-                              _entrance = 0;
-                            });
+                      Expanded(
+                        child: _buildDropdown<String>(
+                          label: 'Корпус',
+                          value: _buildingKey,
+                          items: buildings.map((b) {
+                            return DropdownMenuItem(value: b.key, child: Text(b.name));
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _buildingKey = val;
+                                _entrance = 0;
+                              });
+                            }
                           },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? colors.buttonPrimaryBg
-                                  : colors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? colors.buttonPrimaryBg
-                                    : colors.borderSubtle.withValues(alpha: 0.6),
-                                width: 1.2,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Tooltip(
+                          message: 'Добавить корпус',
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              BuildingFormSheet.show(context: context);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colors.buttonPrimaryBg.withValues(alpha: 0.4),
+                                  width: 1.2,
+                                ),
                               ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: colors.buttonPrimaryBg
-                                            .withValues(alpha: 0.25),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.apartment_rounded,
-                                  size: 15,
-                                  color: isSelected
-                                      ? colors.buttonPrimaryFg
-                                      : colors.iconSecondary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  b.name,
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w600,
-                                    fontSize: 13,
-                                    color: isSelected
-                                        ? colors.buttonPrimaryFg
-                                        : colors.textPrimary,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_rounded, size: 18, color: colors.buttonPrimaryBg),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Корпус',
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                      color: colors.buttonPrimaryBg,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2. Entrance Dropdown
+                  if (building != null && building.entranceCount > 0) ...[
+                    _buildDropdown<int>(
+                      label: 'Подъезд',
+                      value: _entrance,
+                      items: [
+                        const DropdownMenuItem(value: 0, child: Text('Все подъезды')),
+                        for (int e = 1; e <= building.entranceCount; e++)
+                          DropdownMenuItem(value: e, child: Text('Подъезд $e')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _entrance = val);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // 3. Rooms Dropdown
+                  _buildDropdown<int>(
+                    label: 'Количество комнат',
+                    value: _selectedRoom,
+                    items: const [
+                      DropdownMenuItem(value: 0, child: Text('Все комнаты')),
+                      DropdownMenuItem(value: 1, child: Text('1 комната')),
+                      DropdownMenuItem(value: 2, child: Text('2 комнаты')),
+                      DropdownMenuItem(value: 3, child: Text('3 комнаты')),
+                      DropdownMenuItem(value: 4, child: Text('4+ комнат')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedRoom = val;
+                          if (val == 0) {
+                            _rooms.clear();
+                          } else {
+                            _rooms = {val};
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 4. Status Dropdown
+                  _buildDropdown<ApartmentStatus?>(
+                    label: 'Статус квартиры',
+                    value: _selectedStatus,
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Все статусы'),
+                      ),
+                      ...ApartmentStatus.values.map((s) {
+                        return DropdownMenuItem<ApartmentStatus?>(
+                          value: s,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(s.labelRu),
+                            ],
                           ),
                         );
                       }),
-                      // Quick Add Building button
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pop(context);
-                          BuildingFormSheet.show(context: context);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colors.buttonPrimaryBg.withValues(alpha: 0.4),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.add_rounded,
-                                size: 16,
-                                color: colors.buttonPrimaryBg,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Добавить корпус',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                  color: colors.buttonPrimaryBg,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Entrance
-                  if (building != null && building.entranceCount > 0) ...[
-                    Text('Подъезд', style: _sectionTitleStyle(colors)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildEntranceFilterPill(
-                          title: 'Все подъезды',
-                          isSelected: _entrance == 0,
-                          onTap: () => setState(() => _entrance = 0),
-                          colors: colors,
-                        ),
-                        for (int e = 1; e <= building.entranceCount; e++)
-                          _buildEntranceFilterPill(
-                            title: 'Подъезд $e',
-                            isSelected: _entrance == e,
-                            onTap: () => setState(() => _entrance = e),
-                            colors: colors,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Rooms
-                  Text('Количество комнат', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      for (int r = 1; r <= 4; r++)
-                        FilterChip(
-                          label: Text(r == 4 ? '4+ комн.' : '$r комн.'),
-                          selected: _rooms.contains(r),
-                          onSelected: (val) {
-                            setState(() {
-                              if (val) {
-                                _rooms.add(r);
-                              } else {
-                                _rooms.remove(r);
-                              }
-                            });
-                          },
-                        ),
-                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedStatus = val;
+                        if (val == null) {
+                          _statuses = Set<ApartmentStatus>.from(ApartmentStatus.values);
+                        } else {
+                          _statuses = {val};
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 14),
 
-                  // Price Range
-                  Text('Цена', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _minPriceController,
-                          label: 'От',
-                          hintText: 'Введите сумму',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _maxPriceController,
-                          label: 'До',
-                          hintText: 'Введите сумму',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
+                  // 5. Price Range (каждое поле на отдельной строке)
+                  CustomTextField(
+                    controller: _minPriceController,
+                    label: 'Цена от',
+                    hintText: 'Введите минимальную сумму',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 14),
+                  CustomTextField(
+                    controller: _maxPriceController,
+                    label: 'Цена до',
+                    hintText: 'Введите максимальную сумму',
+                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 14),
 
-                  // Area Range
-                  Text('Общая площадь, м²', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _minAreaController,
-                          label: 'От, м²',
-                          hintText: 'Введите площадь',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _maxAreaController,
-                          label: 'До, м²',
-                          hintText: 'Введите площадь',
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
+                  // 6. Area Range (каждое поле на отдельной строке)
+                  CustomTextField(
+                    controller: _minAreaController,
+                    label: 'Общая площадь от, м²',
+                    hintText: 'Введите минимальную площадь',
+                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 14),
-
-                  // Status
-                  Text('Статус квартиры', style: _sectionTitleStyle(colors)),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    children: ApartmentStatus.values.map((s) {
-                      final isSelected = _statuses.contains(s);
-                      return FilterChip(
-                        avatar: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
-                        ),
-                        label: Text(s.labelRu),
-                        selected: isSelected,
-                        onSelected: (val) {
-                          setState(() {
-                            if (val) {
-                              _statuses.add(s);
-                            } else {
-                              if (_statuses.length > 1) _statuses.remove(s);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                  CustomTextField(
+                    controller: _maxAreaController,
+                    label: 'Общая площадь до, м²',
+                    hintText: 'Введите максимальную площадь',
+                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -449,53 +386,57 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
     );
   }
 
-  TextStyle _sectionTitleStyle(dynamic colors) => TextStyle(
-        fontFamily: 'Gilroy',
-        fontWeight: FontWeight.w700,
-        fontSize: 13,
-        color: colors.textPrimary,
-      );
-
-  Widget _buildEntranceFilterPill({
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required dynamic colors,
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.buttonPrimaryBg : colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? colors.buttonPrimaryBg
-                : colors.borderSubtle.withValues(alpha: 0.6),
-            width: 1.2,
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: colors.buttonPrimaryBg.withValues(alpha: 0.25),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          title,
+          const SizedBox(height: 6),
+        ],
+        DropdownButtonFormField<T>(
+          initialValue: value,
+          items: items,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: colors.fieldBg,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            border: AppFieldStyle.outline(context),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppFieldStyle.radius,
+              borderSide: AppFieldStyle.side(context),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppFieldStyle.radius,
+              borderSide: AppFieldStyle.side(context, focused: true),
+            ),
+          ),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.iconSecondary),
+          dropdownColor: colors.surfacePrimary,
           style: TextStyle(
+            fontSize: 14,
             fontFamily: 'Gilroy',
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 12.5,
-            color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
           ),
         ),
-      ),
+      ],
     );
   }
 }

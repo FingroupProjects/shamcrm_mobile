@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/painters/building_3d_painter.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/painters/complex_3d_painter.dart';
@@ -16,6 +20,7 @@ import 'package:crm_task_manager/screens/chess_grid_v2/widgets/apartment_quick_d
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Full Interactive 3D Real Estate Chessboard Visualizer (Media 1, 2, 3, 4)
 class ChessGrid3DView extends StatefulWidget {
@@ -45,6 +50,11 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   double _lastScale = 1.0;
   Offset _lastFocalPoint = Offset.zero;
 
+  // Drag & drop building positioning on Level 1 (Complex ground plane)
+  Building? _draggedBuilding;
+  Offset? _dragStartLocalPoint;
+  Offset? _dragStartBuildingOffset;
+
   // Cached render info from custom painters for overlay interaction
   List<BuildingRenderInfo> _buildingInfos = [];
   List<EntranceRenderInfo> _entranceInfos = [];
@@ -64,7 +74,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
       level: Scene3DLevel.complex,
       selectedBuilding: initialBuilding,
       selectedEntrance: 1,
-      selectedFloor: initialBuilding != null ? (initialBuilding.floorCount >= 7 ? 7 : initialBuilding.floorCount) : 7,
+      selectedFloor: initialBuilding != null
+          ? (initialBuilding.floorCount >= 7 ? 7 : initialBuilding.floorCount)
+          : 7,
       camera: Scene3DState.defaultCameraForLevel(Scene3DLevel.complex),
     );
 
@@ -74,7 +86,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     )..addListener(_onCameraAnimTick);
 
     _rotationTicker = createTicker((elapsed) {
-      if (_state.isAutoRotating && !_animController.isAnimating) {
+      if (_state.isAutoRotating &&
+          !_animController.isAnimating &&
+          _draggedBuilding == null) {
         setState(() {
           _state = _state.copyWith(
             camera: _state.camera.copyWith(
@@ -85,15 +99,114 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
       }
     });
     _rotationTicker?.start();
+
+    _loadSavedSettings();
+  }
+
+  Future<void> _loadSavedSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isNight = prefs.getBool('chess_grid_3d_night_mode') ?? false;
+
+      final rawPositions =
+          prefs.getString('chess_3d_building_pos_${widget.complex.id}');
+      Map<String, Offset> customOffsets = {};
+      if (rawPositions != null && rawPositions.isNotEmpty) {
+        final decoded = jsonDecode(rawPositions) as Map<String, dynamic>;
+        decoded.forEach((key, val) {
+          if (val is Map) {
+            customOffsets[key] = Offset(
+              (val['x'] as num).toDouble(),
+              (val['z'] as num).toDouble(),
+            );
+          }
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _state = _state.copyWith(
+            isNightMode: isNight,
+            customBuildingOffsets: customOffsets,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading 3D settings: $e');
+    }
+  }
+
+  Future<void> _saveBuildingPositions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final map = <String, dynamic>{};
+      _state.customBuildingOffsets.forEach((key, offset) {
+        map[key] = {'x': offset.dx, 'z': offset.dy};
+      });
+      await prefs.setString(
+          'chess_3d_building_pos_${widget.complex.id}', jsonEncode(map));
+    } catch (e) {
+      debugPrint('Error saving building positions: $e');
+    }
+  }
+
+  Future<void> _toggleNightMode() async {
+    final next = !_state.isNightMode;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _state = _state.copyWith(isNightMode: next);
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('chess_grid_3d_night_mode', next);
+    } catch (e) {
+      debugPrint('Error saving night mode: $e');
+    }
+  }
+
+  Future<void> _resetBuildingPositions() async {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _state = _state.copyWith(customBuildingOffsets: const {});
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('chess_3d_building_pos_${widget.complex.id}');
+    } catch (e) {
+      debugPrint('Error removing building positions: $e');
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Расстановка корпусов сброшена по умолчанию'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Offset _getDefaultBuildingPos(Building b) {
+    final buildings = widget.complex.buildings;
+    final i = buildings.indexOf(b);
+    final double progress =
+        buildings.length > 1 ? i / (buildings.length - 1) : 0.5;
+    return Offset(
+      115.0 - (progress * 230.0),
+      -120.0 + (progress * 220.0),
+    );
   }
 
   void _onCameraAnimTick() {
     if (_animStartCamera == null || _animTargetCamera == null) return;
     final t = Curves.easeInOutCubic.transform(_animController.value);
 
-    final newYaw = _animStartCamera!.yaw + (_animTargetCamera!.yaw - _animStartCamera!.yaw) * t;
-    final newPitch = _animStartCamera!.pitch + (_animTargetCamera!.pitch - _animStartCamera!.pitch) * t;
-    final newZoom = _animStartCamera!.zoom + (_animTargetCamera!.zoom - _animStartCamera!.zoom) * t;
+    final newYaw = _animStartCamera!.yaw +
+        (_animTargetCamera!.yaw - _animStartCamera!.yaw) * t;
+    final newPitch = _animStartCamera!.pitch +
+        (_animTargetCamera!.pitch - _animStartCamera!.pitch) * t;
+    final newZoom = _animStartCamera!.zoom +
+        (_animTargetCamera!.zoom - _animStartCamera!.zoom) * t;
 
     setState(() {
       _state = _state.copyWith(
@@ -169,6 +282,25 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     _animateCameraTo(Scene3DState.defaultCameraForLevel(_state.level));
   }
 
+  void _orientToNorth() {
+    HapticFeedback.lightImpact();
+    _animateCameraTo(_state.camera.copyWith(yaw: 0.58));
+  }
+
+  void _openGoogleSatelliteMap() {
+    HapticFeedback.lightImpact();
+    ComplexMapPickerScreen.show(
+      context: context,
+      initialLat: widget.complex.lat,
+      initialLng: widget.complex.lng,
+      initialAddress: widget.complex.address,
+      complexName: widget.complex.name,
+      buildingCount: widget.complex.buildingCount,
+      buildings: widget.complex.buildings,
+      isReadOnly: true,
+    );
+  }
+
   void _onToggleAutoRotate() {
     HapticFeedback.selectionClick();
     setState(() {
@@ -176,8 +308,89 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     });
   }
 
-  // Gesture handling
+  // --- Long Press Building Drag & Drop ---
+  void _onLongPressStart(LongPressStartDetails details) {
+    if (_state.level != Scene3DLevel.complex) return;
+
+    for (final info in _buildingInfos) {
+      if (info.hitBounds.contains(details.localPosition)) {
+        HapticFeedback.heavyImpact();
+        _draggedBuilding = info.building;
+        _dragStartLocalPoint = details.localPosition;
+        _dragStartBuildingOffset =
+            _state.customBuildingOffsets[info.building.key] ??
+                _getDefaultBuildingPos(info.building);
+
+        setState(() {
+          _state = _state.copyWith(
+            draggingBuildingKey: info.building.key,
+            isAutoRotating: false,
+          );
+        });
+        return;
+      }
+    }
+  }
+
+  void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+    if (_draggedBuilding == null ||
+        _dragStartLocalPoint == null ||
+        _dragStartBuildingOffset == null) {
+      return;
+    }
+
+    final delta = details.localPosition - _dragStartLocalPoint!;
+    final cam = _state.camera;
+
+    // Projection of screen delta onto world X/Z plane
+    final rightVec = Offset(cam.rightDir.x, cam.rightDir.z);
+    final forwardVec = Offset(-cam.cameraDir.x, -cam.cameraDir.z);
+    final sinPitch = math.sin(cam.pitch).clamp(0.2, 1.0);
+
+    final worldDeltaX = (rightVec.dx * delta.dx / cam.zoom) +
+        (forwardVec.dx * delta.dy / (cam.zoom * sinPitch));
+    final worldDeltaZ = (rightVec.dy * delta.dx / cam.zoom) +
+        (forwardVec.dy * delta.dy / (cam.zoom * sinPitch));
+
+    final newPosX =
+        (_dragStartBuildingOffset!.dx + worldDeltaX).clamp(-350.0, 350.0);
+    final newPosZ =
+        (_dragStartBuildingOffset!.dy + worldDeltaZ).clamp(-350.0, 350.0);
+
+    final updated = Map<String, Offset>.from(_state.customBuildingOffsets);
+    updated[_draggedBuilding!.key] = Offset(newPosX, newPosZ);
+
+    setState(() {
+      _state = _state.copyWith(customBuildingOffsets: updated);
+    });
+  }
+
+  void _onLongPressEnd(LongPressEndDetails details) {
+    if (_draggedBuilding != null) {
+      HapticFeedback.mediumImpact();
+      _saveBuildingPositions();
+      final bName = _draggedBuilding!.name;
+      setState(() {
+        _draggedBuilding = null;
+        _dragStartLocalPoint = null;
+        _dragStartBuildingOffset = null;
+        _state = _state.copyWith(clearDraggingBuilding: true);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Положение $bName сохранено 📍'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1E2830),
+        ),
+      );
+    }
+  }
+
+  // Gesture handling for Orbit & Zoom
   void _onScaleStart(ScaleStartDetails details) {
+    if (_draggedBuilding != null) return;
     _lastScale = 1.0;
     _lastFocalPoint = details.focalPoint;
     if (_state.isAutoRotating) {
@@ -186,6 +399,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (_draggedBuilding != null) return;
     final delta = details.focalPoint - _lastFocalPoint;
     _lastFocalPoint = details.focalPoint;
 
@@ -218,6 +432,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   }
 
   void _handleTapUp(TapUpDetails details) {
+    if (_draggedBuilding != null) return;
     final tapPos = details.localPosition;
 
     // Hit-testing based on level
@@ -284,7 +499,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   Widget build(BuildContext context) {
     final allApts = _controller.getApartmentsForComplex(widget.complex.id);
     final building = _state.selectedBuilding ??
-        (widget.complex.buildings.isNotEmpty ? widget.complex.buildings.first : null);
+        (widget.complex.buildings.isNotEmpty
+            ? widget.complex.buildings.first
+            : null);
 
     return Stack(
       fit: StackFit.expand,
@@ -295,6 +512,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           onScaleUpdate: _onScaleUpdate,
           onDoubleTap: _onResetCamera,
           onTapUp: _handleTapUp,
+          onLongPressStart: _onLongPressStart,
+          onLongPressMoveUpdate: _onLongPressMoveUpdate,
+          onLongPressEnd: _onLongPressEnd,
           child: CustomPaint(
             painter: _Master3DScenePainter(
               state: _state,
@@ -312,10 +532,10 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           ),
         ),
 
-        // 2. Interactive 3D Overlay Badges (Media 1, 2, 3, 4)
+        // 2. Interactive 3D Overlay Badges
         ..._buildInteractiveFloatingBadges(),
 
-        // 3. Top Breadcrumb Bar (Media 1, 2, 3, 4)
+        // 3. Top Breadcrumb Bar
         Positioned(
           top: 10,
           left: 14,
@@ -330,10 +550,17 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           ),
         ),
 
-        // 4. Bottom Entrance Strip (Media 2 - "Подъезд 1 · свободно 18 из 36")
+        // 3b. Geolocation & 3D Compass HUD Badge
+        Positioned(
+          top: 54,
+          left: 14,
+          child: _buildGeoCompassBadge(),
+        ),
+
+        // 4. Entrance Strip for Level 2 (Docked above the bottom bar, no collision)
         if (_state.level == Scene3DLevel.building)
           Positioned(
-            bottom: 24,
+            bottom: 78,
             left: 20,
             right: 20,
             child: Center(
@@ -341,31 +568,54 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
             ),
           ),
 
-        // 5. Right HUD Controls (Camera reset, auto-rotate, next level)
+        // 5. Right HUD Controls (Camera reset, auto-rotate 360, Day/Night toggle)
         Positioned(
           right: 16,
-          bottom: _state.level == Scene3DLevel.floor && _state.selectedApartment != null
-              ? 165
-              : 32,
+          bottom: _state.level == Scene3DLevel.floor &&
+                  _state.selectedApartment != null
+              ? 185
+              : 80,
           child: Scene3DHudControls(
             state: _state,
             onResetCamera: _onResetCamera,
             onToggleAutoRotate: _onToggleAutoRotate,
-            onNextLevel: _onNextLevel,
+            onToggleNightMode: _toggleNightMode,
+            onResetBuildingPositions: _resetBuildingPositions,
+            onOpenGoogleMap: _openGoogleSatelliteMap,
           ),
         ),
 
-        // 6. Bottom-Left Status Legend
+        // 6. Unified Non-Overlapping Bottom Bar (Status Legend + Action Button)
         Positioned(
-          left: 16,
-          bottom: _state.level == Scene3DLevel.floor && _state.selectedApartment != null
+          left: 14,
+          right: 14,
+          bottom: _state.level == Scene3DLevel.floor &&
+                  _state.selectedApartment != null
               ? 165
-              : 32,
-          child: const Scene3DStatusLegend(),
+              : (MediaQuery.paddingOf(context).bottom > 0
+                  ? MediaQuery.paddingOf(context).bottom + 4
+                  : 18),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Left: Status Legend
+              Flexible(
+                child: Scene3DStatusLegend(isNightMode: _state.isNightMode),
+              ),
+              const SizedBox(width: 8),
+              // Right: Next Level Button ("Смотреть этажи", "3D план этажа")
+              Scene3DNextLevelButton(
+                state: _state,
+                onNextLevel: _onNextLevel,
+              ),
+            ],
+          ),
         ),
 
-        // 7. Quick Dock on Apartment Selection (Media 4)
-        if (_state.level == Scene3DLevel.floor && _state.selectedApartment != null)
+        // 7. Quick Dock on Apartment Selection (Level 4)
+        if (_state.level == Scene3DLevel.floor &&
+            _state.selectedApartment != null)
           Positioned(
             left: 0,
             right: 0,
@@ -375,7 +625,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               onClose: () => setState(() {
                 _state = _state.copyWith(
                   clearApartment: true,
-                  camera: _state.camera.copyWith(panOffset: const Offset(0, -30)),
+                  camera:
+                      _state.camera.copyWith(panOffset: const Offset(0, -30)),
                 );
               }),
               onOpenDetail: () {
@@ -389,7 +640,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                     );
                   },
                   onToggleReserve: () {
-                    _controller.toggleApartmentReserve(_state.selectedApartment!);
+                    _controller
+                        .toggleApartmentReserve(_state.selectedApartment!);
                     setState(() {});
                   },
                 );
@@ -410,6 +662,146 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     );
   }
 
+  /// Real Geolocation Aura & Rotating 3D Compass HUD Badge
+  Widget _buildGeoCompassBadge() {
+    final lat = widget.complex.lat;
+    final lng = widget.complex.lng;
+    final address = widget.complex.address.isNotEmpty
+        ? widget.complex.address
+        : widget.complex.name;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFF202B33).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Rotating Compass Rose (Tapping reorients to North)
+              GestureDetector(
+                onTap: _orientToNorth,
+                child: Tooltip(
+                  message: 'Ориентация на Север (Нажмите для сброса)',
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Transform.rotate(
+                      angle: -_state.camera.yaw + 0.58,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // North pointer (red)
+                          Positioned(
+                            top: 3,
+                            child: Container(
+                              width: 3.0,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF5252),
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
+                              ),
+                            ),
+                          ),
+                          // South pointer (white)
+                          Positioned(
+                            bottom: 3,
+                            child: Container(
+                              width: 3.0,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                              ),
+                            ),
+                          ),
+                          // Center pin
+                          Container(
+                            width: 3.5,
+                            height: 3.5,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF202B33),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Geo Coordinates & Scale (Tapping opens Google Satellite Map with Complex footprint)
+              GestureDetector(
+                onTap: _openGoogleSatelliteMap,
+                child: Tooltip(
+                  message: 'Посмотреть ЖК на реальной спутниковой карте Google',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on, size: 11, color: Color(0xFF2979FF)),
+                          const SizedBox(width: 3),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 155),
+                            child: Text(
+                              address,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Gilroy',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.open_in_new_rounded, size: 10, color: Color(0xFF64B5F6)),
+                        ],
+                      ),
+                      Text(
+                        '${lat.toStringAsFixed(4)}°N, ${lng.toStringAsFixed(4)}°E • Карта Google',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 9.0,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Gilroy',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Media 2 Bottom Badge: "Подъезд 1 · свободно 18 из 36"
   Widget _buildMedia2EntranceDock() {
     final building = _state.selectedBuilding;
@@ -417,10 +809,14 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
 
     final allApts = _controller.getApartmentsForComplex(widget.complex.id);
     final entApts = allApts
-        .where((a) => a.buildingKey == building.key && a.entrance == _state.selectedEntrance)
+        .where((a) =>
+            a.buildingKey == building.key &&
+            a.entrance == _state.selectedEntrance)
         .toList();
 
-    final total = entApts.isNotEmpty ? entApts.length : (building.floorCount * building.apartsPerFloor);
+    final total = entApts.isNotEmpty
+        ? entApts.length
+        : (building.floorCount * building.apartsPerFloor);
     final free = entApts.isNotEmpty
         ? entApts.where((a) => a.status == ApartmentStatus.available).length
         : (total * 0.5).round();
@@ -482,7 +878,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                     ),
                   ),
                   SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_rounded, size: 12, color: Colors.white),
+                  Icon(Icons.arrow_forward_rounded,
+                      size: 12, color: Colors.white),
                 ],
               ),
             ),
@@ -492,7 +889,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     );
   }
 
-  /// Interactive HTML-like floating labels positioned precisely on 3D coordinates
+  /// Interactive floating labels positioned precisely on 3D coordinates
   List<Widget> _buildInteractiveFloatingBadges() {
     final widgets = <Widget>[];
 
@@ -500,17 +897,24 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
       case Scene3DLevel.complex:
         for (final info in _buildingInfos) {
           final pos = info.badgePosition;
+          final isBeingDragged =
+              _state.draggingBuildingKey == info.building.key;
+
           widgets.add(
             Positioned(
-              left: pos.dx - 60,
-              top: pos.dy - 40,
+              left: pos.dx - 65,
+              top: pos.dy - (isBeingDragged ? 55 : 40),
               child: FloatingBuildingBadge(
                 title: info.building.name,
-                subtitle: 'свободно ${info.freeApts} из ${info.totalApts}',
-                isSelected: _state.selectedBuilding?.key == info.building.key,
+                subtitle: isBeingDragged
+                    ? 'Перемещение 📍'
+                    : 'свободно ${info.freeApts} из ${info.totalApts}',
+                isSelected: _state.selectedBuilding?.key == info.building.key ||
+                    isBeingDragged,
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() => _state = _state.copyWith(selectedBuilding: info.building));
+                  setState(() =>
+                      _state = _state.copyWith(selectedBuilding: info.building));
                   _navigateLevel(Scene3DLevel.building);
                 },
               ),
@@ -532,7 +936,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                 isSelected: _state.selectedEntrance == info.entranceNumber,
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() => _state = _state.copyWith(selectedEntrance: info.entranceNumber));
+                  setState(() => _state =
+                      _state.copyWith(selectedEntrance: info.entranceNumber));
                   _navigateLevel(Scene3DLevel.section);
                 },
               ),
@@ -553,7 +958,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                 isSelected: _state.selectedFloor == info.floorNumber,
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() => _state = _state.copyWith(selectedFloor: info.floorNumber));
+                  setState(() =>
+                      _state = _state.copyWith(selectedFloor: info.floorNumber));
                   _navigateLevel(Scene3DLevel.floor);
                 },
               ),
@@ -574,7 +980,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                 isSelected: info.isSelected,
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  setState(() => _state = _state.copyWith(selectedApartment: info.apartment));
+                  setState(() => _state =
+                      _state.copyWith(selectedApartment: info.apartment));
                 },
               ),
             ),
@@ -615,6 +1022,8 @@ class _Master3DScenePainter extends CustomPainter {
       canvas: canvas,
       size: size,
       camera: state.camera,
+      complex: complex,
+      isNightMode: state.isNightMode,
     );
 
     var bInfos = <BuildingRenderInfo>[];
@@ -632,6 +1041,9 @@ class _Master3DScenePainter extends CustomPainter {
           complex: complex,
           allApartments: allApartments,
           highlightedBuilding: state.selectedBuilding,
+          isNightMode: state.isNightMode,
+          customOffsets: state.customBuildingOffsets,
+          draggingBuildingKey: state.draggingBuildingKey,
         );
         break;
 
@@ -644,6 +1056,7 @@ class _Master3DScenePainter extends CustomPainter {
             building: building!,
             allApartments: allApartments,
             selectedEntrance: state.selectedEntrance,
+            isNightMode: state.isNightMode,
           );
         }
         break;
@@ -658,6 +1071,7 @@ class _Master3DScenePainter extends CustomPainter {
             entrance: state.selectedEntrance,
             selectedFloor: state.selectedFloor,
             allApartments: allApartments,
+            isNightMode: state.isNightMode,
           );
         }
         break;
@@ -690,13 +1104,9 @@ class _Master3DScenePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _Master3DScenePainter oldDelegate) {
-    return oldDelegate.state.camera.yaw != state.camera.yaw ||
-        oldDelegate.state.camera.pitch != state.camera.pitch ||
-        oldDelegate.state.camera.zoom != state.camera.zoom ||
-        oldDelegate.state.level != state.level ||
-        oldDelegate.state.selectedBuilding?.key != state.selectedBuilding?.key ||
-        oldDelegate.state.selectedEntrance != state.selectedEntrance ||
-        oldDelegate.state.selectedFloor != state.selectedFloor ||
-        oldDelegate.state.selectedApartment?.id != state.selectedApartment?.id;
+    return oldDelegate.state != state ||
+        oldDelegate.complex != complex ||
+        oldDelegate.allApartments != allApartments ||
+        oldDelegate.building != building;
   }
 }

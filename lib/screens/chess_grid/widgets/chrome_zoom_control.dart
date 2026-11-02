@@ -27,7 +27,7 @@ class ChromeZoomControl extends StatelessWidget {
 
     return Container(
       height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 1 : 2, vertical: 2),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(12),
@@ -80,7 +80,7 @@ class ChromeZoomControl extends StatelessWidget {
               );
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: isCompact ? 5 : 8, vertical: 4),
               decoration: BoxDecoration(
                 color: currentLevel == ChessZoomLevel.micro50
                     ? colors.buttonPrimaryBg.withValues(alpha: 0.14)
@@ -94,18 +94,18 @@ class ChromeZoomControl extends StatelessWidget {
                     currentLevel == ChessZoomLevel.micro50
                         ? Icons.grid_view_rounded
                         : Icons.zoom_in_rounded,
-                    size: 15,
+                    size: isCompact ? 13 : 15,
                     color: currentLevel == ChessZoomLevel.micro50
                         ? colors.buttonPrimaryBg
                         : colors.textSecondary,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: isCompact ? 2 : 4),
                   Text(
                     currentLevel.label,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
+                      fontSize: isCompact ? 11 : 12.5,
                       color: currentLevel == ChessZoomLevel.micro50
                           ? colors.buttonPrimaryBg
                           : colors.textPrimary,
@@ -145,12 +145,12 @@ class ChromeZoomControl extends StatelessWidget {
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 28,
+        width: isCompact ? 22 : 28,
         height: 32,
         alignment: Alignment.center,
         child: Icon(
           icon,
-          size: 17,
+          size: isCompact ? 15 : 17,
           color: enabled
               ? colors.textPrimary
               : colors.textSecondary.withValues(alpha: 0.3),

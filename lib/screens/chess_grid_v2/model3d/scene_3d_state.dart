@@ -29,6 +29,9 @@ class Scene3DState {
   final Apartment? selectedApartment;
   final Camera3D camera;
   final bool isAutoRotating;
+  final bool isNightMode;
+  final String? draggingBuildingKey;
+  final Map<String, Offset> customBuildingOffsets;
 
   const Scene3DState({
     this.level = Scene3DLevel.complex,
@@ -43,6 +46,9 @@ class Scene3DState {
       target: Vector3D(0, 55, 0),
     ),
     this.isAutoRotating = false,
+    this.isNightMode = false,
+    this.draggingBuildingKey,
+    this.customBuildingOffsets = const {},
   });
 
   /// Default optimal camera configuration tailored for each level
@@ -88,6 +94,10 @@ class Scene3DState {
     Apartment? selectedApartment,
     Camera3D? camera,
     bool? isAutoRotating,
+    bool? isNightMode,
+    String? draggingBuildingKey,
+    bool clearDraggingBuilding = false,
+    Map<String, Offset>? customBuildingOffsets,
     bool clearApartment = false,
   }) {
     return Scene3DState(
@@ -100,6 +110,12 @@ class Scene3DState {
           : (selectedApartment ?? this.selectedApartment),
       camera: camera ?? this.camera,
       isAutoRotating: isAutoRotating ?? this.isAutoRotating,
+      isNightMode: isNightMode ?? this.isNightMode,
+      draggingBuildingKey: clearDraggingBuilding
+          ? null
+          : (draggingBuildingKey ?? this.draggingBuildingKey),
+      customBuildingOffsets:
+          customBuildingOffsets ?? this.customBuildingOffsets,
     );
   }
 }

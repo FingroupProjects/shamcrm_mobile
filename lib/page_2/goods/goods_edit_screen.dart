@@ -355,7 +355,10 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     // Deduplicate by name to prevent DataTable column/cell count mismatch
     final seenPopNames = <String>{};
     final individualAttrs = category.attributes
-        .where((a) => a.isIndividual)
+        .where((a) =>
+            a.isIndividual &&
+            a.name.trim().isNotEmpty &&
+            a.name.trim() != 'Неизвестная характеристика')
         .where((a) {
           final key = a.name.trim().toLowerCase();
           if (seenPopNames.contains(key)) return false;
@@ -379,20 +382,39 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
 
         for (var attrValue in variant.attributeValues) {
           String? attrName = attrValue.categoryAttribute?.attribute?.name;
-          if (attrName == null || !newRow.containsKey(attrName)) {
+          if (attrName == null ||
+              attrName == 'Неизвестная характеристика' ||
+              !newRow.containsKey(attrName)) {
             for (var attr in individualAttrs) {
-              if (attr.id == attrValue.categoryAttributeId ||
-                  attr.id == attrValue.id) {
+              if ((attrValue.categoryAttributeId != 0 &&
+                      attr.id == attrValue.categoryAttributeId) ||
+                  (attrValue.id != 0 && attr.id == attrValue.id) ||
+                  (attrName != null &&
+                      attrName != 'Неизвестная характеристика' &&
+                      attr.name.trim().toLowerCase() ==
+                          attrName.trim().toLowerCase())) {
                 attrName = attr.name;
                 break;
               }
             }
           }
 
+          String? matchedKey;
           if (attrName != null && newRow.containsKey(attrName)) {
-            (newRow[attrName] as TextEditingController).text = attrValue.value;
+            matchedKey = attrName;
+          } else if (attrName != null) {
+            for (var k in newRow.keys) {
+              if (k.trim().toLowerCase() == attrName.trim().toLowerCase()) {
+                matchedKey = k;
+                break;
+              }
+            }
+          }
+
+          if (matchedKey != null) {
+            (newRow[matchedKey] as TextEditingController).text = attrValue.value;
             if (attrValue.id != 0) {
-              newRow['attribute_ids'][attrName] = attrValue.id;
+              newRow['attribute_ids'][matchedKey] = attrValue.id;
             }
           }
         }
@@ -458,19 +480,23 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
       for (var variant in widget.goods.variants!) {
         for (var attrValue in variant.attributeValues) {
           String? attrName = attrValue.categoryAttribute?.attribute?.name;
-          if (attrName == null) {
+          if (attrName == null || attrName == 'Неизвестная характеристика') {
             for (var a in allAttributes) {
-              if (a.id == attrValue.categoryAttributeId || a.id == attrValue.id) {
+              if ((attrValue.categoryAttributeId != 0 && a.id == attrValue.categoryAttributeId) ||
+                  (attrValue.id != 0 && a.id == attrValue.id)) {
                 attrName = a.name;
                 break;
               }
             }
           }
-          if (attrName != null && attrName.isNotEmpty) {
-            if (!individualAttributesMap.containsKey(attrName)) {
-              individualAttributesMap[attrName] = {
+          if (attrName != null &&
+              attrName.trim().isNotEmpty &&
+              attrName.trim() != 'Неизвестная характеристика') {
+            final key = attrName.trim().toLowerCase();
+            if (!individualAttributesMap.containsKey(key)) {
+              individualAttributesMap[key] = {
                 'id': attrValue.categoryAttribute?.id ?? attrValue.categoryAttributeId,
-                'name': attrName,
+                'name': attrName.trim(),
                 'isIndividual': true,
               };
             }
@@ -492,6 +518,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
         ));
       }
     }
+
+    // Remove any invalid / unknown attribute entries
+    allAttributes.removeWhere((a) =>
+        a.name.trim().isEmpty ||
+        a.name.trim() == 'Неизвестная характеристика');
 
     // Deduplicate allAttributes by name to prevent DataTable column/cell count mismatch
     final seenAttrNames = <String>{};
@@ -1550,7 +1581,11 @@ class _GoodsEditScreenState extends State<GoodsEditScreen> {
     final seenIndividualNames = <String>{};
     final individualAttrs = selectedCategory!
                                           .attributes
-                                          .where((attr) => attr.isIndividual)
+                                          .where((attr) =>
+                                              attr.isIndividual &&
+                                              attr.name.trim().isNotEmpty &&
+                                              attr.name.trim() !=
+                                                  'Неизвестная характеристика')
                                           .where((attr) {
                                             final key = attr.name.trim().toLowerCase();
                                             if (seenIndividualNames.contains(key)) return false;

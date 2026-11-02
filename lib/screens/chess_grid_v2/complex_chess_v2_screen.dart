@@ -14,15 +14,13 @@ import 'package:crm_task_manager/screens/chess_grid_v2/widgets/apartment_quick_d
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/catalog_list_view_v2.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/chess_cell_v2.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/complex_analytics_view_v2.dart';
-import 'package:crm_task_manager/screens/chess_grid_v2/widgets/interactive_facade_view.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/section_building_sheet_v2.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 enum ComplexViewMode {
-  model3D,   // Интерактивная 3D шахматка (Media 1-4)
-  facade,    // Интерактивный фасад по фото / схеме дома
+  model3D,   // Интерактивная 3D шахматка
   matrix,    // Интерактивная 2D шахматка
   catalog,   // Список квартир
   analytics, // Аналитика и прогресс ЖК
@@ -119,9 +117,11 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                 // Quick Status Filters Bar (Visible for Matrix and Catalog modes)
                 if (_viewMode != ComplexViewMode.analytics && _viewMode != ComplexViewMode.model3D)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(0, 6, 0, 8),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
                           _buildStatusFilterChip(
@@ -209,33 +209,6 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
         return ChessGrid3DView(
           complex: widget.complex,
           onSwitchTo2D: () {
-            setState(() {
-              _viewMode = ComplexViewMode.matrix;
-            });
-          },
-        );
-
-      case ComplexViewMode.facade:
-        if (building == null) {
-          return Center(
-            child: Text(
-              'Корпус не выбран',
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 16,
-                color: colors.textSecondary,
-              ),
-            ),
-          );
-        }
-        return InteractiveFacadeView(
-          building: building,
-          apartments: allApts,
-          onSelectFloor: (floor, entrance) {
-            _controller.setFilter(_controller.filter.copyWith(entrance: entrance));
-          },
-          onSelectApartment: (apt) => _openApartmentDetail(apt),
-          onSwitchToMatrix: () {
             setState(() {
               _viewMode = ComplexViewMode.matrix;
             });
@@ -565,7 +538,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Row(
         children: [
-          // View Mode Selector: Сетка, Список, Аналитика
+          // View Mode Selector: 3D, Сетка, Список, Анализ
           Expanded(
             child: Container(
               height: 38,
@@ -583,12 +556,6 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                     mode: ComplexViewMode.model3D,
                     title: '3D',
                     icon: Icons.view_in_ar_rounded,
-                    colors: colors,
-                  ),
-                  _buildModeSegment(
-                    mode: ComplexViewMode.facade,
-                    title: 'Фасад',
-                    icon: Icons.apartment_rounded,
                     colors: colors,
                   ),
                   _buildModeSegment(
@@ -616,8 +583,9 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
 
           // Chrome-style Zoom Control (Only active in Matrix mode)
           if (_viewMode == ComplexViewMode.matrix) ...[
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             ChromeZoomControl(
+              isCompact: true,
               currentLevel: _zoomLevel,
               onChanged: (newLevel) {
                 setState(() {
@@ -650,6 +618,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             color: isSelected ? colors.surfaceElevated : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
@@ -665,20 +634,25 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 14.5,
+                size: 14,
                 color: isSelected ? colors.buttonPrimaryBg : colors.textSecondary,
               ),
-              const SizedBox(width: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 12,
-                  color: isSelected ? colors.textPrimary : colors.textSecondary,
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    fontSize: 11.5,
+                    color: isSelected ? colors.textPrimary : colors.textSecondary,
+                  ),
                 ),
               ),
             ],
