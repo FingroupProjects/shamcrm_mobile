@@ -4,10 +4,10 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_preview_tooltip.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_filter_dialog.dart';
-import 'package:crm_task_manager/screens/chess_grid/widgets/chrome_zoom_control.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/chess_grid_3d_view.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/widgets/apartment_quick_dock_v2.dart';
@@ -47,14 +47,18 @@ class ComplexChessV2Screen extends StatefulWidget {
 
 class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
   late final ChessGridV2Controller _controller;
-  ComplexViewMode _viewMode = ComplexViewMode.model3D;
-  ChessZoomLevel _zoomLevel = ChessZoomLevel.standard100;
+  late final TransformationController _transformationController;
+  double _currentScale = 1.0;
+  ComplexViewMode _viewMode = ComplexViewMode.matrix;
+  final ChessZoomLevel _zoomLevel = ChessZoomLevel.standard100;
   ApartmentStatus? _quickStatusFilter;
   Apartment? _selectedApartment;
 
   @override
   void initState() {
     super.initState();
+    _transformationController = TransformationController();
+    _transformationController.addListener(_onScaleChanged);
     _controller = ChessGridV2Controller.instance;
     _controller.addListener(_onControllerUpdate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,6 +66,17 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
         _controller.loadComplexDetails(widget.complex.id);
       }
     });
+  }
+
+  void _onScaleChanged() {
+    final scale = _transformationController.value.getMaxScaleOnAxis();
+    if ((scale - _currentScale).abs() > 0.05) {
+      if (mounted) {
+        setState(() {
+          _currentScale = scale;
+        });
+      }
+    }
   }
 
   void _onControllerUpdate() {
@@ -73,6 +88,8 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
 
   @override
   void dispose() {
+    _transformationController.removeListener(_onScaleChanged);
+    _transformationController.dispose();
     _controller.removeListener(_onControllerUpdate);
     super.dispose();
   }
@@ -126,28 +143,28 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                         children: [
                           _buildStatusFilterChip(
                             status: null,
-                            label: 'Все',
+                            label: context.tr('chess_grid_all', fallback: 'Все'),
                             count: apts.length,
                             color: colors.buttonPrimaryBg,
                           ),
                           const SizedBox(width: 6),
                           _buildStatusFilterChip(
                             status: ApartmentStatus.available,
-                            label: 'Свободно',
+                            label: context.tr('chess_grid_available', fallback: 'Свободно'),
                             count: freeCount,
                             color: ApartmentStatus.available.color,
                           ),
                           const SizedBox(width: 6),
                           _buildStatusFilterChip(
                             status: ApartmentStatus.booked,
-                            label: 'Бронь',
+                            label: context.tr('chess_grid_booked', fallback: 'Бронь'),
                             count: bookedCount,
                             color: ApartmentStatus.booked.color,
                           ),
                           const SizedBox(width: 6),
                           _buildStatusFilterChip(
                             status: ApartmentStatus.sold,
-                            label: 'Продано',
+                            label: context.tr('chess_grid_sold', fallback: 'Продано'),
                             count: soldCount,
                             color: ApartmentStatus.sold.color,
                           ),
@@ -155,7 +172,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                             const SizedBox(width: 6),
                             _buildStatusFilterChip(
                               status: ApartmentStatus.reserved,
-                              label: 'Резерв',
+                              label: context.tr('chess_grid_reserved', fallback: 'Резерв'),
                               count: reservedCount,
                               color: ApartmentStatus.reserved.color,
                             ),
@@ -241,7 +258,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
         if (building == null) {
           return Center(
             child: Text(
-              'Корпус не выбран',
+              context.tr('chess_grid_building_not_selected', fallback: 'Корпус не выбран'),
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontSize: 16,
@@ -261,7 +278,9 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
     final complexApts = _controller.getApartmentsForComplex(widget.complex.id);
 
     // Filter by building
-    var filtered = complexApts.where((a) => a.buildingKey == building.key).toList();
+    var filtered = complexApts
+        .where((a) => a.buildingKey == building.key || (building.id != null && a.buildingId == building.id))
+        .toList();
 
     // Filter by entrance
     final selectedEntrance = _controller.filter.entrance;
@@ -279,8 +298,12 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
       filtered = filtered.where((a) => _controller.filter.matches(a)).toList();
     }
 
+    final effectiveEntranceCount = building.getEffectiveEntranceCount(complexApts);
+    final effectiveFloorCount = building.getEffectiveFloorCount(complexApts);
+    final effectiveApartsPerFloor = building.getApartsPerFloorForEntrance(complexApts);
+
     final entrances = selectedEntrance == 0
-        ? List.generate(building.entranceCount, (i) => i + 1)
+        ? List.generate(effectiveEntranceCount, (i) => i + 1)
         : [selectedEntrance];
 
     final isMicro = _zoomLevel == ChessZoomLevel.micro50;
@@ -290,6 +313,118 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
     final headerHeight = _zoomLevel.headerHeight;
     final marginVal = isMicro ? 2.0 : 3.0;
     const rowGap = 4.0;
+
+    final isZoomed = (_currentScale - 1.0).abs() > 0.05;
+
+    final floorColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Spacer matching the entrance header height
+        SizedBox(height: headerHeight),
+
+        for (int floor = effectiveFloorCount; floor >= 1; floor--)
+          Container(
+            width: floorBadgeWidth,
+            height: cellHeight,
+            margin: EdgeInsets.only(
+              top: marginVal,
+              bottom: marginVal + rowGap,
+              right: 6,
+              left: 2,
+            ),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: colors.borderSubtle.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$floor',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                Text(
+                  context.tr('chess_grid_floor_badge', fallback: 'эт'),
+                  style: TextStyle(
+                    fontFamily: 'Golos',
+                    fontSize: 9.5,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+
+    final apartmentsColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Entrance Header Row
+        Row(
+          children: [
+            for (final e in entrances)
+              Container(
+                width: effectiveApartsPerFloor * (cellWidth + (marginVal * 2)),
+                height: headerHeight,
+                padding: const EdgeInsets.only(bottom: 6),
+                alignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                      color: colors.borderSubtle.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    '${context.tr('chess_grid_entrance_label', fallback: 'Подъезд')} $e',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+
+        // Floor Rows
+        for (int floor = effectiveFloorCount; floor >= 1; floor--)
+          Padding(
+            padding: const EdgeInsets.only(bottom: rowGap),
+            child: Row(
+              children: [
+                for (final e in entrances)
+                  for (int p = 0; p < effectiveApartsPerFloor; p++)
+                    _buildCellSlot(
+                      filteredApts: filtered,
+                      building: building,
+                      buildingKey: building.key,
+                      entrance: e,
+                      floor: floor,
+                      position: p,
+                    ),
+              ],
+            ),
+          ),
+      ],
+    );
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 2, 14, 14),
@@ -303,135 +438,79 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: SingleChildScrollView(
-          // Vertical scroll drives both the floor column and the apartment matrix!
-          scrollDirection: Axis.vertical,
-          padding: EdgeInsets.fromLTRB(
-            10,
-            10,
-            10,
-            _selectedApartment != null ? 140 : 20,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sticky Floor Column (pinned on the left horizontally)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Spacer matching the entrance header height
-                  SizedBox(height: headerHeight),
-
-                  for (int floor = building.floorCount; floor >= 1; floor--)
-                    Container(
-                      width: floorBadgeWidth,
-                      height: cellHeight,
-                      margin: EdgeInsets.only(
-                        top: marginVal,
-                        bottom: marginVal + rowGap,
-                        right: 6,
-                      ),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(isMicro ? 8 : 10),
-                        border: Border.all(
-                          color: colors.borderSubtle.withValues(alpha: 0.45),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$floor',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w800,
-                              fontSize: isMicro ? 13 : 15.5,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          if (!isMicro)
-                            Text(
-                              'эт',
-                              style: TextStyle(
-                                fontFamily: 'Golos',
-                                fontSize: 9.5,
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              transformationController: _transformationController,
+              minScale: 0.35,
+              maxScale: 2.5,
+              boundaryMargin: const EdgeInsets.all(80),
+              constrained: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  10,
+                  10,
+                  10,
+                  _selectedApartment != null ? 140 : 20,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    floorColumn,
+                    apartmentsColumn,
+                    const SizedBox(width: 4),
+                    floorColumn,
+                  ],
+                ),
               ),
-
-              // Horizontally scrollable Apartment Grid
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Entrance Header Row
-                      Row(
-                        children: [
-                          for (final e in entrances)
-                            Container(
-                              width: building.apartsPerFloor * (cellWidth + (marginVal * 2)),
-                              height: headerHeight,
-                              padding: const EdgeInsets.only(bottom: 6),
-                              alignment: Alignment.center,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: isMicro ? 8 : 12,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.surfaceElevated,
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: colors.borderSubtle.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                child: Text(
-                                  'Подъезд $e',
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: isMicro ? 11 : 12,
-                                    color: colors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+            ),
+            if (isZoomed)
+              Positioned(
+                bottom: _selectedApartment != null ? 150 : 12,
+                right: 12,
+                child: GestureDetector(
+                  onTap: () {
+                    _transformationController.value = Matrix4.identity();
+                    if (mounted) {
+                      setState(() {
+                        _currentScale = 1.0;
+                      });
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceElevated.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: colors.borderSubtle.withValues(alpha: 0.6),
                       ),
-
-                      // Floor Rows
-                      for (int floor = building.floorCount; floor >= 1; floor--)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: rowGap),
-                          child: Row(
-                            children: [
-                              for (final e in entrances)
-                                for (int p = 0; p < building.apartsPerFloor; p++)
-                                  _buildCellSlot(
-                                    filteredApts: filtered,
-                                    buildingKey: building.key,
-                                    entrance: e,
-                                    floor: floor,
-                                    position: p,
-                                  ),
-                            ],
+                      boxShadow: context.appShadows.card,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.restart_alt_rounded,
+                          size: 14,
+                          color: colors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${(_currentScale * 100).round()}%',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -439,6 +518,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
 
   Widget _buildCellSlot({
     required List<Apartment> filteredApts,
+    required Building building,
     required String buildingKey,
     required int entrance,
     required int floor,
@@ -448,26 +528,24 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
     final cellHeight = _zoomLevel.cellHeight;
     final isMicro = _zoomLevel == ChessZoomLevel.micro50;
 
-    Apartment? apt;
-    try {
-      apt = filteredApts.firstWhere(
+    Apartment? apt = filteredApts.firstWhereOrNull(
+      (a) =>
+          (a.buildingKey == buildingKey || (building.id != null && a.buildingId == building.id)) &&
+          a.entrance == entrance &&
+          a.floor == floor &&
+          a.position == position,
+    );
+    if (apt == null) {
+      // Check if apartment exists without filters to display ghost/filtered slot
+      final rawApt = _controller.apartments.firstWhereOrNull(
         (a) =>
-            a.buildingKey == buildingKey &&
+            (a.complexId == widget.complex.id || widget.complex.id == 0) &&
+            (a.buildingKey == buildingKey || (building.id != null && a.buildingId == building.id)) &&
             a.entrance == entrance &&
             a.floor == floor &&
             a.position == position,
       );
-    } catch (_) {
-      // Check if apartment exists without filters to display ghost/filtered slot
-      try {
-        final rawApt = _controller.apartments.firstWhere(
-          (a) =>
-              a.complexId == widget.complex.id &&
-              a.buildingKey == buildingKey &&
-              a.entrance == entrance &&
-              a.floor == floor &&
-              a.position == position,
-        );
+      if (rawApt != null) {
         return Container(
           width: cellWidth,
           height: cellHeight,
@@ -490,8 +568,6 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
             ),
           ),
         );
-      } catch (_) {
-        apt = null;
       }
     }
 
@@ -560,19 +636,19 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                   ),
                   _buildModeSegment(
                     mode: ComplexViewMode.matrix,
-                    title: 'Сетка',
+                    title: context.tr('chess_grid_tab_matrix', fallback: 'Сетка'),
                     icon: Icons.grid_view_rounded,
                     colors: colors,
                   ),
                   _buildModeSegment(
                     mode: ComplexViewMode.catalog,
-                    title: 'Список',
+                    title: context.tr('chess_grid_tab_catalog', fallback: 'Список'),
                     icon: Icons.format_list_bulleted_rounded,
                     colors: colors,
                   ),
                   _buildModeSegment(
                     mode: ComplexViewMode.analytics,
-                    title: 'Анализ',
+                    title: context.tr('chess_grid_tab_analytics', fallback: 'Анализ'),
                     icon: Icons.insights_rounded,
                     colors: colors,
                   ),
@@ -580,20 +656,6 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
               ),
             ),
           ),
-
-          // Chrome-style Zoom Control (Only active in Matrix mode)
-          if (_viewMode == ComplexViewMode.matrix) ...[
-            const SizedBox(width: 6),
-            ChromeZoomControl(
-              isCompact: true,
-              currentLevel: _zoomLevel,
-              onChanged: (newLevel) {
-                setState(() {
-                  _zoomLevel = newLevel;
-                });
-              },
-            ),
-          ],
         ],
       ),
     );
@@ -638,10 +700,10 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
             children: [
               Icon(
                 icon,
-                size: 14,
+                size: 12,
                 color: isSelected ? colors.buttonPrimaryBg : colors.textSecondary,
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: 2),
               Flexible(
                 child: Text(
                   title,
@@ -650,7 +712,7 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    fontSize: 11.5,
+                    fontSize: 10.5,
                     color: isSelected ? colors.textPrimary : colors.textSecondary,
                   ),
                 ),
@@ -760,8 +822,8 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
     showCustomSnackBar(
       context: context,
       message: apt.status == ApartmentStatus.reserved
-          ? 'Квартира снята с резерва'
-          : 'Квартира поставлена в резерв',
+          ? context.tr('chess_grid_unreserved_success', fallback: 'Квартира снята с резерва')
+          : context.tr('chess_grid_reserved_success', fallback: 'Квартира поставлена в резерв'),
       isSuccess: true,
     );
   }
@@ -789,9 +851,11 @@ class _ComplexChessV2ScreenState extends State<ComplexChessV2Screen> {
     final primaryText = colors.textPrimary;
     final subtleBorder = colors.borderSubtle.withValues(alpha: 0.36);
 
-    final buildingName = building?.name ?? 'Корпус';
+    final buildingName = building?.name ?? context.tr('chess_grid_building', fallback: 'Корпус');
     final entranceNum = _controller.filter.entrance;
-    final entranceText = entranceNum == 0 ? 'Все подъезды' : 'Подъезд $entranceNum';
+    final entranceText = entranceNum == 0
+        ? context.tr('chess_grid_all_entrances', fallback: 'Все подъезды')
+        : '${context.tr('chess_grid_entrance_label', fallback: 'Подъезд')} $entranceNum';
 
     return AppBar(
       automaticallyImplyLeading: false,

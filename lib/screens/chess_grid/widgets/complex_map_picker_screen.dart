@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -140,13 +141,13 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
   String get _layerLabel {
     switch (_layerType) {
       case ComplexMapLayerType.googleHybrid:
-        return 'Спутник Google';
+        return context.tr('chess_grid_hybrid_title', fallback: 'Спутник Google');
       case ComplexMapLayerType.googleSatellite:
-        return 'Чистый спутник';
+        return context.tr('chess_grid_pure_satellite_title', fallback: 'Чистый спутник');
       case ComplexMapLayerType.googleRoadmap:
-        return 'Схема Google';
+        return context.tr('chess_grid_roadmap_title', fallback: 'Схема Google');
       case ComplexMapLayerType.osmStreet:
-        return 'OpenStreetMap';
+        return context.tr('chess_grid_osm_title', fallback: 'OpenStreetMap');
     }
   }
 
@@ -318,9 +319,9 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
                   ),
                 ),
               ),
-              const Text(
-                'Слой спутниковой карты',
-                style: TextStyle(
+              Text(
+                context.tr('chess_grid_map_layer_title', fallback: 'Слой спутниковой карты'),
+                style: const TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
@@ -330,26 +331,26 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
               const SizedBox(height: 12),
               _buildLayerOption(
                 type: ComplexMapLayerType.googleHybrid,
-                title: 'Google Спутник (Гибрид)',
-                subtitle: 'Высокодетализированный снимок с дорогами и домами',
+                title: context.tr('chess_grid_hybrid_title', fallback: 'Google Спутник (Гибрид)'),
+                subtitle: context.tr('chess_grid_hybrid_sub', fallback: 'Высокодетализированный снимок с дорогами и домами'),
                 icon: Icons.satellite_alt_rounded,
               ),
               _buildLayerOption(
                 type: ComplexMapLayerType.googleSatellite,
-                title: 'Чистый спутник Google',
-                subtitle: 'Реальные снимки из космоса без разметки',
+                title: context.tr('chess_grid_pure_satellite_title', fallback: 'Чистый спутник Google'),
+                subtitle: context.tr('chess_grid_pure_satellite_sub', fallback: 'Реальные снимки из космоса без разметки'),
                 icon: Icons.public_rounded,
               ),
               _buildLayerOption(
                 type: ComplexMapLayerType.googleRoadmap,
-                title: 'Google Схема дорог',
-                subtitle: 'Классическая карта Google улиц и строений',
+                title: context.tr('chess_grid_roadmap_title', fallback: 'Google Схема дорог'),
+                subtitle: context.tr('chess_grid_roadmap_sub', fallback: 'Классическая карта Google улиц и строений'),
                 icon: Icons.map_rounded,
               ),
               _buildLayerOption(
                 type: ComplexMapLayerType.osmStreet,
-                title: 'OpenStreetMap',
-                subtitle: 'Открытая топографическая карта',
+                title: context.tr('chess_grid_osm_title', fallback: 'OpenStreetMap'),
+                subtitle: context.tr('chess_grid_osm_sub', fallback: 'Открытая топографическая карта'),
                 icon: Icons.layers_rounded,
               ),
             ],
@@ -503,8 +504,8 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
     for (int i = 0; i < count; i++) {
       final b = (buildings != null && i < buildings.length) ? buildings[i] : null;
       final label = b != null && b.name.isNotEmpty
-          ? (b.name.length > 8 ? b.name.substring(0, 8) : b.name)
-          : 'Корп. ${String.fromCharCode(65 + i)}';
+          ? (b.name.length > 10 ? b.name.substring(0, 10) : b.name)
+          : '${context.tr('chess_grid_building', fallback: 'Корп.')} ${String.fromCharCode(65 + i)}';
 
       final double progress = count > 1 ? i / (count - 1) : 0.5;
       final double offsetLat = (progress * 0.00040) - 0.00020;
@@ -518,7 +519,7 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
       markers.add(
         Marker(
           point: bCenter,
-          width: 82,
+          width: 96,
           height: 28,
           alignment: Alignment.center,
           child: Container(
@@ -539,12 +540,11 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
               ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.apartment_rounded, size: 11, color: Color(0xFF38BDF8)),
                 const SizedBox(width: 3),
-                Flexible(
+                Expanded(
                   child: Text(
                     label,
                     maxLines: 1,
@@ -567,12 +567,12 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
     // 3. Floating Complex Title Capsule
     final complexTitle = widget.complexName?.isNotEmpty == true
         ? widget.complexName!
-        : 'Жилой комплекс';
+        : context.tr('chess_grid_new_complex', fallback: 'Жилой комплекс');
 
     markers.add(
       Marker(
         point: LatLng(center.latitude - 0.00045, center.longitude),
-        width: 180,
+        width: 196,
         height: 34,
         alignment: Alignment.center,
         child: Container(
@@ -590,14 +590,13 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
             ],
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.location_on_rounded, size: 13, color: Colors.white),
               const SizedBox(width: 4),
-              Flexible(
+              Expanded(
                 child: Text(
-                  '$complexTitle • $count корп.',
+                  '$complexTitle • $count ${ChessGridL10n.buildingPlural(context, count)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -701,7 +700,7 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
                               color: Colors.white,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Поиск улицы, города, объекта...',
+                              hintText: context.tr('chess_grid_search_address_hint', fallback: 'Поиск улицы, города, объекта...'),
                               hintStyle: const TextStyle(
                                 fontFamily: 'Golos',
                                 fontSize: 13,
@@ -1000,10 +999,10 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
                           children: [
                             Text(
                               _isGeocoding
-                                  ? 'Определение адреса точки...'
+                                  ? context.tr('chess_grid_determining_address', fallback: 'Определение адреса точки...')
                                   : (_detectedAddress.isNotEmpty
                                       ? _detectedAddress
-                                      : (widget.complexName ?? 'Координаты выбраны')),
+                                      : (widget.complexName ?? context.tr('chess_grid_point_chosen', fallback: 'Координаты выбраны'))),
                               style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
@@ -1051,8 +1050,8 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
                           const SizedBox(width: 8),
                           Text(
                             widget.isReadOnly
-                                ? 'Вернуться к 3D модели ЖК'
-                                : 'Выбрать эту точку на карте',
+                                ? context.tr('chess_grid_return_to_3d', fallback: 'Вернуться к 3D модели ЖК')
+                                : context.tr('chess_grid_select_this_point', fallback: 'Выбрать эту точку на карте'),
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w700,

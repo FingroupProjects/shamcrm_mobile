@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
@@ -33,80 +34,51 @@ class ApartmentRoomLayoutView extends StatefulWidget {
 }
 
 class _ApartmentRoomLayoutViewState extends State<ApartmentRoomLayoutView> {
-  LayoutViewTab _currentTab = LayoutViewTab.blueprint;
+  LayoutViewTab _currentTab = LayoutViewTab.photo;
+
+  List<String> get _photoPaths {
+    final apt = widget.apartment;
+    final paths = <String>[];
+    final cover = apt.layoutImageUrl?.trim() ?? '';
+    if (cover.isNotEmpty) paths.add(cover);
+    for (final plan in apt.plans) {
+      final path = plan.trim();
+      if (path.isNotEmpty && !paths.contains(path)) paths.add(path);
+    }
+    return paths;
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final apt = widget.apartment;
+    final photos = _photoPaths;
+    if (photos.isEmpty) return const SizedBox.shrink();
 
-    final planData = _calculatePlanData(apt);
-
-    final hasPhoto = (apt.layoutImageUrl != null && apt.layoutImageUrl!.isNotEmpty) ||
-        apt.plans.isNotEmpty;
+    final planData = _calculatePlanData(widget.apartment);
+    final showExplication = _currentTab == LayoutViewTab.explication;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Header with Title & Layout Type Pill (only shown when not compact / in full sheet)
         if (!widget.compact) ...[
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Row(
-                children: [
-                  Text(
-                    'Планировка',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colors.buttonPrimaryBg.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      planData.typeLabel,
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 10.5,
-                        color: colors.buttonPrimaryBg,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              _buildTabSelector(colors, hasPhoto),
+              _buildTabSelector(colors),
             ],
           ),
           const SizedBox(height: 8),
         ],
-
-        // Main Content based on active tab
-        if (_currentTab == LayoutViewTab.photo && hasPhoto)
-          _buildPhotoView(colors)
-        else if (_currentTab == LayoutViewTab.explication)
+        if (showExplication)
           _buildExplicationTable(colors, planData)
         else
-          _buildArchitecturalBlueprint(colors, isDark, planData),
+          _buildPhotoView(colors, photos),
       ],
     );
   }
 
-  Widget _buildTabSelector(dynamic colors, bool hasPhoto) {
+  Widget _buildTabSelector(dynamic colors) {
     return Container(
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
@@ -117,9 +89,10 @@ class _ApartmentRoomLayoutViewState extends State<ApartmentRoomLayoutView> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildTabPill('Схема', LayoutViewTab.blueprint, colors),
+          // [Схема комнат скрыта по требованию]
+          // _buildTabPill('Схема', LayoutViewTab.blueprint, colors),
+          _buildTabPill('Фото', LayoutViewTab.photo, colors),
           _buildTabPill('Экспликация', LayoutViewTab.explication, colors),
-          if (hasPhoto) _buildTabPill('Фото', LayoutViewTab.photo, colors),
         ],
       ),
     );
@@ -148,29 +121,50 @@ class _ApartmentRoomLayoutViewState extends State<ApartmentRoomLayoutView> {
     );
   }
 
-  Widget _buildPhotoView(dynamic colors) {
-    final photoUrl = widget.apartment.layoutImageUrl ??
-        (widget.apartment.plans.isNotEmpty ? widget.apartment.plans.first : '');
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: widget.compact ? 120 : 180,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: colors.surfaceElevated,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.borderSubtle),
-        ),
-        child: Image.network(
-          photoUrl,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Center(
-            child: Text(
-              'Не удалось загрузить фото планировки',
-              style: TextStyle(fontFamily: 'Golos', fontSize: 12, color: colors.textSecondary),
+  Widget _buildPhotoView(dynamic colors, List<String> photos) {
+    final height = widget.compact ? 120.0 : 220.0;
+    return SizedBox(
+      height: height,
+      child: PageView.builder(
+        itemCount: photos.length,
+        itemBuilder: (context, index) {
+          final path = photos[index];
+          final isRemote = path.startsWith('http://') || path.startsWith('https://');
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colors.surfaceElevated,
+                  border: Border.all(color: colors.borderSubtle),
+                ),
+                child: isRemote
+                    ? Image.network(
+                        path,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        errorBuilder: (_, __, ___) => _photoError(colors),
+                      )
+                    : Image.file(
+                        File(path),
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        errorBuilder: (_, __, ___) => _photoError(colors),
+                      ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _photoError(dynamic colors) {
+    return Center(
+      child: Text(
+        'Не удалось загрузить фото планировки',
+        style: TextStyle(fontFamily: 'Golos', fontSize: 12, color: colors.textSecondary),
       ),
     );
   }

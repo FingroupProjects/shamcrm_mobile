@@ -2,6 +2,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -130,7 +131,9 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  isEditing ? 'Редактировать корпус' : 'Новый корпус ЖК',
+                  isEditing
+                      ? context.tr('chess_grid_edit_building', fallback: 'Редактировать корпус')
+                      : context.tr('chess_grid_new_building', fallback: 'Новый корпус ЖК'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
@@ -157,11 +160,11 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                     invalid: _missingFields.contains('name'),
                     focus: _firstMissingField == 'name',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите название корпуса',
+                    message: context.tr('chess_grid_specify_building_name', fallback: 'Укажите название корпуса'),
                     child: CustomTextField(
                       controller: _nameController,
-                      label: 'Название корпуса *',
-                      hintText: 'Введите название корпуса',
+                      label: context.tr('chess_grid_building_name', fallback: 'Название корпуса *'),
+                      hintText: context.tr('chess_grid_enter_building_name', fallback: 'Введите название корпуса'),
                       hasError: _missingFields.contains('name'),
                       onChanged: (val) {
                         if (val.trim().isNotEmpty && _missingFields.contains('name')) {
@@ -180,11 +183,11 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                     invalid: _missingFields.contains('entrance'),
                     focus: _firstMissingField == 'entrance',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите кол-во',
+                    message: context.tr('chess_grid_specify_count', fallback: 'Укажите кол-во'),
                     child: CustomTextField(
                       controller: _entranceController,
-                      label: 'Подъездов *',
-                      hintText: 'Введите кол-во',
+                      label: context.tr('chess_grid_entrances_count', fallback: 'Подъездов *'),
+                      hintText: context.tr('chess_grid_enter_count', fallback: 'Введите кол-во'),
                       keyboardType: TextInputType.number,
                       hasError: _missingFields.contains('entrance'),
                       onChanged: (val) {
@@ -203,11 +206,11 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                     invalid: _missingFields.contains('floor'),
                     focus: _firstMissingField == 'floor',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите кол-во',
+                    message: context.tr('chess_grid_specify_count', fallback: 'Укажите кол-во'),
                     child: CustomTextField(
                       controller: _floorController,
-                      label: 'Этажей *',
-                      hintText: 'Введите кол-во',
+                      label: context.tr('chess_grid_floors_count', fallback: 'Этажей *'),
+                      hintText: context.tr('chess_grid_enter_count', fallback: 'Введите кол-во'),
                       keyboardType: TextInputType.number,
                       hasError: _missingFields.contains('floor'),
                       onChanged: (val) {
@@ -222,15 +225,17 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                   ),
                   const SizedBox(height: 14),
 
+                  // [Количество квартир на одном этаже закомментировано по требованию]
+                  /*
                   RequiredFieldSlot(
                     invalid: _missingFields.contains('perFloor'),
                     focus: _firstMissingField == 'perFloor',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите кол-во',
+                    message: context.tr('chess_grid_specify_count', fallback: 'Укажите кол-во'),
                     child: CustomTextField(
                       controller: _perFloorController,
-                      label: 'Кв. на этаже *',
-                      hintText: 'Введите кол-во',
+                      label: context.tr('chess_grid_aparts_per_floor', fallback: 'Количество квартир на одном этаже *'),
+                      hintText: context.tr('chess_grid_enter_count', fallback: 'Введите кол-во'),
                       keyboardType: TextInputType.number,
                       hasError: _missingFields.contains('perFloor'),
                       onChanged: (val) {
@@ -243,6 +248,8 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  */
                   const SizedBox(height: 18),
 
                   // [Тип квартир закомментирован по требованию]
@@ -377,7 +384,9 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
                               ),
                             )
                           : Text(
-                              isEditing ? 'Сохранить корпус' : 'Создать корпус',
+                              isEditing
+                                  ? context.tr('chess_grid_save_changes_btn', fallback: 'Сохранить корпус')
+                                  : context.tr('chess_grid_create_building_btn', fallback: 'Создать корпус'),
                               style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
                             ),
                     ),
@@ -395,13 +404,15 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
     final name = _nameController.text.trim();
     final ent = int.tryParse(_entranceController.text) ?? 0;
     final fl = int.tryParse(_floorController.text) ?? 0;
-    final per = int.tryParse(_perFloorController.text) ?? 0;
+    final parsedPer = int.tryParse(_perFloorController.text) ?? 0;
+    final per = parsedPer > 0 ? parsedPer : (widget.existingBuilding?.apartsPerFloor ?? 4);
 
     final missing = <String>[];
     if (name.isEmpty) missing.add('name');
     if (ent <= 0) missing.add('entrance');
     if (fl <= 0) missing.add('floor');
-    if (per <= 0) missing.add('perFloor');
+    // [Поле "Количество квартир на одном этаже" закомментировано по требованию]
+    // if (per <= 0) missing.add('perFloor');
     // if (_selectedTypes.isEmpty) missing.add('types');
 
     if (missing.isNotEmpty) {
@@ -412,7 +423,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
       });
       showCustomSnackBar(
         context: context,
-        message: 'Заполните обязательные поля',
+        message: context.tr('chess_grid_fill_required', fallback: 'Заполните обязательные поля'),
         isSuccess: false,
       );
       return;

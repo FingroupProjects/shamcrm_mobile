@@ -17,7 +17,9 @@ class ChessGridParkingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final parkingSpots = controller.parkingSpots;
+    final parkingSpots = controller.parkingSpots
+        .where((spot) => spot.complexId == controller.selectedComplexId || spot.complexId == 0)
+        .toList();
 
     return Column(
       children: [

@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
@@ -29,6 +30,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
   late TextEditingController _salesAddrController;
   late TextEditingController _salesMailController;
   late TextEditingController _salesPhoneController;
+  Country? _selectedSalesCountry;
   String _formattedSalesPhone = '';
   late TextEditingController _salesHoursController;
 
@@ -52,8 +54,15 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     _complexLngController = TextEditingController(text: '${c.lng}');
     _salesAddrController = TextEditingController(text: c.salesOffice.address);
     _salesMailController = TextEditingController(text: c.salesOffice.email);
-    _salesPhoneController = TextEditingController(text: c.salesOffice.phone);
-    _salesHoursController = TextEditingController(text: c.salesOffice.workingHours);
+
+    final parsedPhone = parsePhoneCountryAndNumber(c.salesOffice.phone);
+    _selectedSalesCountry = parsedPhone.country;
+    _salesPhoneController = TextEditingController(text: parsedPhone.localNumber);
+    _formattedSalesPhone = c.salesOffice.phone;
+
+    _salesHoursController = TextEditingController(
+      text: ResidentialComplex.formatScheduleString(c.salesOffice.workingHours),
+    );
   }
 
   @override
@@ -191,6 +200,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               CustomPhoneNumberInput(
                 controller: _salesPhoneController,
                 label: 'Телефон',
+                initialCountry: _selectedSalesCountry,
                 onInputChanged: (val) {
                   _formattedSalesPhone = val;
                 },
@@ -201,22 +211,69 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    controller.updateComplex(controller.complex.copyWith(
+                  onPressed: () async {
+                    final localPhone = _salesPhoneController.text.trim();
+                    final dial = _selectedSalesCountry?.dialCode ?? '';
+                    final phoneToSave = _formattedSalesPhone.isNotEmpty
+                        ? _formattedSalesPhone
+                        : (dial.isNotEmpty && localPhone.isNotEmpty
+                            ? '$dial$localPhone'
+                            : localPhone);
+
+                    final hoursToSave = ResidentialComplex.formatScheduleString(
+                      _salesHoursController.text.trim(),
+                    );
+
+                    String startTime = controller.complex.startTime ?? '09:00';
+                    String endTime = controller.complex.endTime ?? '18:00';
+                    if (hoursToSave.contains('–') || hoursToSave.contains('-')) {
+                      final sep = hoursToSave.contains('–') ? '–' : '-';
+                      final parts = hoursToSave.split(sep);
+                      if (parts.length >= 2) {
+                        final s = ResidentialComplex.parseTime(parts[0], startTime);
+                        final e = ResidentialComplex.parseTime(parts[1], endTime);
+                        if (s.isNotEmpty) startTime = s;
+                        if (e.isNotEmpty) endTime = e;
+                      }
+                    }
+
+                    final updated = controller.complex.copyWith(
                       name: _complexNameController.text.trim(),
                       address: _complexAddrController.text.trim(),
-                      lat: double.tryParse(_complexLatController.text) ?? 40.2826,
-                      lng: double.tryParse(_complexLngController.text) ?? 69.6221,
+                      lat: double.tryParse(_complexLatController.text) ?? controller.complex.lat,
+                      lng: double.tryParse(_complexLngController.text) ?? controller.complex.lng,
                       salesOffice: controller.complex.salesOffice.copyWith(
                         address: _salesAddrController.text.trim(),
                         email: _salesMailController.text.trim(),
-                        phone: _formattedSalesPhone.isNotEmpty
-                            ? _formattedSalesPhone
-                            : _salesPhoneController.text.trim(),
-                        workingHours: _salesHoursController.text.trim(),
+                        phone: phoneToSave,
+                        workingHours: hoursToSave,
                       ),
-                    ));
-                    showCustomSnackBar(context: context, message: 'Данные ЖК успешно сохранены', isSuccess: true);
+                      startTime: startTime,
+                      endTime: endTime,
+                    );
+
+                    await controller.updateComplex(updated);
+
+                    try {
+                      await controller.editComplex(
+                        id: updated.id,
+                        name: updated.name,
+                        address: updated.address,
+                        buildingCount: updated.buildingCount,
+                        phone: phoneToSave,
+                        email: updated.salesOffice.email,
+                        salesAddress: updated.salesOffice.address,
+                        workingHours: hoursToSave,
+                        startTime: startTime,
+                        endTime: endTime,
+                        lat: updated.lat,
+                        lng: updated.lng,
+                      );
+                    } catch (_) {}
+
+                    if (mounted) {
+                      showCustomSnackBar(context: context, message: 'Данные ЖК успешно сохранены', isSuccess: true);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.buttonPrimaryBg,

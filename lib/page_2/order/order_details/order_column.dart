@@ -166,6 +166,7 @@ class _OrderColumnState extends State<OrderColumn> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
+                  padding: const EdgeInsets.only(top: 4, bottom: 80),
                   itemCount: orders.length + (_isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == orders.length && _isLoadingMore) {

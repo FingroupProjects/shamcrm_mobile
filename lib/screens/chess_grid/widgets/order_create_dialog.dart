@@ -3,6 +3,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/payment_schedule_sheet.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/source_lead_list.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
@@ -25,19 +26,10 @@ class OrderCreateDialog extends StatefulWidget {
     Apartment? apartment,
     ParkingSpot? parking,
   }) {
-    return showModalBottomSheet(
+    return OrderCreateSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: OrderCreateDialog(
-          apartment: apartment,
-          parking: parking,
-        ),
-      ),
+      apartment: apartment,
+      parking: parking,
     );
   }
 

@@ -806,6 +806,22 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
     }
   }
 
+  Future<void> _fetchLeadManagerFallback(int leadId) async {
+    try {
+      final details = await _apiService.getLeadById(leadId);
+      if (!mounted) return;
+      if (selectedLead == leadId.toString() && !isManagerManuallySelected) {
+        final mgrId = details.manager?.id;
+        if (mgrId != null) {
+          setState(() {
+            selectedManager = mgrId.toString();
+            isManagerInvalid = false;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> _fillPhoneFromSelectedLead(LeadData lead) async {
     var phone = (lead.phone ?? '').trim();
     if (phone.isEmpty || phone.toLowerCase() == 'null') {
@@ -850,8 +866,10 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               selectedLead = selectedLeadData.id.toString();
 
               if (!isSameClient) {
-                if (!isManagerManuallySelected &&
-                    selectedLeadData.managerId != null) {
+                // При смене клиента сбрасываем флаг ручного выбора менеджера
+                isManagerManuallySelected = false;
+
+                if (selectedLeadData.managerId != null) {
                   final managerBlocState =
                       context.read<GetAllManagerBloc>().state;
                   if (managerBlocState is GetAllManagerSuccess) {
@@ -861,11 +879,15 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
                         (manager) => manager.id == selectedLeadData.managerId,
                       );
                       selectedManager = matchingManager.id.toString();
-                      isManagerInvalid = false;
                     } catch (e) {
-                      selectedManager = null;
+                      selectedManager = selectedLeadData.managerId.toString();
                     }
+                  } else {
+                    selectedManager = selectedLeadData.managerId.toString();
                   }
+                  isManagerInvalid = false;
+                } else {
+                  selectedManager = null;
                 }
 
                 _selectedDeliveryAddress = null;
@@ -873,6 +895,9 @@ class _OrderAddScreenState extends State<OrderAddScreen> {
               }
             });
             _fillPhoneFromSelectedLead(selectedLeadData);
+            if (!isSameClient && selectedLeadData.managerId == null) {
+              _fetchLeadManagerFallback(selectedLeadData.id);
+            }
           },
         ),
         const SizedBox(height: 8),

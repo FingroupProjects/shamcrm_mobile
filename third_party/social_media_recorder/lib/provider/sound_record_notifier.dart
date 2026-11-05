@@ -92,6 +92,16 @@ class SoundRecordNotifier extends ChangeNotifier {
 
   bool _disposed = false;
 
+  /// True while [finishRecording] is finalizing. A second pointer-up /
+  /// drag-end / 180s tick must not stop or send again.
+  bool _finishing = false;
+
+  Future<void>? _finishFuture;
+
+  /// Set when the user cancels while stop() is still writing the m4a.
+  /// The file is finalized either way; this only skips the upload.
+  bool _sendAborted = false;
+
   bool get _isDisposed => _disposed;
 
   @override
@@ -187,21 +197,93 @@ class SoundRecordNotifier extends ChangeNotifier {
     });
   }
 
-  finishRecording() {
-    if (_isDisposed) return;
+  /// Slide-to-cancel and the locked trash button. The m4a may still be
+  /// inside stop(); [finishRecording] then must not upload it.
+  void abortPendingSend() {
+    _sendAborted = true;
+  }
+
+  /// AAC/m4a writes its moov atom only inside [AudioRecorder.stop].
+  /// Sending [mPath] before that uploads a file nothing can open.
+  Future<void> finishRecording() {
+    if (_isDisposed) return Future<void>.value();
+    final inFlight = _finishFuture;
+    if (inFlight != null) return inFlight;
+    if (_finishing) return Future<void>.value();
+
+    _finishing = true;
+    final run = _finishRecordingImpl();
+    _finishFuture = run;
+    return run.whenComplete(() {
+      _finishing = false;
+      if (identical(_finishFuture, run)) {
+        _finishFuture = null;
+      }
+    });
+  }
+
+  Future<void> _finishRecordingImpl() async {
     final time = '$minute:$second';
-    if (buttonPressed && (second > 1 || minute > 0) && mPath.isNotEmpty) {
-      sendRequestFunction(File.fromUri(Uri(path: mPath)), time);
+    final shouldSend =
+        buttonPressed && (second > 1 || minute > 0) && mPath.isNotEmpty;
+
+    // Clear this before the first await. onPointerUp and onHorizontalDragEnd
+    // both call finishRecording, and the max-duration timer reschedules
+    // itself when buttonPressed is still true after this function yields.
+    buttonPressed = false;
+    _timer?.cancel();
+    _timer = null;
+    _timerCounter?.cancel();
+    _timerCounter = null;
+
+    String? path;
+    var alreadyStopped = false;
+    if (shouldSend && !_sendAborted) {
+      try {
+        await _stopAmplitudeListening();
+        if (!_isDisposed && !_sendAborted) {
+          final recording = await recordMp3.isRecording();
+          if (!_isDisposed && !_sendAborted && recording) {
+            // moov is written before this future completes.
+            path = await recordMp3.stop();
+            alreadyStopped = true;
+          }
+        }
+      } catch (_) {
+        path = null;
+      }
     }
-    // Always notify the host. Short taps / aborted starts used to skip this
-    // and leave the chat input bar hidden (_voicePressed stuck true).
-    stopRecording?.call(time);
-    resetEdgePadding();
+
+    if (_isDisposed) return;
+
+    final aborted = _sendAborted;
+    _sendAborted = false;
+    try {
+      if (!aborted && path != null && path.isNotEmpty) {
+        sendRequestFunction(File(path), time);
+      }
+      // Always notify the host. Short taps / aborted starts used to skip this
+      // and leave the chat input bar hidden (_voicePressed stuck true).
+      stopRecording?.call(time);
+    } finally {
+      if (!_isDisposed) {
+        await resetEdgePadding(
+          fromFinish: true,
+          recorderAlreadyStopped: alreadyStopped,
+        );
+      }
+    }
   }
 
   /// used to reset all value to initial value when end the record
-  resetEdgePadding() async {
+  resetEdgePadding({
+    bool fromFinish = false,
+    bool recorderAlreadyStopped = false,
+  }) async {
     if (_isDisposed) return;
+    // finishRecording is awaiting stop(); a second stop here races the
+    // muxer and can truncate the file we are about to send.
+    if (_finishing && !fromFinish) return;
     final session = ++_recordSession;
     if (_initWidth == -33) {
       final ctx = key.currentContext;
@@ -232,16 +314,24 @@ class SoundRecordNotifier extends ChangeNotifier {
       return;
     }
     try {
-      final value = await recordMp3.isRecording();
-      if (_isDisposed || session != _recordSession) {
-        return;
-      }
-      if (value == true) {
-        await recordMp3.stop();
+      if (recorderAlreadyStopped) {
+        // stop() already wrote moov. Swap the recorder the same way a
+        // stop inside this method used to, without stopping a second time.
+        if (!_isDisposed && session == _recordSession) {
+          recordMp3 = AudioRecorder();
+        }
+      } else {
+        final value = await recordMp3.isRecording();
         if (_isDisposed || session != _recordSession) {
           return;
         }
-        recordMp3 = AudioRecorder();
+        if (value == true) {
+          await recordMp3.stop();
+          if (_isDisposed || session != _recordSession) {
+            return;
+          }
+          recordMp3 = AudioRecorder();
+        }
       }
     } catch (_) {}
     notifyListeners();
@@ -308,6 +398,7 @@ class SoundRecordNotifier extends ChangeNotifier {
         RenderBox box = key.currentContext?.findRenderObject() as RenderBox;
         Offset position = box.localToGlobal(Offset.zero);
         if (position.dx <= MediaQuery.of(context).size.width * 0.6) {
+          abortPendingSend();
           String time = '$minute:$second';
           if (stopRecording != null) stopRecording!(time);
           resetEdgePadding();
@@ -332,6 +423,9 @@ class SoundRecordNotifier extends ChangeNotifier {
       if (_localCounterForMaxRecordTime >= maxRecordTime!) {
         loopActive = false;
         finishRecording();
+        // finishRecording awaits stop() before it resets the counter.
+        // Do not tick second/minute again on this same callback.
+        return;
       }
       _localCounterForMaxRecordTime++;
     }
@@ -350,6 +444,12 @@ class SoundRecordNotifier extends ChangeNotifier {
   /// this function to start record voice
   record(Function()? startRecord) async {
     if (_isDisposed) return;
+    final pendingFinish = _finishFuture;
+    if (pendingFinish != null) {
+      await pendingFinish;
+      if (_isDisposed) return;
+    }
+    _sendAborted = false;
     final session = ++_recordSession;
     if (!_isAcceptedPermission) {
       await Permission.microphone.request();

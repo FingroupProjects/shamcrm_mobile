@@ -22,7 +22,7 @@ class LeadData {
   factory LeadData.fromJson(Map<String, dynamic> json) => LeadData(
         id: json["id"],
         name: json['name'] is String ? json['name'] : 'Без имени',
-        managerId: json['manager'] != null ? json['manager']['id'] : null,
+        managerId: _managerIdFromJson(json),
         debt: json['debt'], // ← Парсим долг из JSON
         phone: _phoneFromJson(json),
         currencyId: json['currency_id'],
@@ -30,6 +30,23 @@ class LeadData {
             ? LeadListCurrency.fromJson(json['currency'])
             : null,
       );
+
+  static int? _managerIdFromJson(Map<String, dynamic> json) {
+    if (json['manager'] is Map) {
+      final id = json['manager']['id'];
+      if (id != null) return int.tryParse(id.toString());
+    }
+    if (json['manager_id'] != null) {
+      return int.tryParse(json['manager_id'].toString());
+    }
+    if (json['manager'] is int) {
+      return json['manager'] as int;
+    }
+    if (json['manager'] is String) {
+      return int.tryParse(json['manager'] as String);
+    }
+    return null;
+  }
 
   static String? _phoneFromJson(Map<String, dynamic> json) {
     final candidates = <dynamic>[

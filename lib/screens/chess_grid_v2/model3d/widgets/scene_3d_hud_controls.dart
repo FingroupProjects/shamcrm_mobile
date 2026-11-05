@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/scene_3d_state.dart';
 import 'package:flutter/material.dart';
 
@@ -64,8 +65,8 @@ class Scene3DHudControls extends StatelessWidget {
                     ? const Color(0xFFFFD166)
                     : const Color(0xFFFFA000),
                 tooltip: state.isNightMode
-                    ? 'Переключить на день'
-                    : 'Ночной режим с огнями',
+                    ? context.tr('chess_grid_switch_to_day', fallback: 'Переключить на день')
+                    : context.tr('chess_grid_night_mode', fallback: 'Ночной режим с огнями'),
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
               ),
@@ -76,7 +77,7 @@ class Scene3DHudControls extends StatelessWidget {
                 onPressed: onResetCamera,
                 icon: const Icon(Icons.center_focus_strong_rounded, size: 20),
                 color: Colors.white,
-                tooltip: 'Сброс камеры',
+                tooltip: context.tr('chess_grid_reset_camera', fallback: 'Сброс камеры'),
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
               ),
@@ -94,7 +95,7 @@ class Scene3DHudControls extends StatelessWidget {
                 color: state.isAutoRotating
                     ? const Color(0xFF2979FF)
                     : Colors.white,
-                tooltip: 'Авто-облет 360°',
+                tooltip: context.tr('chess_grid_auto_rotate', fallback: 'Авто-облет 360°'),
                 padding: const EdgeInsets.all(8),
                 constraints: const BoxConstraints(),
               ),
@@ -106,7 +107,7 @@ class Scene3DHudControls extends StatelessWidget {
                   onPressed: onOpenGoogleMap,
                   icon: const Icon(Icons.satellite_alt_rounded, size: 20),
                   color: const Color(0xFF64B5F6),
-                  tooltip: 'Спутниковая карта Google',
+                  tooltip: context.tr('chess_grid_google_map', fallback: 'Спутниковая карта Google'),
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
@@ -121,7 +122,7 @@ class Scene3DHudControls extends StatelessWidget {
                   onPressed: onResetBuildingPositions,
                   icon: const Icon(Icons.restore_rounded, size: 20),
                   color: const Color(0xFF2ECC71),
-                  tooltip: 'Сбросить расстановку корпусов',
+                  tooltip: context.tr('chess_grid_reset_layout_tooltip', fallback: 'Сбросить расстановку корпусов'),
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
@@ -149,7 +150,7 @@ class Scene3DNextLevelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (state.level == Scene3DLevel.floor) return const SizedBox.shrink();
 
-    final label = _nextLevelLabel(state.level);
+    final label = _nextLevelLabel(context, state.level);
     if (label.isEmpty) return const SizedBox.shrink();
 
     return ElevatedButton.icon(
@@ -176,14 +177,14 @@ class Scene3DNextLevelButton extends StatelessWidget {
     );
   }
 
-  String _nextLevelLabel(Scene3DLevel level) {
+  String _nextLevelLabel(BuildContext context, Scene3DLevel level) {
     switch (level) {
       case Scene3DLevel.complex:
-        return 'Выбрать корпус';
+        return context.tr('chess_grid_select_building_btn', fallback: 'Выбрать корпус');
       case Scene3DLevel.building:
-        return 'Смотреть этажи';
+        return context.tr('chess_grid_view_floors_btn', fallback: 'Смотреть этажи');
       case Scene3DLevel.section:
-        return '3D план этажа';
+        return context.tr('chess_grid_view_floor_plan_btn', fallback: '3D план этажа');
       case Scene3DLevel.floor:
         return '';
     }
@@ -224,16 +225,16 @@ class Scene3DStatusLegend extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _legendDot(const Color(0xFF2ECC71), 'Свободно'),
+              _legendDot(const Color(0xFF2ECC71), context.tr('chess_grid_available', fallback: 'Свободно')),
               const SizedBox(width: 6),
-              _legendDot(const Color(0xFFF39C12), 'Бронь'),
+              _legendDot(const Color(0xFFF39C12), context.tr('chess_grid_booked', fallback: 'Бронь')),
               const SizedBox(width: 6),
               _legendDot(
                 isNightMode ? const Color(0xFFFFD166) : const Color(0xFF95A5A6),
-                'Продано',
+                context.tr('chess_grid_sold', fallback: 'Продано'),
               ),
               const SizedBox(width: 6),
-              _legendDot(const Color(0xFF1ABC9C), 'Резерв'),
+              _legendDot(const Color(0xFF1ABC9C), context.tr('chess_grid_reserved', fallback: 'Резерв')),
             ],
           ),
         ),

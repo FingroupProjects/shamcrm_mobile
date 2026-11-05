@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_room_layout_view.dart';
 import 'package:flutter/material.dart';
 
@@ -36,7 +37,9 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
     final status = apartment.status;
     final isAvailable = status == ApartmentStatus.available;
     final priceStr = _formatPriceFull(apartment.totalPrice);
-    final roomsLabel = apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}-комн.';
+    final roomsLabel = apartment.rooms == 0
+        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
+        : '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 16),
@@ -111,7 +114,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            status.labelRu,
+                            context.tr(status.name, fallback: status.labelRu),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w700,
@@ -124,7 +127,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${apartment.floor} этаж · $roomsLabel · ${apartment.totalArea.toStringAsFixed(1)} м²',
+                      '${apartment.floor} ${context.tr('chess_grid_floor_full', fallback: 'этаж')} · $roomsLabel · ${apartment.totalArea.toStringAsFixed(1)} ${context.tr('chess_grid_sqm_label', fallback: 'м²')}',
                       style: TextStyle(
                         fontFamily: 'Golos',
                         fontSize: 11.5,
@@ -197,7 +200,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      'Планировка комнат',
+                      context.tr('chess_grid_room_plan', fallback: 'Планировка комнат'),
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,
@@ -252,8 +255,8 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                   ),
                   child: Text(
                     apartment.status == ApartmentStatus.reserved
-                        ? 'Снять резерв'
-                        : 'В резерв',
+                        ? context.tr('chess_grid_unreserve_action', fallback: 'Снять резерв')
+                        : context.tr('chess_grid_reserve_action', fallback: 'В резерв'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -291,7 +294,9 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        isAvailable ? 'Заказ' : 'Недоступно',
+                        isAvailable
+                            ? context.tr('chess_grid_take_order', fallback: 'Заказ')
+                            : context.tr('chess_grid_unavailable', fallback: 'Недоступно'),
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -321,7 +326,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Паспорт',
+                      context.tr('chess_grid_passport', fallback: 'Паспорт'),
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w700,

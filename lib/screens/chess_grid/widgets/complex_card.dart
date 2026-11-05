@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/complex_add_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -121,7 +123,7 @@ class _ComplexCardState extends State<ComplexCard> {
                             ),
                           ),
                           Text(
-                            'помещ.',
+                            context.tr('chess_grid_premises_short', fallback: 'помещ.'),
                             style: TextStyle(
                               fontFamily: 'Golos',
                               fontSize: 9,
@@ -144,7 +146,7 @@ class _ComplexCardState extends State<ComplexCard> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${complex.buildingCount} ${_pluralizeBuilding(complex.buildingCount)}',
+                        '${complex.buildingCount} ${ChessGridL10n.buildingPlural(context, complex.buildingCount)}',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -212,7 +214,7 @@ class _ComplexCardState extends State<ComplexCard> {
                     // Bar 1: Parkings Occupancy (TZ image 2)
                     _buildOccupancySection(
                       context: context,
-                      title: 'Паркоместа - $parkTotal ед.',
+                      title: '${context.tr('chess_grid_parking_spots', fallback: 'Паркоместа')} - $parkTotal ${context.tr('chess_grid_units_short', fallback: 'ед.')}',
                       isPercent: _parkingAsPercent,
                       onToggle: (val) => setState(() => _parkingAsPercent = val),
                       free: parkFree,
@@ -226,7 +228,7 @@ class _ComplexCardState extends State<ComplexCard> {
                     // Bar 2: Apartments Occupancy (TZ image 2)
                     _buildOccupancySection(
                       context: context,
-                      title: 'Квартиры - $aptTotal ед.',
+                      title: '${context.tr('chess_grid_apartments', fallback: 'Квартиры')} - $aptTotal ${context.tr('chess_grid_units_short', fallback: 'ед.')}',
                       isPercent: _apartmentsAsPercent,
                       onToggle: (val) => setState(() => _apartmentsAsPercent = val),
                       free: aptFree,
@@ -239,14 +241,15 @@ class _ComplexCardState extends State<ComplexCard> {
                     const Divider(height: 1),
                     const SizedBox(height: 12),
 
-                    // Bottom 3 Action Buttons (matches TZ image 2)
+                    // Bottom Action Buttons: Правка & Шахматка
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: widget.onEdit ?? widget.onTap,
+                            onPressed: widget.onEdit ??
+                                () => ComplexAddSheet.show(context, complex: widget.complex),
                             icon: const Icon(Icons.edit_outlined, size: 15),
-                            label: const Text('Правка'),
+                            label: Text(context.tr('chess_grid_edit', fallback: 'Правка')),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: colors.textPrimary,
                               side: BorderSide(color: colors.borderSubtle),
@@ -256,27 +259,13 @@ class _ComplexCardState extends State<ComplexCard> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: widget.onOpenCatalog ?? widget.onTap,
-                            icon: const Icon(Icons.grid_on_rounded, size: 15),
-                            label: const Text('Таблица'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: colors.buttonPrimaryBg,
-                              side: BorderSide(color: colors.buttonPrimaryBg.withValues(alpha: 0.5)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              textStyle: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                          flex: 2,
                           child: ElevatedButton.icon(
                             onPressed: widget.onTap,
                             icon: const Icon(Icons.apps_rounded, size: 15),
-                            label: const Text('Шахматка'),
+                            label: Text(context.tr('chess_grid_tab_chess', fallback: 'Шахматка')),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: colors.buttonPrimaryBg,
                               foregroundColor: colors.buttonPrimaryFg,
@@ -368,7 +357,7 @@ class _ComplexCardState extends State<ComplexCard> {
                       ),
                       child: Center(
                         child: Text(
-                          'ед.',
+                          context.tr('chess_grid_units_short', fallback: 'ед.'),
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w700,
@@ -396,7 +385,7 @@ class _ComplexCardState extends State<ComplexCard> {
             child: total == 0
                 ? Center(
                     child: Text(
-                      'Нет данных',
+                      context.tr('chess_grid_no_data', fallback: 'Нет данных'),
                       style: TextStyle(fontFamily: 'Golos', fontSize: 9.5, color: colors.textSecondary),
                     ),
                   )
@@ -488,11 +477,5 @@ class _ComplexCardState extends State<ComplexCard> {
         ),
       ),
     );
-  }
-
-  String _pluralizeBuilding(int count) {
-    if (count == 1) return 'корпус';
-    if (count >= 2 && count <= 4) return 'корпуса';
-    return 'корпусов';
   }
 }

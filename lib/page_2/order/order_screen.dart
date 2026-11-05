@@ -7,7 +7,6 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_even
 import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_state.dart';
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/custom_widget/custom_app_bar_page_2.dart';
-import 'package:crm_task_manager/custom_widget/custom_tasks_tabBar.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
@@ -29,8 +28,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderScreen extends StatefulWidget {
   final int? organizationId;
+  final String? title;
+  final bool hideAppBar;
 
-  const OrderScreen({this.organizationId});
+  const OrderScreen({
+    super.key,
+    this.organizationId,
+    this.title,
+    this.hideAppBar = false,
+  });
 
   @override
   _OrderScreenState createState() => _OrderScreenState();
@@ -384,17 +390,20 @@ class _OrderScreenState extends State<OrderScreen>
       value: _orderBloc,
       child: Scaffold(
         backgroundColor: colors.backgroundPrimary,
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          backgroundColor: colors.surfacePrimary,
-          title: CustomAppBarPage2(
+        appBar: widget.hideAppBar
+            ? null
+            : AppBar(
+                automaticallyImplyLeading: widget.title == null,
+                forceMaterialTransparency: true,
+                backgroundColor: colors.surfacePrimary,
+                title: CustomAppBarPage2(
             onChangedSearchInput: (value) => _onSearch(value),
             showFilterIcon: false,
             showSearchIcon: true,
             showFilterOrderIcon: true,
             title: isClickAvatarIcon
                 ? localizations!.translate('appbar_settings')
-                : localizations!.translate('appbar_orders'),
+                : (widget.title ?? localizations!.translate('appbar_orders')),
             onClickProfileAvatar: () {
               setState(() {
                 isClickAvatarIcon = !isClickAvatarIcon;
@@ -806,7 +815,8 @@ class _OrderScreenState extends State<OrderScreen>
                           },
                           child: Column(
                             children: [
-                              const SizedBox(height: 15),
+                              SizedBox(height: widget.hideAppBar ? 4 : 10),
+                              if (widget.hideAppBar) _buildEmbeddedSearchBar(context),
                               if (!_isSearching && _showCustomTabBar)
                                 _buildCustomTabBar(context),
                               Expanded(
@@ -937,22 +947,82 @@ class _OrderScreenState extends State<OrderScreen>
     );
   }
 
+  Widget _buildEmbeddedSearchBar(BuildContext context) {
+    final colors = context.appColors;
+    final localizations = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: colors.surfacePrimary.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colors.borderSubtle.withValues(alpha: 0.5),
+          ),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) => _onSearch(value),
+          style: TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 13,
+            color: colors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            hintText: localizations?.translate('search') ?? 'Поиск...',
+            hintStyle: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 12.5,
+              color: colors.textSecondary,
+            ),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: colors.iconSecondary,
+            ),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        _lastSearchQuery = '';
+                      });
+                      _orderBloc.add(FetchOrderStatuses());
+                    },
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: colors.iconSecondary,
+                    ),
+                  )
+                : null,
+            border: InputBorder.none,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCustomTabBar(BuildContext context) {
     final colors = context.appColors;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: colors.borderSubtle.withValues(alpha: 0.48),
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: colors.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -966,17 +1036,17 @@ class _OrderScreenState extends State<OrderScreen>
                 _tabKeys.add(GlobalKey());
               }
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: _buildTabButton(index),
               );
             }),
             if (_canCreateOrderStatus)
               Padding(
-                padding: const EdgeInsets.only(left: 4),
+                padding: const EdgeInsets.only(left: 3),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(10),
                     onTap: () async {
                       await showDialog(
                         context: context,
@@ -985,17 +1055,17 @@ class _OrderScreenState extends State<OrderScreen>
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
                         color: colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: colors.borderSubtle.withValues(alpha: 0.52),
                         ),
                       ),
                       child: Icon(
                         Icons.add,
-                        size: 20,
+                        size: 17,
                         color: colors.iconPrimary,
                       ),
                     ),
@@ -1059,14 +1129,14 @@ class _OrderScreenState extends State<OrderScreen>
         _showStatusOptions(context, index);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
         decoration: BoxDecoration(
           color: isActive
               ? colors.buttonPrimaryBg
               : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isActive
                 ? colors.buttonPrimaryBg
@@ -1076,8 +1146,8 @@ class _OrderScreenState extends State<OrderScreen>
               ? [
                   BoxShadow(
                     color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ]
               : const [],
@@ -1086,7 +1156,7 @@ class _OrderScreenState extends State<OrderScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
+              constraints: const BoxConstraints(maxWidth: 130),
               child: Text(
                 title.isEmpty ? 'Статус' : title,
                 overflow: TextOverflow.ellipsis,
@@ -1094,24 +1164,24 @@ class _OrderScreenState extends State<OrderScreen>
                   color: isActive
                       ? colors.buttonPrimaryFg
                       : colors.textPrimary,
-                  fontSize: 14,
+                  fontSize: 12.5,
                   fontFamily: 'Gilroy',
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: isActive
-                    ? colors.buttonPrimaryFg.withValues(alpha: 0.18)
-                    : colors.buttonPrimaryBg.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
+                    ? colors.buttonPrimaryFg.withValues(alpha: 0.22)
+                    : colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isActive
-                      ? colors.buttonPrimaryBg.withValues(alpha: 0.85)
-                      : colors.textInverse.withValues(alpha: 0.22),
+                      ? colors.buttonPrimaryFg.withValues(alpha: 0.4)
+                      : colors.buttonPrimaryBg.withValues(alpha: 0.25),
                   width: 1,
                 ),
               ),
@@ -1121,7 +1191,7 @@ class _OrderScreenState extends State<OrderScreen>
                   color: isActive
                       ? colors.buttonPrimaryFg
                       : colors.textPrimary,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
                 ),

@@ -122,6 +122,14 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
   }
 
   @override
+  void didUpdateWidget(covariant LeadWithManager oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedLead != oldWidget.selectedLead) {
+      _updateSelectedLeadData();
+    }
+  }
+
+  @override
   void dispose() {
     appRouteObserver.unsubscribe(this);
     super.dispose();

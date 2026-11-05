@@ -7,6 +7,7 @@ import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dar
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_add_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_card.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/complex_chess_v2_screen.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,11 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
     super.initState();
     _controller = ChessGridV2Controller.instance;
     _controller.addListener(_onControllerUpdate);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _controller.loadDataFromApi();
+      }
+    });
   }
 
   void _onControllerUpdate() {
@@ -152,7 +158,7 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Жилые комплексы 2.0',
+                                '${context.tr('chess_grid_residential_complexes', fallback: 'Жилые комплексы')} 2.0',
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w700,
@@ -162,7 +168,7 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${filteredComplexes.length} ${_pluralizeComplex(filteredComplexes.length)}',
+                                '${filteredComplexes.length} ${ChessGridL10n.complexPlural(context, filteredComplexes.length)}',
                                 style: TextStyle(
                                   fontFamily: 'Golos',
                                   fontSize: 12,
@@ -174,9 +180,9 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
                           ElevatedButton.icon(
                             onPressed: () => ComplexAddSheet.show(context),
                             icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text(
-                              'Добавить ЖК',
-                              style: TextStyle(
+                            label: Text(
+                              context.tr('chess_grid_add_complex', fallback: 'Добавить ЖК'),
+                              style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
@@ -233,6 +239,9 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
                                       ),
                                     );
                                   },
+                                  onEdit: () {
+                                    ComplexAddSheet.show(context, complex: complex);
+                                  },
                                 );
                               },
                             ),
@@ -270,22 +279,22 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildMetricItem(
-                label: 'Всего',
+                label: context.tr('chess_grid_total', fallback: 'Всего'),
                 value: '$total',
                 color: colors.textPrimary,
               ),
               _buildMetricItem(
-                label: 'Свободно',
+                label: context.tr('chess_grid_available', fallback: 'Свободно'),
                 value: '$available',
                 color: ApartmentStatus.available.color,
               ),
               _buildMetricItem(
-                label: 'Бронь',
+                label: context.tr('chess_grid_booked', fallback: 'Бронь'),
                 value: '$booked',
                 color: ApartmentStatus.booked.color,
               ),
               _buildMetricItem(
-                label: 'Продано',
+                label: context.tr('chess_grid_sold', fallback: 'Продано'),
                 value: '$sold',
                 color: ApartmentStatus.sold.color,
               ),
@@ -372,7 +381,9 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _searchQuery.isEmpty ? 'Нет жилых комплексов' : 'Ничего не найдено',
+            _searchQuery.isEmpty
+                ? context.tr('chess_grid_no_complexes', fallback: 'Нет жилых комплексов')
+                : context.tr('chess_grid_complexes_not_found', fallback: 'Ничего не найдено'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontSize: 16,
@@ -383,15 +394,6 @@ class _ChessGridV2ScreenState extends State<ChessGridV2Screen> {
         ],
       ),
     );
-  }
-
-  String _pluralizeComplex(int count) {
-    final mod10 = count % 10;
-    final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 19) return 'комплексов';
-    if (mod10 == 1) return 'комплекс';
-    if (mod10 >= 2 && mod10 <= 4) return 'комплекса';
-    return 'комплексов';
   }
 }
 

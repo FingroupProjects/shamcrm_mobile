@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -127,7 +128,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0 ? 'Ст' : '${apartment.rooms}к';
+    final roomsLabel = apartment.rooms == 0
+        ? context.tr('chess_grid_studio_short', fallback: 'Ст')
+        : '${apartment.rooms}${context.tr('chess_grid_room_short_letter', fallback: 'к')}';
 
     return GestureDetector(
       onTap: () {
@@ -224,7 +227,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0 ? 'Студия' : '${apartment.rooms} комн.';
+    final roomsLabel = apartment.rooms == 0
+        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
+        : '${apartment.rooms} ${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
     final priceStr = _formatPrice(apartment.totalPrice);
 
     return GestureDetector(
@@ -337,7 +342,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}-комн.';
+    final roomsLabel = apartment.rooms == 0
+        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
+        : '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
     final priceStr = _formatPrice(apartment.totalPrice);
 
     return GestureDetector(

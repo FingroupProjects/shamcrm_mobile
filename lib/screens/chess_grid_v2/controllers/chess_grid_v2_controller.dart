@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 
@@ -11,6 +12,8 @@ import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dar
 class ChessGridV2Controller extends ChangeNotifier {
   static ChessGridV2Controller? _instance;
   static ChessGridV2Controller get instance => _instance ??= ChessGridV2Controller._();
+
+  final ApiService _apiService = ApiService();
 
   ChessGridV2Controller._() {
     _initRichMockData();
@@ -88,6 +91,40 @@ class ChessGridV2Controller extends ChangeNotifier {
     return complexes.firstWhereOrNull((c) => c.id == id);
   }
 
+  Future<void> loadDataFromApi({bool showLoading = true}) async {
+    if (showLoading) {
+      isLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      final fetchedComplexes = await _apiService.getResidentialComplexes();
+      if (fetchedComplexes.isNotEmpty) {
+        complexes = fetchedComplexes;
+        if (_selectedComplexId == 0 || !complexes.any((c) => c.id == _selectedComplexId)) {
+          _selectedComplexId = complexes.first.id;
+        }
+        final c = complex;
+        if (c.buildings.isNotEmpty) {
+          if (_selectedBuildingKey.isEmpty || !c.buildings.any((b) => b.key == _selectedBuildingKey)) {
+            _selectedBuildingKey = c.buildings.first.key;
+          }
+        } else {
+          _selectedBuildingKey = '';
+        }
+        _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
+        await loadComplexDetails(_selectedComplexId, showLoading: false);
+      }
+      errorMessage = null;
+    } catch (e) {
+      debugPrint('ChessGridV2Controller.loadDataFromApi error: $e');
+      errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void selectComplex(int id) {
     if (_selectedComplexId == id) return;
     _selectedComplexId = id;
@@ -100,12 +137,21 @@ class ChessGridV2Controller extends ChangeNotifier {
     _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
     _selectedApartment = null;
     notifyListeners();
+    loadComplexDetails(id);
   }
 
   void selectBuilding(String key) {
     _selectedBuildingKey = key;
     _filter = _filter.copyWith(buildingKey: key);
     notifyListeners();
+
+    final b = complex.buildings.firstWhereOrNull((item) => item.key == key);
+    if (b != null && b.id != null) {
+      final hasApts = apartments.any((a) => a.buildingKey == key || a.buildingId == b.id);
+      if (!hasApts) {
+        loadApartmentsForBuilding(buildingId: b.id, buildingKey: b.key);
+      }
+    }
   }
 
   void selectApartment(Apartment? apt) {
@@ -142,16 +188,113 @@ class ChessGridV2Controller extends ChangeNotifier {
 
   Future<void> loadComplexDetails(int id, {bool showLoading = false}) async {
     _selectedComplexId = id;
-    final c = complex;
-    if (c.buildings.isNotEmpty) {
-      if (!c.buildings.any((b) => b.key == _selectedBuildingKey)) {
-        _selectedBuildingKey = c.buildings.first.key;
-      }
-    } else {
-      _selectedBuildingKey = '';
+    if (showLoading) {
+      isLoadingComplex = true;
+      notifyListeners();
     }
-    _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
+
+    try {
+      List<Building> fetchedBuildings = [];
+      try {
+        fetchedBuildings = await _apiService.getBuildings(residentialComplexId: id);
+      } catch (e) {
+        debugPrint('ChessGridV2Controller.loadComplexDetails getBuildings error: $e');
+      }
+
+      ResidentialComplex? fetchedComplex;
+      try {
+        fetchedComplex = await _apiService.getResidentialComplexById(id);
+      } catch (e) {
+        debugPrint('ChessGridV2Controller.loadComplexDetails getResidentialComplexById error: $e');
+      }
+
+      final combinedBuildings = fetchedBuildings.isNotEmpty
+          ? fetchedBuildings
+          : (fetchedComplex != null && fetchedComplex.buildings.isNotEmpty
+              ? fetchedComplex.buildings
+              : <Building>[]);
+
+      final current = findComplexById(id) ?? fetchedComplex;
+      if (current != null) {
+        final updated = current.copyWith(
+          buildings: combinedBuildings,
+          buildingCount: combinedBuildings.isNotEmpty ? combinedBuildings.length : current.buildingCount,
+        );
+
+        final idx = complexes.indexWhere((c) => c.id == id);
+        if (idx != -1) {
+          complexes[idx] = updated;
+        } else {
+          complexes.add(updated);
+        }
+
+        if (combinedBuildings.isNotEmpty) {
+          if (_selectedBuildingKey.isEmpty || !combinedBuildings.any((b) => b.key == _selectedBuildingKey)) {
+            _selectedBuildingKey = combinedBuildings.first.key;
+          }
+        } else {
+          _selectedBuildingKey = '';
+        }
+        _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
+
+        // Fetch real apartments (goods) from server for all buildings of the complex
+        apartments.removeWhere((a) => a.complexId == id);
+        for (final b in combinedBuildings) {
+          if (b.id != null) {
+            try {
+              final bApts = await _apiService.getApartmentsByBuilding(
+                buildingId: b.id!,
+                residentialComplexId: id,
+                buildingKey: b.key,
+                buildingName: b.name,
+              );
+              apartments.addAll(bApts);
+            } catch (e) {
+              debugPrint('ChessGridV2Controller.loadComplexDetails error loading b#${b.id}: $e');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('ChessGridV2Controller.loadComplexDetails error: $e');
+    } finally {
+      isLoadingComplex = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadApartmentsForBuilding({int? buildingId, String? buildingKey}) async {
+    final bKey = buildingKey ?? _selectedBuildingKey;
+    Building? b;
+    if (complex.buildings.isNotEmpty) {
+      b = complex.buildings.firstWhereOrNull((item) =>
+          item.key == bKey || (buildingId != null && item.id == buildingId));
+    }
+
+    final targetBuildingId = buildingId ?? b?.id;
+    if (targetBuildingId == null) return;
+
+    isLoadingApartments = true;
     notifyListeners();
+
+    try {
+      final fetchedApts = await _apiService.getApartmentsByBuilding(
+        buildingId: targetBuildingId,
+        residentialComplexId: _selectedComplexId,
+        buildingKey: b?.key ?? bKey,
+        buildingName: b?.name ?? 'Корпус',
+      );
+
+      apartments.removeWhere((a) =>
+          a.buildingKey == (b?.key ?? bKey) ||
+          a.buildingId == targetBuildingId);
+      apartments.addAll(fetchedApts);
+    } catch (e) {
+      debugPrint('ChessGridV2Controller.loadApartmentsForBuilding error: $e');
+    } finally {
+      isLoadingApartments = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> updateComplex(ResidentialComplex updated) async {

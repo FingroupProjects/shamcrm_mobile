@@ -110,4 +110,14 @@ class SupplierCurrency {
       'updated_at': updatedAt,
     };
   }
+
+  @override
+  String toString() {
+    final title = name?.trim() ?? '';
+    final symbol = symbolCode?.trim() ?? '';
+    if (title.isNotEmpty && symbol.isNotEmpty) return '$title $symbol';
+    if (title.isNotEmpty) return title;
+    if (symbol.isNotEmpty) return symbol;
+    return '';
+  }
 }

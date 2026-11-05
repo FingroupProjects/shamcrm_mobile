@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:flutter/material.dart';
@@ -88,7 +89,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                             color: colors.textPrimary,
                           ),
                           decoration: InputDecoration(
-                            hintText: '№ кв. или тип...',
+                            hintText: context.tr('chess_grid_search_hint', fallback: '№ кв. или тип...'),
                             hintStyle: TextStyle(
                               fontFamily: 'Golos',
                               fontSize: 12.5,
@@ -133,7 +134,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                       Icon(Icons.sort_rounded, size: 18, color: colors.buttonPrimaryBg),
                       const SizedBox(width: 4),
                       Text(
-                        _sortLabel(_sortMode),
+                        _sortLabel(context, _sortMode),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -145,10 +146,10 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                   ),
                 ),
                 itemBuilder: (ctx) => [
-                  _buildSortItem('price_asc', 'Цена ↑', colors),
-                  _buildSortItem('price_desc', 'Цена ↓', colors),
-                  _buildSortItem('area_asc', 'Площадь ↑', colors),
-                  _buildSortItem('area_desc', 'Площадь ↓', colors),
+                  _buildSortItem('price_asc', context.tr('chess_grid_price_asc', fallback: 'Цена ↑'), colors),
+                  _buildSortItem('price_desc', context.tr('chess_grid_price_desc', fallback: 'Цена ↓'), colors),
+                  _buildSortItem('area_asc', context.tr('chess_grid_area_asc', fallback: 'Площадь ↑'), colors),
+                  _buildSortItem('area_desc', context.tr('chess_grid_area_desc', fallback: 'Площадь ↓'), colors),
                 ],
               ),
             ],
@@ -162,12 +163,12 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildRoomChip(null, 'Все'),
-                _buildRoomChip(0, 'Студии'),
-                _buildRoomChip(1, '1-комн.'),
-                _buildRoomChip(2, '2-комн.'),
-                _buildRoomChip(3, '3-комн.'),
-                _buildRoomChip(4, '4+ комн.'),
+                _buildRoomChip(null, context.tr('chess_grid_all', fallback: 'Все')),
+                _buildRoomChip(0, context.tr('chess_grid_studios', fallback: 'Студии')),
+                _buildRoomChip(1, context.tr('chess_grid_rooms_1', fallback: '1-комн.')),
+                _buildRoomChip(2, context.tr('chess_grid_rooms_2', fallback: '2-комн.')),
+                _buildRoomChip(3, context.tr('chess_grid_rooms_3', fallback: '3-комн.')),
+                _buildRoomChip(4, context.tr('chess_grid_rooms_4plus', fallback: '4+ комн.')),
               ],
             ),
           ),
@@ -202,7 +203,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                       Icon(Icons.apartment_rounded, size: 48, color: colors.iconSecondary.withValues(alpha: 0.4)),
                       const SizedBox(height: 10),
                       Text(
-                        'Квартиры не найдены',
+                        context.tr('chess_grid_apartments_not_found', fallback: 'Квартиры не найдены'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w600,
@@ -448,18 +449,18 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
     );
   }
 
-  String _sortLabel(String mode) {
+  String _sortLabel(BuildContext context, String mode) {
     switch (mode) {
       case 'price_asc':
-        return 'Цена ↑';
+        return context.tr('chess_grid_price_asc', fallback: 'Цена ↑');
       case 'price_desc':
-        return 'Цена ↓';
+        return context.tr('chess_grid_price_desc', fallback: 'Цена ↓');
       case 'area_asc':
-        return 'Площадь ↑';
+        return context.tr('chess_grid_area_asc', fallback: 'Площадь ↑');
       case 'area_desc':
-        return 'Площадь ↓';
+        return context.tr('chess_grid_area_desc', fallback: 'Площадь ↓');
       default:
-        return 'Сортировка';
+        return context.tr('chess_grid_sorting', fallback: 'Сортировка');
     }
   }
 

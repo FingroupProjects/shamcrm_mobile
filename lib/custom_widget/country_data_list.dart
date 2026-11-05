@@ -460,4 +460,27 @@ List<String> countryCodes = [
   '+212', '+967', '+260', '+263',
   '+880', '+852', '+853', '+970', '+235', '+249', '+262', '+383', '+389',
   '+507', '+590', '+297', '+298', '+500', '+682', '+599', '+290', '+246'
-]; 
+];
+
+/// Parses raw phone string (e.g. "+998712001102" or "998712001102") into
+/// the matching [Country] and the local number digits (e.g. "712001102").
+({Country? country, String localNumber}) parsePhoneCountryAndNumber(String? rawPhone) {
+  if (rawPhone == null || rawPhone.trim().isEmpty) {
+    return (country: null, localNumber: '');
+  }
+  String clean = rawPhone.trim();
+  if (!clean.startsWith('+')) {
+    clean = '+$clean';
+  }
+  // Sort countries by dialCode length descending so longer codes match first
+  final sorted = List<Country>.from(countries)
+    ..sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
+
+  for (final c in sorted) {
+    if (clean.startsWith(c.dialCode)) {
+      final local = clean.substring(c.dialCode.length);
+      return (country: c, localNumber: local);
+    }
+  }
+  return (country: null, localNumber: rawPhone.replaceAll('+', '').trim());
+}

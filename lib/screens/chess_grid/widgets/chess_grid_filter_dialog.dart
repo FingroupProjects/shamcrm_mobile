@@ -2,6 +2,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
 import 'package:flutter/material.dart';
 
@@ -154,7 +155,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    'Фильтр',
+                    context.tr('chess_grid_filter_title', fallback: 'Фильтр'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -167,7 +168,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   onPressed: _resetFilters,
                   style: _buildActionButtonStyle(),
                   child: Text(
-                    'Сбросить',
+                    context.tr('chess_grid_reset_filters', fallback: 'Сбросить'),
                     style: context.appTextStyles.labelLg.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colors.buttonPrimaryBg,
@@ -179,7 +180,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   onPressed: _applyFilters,
                   style: _buildActionButtonStyle(),
                   child: Text(
-                    'Применить',
+                    context.tr('chess_grid_apply', fallback: 'Применить'),
                     style: context.appTextStyles.labelLg.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colors.buttonPrimaryBg,
@@ -203,7 +204,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                     children: [
                       Expanded(
                         child: _buildDropdown<String>(
-                          label: 'Корпус',
+                          label: context.tr('chess_grid_building', fallback: 'Корпус'),
                           value: _buildingKey,
                           items: buildings.map((b) {
                             return DropdownMenuItem(value: b.key, child: Text(b.name));
@@ -222,7 +223,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 2),
                         child: Tooltip(
-                          message: 'Добавить корпус',
+                          message: context.tr('chess_grid_action_add_building', fallback: 'Добавить корпус'),
                           child: InkWell(
                             onTap: () {
                               Navigator.pop(context);
@@ -246,7 +247,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                                   Icon(Icons.add_rounded, size: 18, color: colors.buttonPrimaryBg),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Корпус',
+                                    context.tr('chess_grid_building', fallback: 'Корпус'),
                                     style: TextStyle(
                                       fontFamily: 'Gilroy',
                                       fontWeight: FontWeight.w700,
@@ -267,12 +268,18 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   // 2. Entrance Dropdown
                   if (building != null && building.entranceCount > 0) ...[
                     _buildDropdown<int>(
-                      label: 'Подъезд',
+                      label: context.tr('chess_grid_entrance_label', fallback: 'Подъезд'),
                       value: _entrance,
                       items: [
-                        const DropdownMenuItem(value: 0, child: Text('Все подъезды')),
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text(context.tr('chess_grid_all_entrances', fallback: 'Все подъезды')),
+                        ),
                         for (int e = 1; e <= building.entranceCount; e++)
-                          DropdownMenuItem(value: e, child: Text('Подъезд $e')),
+                          DropdownMenuItem(
+                            value: e,
+                            child: Text('${context.tr('chess_grid_entrance_label', fallback: 'Подъезд')} $e'),
+                          ),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _entrance = val);
@@ -283,14 +290,29 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
 
                   // 3. Rooms Dropdown
                   _buildDropdown<int>(
-                    label: 'Количество комнат',
+                    label: context.tr('chess_grid_rooms_count_label', fallback: 'Количество комнат'),
                     value: _selectedRoom,
-                    items: const [
-                      DropdownMenuItem(value: 0, child: Text('Все комнаты')),
-                      DropdownMenuItem(value: 1, child: Text('1 комната')),
-                      DropdownMenuItem(value: 2, child: Text('2 комнаты')),
-                      DropdownMenuItem(value: 3, child: Text('3 комнаты')),
-                      DropdownMenuItem(value: 4, child: Text('4+ комнат')),
+                    items: [
+                      DropdownMenuItem(
+                        value: 0,
+                        child: Text(context.tr('chess_grid_all_rooms', fallback: 'Все комнаты')),
+                      ),
+                      DropdownMenuItem(
+                        value: 1,
+                        child: Text(context.tr('chess_grid_room_1', fallback: '1 комната')),
+                      ),
+                      DropdownMenuItem(
+                        value: 2,
+                        child: Text(context.tr('chess_grid_rooms_2_label', fallback: '2 комнаты')),
+                      ),
+                      DropdownMenuItem(
+                        value: 3,
+                        child: Text(context.tr('chess_grid_rooms_3_label', fallback: '3 комнаты')),
+                      ),
+                      DropdownMenuItem(
+                        value: 4,
+                        child: Text(context.tr('chess_grid_rooms_4plus_label', fallback: '4+ комнат')),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -309,12 +331,12 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
 
                   // 4. Status Dropdown
                   _buildDropdown<ApartmentStatus?>(
-                    label: 'Статус квартиры',
+                    label: context.tr('chess_grid_apartment_status_filter', fallback: 'Статус квартиры'),
                     value: _selectedStatus,
                     items: [
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: null,
-                        child: Text('Все статусы'),
+                        child: Text(context.tr('chess_grid_all_statuses', fallback: 'Все статусы')),
                       ),
                       ...ApartmentStatus.values.map((s) {
                         return DropdownMenuItem<ApartmentStatus?>(
@@ -327,7 +349,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                                 decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
                               ),
                               const SizedBox(width: 8),
-                              Text(s.labelRu),
+                              Text(s.localizedLabel(context)),
                             ],
                           ),
                         );
@@ -349,15 +371,15 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   // 5. Price Range (каждое поле на отдельной строке)
                   CustomTextField(
                     controller: _minPriceController,
-                    label: 'Цена от',
-                    hintText: 'Введите минимальную сумму',
+                    label: context.tr('chess_grid_price_from', fallback: 'Цена от'),
+                    hintText: context.tr('chess_grid_min_price_hint', fallback: 'Введите минимальную сумму'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 14),
                   CustomTextField(
                     controller: _maxPriceController,
-                    label: 'Цена до',
-                    hintText: 'Введите максимальную сумму',
+                    label: context.tr('chess_grid_price_to', fallback: 'Цена до'),
+                    hintText: context.tr('chess_grid_max_price_hint', fallback: 'Введите максимальную сумму'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 14),
@@ -365,15 +387,15 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
                   // 6. Area Range (каждое поле на отдельной строке)
                   CustomTextField(
                     controller: _minAreaController,
-                    label: 'Общая площадь от, м²',
-                    hintText: 'Введите минимальную площадь',
+                    label: context.tr('chess_grid_area_from', fallback: 'Общая площадь от, м²'),
+                    hintText: context.tr('chess_grid_min_area_hint', fallback: 'Введите минимальную площадь'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 14),
                   CustomTextField(
                     controller: _maxAreaController,
-                    label: 'Общая площадь до, м²',
-                    hintText: 'Введите максимальную площадь',
+                    label: context.tr('chess_grid_area_to', fallback: 'Общая площадь до, м²'),
+                    hintText: context.tr('chess_grid_max_area_hint', fallback: 'Введите максимальную площадь'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 24),

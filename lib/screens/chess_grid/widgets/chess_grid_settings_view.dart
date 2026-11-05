@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
@@ -20,6 +21,7 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
   late TextEditingController _compNameController;
   late TextEditingController _compAddrController;
   late TextEditingController _compTelController;
+  Country? _selectedCompCountry;
   String _formattedCompTel = '';
   late TextEditingController _compMailController;
   late TextEditingController _compInnController;
@@ -34,7 +36,12 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
     _limController = TextEditingController(text: '${c.monthlyBookingLimit}');
     _compNameController = TextEditingController(text: c.requisites.name);
     _compAddrController = TextEditingController(text: c.requisites.address);
-    _compTelController = TextEditingController(text: c.requisites.phone);
+
+    final parsed = parsePhoneCountryAndNumber(c.requisites.phone);
+    _selectedCompCountry = parsed.country;
+    _compTelController = TextEditingController(text: parsed.localNumber);
+    _formattedCompTel = c.requisites.phone;
+
     _compMailController = TextEditingController(text: c.requisites.email);
     _compInnController = TextEditingController(text: c.requisites.inn);
 
@@ -213,6 +220,7 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
                 CustomPhoneNumberInput(
                   controller: _compTelController,
                   label: 'Телефон',
+                  initialCountry: _selectedCompCountry,
                   onInputChanged: (val) {
                     _formattedCompTel = val;
                   },
@@ -226,12 +234,18 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
+                      final localPhone = _compTelController.text.trim();
+                      final dial = _selectedCompCountry?.dialCode ?? '';
+                      final phoneToSave = _formattedCompTel.isNotEmpty
+                          ? _formattedCompTel
+                          : (dial.isNotEmpty && localPhone.isNotEmpty
+                              ? '$dial$localPhone'
+                              : localPhone);
+
                       controller.updateCompanyRequisites(CompanyRequisites(
                         name: _compNameController.text.trim(),
                         address: _compAddrController.text.trim(),
-                        phone: _formattedCompTel.isNotEmpty
-                            ? _formattedCompTel
-                            : _compTelController.text.trim(),
+                        phone: phoneToSave,
                         email: _compMailController.text.trim(),
                         inn: _compInnController.text.trim(),
                       ));

@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Floating Building / Complex Badge (Media 1)
@@ -136,7 +137,7 @@ class FloatingEntranceBadge extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Подъезд $entranceNumber',
+                  '${context.tr('chess_grid_entrance', fallback: 'Подъезд')} $entranceNumber',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,

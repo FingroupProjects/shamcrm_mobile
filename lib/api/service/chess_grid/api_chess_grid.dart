@@ -320,9 +320,16 @@ extension ApiChessGridX on ApiService {
     return Building.fromJson(map);
   }
 
+  bool _isParkingGood(Map<String, dynamic> json) {
+    final data = json['good'] is Map ? Map<String, dynamic>.from(json['good'] as Map) : json;
+    final type = (data['type'] ?? json['type'] ?? '').toString().toLowerCase();
+    final parkingType = (data['parking_type'] ?? json['parking_type'] ?? '').toString();
+    return type.contains('парков') || parkingType.trim().isNotEmpty;
+  }
+
   /// GET /good?building_id={buildingId}
-  /// Fetches real apartments/units from the goods catalog belonging to this building
-  Future<List<Apartment>> getApartmentsByBuilding({
+  /// Apartments stay on the chess grid. Goods with type "парковочное место" go to parking.
+  Future<BuildingGoods> getBuildingGoods({
     required int buildingId,
     int? residentialComplexId,
     String buildingKey = '',
@@ -349,52 +356,46 @@ extension ApiChessGridX on ApiService {
     final decoded = json.decode(response.body);
     final list = _extractList(decoded);
 
-    final apts = list
-        .whereType<Map<String, dynamic>>()
-        .map((e) => Apartment.fromGood(
-              e,
-              complexId: residentialComplexId ?? 1,
-              buildingKey: buildingKey,
-              buildingName: buildingName,
-            ))
-        .toList();
-
-    _normalizeApartmentPositions(apts);
-
-    return apts;
-  }
-
-  /// Normalizes positions on each floor (0..n-1) if not explicitly set by the server
-  void _normalizeApartmentPositions(List<Apartment> apts) {
-    final Map<String, List<Apartment>> groups = {};
-    for (final a in apts) {
-      final key = '${a.entrance}_${a.floor}';
-      groups.putIfAbsent(key, () => []).add(a);
-    }
-
-    for (final entry in groups.entries) {
-      final group = entry.value;
-      final hasDuplicatePositions = group.length > 1 &&
-          (group.every((a) => a.position == 0) ||
-              group.map((a) => a.position).toSet().length < group.length);
-
-      if (hasDuplicatePositions) {
-        group.sort((a, b) {
-          final nA = int.tryParse(a.number.replaceAll(RegExp(r'[^0-9]'), ''));
-          final nB = int.tryParse(b.number.replaceAll(RegExp(r'[^0-9]'), ''));
-          if (nA != null && nB != null) return nA.compareTo(nB);
-          return a.id.compareTo(b.id);
-        });
-
-        for (int i = 0; i < group.length; i++) {
-          final target = group[i];
-          final idx = apts.indexOf(target);
-          if (idx != -1) {
-            apts[idx] = target.copyWith(position: i);
-          }
-        }
+    final apartments = <Apartment>[];
+    final parking = <ParkingSpot>[];
+    for (final item in list.whereType<Map<String, dynamic>>()) {
+      if (_isParkingGood(item)) {
+        parking.add(ParkingSpot.fromGood(
+          item,
+          complexId: residentialComplexId ?? 1,
+          buildingId: buildingId,
+          buildingKey: buildingKey,
+        ));
+      } else {
+        apartments.add(Apartment.fromGood(
+          item,
+          complexId: residentialComplexId ?? 1,
+          buildingKey: buildingKey,
+          buildingName: buildingName,
+        ));
       }
     }
+
+    return BuildingGoods(
+      apartments: Apartment.normalizePositions(apartments),
+      parking: parking,
+    );
+  }
+
+  /// GET /good?building_id={buildingId}
+  Future<List<Apartment>> getApartmentsByBuilding({
+    required int buildingId,
+    int? residentialComplexId,
+    String buildingKey = '',
+    String buildingName = '',
+  }) async {
+    final goods = await getBuildingGoods(
+      buildingId: buildingId,
+      residentialComplexId: residentialComplexId,
+      buildingKey: buildingKey,
+      buildingName: buildingName,
+    );
+    return goods.apartments;
   }
 
   /// GET /buildings/{building_id}/entrances
@@ -504,6 +505,85 @@ extension ApiChessGridX on ApiService {
     );
   }
 
+  /// POST /good for a parking spot.
+  /// {
+  ///   "name": "П-01",
+  ///   "type": "парковочное место",
+  ///   "parking_type": "подземная",
+  ///   "building_id": 1,
+  ///   "price": 5000,
+  ///   "total_area": 15,
+  ///   "status": "свободно"
+  /// }
+  Future<ParkingSpot> createParkingGood({
+    required int buildingId,
+    required String name,
+    required String parkingType,
+    required double price,
+    required double totalArea,
+    required ApartmentStatus status,
+    int complexId = 1,
+    String buildingKey = '',
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'type': 'парковочное место',
+      'parking_type': _parkingTypeValue(parkingType),
+      'building_id': buildingId,
+      'price': price,
+      'total_area': totalArea,
+      'status': _parkingStatusValue(status),
+    };
+
+    final response = await _postRequest('/good', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final msg = _extractErrorMessageFromResponse(response) ?? response.body;
+      throw Exception('Ошибка создания парковки (${response.statusCode}): $msg');
+    }
+
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+    final map = _extractMap(decoded);
+    if (map.isEmpty) {
+      return ParkingSpot(
+        id: 0,
+        complexId: complexId,
+        buildingId: buildingId,
+        number: name,
+        type: parkingType,
+        buildingKey: buildingKey,
+        price: price,
+        area: totalArea,
+        status: status,
+      );
+    }
+    return ParkingSpot.fromGood(
+      map,
+      complexId: complexId,
+      buildingId: buildingId,
+      buildingKey: buildingKey,
+    );
+  }
+
+  String _parkingTypeValue(String type) {
+    final value = type.trim().toLowerCase();
+    if (value.contains('открыт')) return 'открытая';
+    if (value.contains('закрыт') || value.contains('крыт')) return 'закрытая';
+    return 'подземная';
+  }
+
+  String _parkingStatusValue(ApartmentStatus status) {
+    switch (status) {
+      case ApartmentStatus.available:
+        return 'свободно';
+      case ApartmentStatus.booked:
+        return 'бронь';
+      case ApartmentStatus.sold:
+        return 'продано';
+      case ApartmentStatus.reserved:
+        return 'резерв';
+    }
+  }
+
   /// DELETE /good/{id}
   Future<bool> deleteApartmentGood(int goodId) async {
     final path = '/good/$goodId';
@@ -513,6 +593,124 @@ extension ApiChessGridX on ApiService {
 
     final response = await _deleteRequest(path);
     return response.statusCode == 200 || response.statusCode == 204;
+  }
+
+  /// POST /order for a chess-grid apartment deal.
+  /// Field names match the backend contract. status_id, organization_id and
+  /// deliveryType stay because the existing order endpoint still requires them.
+  Future<Map<String, dynamic>> createResidentialOrder({
+    required int leadId,
+    required int managerId,
+    required int orderStatusId,
+    required int integrationId,
+    required String phone,
+    required double sum,
+    required int currencyId,
+    required String ownerName,
+    required String gender,
+    required String passport,
+    String? passportIssuedBy,
+    String? passportIssuedAt,
+    String? passportExpiresAt,
+    String? ownerBirthDate,
+    int? inn,
+    String? residenceAddress,
+    required int goodId,
+    required int variantId,
+    required double pricePerM2,
+    required String dealType,
+    double? downPayment,
+    int? installmentMonths,
+  }) async {
+    final organizationId = await resolveSelectedOrganizationId();
+    final body = <String, dynamic>{
+      'lead_id': leadId,
+      'manager_id': managerId,
+      'order_status_id': orderStatusId,
+      'status_id': orderStatusId,
+      'integration_id': integrationId,
+      'phone': phone,
+      'sum': sum,
+      'currency_id': currencyId,
+      'owner_name': ownerName,
+      'gender': gender,
+      'passport': passport,
+      'goods': [
+        {
+          'good_id': goodId,
+          'variant_id': variantId,
+          'quantity': 1,
+          'price': sum,
+        },
+      ],
+      'price_per_m2': pricePerM2,
+      'deal_type': dealType,
+      'organization_id': organizationId,
+      'deliveryType': 'pickup',
+    };
+
+    if (passportIssuedBy != null && passportIssuedBy.trim().isNotEmpty) {
+      body['passport_issued_by'] = passportIssuedBy.trim();
+    }
+    if (passportIssuedAt != null && passportIssuedAt.isNotEmpty) {
+      body['passport_issued_at'] = passportIssuedAt;
+    }
+    if (passportExpiresAt != null && passportExpiresAt.isNotEmpty) {
+      body['passport_expires_at'] = passportExpiresAt;
+    }
+    if (ownerBirthDate != null && ownerBirthDate.isNotEmpty) {
+      body['owner_birth_date'] = ownerBirthDate;
+    }
+    if (inn != null) {
+      body['inn'] = inn;
+    }
+    if (residenceAddress != null && residenceAddress.trim().isNotEmpty) {
+      body['residence_address'] = residenceAddress.trim();
+    }
+    if (dealType == 'installment' || dealType == 'mixed') {
+      body['down_payment'] = downPayment ?? 0;
+      body['installment_months'] = installmentMonths ?? 0;
+    }
+
+    final response = await _postRequest('/order', body);
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+    if (<int>[200, 201, 202, 203, 204].contains(response.statusCode)) {
+      String? orderId;
+      if (decoded is Map) {
+        final result = decoded['result'];
+        if (result is Map && result['id'] != null) {
+          orderId = result['id'].toString();
+        } else if (decoded['id'] != null) {
+          orderId = decoded['id'].toString();
+        }
+      }
+      return {'success': true, 'orderId': orderId};
+    }
+
+    return {
+      'success': false,
+      'error': _orderErrorText(decoded) ?? 'Не удалось создать заказ (${response.statusCode})',
+    };
+  }
+
+  String? _orderErrorText(dynamic decoded) {
+    if (decoded is! Map) return null;
+    final message = decoded['message'];
+    if (message is String && message.trim().isNotEmpty) return message.trim();
+    if (message is Map) {
+      for (final value in message.values) {
+        if (value is List && value.isNotEmpty) return value.first.toString();
+        if (value is String && value.trim().isNotEmpty) return value.trim();
+      }
+    }
+    final errors = decoded['errors'];
+    if (errors is Map) {
+      for (final value in errors.values) {
+        if (value is List && value.isNotEmpty) return value.first.toString();
+        if (value is String && value.trim().isNotEmpty) return value.trim();
+      }
+    }
+    return null;
   }
 }
 

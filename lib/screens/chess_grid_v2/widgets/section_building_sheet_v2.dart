@@ -1,4 +1,5 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -68,7 +69,7 @@ class SectionBuildingSheetV2 extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Секция и подъезд',
+                    context.tr('chess_grid_section_and_entrance', fallback: 'Секция и подъезд'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w800,
@@ -100,7 +101,7 @@ class SectionBuildingSheetV2 extends StatelessWidget {
 
           // Buildings Section
           Text(
-            'Корпус / Блок',
+            context.tr('chess_grid_building_block', fallback: 'Корпус / Блок'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
@@ -193,7 +194,7 @@ class SectionBuildingSheetV2 extends StatelessWidget {
 
           // Entrances Section
           Text(
-            'Подъезд',
+            context.tr('chess_grid_entrance', fallback: 'Подъезд'),
             style: TextStyle(
               fontFamily: 'Gilroy',
               fontWeight: FontWeight.w700,
@@ -209,7 +210,7 @@ class SectionBuildingSheetV2 extends StatelessWidget {
             children: [
               _buildEntrancePill(
                 context: context,
-                title: 'Все подъезды',
+                title: context.tr('chess_grid_all_entrances', fallback: 'Все подъезды'),
                 isSelected: currentEntrance == 0,
                 onTap: () {
                   controller.setFilter(controller.filter.copyWith(entrance: 0));
@@ -220,7 +221,7 @@ class SectionBuildingSheetV2 extends StatelessWidget {
                 for (int e = 1; e <= building.entranceCount; e++)
                   _buildEntrancePill(
                   context: context,
-                  title: 'Подъезд $e',
+                  title: '${context.tr('chess_grid_entrance', fallback: 'Подъезд')} $e',
                   isSelected: currentEntrance == e,
                   onTap: () {
                     controller.setFilter(controller.filter.copyWith(entrance: e));

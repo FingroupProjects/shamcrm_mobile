@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/scene_3d_state.dart';
 import 'package:flutter/material.dart';
 
@@ -89,7 +90,7 @@ class Scene3DBreadcrumbs extends StatelessWidget {
                 if (state.level.index >= Scene3DLevel.section.index) ...[
                   _buildSeparator(),
                   _buildCrumb(
-                    title: 'Подъезд ${state.selectedEntrance}',
+                    title: '${context.tr('chess_grid_entrance', fallback: 'Подъезд')} ${state.selectedEntrance}',
                     isActive: state.level == Scene3DLevel.section,
                     onTap: () => onSelectLevel(Scene3DLevel.section),
                   ),
@@ -99,7 +100,7 @@ class Scene3DBreadcrumbs extends StatelessWidget {
                 if (state.level.index >= Scene3DLevel.floor.index) ...[
                   _buildSeparator(),
                   _buildCrumb(
-                    title: 'Этаж ${state.selectedFloor}',
+                    title: '${context.tr('chess_grid_floor', fallback: 'Этаж')} ${state.selectedFloor}',
                     isActive: state.level == Scene3DLevel.floor,
                     onTap: () => onSelectLevel(Scene3DLevel.floor),
                   ),

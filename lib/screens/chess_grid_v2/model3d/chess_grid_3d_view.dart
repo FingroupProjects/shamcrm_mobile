@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/controllers/chess_grid_v2_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_detail_sheet.dart';
@@ -26,11 +28,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ChessGrid3DView extends StatefulWidget {
   final ResidentialComplex complex;
   final VoidCallback? onSwitchTo2D;
+  final List<Apartment>? apartments;
+  final Function(Apartment)? onToggleReserve;
 
   const ChessGrid3DView({
     super.key,
     required this.complex,
     this.onSwitchTo2D,
+    this.apartments,
+    this.onToggleReserve,
   });
 
   @override
@@ -61,13 +67,55 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   List<FloorRenderInfo> _floorInfos = [];
   List<Apartment3DRenderInfo> _apartmentInfos = [];
 
+  ResidentialComplex get _effectiveComplex {
+    if (widget.complex.buildings.isNotEmpty) return widget.complex;
+    final c1 = ChessGridController.instance.complex;
+    if (c1.id == widget.complex.id && c1.buildings.isNotEmpty) return c1;
+    final c2 = _controller.complex;
+    if (c2.id == widget.complex.id && c2.buildings.isNotEmpty) return c2;
+    return widget.complex;
+  }
+
+  List<Apartment> get _allApartments {
+    if (widget.apartments != null && widget.apartments!.isNotEmpty) {
+      return widget.apartments!;
+    }
+    final v2Apts = _controller.getApartmentsForComplex(widget.complex.id);
+    if (v2Apts.isNotEmpty) return v2Apts;
+    return ChessGridController.instance.getApartmentsForComplex(widget.complex.id);
+  }
+
+  void _handleToggleReserve(Apartment apt) {
+    if (widget.onToggleReserve != null) {
+      widget.onToggleReserve!(apt);
+    } else {
+      _controller.toggleApartmentReserve(apt);
+      ChessGridController.instance.toggleApartmentReserve(apt);
+    }
+    setState(() {});
+  }
+
+  void _onControllersChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _controller = ChessGridV2Controller.instance;
 
-    final initialBuilding = widget.complex.buildings.isNotEmpty
-        ? widget.complex.buildings.first
+    ChessGridController.instance.addListener(_onControllersChanged);
+    _controller.addListener(_onControllersChanged);
+
+    if (_allApartments.isEmpty) {
+      ChessGridController.instance.loadComplexDetails(widget.complex.id, showLoading: false);
+      _controller.loadComplexDetails(widget.complex.id, showLoading: false);
+    }
+
+    final effComplex = _effectiveComplex;
+    final initialBuilding = effComplex.buildings.isNotEmpty
+        ? effComplex.buildings.first
         : null;
 
     _state = Scene3DState(
@@ -177,9 +225,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Расстановка корпусов сброшена по умолчанию'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.tr('chess_grid_layout_reset_done', fallback: 'Расстановка корпусов сброшена по умолчанию')),
+          duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -187,7 +235,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   }
 
   Offset _getDefaultBuildingPos(Building b) {
-    final buildings = widget.complex.buildings;
+    final buildings = _effectiveComplex.buildings;
     final i = buildings.indexOf(b);
     final double progress =
         buildings.length > 1 ? i / (buildings.length - 1) : 0.5;
@@ -227,6 +275,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
 
   @override
   void dispose() {
+    ChessGridController.instance.removeListener(_onControllersChanged);
+    _controller.removeListener(_onControllersChanged);
     _rotationTicker?.dispose();
     _animController.dispose();
     super.dispose();
@@ -497,10 +547,11 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
 
   @override
   Widget build(BuildContext context) {
-    final allApts = _controller.getApartmentsForComplex(widget.complex.id);
+    final allApts = _allApartments;
+    final complex = _effectiveComplex;
     final building = _state.selectedBuilding ??
-        (widget.complex.buildings.isNotEmpty
-            ? widget.complex.buildings.first
+        (complex.buildings.isNotEmpty
+            ? complex.buildings.first
             : null);
 
     return Stack(
@@ -518,7 +569,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           child: CustomPaint(
             painter: _Master3DScenePainter(
               state: _state,
-              complex: widget.complex,
+              complex: complex,
               allApartments: allApts,
               building: building,
               onRenderFinished: (bInfos, eInfos, fInfos, aInfos) {
@@ -543,7 +594,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
           child: Center(
             child: Scene3DBreadcrumbs(
               state: _state,
-              complex: widget.complex,
+              complex: complex,
               onBack: _navigateBack,
               onSelectLevel: _navigateLevel,
             ),
@@ -640,15 +691,12 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                     );
                   },
                   onToggleReserve: () {
-                    _controller
-                        .toggleApartmentReserve(_state.selectedApartment!);
-                    setState(() {});
+                    _handleToggleReserve(_state.selectedApartment!);
                   },
                 );
               },
               onToggleReserve: () {
-                _controller.toggleApartmentReserve(_state.selectedApartment!);
-                setState(() {});
+                _handleToggleReserve(_state.selectedApartment!);
               },
               onCreateOrder: () {
                 OrderCreateSheet.show(
@@ -664,11 +712,12 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
 
   /// Real Geolocation Aura & Rotating 3D Compass HUD Badge
   Widget _buildGeoCompassBadge() {
-    final lat = widget.complex.lat;
-    final lng = widget.complex.lng;
-    final address = widget.complex.address.isNotEmpty
-        ? widget.complex.address
-        : widget.complex.name;
+    final complex = _effectiveComplex;
+    final lat = complex.lat;
+    final lng = complex.lng;
+    final address = complex.address.isNotEmpty
+        ? complex.address
+        : complex.name;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -697,7 +746,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               GestureDetector(
                 onTap: _orientToNorth,
                 child: Tooltip(
-                  message: 'Ориентация на Север (Нажмите для сброса)',
+                  message: context.tr('chess_grid_north_orientation', fallback: 'Ориентация на Север (Нажмите для сброса)'),
                   child: Container(
                     width: 24,
                     height: 24,
@@ -754,7 +803,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               GestureDetector(
                 onTap: _openGoogleSatelliteMap,
                 child: Tooltip(
-                  message: 'Посмотреть ЖК на реальной спутниковой карте Google',
+                  message: context.tr('chess_grid_view_on_satellite', fallback: 'Посмотреть ЖК на реальной спутниковой карте Google'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -783,7 +832,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                         ],
                       ),
                       Text(
-                        '${lat.toStringAsFixed(4)}°N, ${lng.toStringAsFixed(4)}°E • Карта Google',
+                        '${lat.toStringAsFixed(4)}°N, ${lng.toStringAsFixed(4)}°E • ${context.tr('chess_grid_google_map', fallback: 'Карта Google')}',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.75),
                           fontSize: 9.0,
@@ -807,10 +856,10 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
     final building = _state.selectedBuilding;
     if (building == null) return const SizedBox.shrink();
 
-    final allApts = _controller.getApartmentsForComplex(widget.complex.id);
+    final allApts = _allApartments;
     final entApts = allApts
         .where((a) =>
-            a.buildingKey == building.key &&
+            (a.buildingKey == building.key || (building.id != null && a.buildingId == building.id)) &&
             a.entrance == _state.selectedEntrance)
         .toList();
 
@@ -850,7 +899,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
             ),
             const SizedBox(width: 8),
             Text(
-              'Подъезд ${_state.selectedEntrance} · свободно $free из $total',
+              '${context.tr('chess_grid_entrance', fallback: 'Подъезд')} ${_state.selectedEntrance} · ${context.tr('chess_grid_available', fallback: 'свободно').toLowerCase()} $free ${context.tr('chess_grid_of', fallback: 'из')} $total',
               style: const TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w700,
@@ -865,20 +914,20 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                 color: const Color(0xFF2979FF),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Этажи',
-                    style: TextStyle(
+                    context.tr('chess_grid_floors', fallback: 'Этажи'),
+                    style: const TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_rounded,
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_forward_rounded,
                       size: 12, color: Colors.white),
                 ],
               ),
@@ -907,8 +956,8 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               child: FloatingBuildingBadge(
                 title: info.building.name,
                 subtitle: isBeingDragged
-                    ? 'Перемещение 📍'
-                    : 'свободно ${info.freeApts} из ${info.totalApts}',
+                    ? context.tr('chess_grid_moving', fallback: 'Перемещение 📍')
+                    : '${context.tr('chess_grid_available', fallback: 'свободно').toLowerCase()} ${info.freeApts} ${context.tr('chess_grid_of', fallback: 'из')} ${info.totalApts}',
                 isSelected: _state.selectedBuilding?.key == info.building.key ||
                     isBeingDragged,
                 onTap: () {
@@ -932,7 +981,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               top: pos.dy - 40,
               child: FloatingEntranceBadge(
                 entranceNumber: info.entranceNumber,
-                subtitle: 'свободно ${info.freeApts} из ${info.totalApts}',
+                subtitle: '${context.tr('chess_grid_available', fallback: 'свободно').toLowerCase()} ${info.freeApts} ${context.tr('chess_grid_of', fallback: 'из')} ${info.totalApts}',
                 isSelected: _state.selectedEntrance == info.entranceNumber,
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -1080,7 +1129,7 @@ class _Master3DScenePainter extends CustomPainter {
         if (building != null) {
           final floorApts = allApartments
               .where((a) =>
-                  a.buildingKey == building!.key &&
+                  (a.buildingKey == building!.key || (building!.id != null && a.buildingId == building!.id)) &&
                   a.entrance == state.selectedEntrance &&
                   a.floor == state.selectedFloor)
               .toList();

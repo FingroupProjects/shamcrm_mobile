@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
-import 'package:crm_task_manager/screens/chess_grid/services/payment_schedule_pdf_service.dart';
+// import 'package:crm_task_manager/screens/chess_grid/services/payment_schedule_pdf_service.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_room_layout_view.dart';
 import 'package:flutter/material.dart';
 
@@ -134,32 +134,31 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Print Passport Button
-                    IconButton(
-                      icon: const Icon(Icons.print_outlined, size: 21),
-                      color: colors.buttonPrimaryBg,
-                      tooltip: 'Печать паспорта',
-                      onPressed: () async {
-                        await PaymentSchedulePdfService.printApartmentPassport(
-                          apartment: apartment,
-                          complex: controller.complex,
-                          requisites: controller.requisites,
-                        );
-                      },
-                    ),
-                    // Share Passport Button
-                    IconButton(
-                      icon: const Icon(Icons.share_outlined, size: 20),
-                      color: colors.buttonPrimaryBg,
-                      tooltip: 'Поделиться паспортом',
-                      onPressed: () async {
-                        await PaymentSchedulePdfService.shareApartmentPassport(
-                          apartment: apartment,
-                          complex: controller.complex,
-                          requisites: controller.requisites,
-                        );
-                      },
-                    ),
+                    // [Печать и шаринг паспорта скрыты по требованию]
+                    // IconButton(
+                    //   icon: const Icon(Icons.print_outlined, size: 21),
+                    //   color: colors.buttonPrimaryBg,
+                    //   tooltip: 'Печать паспорта',
+                    //   onPressed: () async {
+                    //     await PaymentSchedulePdfService.printApartmentPassport(
+                    //       apartment: apartment,
+                    //       complex: controller.complex,
+                    //       requisites: controller.requisites,
+                    //     );
+                    //   },
+                    // ),
+                    // IconButton(
+                    //   icon: const Icon(Icons.share_outlined, size: 20),
+                    //   color: colors.buttonPrimaryBg,
+                    //   tooltip: 'Поделиться паспортом',
+                    //   onPressed: () async {
+                    //     await PaymentSchedulePdfService.shareApartmentPassport(
+                    //       apartment: apartment,
+                    //       complex: controller.complex,
+                    //       requisites: controller.requisites,
+                    //     );
+                    //   },
+                    // ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 22),
                       color: colors.iconSecondary,
@@ -415,18 +414,19 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                         _buildDivider(colors),
                         _buildParamRow(context, 'Кол-во комнат', apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}'),
                         _buildDivider(colors),
-                        _buildParamRow(context, 'Тип планировки', apartment.layoutType ?? 'A'),
-                        _buildDivider(colors),
-                        _buildParamRow(context, 'Кол-во балконов', '${apartment.balconiesCount}'),
-                        _buildDivider(colors),
-                        _buildParamRow(context, 'Кол-во совмещенных санузлов', '${apartment.combinedBathroomsCount}'),
-                        _buildDivider(colors),
+                        // [Скрыто по требованию]
+                        // _buildParamRow(context, 'Тип планировки', apartment.layoutType ?? 'A'),
+                        // _buildDivider(colors),
+                        // _buildParamRow(context, 'Кол-во балконов', '${apartment.balconiesCount}'),
+                        // _buildDivider(colors),
+                        // _buildParamRow(context, 'Кол-во совмещенных санузлов', '${apartment.combinedBathroomsCount}'),
+                        // _buildDivider(colors),
                         _buildParamRow(context, 'Этаж', '${apartment.floor}'),
                         _buildDivider(colors),
                         _buildParamRow(context, 'Подъезд', '${apartment.entrance}'),
                         _buildDivider(colors),
-                        _buildParamRow(context, 'Тип отделки', apartment.type),
-                        _buildDivider(colors),
+                        // _buildParamRow(context, 'Тип отделки', apartment.type),
+                        // _buildDivider(colors),
                         _buildParamRow(
                           context,
                           'Броней в этом месяце',
@@ -482,7 +482,7 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            isAvailable ? 'Оформить бронь / заказ' : 'Заказ недоступен (не свободно)',
+                            isAvailable ? 'В сделку' : 'Заказ недоступен (не свободно)',
                             style: const TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w700,
@@ -494,38 +494,38 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                     ),
                   ),
 
-                  // Reserve toggle
-                  if (apartment.status == ApartmentStatus.available ||
-                      apartment.status == ApartmentStatus.reserved) ...[
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          widget.onToggleReserve();
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: colors.textPrimary,
-                          side: BorderSide(color: colors.borderSubtle),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          apartment.status == ApartmentStatus.reserved
-                              ? 'Снять с резерва'
-                              : 'Поставить в резерв',
-                          style: const TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  // [Кнопка резерва скрыта по требованию]
+                  // if (apartment.status == ApartmentStatus.available ||
+                  //     apartment.status == ApartmentStatus.reserved) ...[
+                  //   const SizedBox(height: 10),
+                  //   SizedBox(
+                  //     width: double.infinity,
+                  //     height: 46,
+                  //     child: OutlinedButton(
+                  //       onPressed: () {
+                  //         Navigator.pop(context);
+                  //         widget.onToggleReserve();
+                  //       },
+                  //       style: OutlinedButton.styleFrom(
+                  //         foregroundColor: colors.textPrimary,
+                  //         side: BorderSide(color: colors.borderSubtle),
+                  //         shape: RoundedRectangleBorder(
+                  //           borderRadius: BorderRadius.circular(14),
+                  //         ),
+                  //       ),
+                  //       child: Text(
+                  //         apartment.status == ApartmentStatus.reserved
+                  //             ? 'Снять с резерва'
+                  //             : 'Поставить в резерв',
+                  //         style: const TextStyle(
+                  //           fontFamily: 'Gilroy',
+                  //           fontWeight: FontWeight.w600,
+                  //           fontSize: 14,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ],
                 ],
               ),
             ),

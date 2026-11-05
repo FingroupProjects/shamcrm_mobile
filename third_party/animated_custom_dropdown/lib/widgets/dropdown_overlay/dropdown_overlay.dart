@@ -242,7 +242,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
 
     if (_usesPaginatedRequest && widget.items.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
+        if (mounted && currentQuery.isEmpty) {
           _performPaginatedSearch('');
         }
       });
@@ -280,10 +280,14 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
     }
   }
 
+  int _searchGeneration = 0;
+
   Future<void> _performPaginatedSearch(String query) async {
-    if (!_usesPaginatedRequest || isSearchRequestLoading) {
+    if (!_usesPaginatedRequest) {
       return;
     }
+
+    final generation = ++_searchGeneration;
 
     setState(() {
       currentQuery = query;
@@ -296,7 +300,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
 
     try {
       final response = await widget.paginatedRequest!(query, 1);
-      if (!mounted) return;
+      if (!mounted || generation != _searchGeneration) return;
 
       setState(() {
         items = response.items;
@@ -305,7 +309,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
         isSearchRequestLoading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _searchGeneration) return;
 
       setState(() {
         isSearchRequestLoading = false;
@@ -322,6 +326,8 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
       return;
     }
 
+    final generation = _searchGeneration;
+
     setState(() {
       isPaginationLoading = true;
     });
@@ -330,7 +336,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
 
     try {
       final response = await widget.paginatedRequest!(currentQuery, nextPage);
-      if (!mounted) return;
+      if (!mounted || generation != _searchGeneration) return;
 
       final mergedItems = List<T>.from(items);
       for (final item in response.items) {
@@ -346,7 +352,7 @@ class _DropdownOverlayState<T> extends State<_DropdownOverlay<T>> {
         isPaginationLoading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _searchGeneration) return;
 
       setState(() {
         isPaginationLoading = false;

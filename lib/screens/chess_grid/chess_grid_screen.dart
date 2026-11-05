@@ -7,6 +7,7 @@ import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_contr
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_add_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_card.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,8 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
-  int _scopeTabIndex = 0; // 0 = Мои объекты, 1 = Доступные мне
+  // [Переключатель «Мои объекты» / «Доступные мне» скрыт по требованию]
+  // int _scopeTabIndex = 0;
   bool isClickAvatarIcon = false;
 
   @override
@@ -166,7 +168,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Жилые комплексы',
+                                context.tr('chess_grid_residential_complexes', fallback: 'Жилые комплексы'),
                                 style: TextStyle(
                                   fontFamily: 'Gilroy',
                                   fontWeight: FontWeight.w700,
@@ -176,7 +178,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${filteredComplexes.length} ${_pluralizeComplex(filteredComplexes.length)}',
+                                '${filteredComplexes.length} ${ChessGridL10n.complexPlural(context, filteredComplexes.length)}',
                                 style: TextStyle(
                                   fontFamily: 'Golos',
                                   fontSize: 12,
@@ -188,9 +190,9 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                           ElevatedButton.icon(
                             onPressed: () => ComplexAddSheet.show(context),
                             icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text(
-                              'Добавить ЖК',
-                              style: TextStyle(
+                            label: Text(
+                              context.tr('chess_grid_add_complex', fallback: 'Добавить ЖК'),
+                              style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
@@ -213,71 +215,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                       ),
                     ),
 
-                    // TZ Section 1/2: «Мои объекты» / «Доступные мне» tab selector
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.5)),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _scopeTabIndex = 0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: _scopeTabIndex == 0 ? colors.buttonPrimaryBg : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(9),
-                                    boxShadow: _scopeTabIndex == 0
-                                        ? [BoxShadow(color: colors.buttonPrimaryBg.withValues(alpha: 0.25), blurRadius: 4)]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Мои объекты',
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                      color: _scopeTabIndex == 0 ? Colors.white : colors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() => _scopeTabIndex = 1),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: _scopeTabIndex == 1 ? colors.buttonPrimaryBg : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(9),
-                                    boxShadow: _scopeTabIndex == 1
-                                        ? [BoxShadow(color: colors.buttonPrimaryBg.withValues(alpha: 0.25), blurRadius: 4)]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'Доступные мне',
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                      color: _scopeTabIndex == 1 ? Colors.white : colors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // [Переключатель «Мои объекты» / «Доступные мне» скрыт по требованию]
 
                     // Summary Stats Strip (Всего, Свободно, Бронь, Резерв, Продано)
                     Padding(
@@ -304,31 +242,31 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             _buildTopStat(
-                              title: 'Всего',
+                              title: context.tr('chess_grid_total', fallback: 'Всего'),
                               value: '$totalApartments',
                               color: colors.textPrimary,
                             ),
                             _buildTopDivider(),
                             _buildTopStat(
-                              title: 'Свободно',
+                              title: context.tr('chess_grid_available', fallback: 'Свободно'),
                               value: '$totalAvailable',
                               color: ApartmentStatus.available.color,
                             ),
                             _buildTopDivider(),
                             _buildTopStat(
-                              title: 'Бронь',
+                              title: context.tr('chess_grid_booked', fallback: 'Бронь'),
                               value: '$totalBooked',
                               color: ApartmentStatus.booked.color,
                             ),
                             _buildTopDivider(),
                             _buildTopStat(
-                              title: 'Резерв',
+                              title: context.tr('chess_grid_reserved', fallback: 'Резерв'),
                               value: '$totalReserved',
                               color: ApartmentStatus.reserved.color,
                             ),
                             _buildTopDivider(),
                             _buildTopStat(
-                              title: 'Продано',
+                              title: context.tr('chess_grid_sold', fallback: 'Продано'),
                               value: '$totalSold',
                               color: ApartmentStatus.sold.color,
                             ),
@@ -361,7 +299,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                         ),
                                         const SizedBox(height: 12),
                                         Text(
-                                          'Не удалось загрузить данные',
+                                          context.tr('chess_grid_failed_load', fallback: 'Не удалось загрузить данные'),
                                           style: TextStyle(
                                             fontFamily: 'Gilroy',
                                             fontWeight: FontWeight.w700,
@@ -385,7 +323,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                         ElevatedButton.icon(
                                           onPressed: () => _controller.loadDataFromApi(),
                                           icon: const Icon(Icons.refresh_rounded, size: 18),
-                                          label: const Text('Повторить попытку'),
+                                          label: Text(context.tr('chess_grid_retry', fallback: 'Повторить попытку')),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: colors.buttonPrimaryBg,
                                             foregroundColor: colors.buttonPrimaryFg,
@@ -412,8 +350,8 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                           const SizedBox(height: 12),
                                           Text(
                                             _searchQuery.isNotEmpty
-                                                ? 'Комплексы не найдены'
-                                                : 'Нет добавленных ЖК',
+                                                ? context.tr('chess_grid_complexes_not_found', fallback: 'Комплексы не найдены')
+                                                : context.tr('chess_grid_no_complexes', fallback: 'Нет добавленных ЖК'),
                                             style: TextStyle(
                                               fontFamily: 'Gilroy',
                                               fontWeight: FontWeight.w600,
@@ -427,9 +365,9 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                                 ComplexAddSheet.show(context),
                                             icon:
                                                 const Icon(Icons.add_rounded, size: 18),
-                                            label: const Text(
-                                              'Добавить ЖК',
-                                              style: TextStyle(
+                                            label: Text(
+                                              context.tr('chess_grid_add_complex', fallback: 'Добавить ЖК'),
+                                              style: const TextStyle(
                                                 fontFamily: 'Gilroy',
                                                 fontWeight: FontWeight.w700,
                                               ),
@@ -463,15 +401,18 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                           return ComplexCard(
                                             complex: complex,
                                             onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ComplexChessScreen(
-                                              complex: complex),
-                                        ),
-                                      );
-                                    },
-                                  );
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ComplexChessScreen(
+                                                      complex: complex),
+                                                ),
+                                              );
+                                            },
+                                            onEdit: () {
+                                              ComplexAddSheet.show(context, complex: complex);
+                                            },
+                                          );
                                 },
                               ),
                             ),
@@ -519,15 +460,5 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
       height: 22,
       color: context.appColors.borderSubtle.withValues(alpha: 0.5),
     );
-  }
-
-  String _pluralizeComplex(int count) {
-    if (count % 10 == 1 && count % 100 != 11) return 'комплекс';
-    if (count % 10 >= 2 &&
-        count % 10 <= 4 &&
-        (count % 100 < 10 || count % 100 >= 20)) {
-      return 'комплекса';
-    }
-    return 'комплексов';
   }
 }

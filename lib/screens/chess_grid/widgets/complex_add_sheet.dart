@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
+import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/work_schedule_selector.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
@@ -12,16 +15,18 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ComplexAddSheet extends StatefulWidget {
-  const ComplexAddSheet({super.key});
+  final ResidentialComplex? complex;
 
-  static Future<void> show(BuildContext context) {
+  const ComplexAddSheet({super.key, this.complex});
+
+  static Future<void> show(BuildContext context, {ResidentialComplex? complex}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: const ComplexAddSheet(),
+        child: ComplexAddSheet(complex: complex),
       ),
     );
   }
@@ -36,6 +41,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
   final _buildingCountController = TextEditingController();
   final _salesAddressController = TextEditingController();
   final _salesPhoneController = TextEditingController();
+  Country? _selectedCountry;
   String _formattedPhone = '';
   final _salesEmailController = TextEditingController();
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
@@ -53,6 +59,41 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
 
   bool _isLocating = false;
   bool _isSaving = false;
+
+  bool get _isEdit => widget.complex != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.complex;
+    if (c != null) {
+      _nameController.text = c.name;
+      _addressController.text = c.address;
+      _buildingCountController.text = c.buildingCount > 0 ? c.buildingCount.toString() : '';
+      _salesAddressController.text = c.salesOffice.address;
+
+      final parsed = parsePhoneCountryAndNumber(c.salesOffice.phone);
+      _selectedCountry = parsed.country;
+      _salesPhoneController.text = parsed.localNumber;
+      _formattedPhone = c.salesOffice.phone;
+
+      _salesEmailController.text = c.salesOffice.email;
+      _latController.text = c.lat.toString();
+      _lngController.text = c.lng.toString();
+      if (c.photos.isNotEmpty) {
+        _photos.addAll(c.photos);
+      }
+      _workingHoursSummary = ResidentialComplex.formatScheduleString(c.salesOffice.workingHours);
+      if (c.startTime != null && c.startTime!.contains(':')) {
+        final p = c.startTime!.split(':');
+        _startTime = TimeOfDay(hour: int.tryParse(p[0]) ?? 9, minute: int.tryParse(p[1]) ?? 0);
+      }
+      if (c.endTime != null && c.endTime!.contains(':')) {
+        final p = c.endTime!.split(':');
+        _endTime = TimeOfDay(hour: int.tryParse(p[0]) ?? 18, minute: int.tryParse(p[1]) ?? 0);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -193,7 +234,9 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Добавление объекта (ЖК)',
+                  _isEdit
+                      ? context.tr('chess_grid_edit_complex', fallback: 'Редактировать жилой комплекс')
+                      : context.tr('chess_grid_new_complex', fallback: 'Добавление объекта (ЖК)'),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
@@ -221,11 +264,11 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     invalid: _missingFields.contains('name'),
                     focus: _firstMissingField == 'name',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите название ЖК',
+                    message: context.tr('chess_grid_specify_building_name', fallback: 'Укажите название ЖК'),
                     child: CustomTextField(
                       controller: _nameController,
-                      hintText: 'Введите название ЖК',
-                      label: 'Название объекта (ЖК) *',
+                      hintText: context.tr('chess_grid_enter_complex_name', fallback: 'Введите название ЖК'),
+                      label: context.tr('chess_grid_complex_name', fallback: 'Название объекта (ЖК) *'),
                       hasError: _missingFields.contains('name'),
                       onChanged: (val) {
                         if (val.trim().isNotEmpty && _missingFields.contains('name')) {
@@ -243,11 +286,11 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     invalid: _missingFields.contains('address'),
                     focus: _firstMissingField == 'address',
                     pulse: _fieldErrorPulse,
-                    message: 'Укажите адрес ЖК',
+                    message: context.tr('chess_grid_enter_complex_address', fallback: 'Укажите адрес ЖК'),
                     child: CustomTextField(
                       controller: _addressController,
-                      hintText: 'Введите адрес ЖК',
-                      label: 'Адрес ЖК *',
+                      hintText: context.tr('chess_grid_enter_complex_address', fallback: 'Введите адрес ЖК'),
+                      label: context.tr('chess_grid_address', fallback: 'Адрес ЖК *'),
                       hasError: _missingFields.contains('address'),
                       onChanged: (val) {
                         if (val.trim().isNotEmpty && _missingFields.contains('address')) {
@@ -275,7 +318,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Геолокация объекта',
+                        context.tr('chess_grid_geolocation_title', fallback: 'Геолокация объекта'),
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -306,9 +349,9 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                           OutlinedButton.icon(
                             onPressed: _pickFromMap,
                             icon: const Icon(Icons.map_outlined, size: 15),
-                            label: const Text(
-                              'Карта',
-                              style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w700),
+                            label: Text(
+                              context.tr('map', fallback: 'Карта'),
+                              style: const TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: colors.buttonPrimaryBg,
@@ -338,7 +381,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Координаты: ${_latController.text}, ${_lngController.text}',
+                              '${context.tr('chess_grid_coordinates_label', fallback: 'Координаты')}: ${_latController.text}, ${_lngController.text}',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w600,
@@ -379,7 +422,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Фотографии комплекса (${_photos.length})',
+                        '${context.tr('chess_grid_photos', fallback: 'Фотографии комплекса')} (${_photos.length})',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -390,9 +433,9 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                       TextButton.icon(
                         onPressed: _pickPhotos,
                         icon: const Icon(Icons.add_photo_alternate_rounded, size: 18),
-                        label: const Text(
-                          'Добавить фото',
-                          style: TextStyle(fontFamily: 'Gilroy', fontSize: 12),
+                        label: Text(
+                          context.tr('chess_grid_add_photo', fallback: 'Добавить фото'),
+                          style: const TextStyle(fontFamily: 'Gilroy', fontSize: 12),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: colors.buttonPrimaryBg,
@@ -456,7 +499,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
 
                   // Sales Office Block (TZ Section 1)
                   Text(
-                    'Данные отдела продаж',
+                    context.tr('chess_grid_sales_dept_data', fallback: 'Данные отдела продаж'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -468,14 +511,15 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
 
                   CustomTextField(
                     controller: _salesAddressController,
-                    hintText: 'Введите адрес офиса продаж',
-                    label: 'Адрес отдела продаж',
+                    hintText: context.tr('chess_grid_enter_sales_address', fallback: 'Введите адрес офиса продаж'),
+                    label: context.tr('chess_grid_sales_address', fallback: 'Адрес отдела продаж'),
                   ),
                   const SizedBox(height: 14),
 
                   CustomPhoneNumberInput(
                     controller: _salesPhoneController,
-                    label: 'Телефон',
+                    label: context.tr('chess_grid_phone', fallback: 'Телефон'),
+                    initialCountry: _selectedCountry,
                     onInputChanged: (val) {
                       _formattedPhone = val;
                     },
@@ -484,8 +528,8 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
 
                   CustomTextField(
                     controller: _salesEmailController,
-                    hintText: 'Введите email',
-                    label: 'Электронная почта',
+                    hintText: context.tr('chess_grid_enter_email', fallback: 'Введите email'),
+                    label: context.tr('chess_grid_email', fallback: 'Электронная почта'),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 14),
@@ -525,9 +569,11 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Создать жилой комплекс',
-                              style: TextStyle(
+                          : Text(
+                              _isEdit
+                                  ? context.tr('chess_grid_save_changes', fallback: 'Сохранить изменения')
+                                  : context.tr('chess_grid_create_complex_full', fallback: 'Создать жилой комплекс'),
+                              style: const TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
@@ -560,7 +606,7 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
       });
       showCustomSnackBar(
         context: context,
-        message: 'Заполните обязательные поля',
+        message: context.tr('chess_grid_fill_required', fallback: 'Заполните обязательные поля'),
         isSuccess: false,
       );
       return;
@@ -584,40 +630,73 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
     final lat = double.tryParse(_latController.text) ?? 41.311081;
     final lng = double.tryParse(_lngController.text) ?? 69.240562;
 
+    final localPhone = _salesPhoneController.text.trim();
+    final dial = _selectedCountry?.dialCode ?? '';
+    final phoneToSave = _formattedPhone.isNotEmpty
+        ? _formattedPhone
+        : (dial.isNotEmpty && localPhone.isNotEmpty
+            ? '$dial$localPhone'
+            : localPhone);
+
     setState(() => _isSaving = true);
 
     try {
-      await ChessGridController.instance.addComplex(
-        name: name,
-        address: address,
-        buildingCount: buildingCount,
-        salesAddress: _salesAddressController.text.trim(),
-        phone: _formattedPhone.isNotEmpty
-            ? _formattedPhone
-            : _salesPhoneController.text.trim(),
-        email: _salesEmailController.text.trim(),
-        workingHours: rawHours,
-        startTime: startTime,
-        endTime: endTime,
-        lat: lat,
-        lng: lng,
-        photos: _photos,
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-        showCustomSnackBar(
-          context: context,
-          message: 'Жилой комплекс «$name» успешно создан!',
-          isSuccess: true,
+      if (_isEdit) {
+        await ChessGridController.instance.editComplex(
+          id: widget.complex!.id,
+          name: name,
+          address: address,
+          buildingCount: buildingCount,
+          salesAddress: _salesAddressController.text.trim(),
+          phone: phoneToSave,
+          email: _salesEmailController.text.trim(),
+          workingHours: rawHours,
+          startTime: startTime,
+          endTime: endTime,
+          lat: lat,
+          lng: lng,
+          photos: _photos,
         );
+
+        if (mounted) {
+          Navigator.pop(context);
+          showCustomSnackBar(
+            context: context,
+            message: 'Жилой комплекс «$name» успешно обновлен!',
+            isSuccess: true,
+          );
+        }
+      } else {
+        await ChessGridController.instance.addComplex(
+          name: name,
+          address: address,
+          buildingCount: buildingCount,
+          salesAddress: _salesAddressController.text.trim(),
+          phone: phoneToSave,
+          email: _salesEmailController.text.trim(),
+          workingHours: rawHours,
+          startTime: startTime,
+          endTime: endTime,
+          lat: lat,
+          lng: lng,
+          photos: _photos,
+        );
+
+        if (mounted) {
+          Navigator.pop(context);
+          showCustomSnackBar(
+            context: context,
+            message: 'Жилой комплекс «$name» успешно создан!',
+            isSuccess: true,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
         showCustomSnackBar(
           context: context,
-          message: 'Ошибка при создании ЖК: $e',
+          message: 'Ошибка при сохранении ЖК: $e',
           isSuccess: false,
         );
       }

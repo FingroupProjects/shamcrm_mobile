@@ -189,12 +189,24 @@ class ChessGridController extends ChangeNotifier {
         }
         _filter = ChessGridFilter(buildingKey: _selectedBuildingKey);
 
-        // Fetch real apartments (goods) from server for the selected building
-        final selectedB = combinedBuildings.firstWhereOrNull((b) => b.key == _selectedBuildingKey);
-        if (selectedB != null && selectedB.id != null) {
-          await loadApartmentsForBuilding(buildingId: selectedB.id, buildingKey: selectedB.key);
-        } else {
-          apartments.removeWhere((a) => a.complexId == id);
+        // Fetch apartments and parking goods for all buildings of the complex.
+        apartments.removeWhere((a) => a.complexId == id);
+        parkingSpots.removeWhere((p) => p.complexId == id);
+        for (final b in combinedBuildings) {
+          if (b.id != null) {
+            try {
+              final goods = await _apiService.getBuildingGoods(
+                buildingId: b.id!,
+                residentialComplexId: id,
+                buildingKey: b.key,
+                buildingName: b.name,
+              );
+              apartments.addAll(goods.apartments);
+              parkingSpots.addAll(goods.parking);
+            } catch (e) {
+              debugPrint('ChessGridController.loadComplexDetails error loading b#${b.id}: $e');
+            }
+          }
         }
       }
     } catch (e) {
@@ -226,20 +238,26 @@ class ChessGridController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final fetchedApts = await _apiService.getApartmentsByBuilding(
+      final goods = await _apiService.getBuildingGoods(
         buildingId: targetBuildingId,
         residentialComplexId: _selectedComplexId,
         buildingKey: b?.key ?? bKey,
         buildingName: b?.name ?? 'Корпус',
       );
 
-      // Replace existing apartments for this building with real ones from server
-      apartments.removeWhere((a) => a.buildingKey == (b?.key ?? bKey));
-      apartments.addAll(fetchedApts);
+      // Replace existing apartments and parking for this building with server data.
+      apartments.removeWhere((a) =>
+          a.buildingKey == (b?.key ?? bKey) ||
+          a.buildingId == targetBuildingId);
+      apartments.addAll(goods.apartments);
+      parkingSpots.removeWhere((p) =>
+          p.buildingKey == (b?.key ?? bKey) ||
+          p.buildingId == targetBuildingId);
+      parkingSpots.addAll(goods.parking);
       errorMessage = null;
 
       if (kDebugMode) {
-        debugPrint('ChessGridController.loadApartmentsForBuilding: successfully loaded ${fetchedApts.length} apartments for building #$targetBuildingId');
+        debugPrint('ChessGridController.loadApartmentsForBuilding: loaded ${goods.apartments.length} apartments and ${goods.parking.length} parking spots for building #$targetBuildingId');
       }
     } catch (e) {
       debugPrint('ChessGridController.loadApartmentsForBuilding error: $e');
@@ -463,7 +481,15 @@ class ChessGridController extends ChangeNotifier {
         );
         final idx = apartments.indexOf(apt);
         if (idx != -1) {
-          apartments[idx] = created;
+          final mergedPlans = [
+            ...created.plans,
+            ...apt.plans.where((path) => path.isNotEmpty && !created.plans.contains(path)),
+          ];
+          final createdCover = created.layoutImageUrl?.trim() ?? '';
+          apartments[idx] = created.copyWith(
+            plans: mergedPlans,
+            layoutImageUrl: createdCover.isNotEmpty ? created.layoutImageUrl : apt.layoutImageUrl,
+          );
           notifyListeners();
         }
       }
@@ -494,8 +520,30 @@ class ChessGridController extends ChangeNotifier {
     return false;
   }
 
-  void addParkingSpot(ParkingSpot spot) {
-    parkingSpots.add(spot);
+  Future<void> addParkingSpot(ParkingSpot spot) async {
+    final building = complex.buildings.firstWhereOrNull((item) => item.key == spot.buildingKey);
+    final buildingId = building?.id ?? spot.buildingId;
+    if (buildingId == null) {
+      throw Exception('У корпуса нет building_id, парковку создать нельзя');
+    }
+
+    final created = await _apiService.createParkingGood(
+      buildingId: buildingId,
+      name: spot.number,
+      parkingType: spot.type,
+      price: spot.price,
+      totalArea: spot.area,
+      status: spot.status,
+      complexId: spot.complexId > 0 ? spot.complexId : complex.id,
+      buildingKey: spot.buildingKey,
+    );
+    parkingSpots.add(created.copyWith(
+      complexId: spot.complexId > 0 ? spot.complexId : complex.id,
+      buildingId: buildingId,
+      buildingKey: spot.buildingKey,
+      number: created.number.isNotEmpty ? created.number : spot.number,
+      type: spot.type,
+    ));
     notifyListeners();
   }
 
@@ -687,6 +735,63 @@ class ChessGridController extends ChangeNotifier {
     }
   }
 
+  Future<bool> editComplex({
+    required int id,
+    required String name,
+    required String address,
+    int buildingCount = 1,
+    String? phone,
+    String? email,
+    String? salesAddress,
+    String? workingHours,
+    String? startTime,
+    String? endTime,
+    double? lat,
+    double? lng,
+    List<String>? photos,
+  }) async {
+    final payload = {
+      'name': name,
+      'address': address,
+      'latitude': (lat ?? 41.311081).toString(),
+      'longitude': (lng ?? 69.240562).toString(),
+      'number_of_buildings': buildingCount,
+      'sales_department_address': (salesAddress != null && salesAddress.isNotEmpty)
+          ? salesAddress
+          : address,
+      'sales_department_mail': (email != null && email.isNotEmpty)
+          ? email
+          : 'sales@panorama.uz',
+      'sales_department_phone': (phone != null && phone.isNotEmpty)
+          ? phone
+          : '+998901234567',
+      'start_time': (startTime != null && startTime.isNotEmpty)
+          ? startTime
+          : '09:00',
+      'end_time': (endTime != null && endTime.isNotEmpty)
+          ? endTime
+          : '18:00',
+    };
+
+    try {
+      final updated = await _apiService.updateResidentialComplex(
+        id,
+        payload,
+        filePaths: photos,
+      );
+      final idx = complexes.indexWhere((c) => c.id == id);
+      if (idx != -1) {
+        complexes[idx] = updated;
+      }
+      notifyListeners();
+      await loadDataFromApi(showLoading: false);
+      return true;
+    } catch (e) {
+      debugPrint('ChessGridController.updateComplex API error: $e');
+      rethrow;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Queries
   // ─────────────────────────────────────────────────────────────────────────
@@ -725,6 +830,9 @@ class ChessGridController extends ChangeNotifier {
 
   String? createOrder({
     Apartment? apartment,
+    String? serverOrderId,
+    OrderStatus? orderStatus,
+    bool fromServer = false,
     required String buyerName,
     required String buyerPhone,
     required String buyerEmail,
@@ -738,13 +846,31 @@ class ChessGridController extends ChangeNotifier {
     ParkingSpot? parking,
     Map<int, String>? customFields,
     String? sourceId,
+    int? leadId,
+    String? managerId,
+    ApartmentStatus? targetStatus,
+    String? ownerFullName,
+    String? gender,
+    String? passportSeriesNumber,
+    String? passportIssuePlace,
+    String? inn,
+    String? address,
+    DateTime? passportIssueDate,
+    DateTime? passportExpiryDate,
+    DateTime? birthDate,
+    double? pricePerSqm,
+    double? totalArea,
+    double? customPrice,
+    String? currency,
+    double? installmentSumOverride,
+    double? monthlyPaymentOverride,
   }) {
     if (apartment == null && parking == null) {
       return 'Выберите помещение или паркинг для создания заказа';
     }
 
-    // Strict TZ rule
-    if (apartment != null) {
+    // Strict TZ rule. A server-created order is already accepted.
+    if (!fromServer && apartment != null) {
       if (apartment.status != ApartmentStatus.available) {
         return 'Заказ доступен только для свободных квартир!';
       }
@@ -754,7 +880,7 @@ class ChessGridController extends ChangeNotifier {
       }
     }
 
-    if (parking != null && apartment == null) {
+    if (!fromServer && parking != null && apartment == null) {
       if (parking.status != ApartmentStatus.available) {
         return 'Заказ доступен только для свободных парковочных мест!';
       }
@@ -766,25 +892,29 @@ class ChessGridController extends ChangeNotifier {
     );
     final reservedUntil = DateTime.now().add(Duration(days: setting.durationDays));
 
-    final totalPrice = (apartment?.totalPrice ?? 0) + (parking?.price ?? 0);
+    final totalPrice = customPrice ?? ((apartment?.totalPrice ?? 0) + (parking?.price ?? 0));
 
     PaymentDetails? pay;
     if (dealType != DealType.cash) {
       final effectiveBarter = dealType == DealType.mixed ? barterAmount : 0.0;
-      final installmentSum = (totalPrice - downPayment - effectiveBarter).clamp(0.0, double.infinity);
+      final installmentSum = installmentSumOverride ??
+          (totalPrice - downPayment - effectiveBarter).clamp(0.0, double.infinity);
       final sched = PaymentDetails.generateSchedule(totalInstallmentSum: installmentSum, months: months);
+      final monthlyPayment = monthlyPaymentOverride ?? (sched.isNotEmpty ? sched.first.paymentAmount : 0);
       pay = PaymentDetails(
         downPayment: downPayment,
         months: months,
         installmentSum: installmentSum,
-        monthlyPayment: sched.isNotEmpty ? sched.first.paymentAmount : 0,
+        monthlyPayment: monthlyPayment,
         barterSubject: barterSubject,
         barterAmount: effectiveBarter,
         schedule: sched,
       );
     }
 
-    final orderId = 'З-${++_orderIdCounter}';
+    final orderId = (serverOrderId != null && serverOrderId.isNotEmpty)
+        ? serverOrderId
+        : 'З-${++_orderIdCounter}';
     final newOrder = Order(
       id: orderId,
       complexId: apartment?.complexId ?? parking?.complexId ?? _selectedComplexId,
@@ -797,21 +927,39 @@ class ChessGridController extends ChangeNotifier {
       manager: roleName,
       dealType: dealType,
       price: totalPrice,
-      status: OrderStatus.inProgress,
+      status: orderStatus ??
+          (targetStatus == ApartmentStatus.sold ? OrderStatus.success : OrderStatus.inProgress),
       reservedUntil: reservedUntil,
       paymentDetails: pay,
       customFields: customFields ?? const {},
       sourceId: sourceId,
+      leadId: leadId,
+      managerId: managerId,
+      ownerFullName: ownerFullName ?? buyerName,
+      gender: gender,
+      passportSeriesNumber: passportSeriesNumber,
+      passportIssuePlace: passportIssuePlace,
+      inn: inn,
+      address: address,
+      passportIssueDate: passportIssueDate,
+      passportExpiryDate: passportExpiryDate,
+      birthDate: birthDate,
+      pricePerSqm: pricePerSqm ?? apartment?.pricePerSqm,
+      totalArea: totalArea ?? apartment?.totalArea,
+      currency: currency ?? 'USD',
+      installmentSum: pay?.installmentSum,
+      monthlyPayment: pay?.monthlyPayment,
     );
 
     orders.insert(0, newOrder);
 
-    // Auto-change status of apartment to booked
+    // Auto-change status of apartment to targetStatus or booked
+    final aptNewStatus = targetStatus ?? ApartmentStatus.booked;
     if (apartment != null) {
       final index = apartments.indexWhere((a) => a.id == apartment.id);
       if (index != -1) {
         apartments[index] = apartments[index].copyWith(
-          status: ApartmentStatus.booked,
+          status: aptNewStatus,
           bookingCountMonth: apartments[index].bookingCountMonth + 1,
         );
       }
@@ -821,7 +969,7 @@ class ChessGridController extends ChangeNotifier {
       final pIndex = parkingSpots.indexWhere((p) => p.id == parking.id);
       if (pIndex != -1) {
         parkingSpots[pIndex] = parkingSpots[pIndex].copyWith(
-          status: ApartmentStatus.booked,
+          status: aptNewStatus,
           linkedApartmentId: apartment?.id,
         );
       }

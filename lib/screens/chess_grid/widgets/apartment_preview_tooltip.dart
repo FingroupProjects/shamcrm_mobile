@@ -174,7 +174,7 @@ class ApartmentPreviewTooltip extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${apartment.type} · \$${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
+                        '\$${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
                         style: TextStyle(
                           fontFamily: 'Golos',
                           fontSize: 11.5,

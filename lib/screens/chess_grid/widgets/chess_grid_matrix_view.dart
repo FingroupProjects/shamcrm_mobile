@@ -36,9 +36,14 @@ class ChessGridMatrixView extends StatelessWidget {
       );
     }
 
+    final complexApts = controller.apartments.where((a) => a.complexId == controller.selectedComplexId).toList();
+    final effectiveEntranceCount = building.getEffectiveEntranceCount(complexApts);
+    final effectiveFloorCount = building.getEffectiveFloorCount(complexApts);
+    final effectiveApartsPerFloor = building.getApartsPerFloorForEntrance(complexApts);
+
     final selectedEntrance = controller.filter.entrance;
     final entrances = selectedEntrance == 0
-        ? List.generate(building.entranceCount, (i) => i + 1)
+        ? List.generate(effectiveEntranceCount, (i) => i + 1)
         : [selectedEntrance];
 
     return Container(
@@ -71,7 +76,7 @@ class ChessGridMatrixView extends StatelessWidget {
                   children: [
                     const SizedBox(width: 48), // Floor label width spacer
                     ...entrances.map((e) {
-                      final width = building.apartsPerFloor * 82.0;
+                      final width = effectiveApartsPerFloor * 82.0;
                       return Container(
                         width: width,
                         padding: const EdgeInsets.only(bottom: 8),
@@ -106,7 +111,7 @@ class ChessGridMatrixView extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 // Floor rows from top floor down to 1st floor
-                for (int fl = building.floorCount; fl >= 1; fl--) ...[
+                for (int fl = effectiveFloorCount; fl >= 1; fl--) ...[
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -130,9 +135,10 @@ class ChessGridMatrixView extends StatelessWidget {
                       ...entrances.map((e) {
                         return Row(
                           children: [
-                            for (int p = 0; p < building.apartsPerFloor; p++) ...[
+                            for (int p = 0; p < effectiveApartsPerFloor; p++) ...[
                               _buildCellOrEmptySlot(
                                 context: context,
+                                building: building,
                                 buildingKey: building.key,
                                 entrance: e,
                                 floor: fl,
@@ -174,7 +180,10 @@ class ChessGridMatrixView extends StatelessWidget {
     List<int> entrances,
   ) {
     final colors = context.appColors;
-    final spots = controller.parkingSpots.where((p) => p.buildingKey == building.key).toList();
+    final spots = controller.parkingSpots.where((p) {
+      if (building.id != null && p.buildingId == building.id) return true;
+      return p.buildingKey == building.key;
+    }).toList();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -362,6 +371,7 @@ class ChessGridMatrixView extends StatelessWidget {
 
   Widget _buildCellOrEmptySlot({
     required BuildContext context,
+    required Building building,
     required String buildingKey,
     required int entrance,
     required int floor,
@@ -369,7 +379,7 @@ class ChessGridMatrixView extends StatelessWidget {
   }) {
     final colors = context.appColors;
     final apt = controller.apartments.where((a) =>
-        a.buildingKey == buildingKey &&
+        (a.buildingKey == buildingKey || (building.id != null && a.buildingId == building.id)) &&
         a.entrance == entrance &&
         a.floor == floor &&
         a.position == position).firstOrNull;

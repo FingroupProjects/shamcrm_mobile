@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
 export 'chess_zoom_level.dart';
@@ -65,6 +67,19 @@ extension ApartmentStatusX on ApartmentStatus {
     }
   }
 
+  String localizedLabel(BuildContext context) {
+    switch (this) {
+      case ApartmentStatus.available:
+        return AppLocalizations.of(context)?.translate('chess_grid_available') ?? 'Свободно';
+      case ApartmentStatus.booked:
+        return AppLocalizations.of(context)?.translate('chess_grid_booked') ?? 'Бронь';
+      case ApartmentStatus.sold:
+        return AppLocalizations.of(context)?.translate('chess_grid_sold') ?? 'Продано';
+      case ApartmentStatus.reserved:
+        return AppLocalizations.of(context)?.translate('chess_grid_reserved') ?? 'Резерв';
+    }
+  }
+
   IconData get icon {
     switch (this) {
       case ApartmentStatus.available:
@@ -90,6 +105,17 @@ extension DealTypeX on DealType {
         return 'Смешанная оплата';
     }
   }
+
+  String localizedLabel(BuildContext context) {
+    switch (this) {
+      case DealType.cash:
+        return AppLocalizations.of(context)?.translate('chess_grid_deal_cash') ?? 'Наличными';
+      case DealType.installment:
+        return AppLocalizations.of(context)?.translate('chess_grid_deal_installment') ?? 'Рассрочка';
+      case DealType.mixed:
+        return AppLocalizations.of(context)?.translate('chess_grid_deal_mixed') ?? 'Смешанная оплата';
+    }
+  }
 }
 
 extension OrderStatusX on OrderStatus {
@@ -101,6 +127,17 @@ extension OrderStatusX on OrderStatus {
         return 'Успешно';
       case OrderStatus.rejected:
         return 'Неуспешно';
+    }
+  }
+
+  String localizedLabel(BuildContext context) {
+    switch (this) {
+      case OrderStatus.inProgress:
+        return AppLocalizations.of(context)?.translate('chess_grid_order_in_progress') ?? 'В работе';
+      case OrderStatus.success:
+        return AppLocalizations.of(context)?.translate('chess_grid_order_success') ?? 'Успешно';
+      case OrderStatus.rejected:
+        return AppLocalizations.of(context)?.translate('chess_grid_order_rejected') ?? 'Неуспешно';
     }
   }
 
@@ -230,6 +267,7 @@ class CustomField {
 class Apartment {
   final int id;
   final int complexId;
+  final int? buildingId;
   final String number;
   final ApartmentStatus status;
   final String type; // 'Студия', 'Евроремонт', 'Предчистовая', 'Черновая'
@@ -248,6 +286,7 @@ class Apartment {
   final int floor;
   final int entrance;
   final int? entranceId;
+  final int? variantId;
   final int position;
   final String buildingKey;
   final String buildingName;
@@ -257,6 +296,7 @@ class Apartment {
   const Apartment({
     required this.id,
     this.complexId = 1,
+    this.buildingId,
     required this.number,
     required this.status,
     required this.type,
@@ -275,6 +315,7 @@ class Apartment {
     required this.floor,
     required this.entrance,
     this.entranceId,
+    this.variantId,
     this.position = 0,
     required this.buildingKey,
     required this.buildingName,
@@ -295,6 +336,7 @@ class Apartment {
 
     final id = SafeConverters.toInt(data['id'] ?? json['id']);
     final cId = SafeConverters.toIntOrNull(data['residential_complex_id'] ?? json['residential_complex_id'] ?? data['complex_id']) ?? complexId;
+    final rawBuildingId = SafeConverters.toIntOrNull(data['building_id'] ?? json['building_id']);
 
     // Attributes map helper (lowercase key -> value)
     final Map<String, String> attrs = {};
@@ -324,13 +366,13 @@ class Apartment {
       return null;
     }
 
-    // Number extraction
+    // Number extraction: clean digits e.g. "Квартира 33" -> "33", "Квартира № 45" -> "45"
     String number = SafeConverters.toSafeString(data['number'] ?? json['number'] ?? data['apartment_number'] ?? json['apartment_number']);
     if (number.isEmpty) {
       final nameStr = SafeConverters.toSafeString(data['name'] ?? json['name']);
-      final match = RegExp(r'(?:кв|квартира|№|\#)\s*([0-9A-Za-zА-Яа-я\-]+)', caseSensitive: false).firstMatch(nameStr);
+      final match = RegExp(r'(?:кв\.?|квартира|№|\#)\s*(?:№|\#)?\s*([0-9]+[A-Za-zА-Яа-я\-]*)', caseSensitive: false).firstMatch(nameStr);
       if (match != null) {
-        number = match.group(1) ?? nameStr;
+        number = match.group(1)?.trim() ?? nameStr;
       } else {
         number = nameStr.isNotEmpty ? nameStr : '$id';
       }
@@ -341,10 +383,36 @@ class Apartment {
         SafeConverters.toIntOrNull(findAttr(['этаж', 'floor'])) ?? 1;
 
     // Entrance
+    int entranceVal = 1;
     final entranceIdVal = SafeConverters.toIntOrNull(data['entrance_id'] ?? json['entrance_id']);
-    final entranceVal = SafeConverters.toIntOrNull(data['entrance'] ?? json['entrance'] ?? data['porch'] ?? data['entrance_number']) ??
-        SafeConverters.toIntOrNull(findAttr(['подъезд', 'entrance', 'секция'])) ??
-        (entranceIdVal ?? 1);
+    final rawEntrance = data['entrance'] ?? json['entrance'];
+    if (rawEntrance is Map) {
+      final eName = rawEntrance['name']?.toString() ?? '';
+      final match = RegExp(r'\d+').firstMatch(eName);
+      if (match != null) {
+        entranceVal = int.tryParse(match.group(0)!) ?? 1;
+      } else {
+        entranceVal = SafeConverters.toIntOrNull(rawEntrance['number'] ?? rawEntrance['entrance_number']) ??
+            SafeConverters.toIntOrNull(rawEntrance['id']) ?? (entranceIdVal ?? 1);
+      }
+    } else if (rawEntrance is num) {
+      entranceVal = rawEntrance.toInt();
+    } else if (rawEntrance is String) {
+      final match = RegExp(r'\d+').firstMatch(rawEntrance);
+      if (match != null) {
+        entranceVal = int.tryParse(match.group(0)!) ?? 1;
+      } else {
+        entranceVal = int.tryParse(rawEntrance) ?? (entranceIdVal ?? 1);
+      }
+    } else {
+      final attrEntrance = findAttr(['подъезд', 'entrance', 'секция']);
+      if (attrEntrance != null) {
+        final match = RegExp(r'\d+').firstMatch(attrEntrance);
+        if (match != null) entranceVal = int.tryParse(match.group(0)!) ?? 1;
+      } else if (entranceIdVal != null) {
+        entranceVal = entranceIdVal;
+      }
+    }
 
     // Rooms
     final roomsVal = SafeConverters.toIntOrNull(data['rooms'] ?? json['rooms'] ?? data['room_count'] ?? data['number_of_rooms']) ??
@@ -354,10 +422,16 @@ class Apartment {
     final posVal = SafeConverters.toIntOrNull(data['position'] ?? json['position'] ?? data['apartment_position']) ??
         SafeConverters.toIntOrNull(findAttr(['позиция', 'position'])) ?? 0;
 
-    // Type
-    String typeVal = SafeConverters.toSafeString(data['type'] ?? json['type'] ?? data['apartment_type'] ?? json['apartment_type']);
+    // Type (prioritize apartment_type over generic type)
+    String typeVal = SafeConverters.toSafeString(data['apartment_type'] ?? json['apartment_type']);
     if (typeVal.isEmpty) {
       typeVal = findAttr(['тип', 'тип квартиры', 'отделка']) ?? '';
+    }
+    if (typeVal.isEmpty) {
+      final rawType = SafeConverters.toSafeString(data['type'] ?? json['type']);
+      if (rawType.isNotEmpty && !rawType.toLowerCase().contains('квартир') && !rawType.toLowerCase().contains('apartment')) {
+        typeVal = rawType;
+      }
     }
     if (typeVal.isEmpty) {
       typeVal = roomsVal == 1 ? 'Студия' : (roomsVal == 2 ? 'Евроремонт' : 'Черновая');
@@ -415,9 +489,18 @@ class Apartment {
       layoutImg = plansList.first;
     }
 
-    final rawBKey = (data['building_id'] ?? json['building_id'] ?? data['building_key'] ?? json['building_key'])?.toString();
+    final rawBKey = (rawBuildingId ?? data['building_key'] ?? json['building_key'])?.toString();
     final effectiveBKey = buildingKey.isNotEmpty ? buildingKey : (rawBKey ?? 'A');
     final effectiveBName = buildingName.isNotEmpty ? buildingName : (data['building_name'] ?? json['building_name'] ?? 'Корпус').toString();
+
+    int? variantId = SafeConverters.toIntOrNull(data['variant_id'] ?? json['variant_id']);
+    if (variantId == null || variantId <= 0) {
+      final rawVariants = data['variants'] ?? json['variants'];
+      if (rawVariants is List && rawVariants.isNotEmpty && rawVariants.first is Map) {
+        variantId = SafeConverters.toIntOrNull(rawVariants.first['id']);
+      }
+    }
+    if (variantId != null && variantId <= 0) variantId = null;
 
     final layoutTypeVal = SafeConverters.toStringOrNull(
       data['layout_type'] ?? json['layout_type'] ?? findAttr(['тип планировки', 'планировка']),
@@ -434,6 +517,7 @@ class Apartment {
     return Apartment(
       id: id,
       complexId: cId,
+      buildingId: rawBuildingId,
       number: number,
       status: status,
       type: typeVal,
@@ -452,6 +536,7 @@ class Apartment {
       floor: floorVal > 0 ? floorVal : 1,
       entrance: entranceVal > 0 ? entranceVal : 1,
       entranceId: entranceIdVal,
+      variantId: variantId,
       position: posVal >= 0 ? posVal : 0,
       buildingKey: effectiveBKey,
       buildingName: effectiveBName,
@@ -459,10 +544,68 @@ class Apartment {
     );
   }
 
+  /// Normalizes apartment positions on each floor of each entrance sequentially (0..n-1)
+  /// sorted by apartment number ascending. Also handles normalizing entrance numbers if needed.
+  static List<Apartment> normalizePositions(List<Apartment> apts, {Building? building}) {
+    if (apts.isEmpty) return apts;
+
+    final result = List<Apartment>.from(apts);
+
+    // 1. Detect if entrance IDs need to be normalized to sequential indices 1..N
+    final distinctEntrances = result.map((a) => a.entrance).toSet().toList()..sort();
+    if (distinctEntrances.isNotEmpty && distinctEntrances.first > 2) {
+      final Map<int, int> entranceMap = {};
+      for (int i = 0; i < distinctEntrances.length; i++) {
+        entranceMap[distinctEntrances[i]] = i + 1;
+      }
+      for (int i = 0; i < result.length; i++) {
+        final mapped = entranceMap[result[i].entrance];
+        if (mapped != null) {
+          result[i] = result[i].copyWith(entrance: mapped);
+        }
+      }
+    }
+
+    // 2. Group by buildingKey (or buildingId), entrance, floor
+    final Map<String, List<Apartment>> groups = {};
+    for (final a in result) {
+      final bIdentifier = a.buildingId != null ? 'id_${a.buildingId}' : a.buildingKey;
+      final key = '${bIdentifier}_${a.entrance}_${a.floor}';
+      groups.putIfAbsent(key, () => []).add(a);
+    }
+
+    for (final entry in groups.entries) {
+      final group = entry.value;
+      final hasDuplicatePositions = group.length > 1 &&
+          (group.every((a) => a.position == 0) ||
+              group.map((a) => a.position).toSet().length < group.length);
+
+      if (hasDuplicatePositions) {
+        group.sort((a, b) {
+          final nA = int.tryParse(a.number.replaceAll(RegExp(r'[^0-9]'), ''));
+          final nB = int.tryParse(b.number.replaceAll(RegExp(r'[^0-9]'), ''));
+          if (nA != null && nB != null && nA != nB) return nA.compareTo(nB);
+          return a.id.compareTo(b.id);
+        });
+
+        for (int i = 0; i < group.length; i++) {
+          final target = group[i];
+          final idx = result.indexWhere((x) => x.id == target.id);
+          if (idx != -1) {
+            result[idx] = target.copyWith(position: i);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'residential_complex_id': complexId,
+      if (buildingId != null) 'building_id': buildingId,
       'number': number,
       'status': status.name,
       'type': type,
@@ -481,6 +624,7 @@ class Apartment {
       'floor': floor,
       'entrance': entrance,
       if (entranceId != null) 'entrance_id': entranceId,
+      if (variantId != null) 'variant_id': variantId,
       'position': position,
       'building_key': buildingKey,
       'building_name': buildingName,
@@ -490,6 +634,7 @@ class Apartment {
   Apartment copyWith({
     int? id,
     int? complexId,
+    int? buildingId,
     String? number,
     ApartmentStatus? status,
     String? type,
@@ -508,6 +653,7 @@ class Apartment {
     int? floor,
     int? entrance,
     int? entranceId,
+    int? variantId,
     int? position,
     String? buildingKey,
     String? buildingName,
@@ -517,6 +663,7 @@ class Apartment {
     return Apartment(
       id: id ?? this.id,
       complexId: complexId ?? this.complexId,
+      buildingId: buildingId ?? this.buildingId,
       number: number ?? this.number,
       status: status ?? this.status,
       type: type ?? this.type,
@@ -535,6 +682,7 @@ class Apartment {
       floor: floor ?? this.floor,
       entrance: entrance ?? this.entrance,
       entranceId: entranceId ?? this.entranceId,
+      variantId: variantId ?? this.variantId,
       position: position ?? this.position,
       buildingKey: buildingKey ?? this.buildingKey,
       buildingName: buildingName ?? this.buildingName,
@@ -592,6 +740,7 @@ class Entrance {
 class ParkingSpot {
   final int id;
   final int complexId;
+  final int? buildingId;
   final String number;
   final String type; // 'Подземная', 'Открытая', 'Закрытая'
   final String buildingKey;
@@ -604,6 +753,7 @@ class ParkingSpot {
   const ParkingSpot({
     required this.id,
     this.complexId = 1,
+    this.buildingId,
     required this.number,
     required this.type,
     required this.buildingKey,
@@ -614,9 +764,56 @@ class ParkingSpot {
     this.currency = '\$',
   });
 
+  factory ParkingSpot.fromGood(
+    Map<String, dynamic> json, {
+    int complexId = 1,
+    int? buildingId,
+    String buildingKey = '',
+  }) {
+    final Map<String, dynamic> data =
+        json.containsKey('good') && json['good'] is Map ? SafeConverters.toMap(json['good']) : json;
+
+    final id = SafeConverters.toInt(data['id'] ?? json['id']);
+    final name = SafeConverters.toSafeString(data['name'] ?? json['name']);
+    final number = SafeConverters.toSafeString(
+      data['number'] ?? json['number'],
+      defaultValue: name.isNotEmpty ? name : '$id',
+    );
+    final rawType = SafeConverters.toSafeString(data['parking_type'] ?? json['parking_type']).toLowerCase();
+    String type = 'Подземная';
+    if (rawType.contains('открыт')) {
+      type = 'Открытая';
+    } else if (rawType.contains('закрыт') || rawType.contains('крыт')) {
+      type = 'Закрытая';
+    }
+
+    final statusStr = SafeConverters.toSafeString(data['status'] ?? json['status']).toLowerCase();
+    ApartmentStatus status = ApartmentStatus.available;
+    if (statusStr.contains('брон') || statusStr.contains('book')) {
+      status = ApartmentStatus.booked;
+    } else if (statusStr.contains('продан') || statusStr.contains('sold')) {
+      status = ApartmentStatus.sold;
+    } else if (statusStr.contains('резерв') || statusStr.contains('reserv')) {
+      status = ApartmentStatus.reserved;
+    }
+
+    return ParkingSpot(
+      id: id,
+      complexId: SafeConverters.toIntOrNull(data['residential_complex_id'] ?? json['residential_complex_id']) ?? complexId,
+      buildingId: SafeConverters.toIntOrNull(data['building_id'] ?? json['building_id']) ?? buildingId,
+      number: number,
+      type: type,
+      buildingKey: buildingKey,
+      price: SafeConverters.toDoubleOrNull(data['price'] ?? json['price']) ?? 0,
+      area: SafeConverters.toDoubleOrNull(data['total_area'] ?? json['total_area'] ?? data['area']) ?? 0,
+      status: status,
+    );
+  }
+
   ParkingSpot copyWith({
     int? id,
     int? complexId,
+    int? buildingId,
     String? number,
     String? type,
     String? buildingKey,
@@ -629,6 +826,7 @@ class ParkingSpot {
     return ParkingSpot(
       id: id ?? this.id,
       complexId: complexId ?? this.complexId,
+      buildingId: buildingId ?? this.buildingId,
       number: number ?? this.number,
       type: type ?? this.type,
       buildingKey: buildingKey ?? this.buildingKey,
@@ -639,6 +837,16 @@ class ParkingSpot {
       currency: currency ?? this.currency,
     );
   }
+}
+
+class BuildingGoods {
+  final List<Apartment> apartments;
+  final List<ParkingSpot> parking;
+
+  const BuildingGoods({
+    required this.apartments,
+    required this.parking,
+  });
 }
 
 class Building {
@@ -689,9 +897,9 @@ class Building {
       return fallback;
     }
 
-    final entrances = parseInt(json['number_of_entrances'] ?? json['entranceCount'], 1);
-    final floors = parseInt(json['number_of_floors'] ?? json['floorCount'], 1);
-    final aparts = parseInt(json['number_of_apartments_per_floor'] ?? json['apartsPerFloor'], 4);
+    final entrances = parseInt(json['number_of_entrances'] ?? json['entranceCount'] ?? json['number_of_entrance'], 1);
+    final floors = parseInt(json['number_of_floors'] ?? json['floorCount'] ?? json['number_of_floor'], 1);
+    final aparts = parseInt(json['apartments_per_floor'] ?? json['number_of_apartments_per_floor'] ?? json['apartsPerFloor'], 4);
 
     List<String> types = [];
     if (json['apartment_types'] is List) {
@@ -720,6 +928,71 @@ class Building {
       imageUrl: img?.toString(),
       buildingShape: shape?.toString(),
     );
+  }
+
+  /// Calculates effective apartments per floor for a single entrance column.
+  /// If [apartsPerFloor] from server is the total across all entrances in the building (e.g. 10 total across 2 entrances = 5 per entrance),
+  /// this properly calculates 5 per entrance so no ghost empty slots are displayed.
+  int getApartsPerFloorForEntrance(List<Apartment> allApts) {
+    final bApts = allApts
+        .where((a) => a.buildingKey == key || (id != null && a.buildingId == id))
+        .toList();
+    if (bApts.isNotEmpty) {
+      int maxInFloorEntrance = 0;
+      int maxPos = -1;
+      final Map<String, int> counts = {};
+      for (final a in bApts) {
+        final k = '${a.entrance}_${a.floor}';
+        counts[k] = (counts[k] ?? 0) + 1;
+        if (a.position > maxPos) maxPos = a.position;
+      }
+      for (final c in counts.values) {
+        if (c > maxInFloorEntrance) maxInFloorEntrance = c;
+      }
+      final needed = math.max(maxInFloorEntrance, maxPos + 1);
+
+      // If backend apartsPerFloor is total across all entrances (e.g. 10 / 2 = 5):
+      if (entranceCount > 1 &&
+          apartsPerFloor >= entranceCount &&
+          (apartsPerFloor % entranceCount == 0)) {
+        final perEnt = apartsPerFloor ~/ entranceCount;
+        if (perEnt >= needed) {
+          return perEnt;
+        }
+      }
+      return math.max(needed, apartsPerFloor);
+    }
+
+    if (entranceCount > 1 &&
+        apartsPerFloor >= entranceCount &&
+        (apartsPerFloor % entranceCount == 0)) {
+      return apartsPerFloor ~/ entranceCount;
+    }
+    return apartsPerFloor > 0 ? apartsPerFloor : 4;
+  }
+
+  /// Returns effective floor count taking into account the highest floor in loaded apartments
+  int getEffectiveFloorCount(List<Apartment> allApts) {
+    final bApts = allApts
+        .where((a) => a.buildingKey == key || (id != null && a.buildingId == id))
+        .toList();
+    if (bApts.isNotEmpty) {
+      final maxFloor = bApts.map((a) => a.floor).reduce(math.max);
+      return math.max(floorCount, maxFloor);
+    }
+    return floorCount > 0 ? floorCount : 1;
+  }
+
+  /// Returns effective entrance count taking into account the highest entrance in loaded apartments
+  int getEffectiveEntranceCount(List<Apartment> allApts) {
+    final bApts = allApts
+        .where((a) => a.buildingKey == key || (id != null && a.buildingId == id))
+        .toList();
+    if (bApts.isNotEmpty) {
+      final maxEntrance = bApts.map((a) => a.entrance).reduce(math.max);
+      return math.max(entranceCount, maxEntrance);
+    }
+    return entranceCount > 0 ? entranceCount : 1;
   }
 
   Map<String, dynamic> toJson() {
@@ -827,9 +1100,12 @@ class ResidentialComplex {
     final salesPhone = json['sales_department_phone']?.toString() ??
         (json['salesOffice'] is Map ? json['salesOffice']['phone']?.toString() : null) ??
         '';
-    final startTime = json['start_time']?.toString() ?? '09:00';
-    final endTime = json['end_time']?.toString() ?? '18:00';
-    final workingHours = '$startTime – $endTime';
+    final startTime = parseTime(json['start_time'], '09:00');
+    final endTime = parseTime(json['end_time'], '18:00');
+    final rawHours = json['working_hours']?.toString();
+    final workingHours = formatScheduleString(
+      (rawHours != null && rawHours.trim().isNotEmpty) ? rawHours : '$startTime – $endTime',
+    );
 
     List<Building> parsedBuildings = [];
     if (json['buildings'] is List) {
@@ -862,6 +1138,47 @@ class ResidentialComplex {
       startTime: startTime,
       endTime: endTime,
     );
+  }
+
+  /// Parses raw time input (e.g. ISO 8601 "2026-11-03T04:00:00.000Z" or "09:00:00")
+  /// into clean human-readable "HH:mm" in local time.
+  static String parseTime(dynamic raw, String fallback) {
+    if (raw == null) return fallback;
+    final str = raw.toString().trim();
+    if (str.isEmpty) return fallback;
+    if (str.contains('T') || (str.contains('-') && str.contains(':'))) {
+      try {
+        final dt = DateTime.parse(str).toLocal();
+        return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      } catch (_) {}
+    }
+    if (str.contains(':')) {
+      final parts = str.split(':');
+      if (parts.length >= 2) {
+        final h = int.tryParse(parts[0]);
+        final m = int.tryParse(parts[1]);
+        if (h != null && m != null) {
+          return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+        }
+      }
+    }
+    return str;
+  }
+
+  /// Formats any schedule string and replaces raw ISO timestamps with clean HH:mm time.
+  static String formatScheduleString(String? text) {
+    if (text == null || text.trim().isEmpty) return '09:00 – 18:00';
+    String result = text.trim();
+    final isoRegex = RegExp(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?');
+    result = result.replaceAllMapped(isoRegex, (match) {
+      try {
+        final dt = DateTime.parse(match.group(0)!).toLocal();
+        return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      } catch (_) {
+        return match.group(0)!;
+      }
+    });
+    return result;
   }
 
   Map<String, dynamic> toCreateJson() {
@@ -932,6 +1249,22 @@ class Order {
   final PaymentDetails? paymentDetails;
   final Map<int, String> customFields;
   final String? sourceId;
+  final int? leadId;
+  final String? managerId;
+  final String? ownerFullName;
+  final String? gender; // 'М' or 'Ж'
+  final String? passportSeriesNumber;
+  final String? passportIssuePlace;
+  final String? inn;
+  final String? address;
+  final DateTime? passportIssueDate;
+  final DateTime? passportExpiryDate;
+  final DateTime? birthDate;
+  final double? pricePerSqm;
+  final double? totalArea;
+  final String? currency;
+  final double? installmentSum;
+  final double? monthlyPayment;
 
   const Order({
     required this.id,
@@ -950,6 +1283,22 @@ class Order {
     this.paymentDetails,
     this.customFields = const {},
     this.sourceId,
+    this.leadId,
+    this.managerId,
+    this.ownerFullName,
+    this.gender,
+    this.passportSeriesNumber,
+    this.passportIssuePlace,
+    this.inn,
+    this.address,
+    this.passportIssueDate,
+    this.passportExpiryDate,
+    this.birthDate,
+    this.pricePerSqm,
+    this.totalArea,
+    this.currency,
+    this.installmentSum,
+    this.monthlyPayment,
   });
 
   Order copyWith({
@@ -969,6 +1318,22 @@ class Order {
     PaymentDetails? paymentDetails,
     Map<int, String>? customFields,
     String? sourceId,
+    int? leadId,
+    String? managerId,
+    String? ownerFullName,
+    String? gender,
+    String? passportSeriesNumber,
+    String? passportIssuePlace,
+    String? inn,
+    String? address,
+    DateTime? passportIssueDate,
+    DateTime? passportExpiryDate,
+    DateTime? birthDate,
+    double? pricePerSqm,
+    double? totalArea,
+    String? currency,
+    double? installmentSum,
+    double? monthlyPayment,
   }) {
     return Order(
       id: id ?? this.id,
@@ -987,6 +1352,22 @@ class Order {
       paymentDetails: paymentDetails ?? this.paymentDetails,
       customFields: customFields ?? this.customFields,
       sourceId: sourceId ?? this.sourceId,
+      leadId: leadId ?? this.leadId,
+      managerId: managerId ?? this.managerId,
+      ownerFullName: ownerFullName ?? this.ownerFullName,
+      gender: gender ?? this.gender,
+      passportSeriesNumber: passportSeriesNumber ?? this.passportSeriesNumber,
+      passportIssuePlace: passportIssuePlace ?? this.passportIssuePlace,
+      inn: inn ?? this.inn,
+      address: address ?? this.address,
+      passportIssueDate: passportIssueDate ?? this.passportIssueDate,
+      passportExpiryDate: passportExpiryDate ?? this.passportExpiryDate,
+      birthDate: birthDate ?? this.birthDate,
+      pricePerSqm: pricePerSqm ?? this.pricePerSqm,
+      totalArea: totalArea ?? this.totalArea,
+      currency: currency ?? this.currency,
+      installmentSum: installmentSum ?? this.installmentSum,
+      monthlyPayment: monthlyPayment ?? this.monthlyPayment,
     );
   }
 }

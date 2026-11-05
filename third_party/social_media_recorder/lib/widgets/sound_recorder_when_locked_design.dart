@@ -36,6 +36,7 @@ class SoundRecorderWhenLockedDesign extends StatelessWidget {
   }) : super(key: key);
 
   void _cancel() {
+    soundRecordNotifier.abortPendingSend();
     soundRecordNotifier.isShow = false;
     final time =
         '${soundRecordNotifier.minute}:${soundRecordNotifier.second}';

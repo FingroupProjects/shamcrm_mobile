@@ -387,30 +387,24 @@ class _DealAddScreenState extends State<DealAddScreen> {
         setState(() {
           selectedLead = selectedLeadData.id.toString();
           isLeadInvalid = false;
-          //print('DealAddScreen: isManagerManuallySelected: $isManagerManuallySelected');
-          if (!isManagerManuallySelected &&
-              selectedLeadData.managerId != null) {
-            //print('DealAddScreen: Attempting to auto-select manager');
+          isManagerManuallySelected = false;
+          if (selectedLeadData.managerId != null) {
             final managerBlocState = context.read<GetAllManagerBloc>().state;
-            //print('DealAddScreen: ManagerBloc state: $managerBlocState');
             if (managerBlocState is GetAllManagerSuccess) {
               final managers = managerBlocState.dataManager.result ?? [];
-              //print('DealAddScreen: Available managers: ${managers.map((m) => m.id)}');
               try {
                 final matchingManager = managers.firstWhere(
                   (manager) => manager.id == selectedLeadData.managerId,
                 );
                 selectedManager = matchingManager.id.toString();
-                //print('DealAddScreen: Auto-selected manager: ${matchingManager.id} (${matchingManager.name})');
               } catch (e) {
-                //print('DealAddScreen: Manager not found for ID ${selectedLeadData.managerId}, skipping auto-select');
-                selectedManager = null;
+                selectedManager = selectedLeadData.managerId.toString();
               }
             } else {
-              //print('DealAddScreen: ManagerBloc not in success state, skipping auto-select');
+              selectedManager = selectedLeadData.managerId.toString();
             }
           } else {
-            //print('DealAddScreen: Manager already manually selected or no managerId, skipping auto-select');
+            selectedManager = null;
           }
         });
       },

@@ -1,3 +1,6 @@
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
+import 'package:flutter/widgets.dart';
+
 /// Zoom levels for the Chessboard matrix, inspired by Chrome zoom controls.
 /// Supports 4 discrete levels (50%, 75%, 100%, 125%), with 2 primary default modes (100% and 50%).
 enum ChessZoomLevel {
@@ -101,6 +104,19 @@ enum ChessZoomLevel {
       return ChessZoomLevel.micro50;
     }
     return ChessZoomLevel.standard100;
+  }
+
+  String localizedTitle(BuildContext context) {
+    switch (this) {
+      case ChessZoomLevel.micro50:
+        return ChessGridL10n.tr(context, 'chess_grid_zoom_micro', fallback: 'Микро (50%)');
+      case ChessZoomLevel.compact75:
+        return ChessGridL10n.tr(context, 'chess_grid_zoom_compact', fallback: 'Компакт (75%)');
+      case ChessZoomLevel.standard100:
+        return ChessGridL10n.tr(context, 'chess_grid_zoom_standard', fallback: 'Стандарт (100%)');
+      case ChessZoomLevel.large125:
+        return ChessGridL10n.tr(context, 'chess_grid_zoom_large', fallback: 'Крупно (125%)');
+    }
   }
 }
 

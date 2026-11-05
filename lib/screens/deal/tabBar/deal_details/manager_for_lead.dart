@@ -53,9 +53,7 @@ class _ManagerForLeadState extends State<ManagerForLead> {
   @override
   void didUpdateWidget(covariant ManagerForLead oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedManager != oldWidget.selectedManager &&
-        widget.selectedManager != null) {
-      //print('ManagerForLead: selectedManager changed to ${widget.selectedManager}');
+    if (widget.selectedManager != oldWidget.selectedManager) {
       _updateSelectedManagerData();
     }
   }
@@ -197,7 +195,10 @@ class _ManagerForLeadState extends State<ManagerForLead> {
           ),
           const SizedBox(height: 4),
           CustomDropdown<ManagerData>.searchRequestPaginated(
-                  paginatedRequest: _searchManagers,
+            key: ValueKey(
+              'manager_dropdown_${selectedManagerData?.id ?? widget.selectedManager ?? 'none'}',
+            ),
+            paginatedRequest: _searchManagers,
                   futureRequestDelay: const Duration(milliseconds: 350),
                   closeDropDownOnClearFilterSearch: true,
                   items: managersList,
