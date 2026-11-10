@@ -7,18 +7,20 @@ import 'package:intl/intl.dart';
 
 class PaymentScheduleSheet extends StatelessWidget {
   final Order order;
+  final Apartment? apartment;
 
-  const PaymentScheduleSheet({super.key, required this.order});
+  const PaymentScheduleSheet({super.key, required this.order, this.apartment});
 
   static Future<void> show({
     required BuildContext context,
     required Order order,
+    Apartment? apartment,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => PaymentScheduleSheet(order: order),
+      builder: (ctx) => PaymentScheduleSheet(order: order, apartment: apartment),
     );
   }
 
@@ -27,7 +29,7 @@ class PaymentScheduleSheet extends StatelessWidget {
     final colors = context.appColors;
     final controller = ChessGridController.instance;
     final req = controller.requisites;
-    final apt = controller.findApartmentById(order.apartmentId);
+    final apt = controller.findApartmentById(order.apartmentId) ?? apartment;
     final park = controller.findParkingById(order.parkingId);
     final pay = order.paymentDetails;
     final schedule = pay?.schedule ?? [];
@@ -384,8 +386,8 @@ class PaymentScheduleSheet extends StatelessWidget {
                         details: pay,
                       );
                     },
-                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                    label: const Text('Скачать PDF'),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: const Text('Отправить'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.buttonPrimaryBg,
                       foregroundColor: colors.buttonPrimaryFg,

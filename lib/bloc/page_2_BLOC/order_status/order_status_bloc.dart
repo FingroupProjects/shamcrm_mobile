@@ -533,6 +533,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         customFields: event.customFields,
         directoryValues: event.directoryValues,
         files: event.files,
+        extraFields: event.extraFields,
       );
       //print('OrderBloc: Результат создания заказа: $result');
 

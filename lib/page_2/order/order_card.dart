@@ -1,6 +1,7 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/page_2/order/order_details/chess_deal_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_dropdown_bottom_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_details/payment_status_style.dart';
@@ -16,6 +17,7 @@ class OrderCard extends StatefulWidget {
   final void Function(int oldStatusId, int newStatusId) onStatusUpdated;
   final void Function(int newStatusId) onStatusId;
   final Function(int) onTabChange;
+  final bool residentialDeal;
 
   const OrderCard({
     required this.order,
@@ -23,6 +25,7 @@ class OrderCard extends StatefulWidget {
     required this.onStatusUpdated,
     required this.onStatusId,
     required this.onTabChange,
+    this.residentialDeal = false,
     super.key,
   });
 
@@ -158,17 +161,24 @@ class _OrderCardState extends State<OrderCard> {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(
-              orderId: widget.order.id,
-              categoryName: '',
-              order: widget.order,
-              organizationId: widget.organizationId,
-            ),
+            builder: (context) => widget.residentialDeal
+                ? ChessDealDetailsScreen(
+                    orderId: widget.order.id,
+                    order: widget.order,
+                    organizationId: widget.organizationId,
+                    onStatusUpdated: widget.onStatusUpdated,
+                  )
+                : OrderDetailsScreen(
+                    orderId: widget.order.id,
+                    categoryName: '',
+                    order: widget.order,
+                    organizationId: widget.organizationId,
+                  ),
           ),
         );
 
         if (result != null &&
-            result is Map<String, dynamic> &&
+            result is Map &&
             result['success'] == true &&
             mounted) {
           final oldStatusId =

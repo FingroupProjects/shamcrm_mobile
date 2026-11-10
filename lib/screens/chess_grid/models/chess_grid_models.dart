@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'package:crm_task_manager/screens/chess_grid/utils/complex_photo_store.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:flutter/material.dart';
@@ -222,12 +224,37 @@ class PaymentDetails {
     required double totalInstallmentSum,
     required int months,
     DateTime? startDate,
+    DateTime? firstDueDate,
   }) {
     if (months <= 0 || totalInstallmentSum <= 0) return [];
+    final rows = <InstallmentScheduleRow>[];
+
+    if (firstDueDate != null) {
+      final cents = (totalInstallmentSum * 100).round();
+      final base = cents ~/ months;
+      var left = cents;
+      for (int i = 1; i <= months; i++) {
+        final isLast = i == months;
+        final paymentCents = isLast ? left : base;
+        left -= paymentCents;
+        final payDate = DateTime(
+          firstDueDate.year,
+          firstDueDate.month + (i - 1),
+          firstDueDate.day,
+        );
+        rows.add(InstallmentScheduleRow(
+          number: i,
+          date: payDate,
+          paymentAmount: paymentCents / 100,
+          remainingDebt: left / 100,
+        ));
+      }
+      return rows;
+    }
+
     final baseMonthly = (totalInstallmentSum / months).floorToDouble();
     double remaining = totalInstallmentSum;
     final start = startDate ?? DateTime.now();
-    final rows = <InstallmentScheduleRow>[];
 
     for (int i = 1; i <= months; i++) {
       final isLast = i == months;
@@ -1051,6 +1078,8 @@ class ResidentialComplex {
   final SalesOfficeInfo salesOffice;
   final String? startTime;
   final String? endTime;
+  final int numberOfApartments;
+  final int numberOfParkingSpaces;
 
   const ResidentialComplex({
     required this.id,
@@ -1064,6 +1093,8 @@ class ResidentialComplex {
     required this.salesOffice,
     this.startTime = '09:00',
     this.endTime = '18:00',
+    this.numberOfApartments = 0,
+    this.numberOfParkingSpaces = 0,
   });
 
   factory ResidentialComplex.fromJson(Map<String, dynamic> json) {
@@ -1081,14 +1112,25 @@ class ResidentialComplex {
     final lat = parseCoord(json['latitude'] ?? json['lat'], 41.311081);
     final lng = parseCoord(json['longitude'] ?? json['lng'], 69.240562);
 
-    int parseBuildingsCount(dynamic val) {
+    int parseCount(dynamic val, [int fallback = 0]) {
       if (val is num) return val.toInt();
-      if (val is String) return int.tryParse(val) ?? 1;
-      return 1;
+      if (val is String) return int.tryParse(val) ?? fallback;
+      return fallback;
     }
 
-    final bCount = parseBuildingsCount(
+    final bCount = parseCount(
       json['number_of_buildings'] ?? json['buildings_count'] ?? json['buildingCount'],
+      1,
+    );
+
+    final numberOfApartments = parseCount(
+      json['number_of_apartments'] ?? json['numberOfApartments'] ?? json['apartments_count'] ?? json['apartment_count'],
+      0,
+    );
+
+    final numberOfParkingSpaces = parseCount(
+      json['number_of_parking_spaces'] ?? json['numberOfParkingSpaces'] ?? json['parking_spaces_count'] ?? json['parking_count'],
+      0,
     );
 
     final salesAddr = json['sales_department_address']?.toString() ??
@@ -1116,8 +1158,71 @@ class ResidentialComplex {
     }
 
     List<String> parsedPhotos = [];
-    if (json['photos'] is List) {
-      parsedPhotos = (json['photos'] as List).map((p) => p.toString()).toList();
+    void extractPhotoCandidate(dynamic item) {
+      if (item == null) return;
+      if (item is String) {
+        final trimmed = item.trim();
+        if (trimmed.isNotEmpty) {
+          if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+            try {
+              final decoded = jsonDecode(trimmed);
+              if (decoded is List) {
+                for (final sub in decoded) {
+                  extractPhotoCandidate(sub);
+                }
+                return;
+              }
+            } catch (_) {}
+          }
+          parsedPhotos.add(trimmed);
+        }
+      } else if (item is Map) {
+        final path = item['url'] ??
+            item['path'] ??
+            item['file'] ??
+            item['filePath'] ??
+            item['full_url'] ??
+            item['image'] ??
+            item['photo'];
+        if (path != null && path.toString().trim().isNotEmpty) {
+          parsedPhotos.add(path.toString().trim());
+        }
+      }
+    }
+
+    final photoSources = [
+      json['main_photo'],
+      json['mainPhoto'],
+      json['photos'],
+      json['photo'],
+      json['images'],
+      json['image'],
+      json['files'],
+      json['file'],
+      json['image_url'],
+      json['photo_url'],
+      json['avatar'],
+      json['cover'],
+      json['media'],
+      json['attachments'],
+    ];
+    for (final src in photoSources) {
+      if (src == null) continue;
+      if (src is List) {
+        for (final item in src) {
+          extractPhotoCandidate(item);
+        }
+      } else {
+        extractPhotoCandidate(src);
+      }
+    }
+    parsedPhotos = parsedPhotos.toSet().toList();
+
+    if (parsedPhotos.isEmpty) {
+      final cached = ComplexPhotoStore.getCachedPhotosSync(id);
+      if (cached.isNotEmpty) {
+        parsedPhotos.addAll(cached);
+      }
     }
 
     return ResidentialComplex(
@@ -1137,6 +1242,8 @@ class ResidentialComplex {
       ),
       startTime: startTime,
       endTime: endTime,
+      numberOfApartments: numberOfApartments,
+      numberOfParkingSpaces: numberOfParkingSpaces,
     );
   }
 
@@ -1215,6 +1322,8 @@ class ResidentialComplex {
     SalesOfficeInfo? salesOffice,
     String? startTime,
     String? endTime,
+    int? numberOfApartments,
+    int? numberOfParkingSpaces,
   }) {
     return ResidentialComplex(
       id: id ?? this.id,
@@ -1228,6 +1337,8 @@ class ResidentialComplex {
       salesOffice: salesOffice ?? this.salesOffice,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
+      numberOfApartments: numberOfApartments ?? this.numberOfApartments,
+      numberOfParkingSpaces: numberOfParkingSpaces ?? this.numberOfParkingSpaces,
     );
   }
 }

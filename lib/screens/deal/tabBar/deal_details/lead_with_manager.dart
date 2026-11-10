@@ -15,12 +15,14 @@ class LeadWithManager extends StatefulWidget {
   final String? selectedLead;
   final Function(LeadData) onSelectLead;
   final bool alwaysRefreshFromServer;
+  final bool hasError;
 
   const LeadWithManager({
     super.key,
     required this.onSelectLead,
     this.selectedLead,
     this.alwaysRefreshFromServer = false,
+    this.hasError = false,
   });
 
   @override
@@ -263,7 +265,10 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
               decoration: CustomDropdownDecoration(
                 closedFillColor: context.appColors.fieldBackground,
                 expandedFillColor: context.appColors.surfacePrimary,
-                closedBorder: AppFieldStyle.dropdownBorder(context),
+                closedBorder: AppFieldStyle.dropdownBorder(
+                  context,
+                  hasError: widget.hasError,
+                ),
                 closedErrorBorder: AppFieldStyle.dropdownBorder(
                   context,
                   hasError: true,

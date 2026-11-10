@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
@@ -6,6 +5,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/complex_cover_image.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/work_schedule_selector.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
@@ -453,7 +453,6 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                         separatorBuilder: (_, __) => const SizedBox(width: 8),
                         itemBuilder: (ctx, idx) {
                           final path = _photos[idx];
-                          final isLocal = File(path).existsSync();
                           return Stack(
                             children: [
                               ClipRRect(
@@ -462,16 +461,16 @@ class _ComplexAddSheetState extends State<ComplexAddSheet> {
                                   width: 72,
                                   height: 72,
                                   color: colors.surfaceElevated,
-                                  child: isLocal
-                                      ? Image.file(File(path), fit: BoxFit.cover)
-                                      : Image.network(
-                                          path,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Icon(
-                                            Icons.broken_image_rounded,
-                                            color: colors.iconSecondary,
-                                          ),
-                                        ),
+                                  child: ComplexCoverImage(
+                                    photo: path,
+                                    width: 72,
+                                    height: 72,
+                                    fit: BoxFit.cover,
+                                    placeholder: Icon(
+                                      Icons.broken_image_rounded,
+                                      color: colors.iconSecondary,
+                                    ),
+                                  ),
                                 ),
                               ),
                               Positioned(

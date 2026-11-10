@@ -1,9 +1,10 @@
-import 'dart:io';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/complex_photo_store.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_add_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/complex_cover_image.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/complex_map_picker_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -42,15 +43,23 @@ class _ComplexCardState extends State<ComplexCard> {
     final aptBooked = apts.where((a) => a.status == ApartmentStatus.booked).length;
     final aptReserved = apts.where((a) => a.status == ApartmentStatus.reserved).length;
     final aptSold = apts.where((a) => a.status == ApartmentStatus.sold).length;
-    final aptTotal = apts.length;
+    final aptTotal = apts.isNotEmpty ? apts.length : complex.numberOfApartments;
 
     final parkFree = parkings.where((p) => p.status == ApartmentStatus.available).length;
     final parkBooked = parkings.where((p) => p.status == ApartmentStatus.booked).length;
     final parkReserved = parkings.where((p) => p.status == ApartmentStatus.reserved).length;
     final parkSold = parkings.where((p) => p.status == ApartmentStatus.sold).length;
-    final parkTotal = parkings.length;
+    final parkTotal = parkings.isNotEmpty ? parkings.length : complex.numberOfParkingSpaces;
 
-    final totalUnits = aptTotal + parkTotal;
+    final totalUnits = (aptTotal + parkTotal > 0)
+        ? (aptTotal + parkTotal)
+        : (complex.numberOfApartments + complex.numberOfParkingSpaces);
+
+    final photo = complex.photos.isNotEmpty
+        ? complex.photos.first
+        : (ComplexPhotoStore.getCachedPhotosSync(complex.id).isNotEmpty
+            ? ComplexPhotoStore.getCachedPhotosSync(complex.id).first
+            : null);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -80,14 +89,12 @@ class _ComplexCardState extends State<ComplexCard> {
                       height: 140,
                       width: double.infinity,
                       color: colors.surfaceElevated,
-                      child: complex.photos.isNotEmpty
-                          ? (File(complex.photos.first).existsSync()
-                              ? Image.file(File(complex.photos.first), fit: BoxFit.cover)
-                              : Image.network(
-                                  complex.photos.first,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => _buildCoverPlaceholder(context),
-                                ))
+                      child: (photo != null && photo.isNotEmpty)
+                          ? ComplexCoverImage(
+                              photo: photo,
+                              fit: BoxFit.cover,
+                              placeholder: _buildCoverPlaceholder(context),
+                            )
                           : _buildCoverPlaceholder(context),
                     ),
                   ),
@@ -300,6 +307,8 @@ class _ComplexCardState extends State<ComplexCard> {
     required int total,
   }) {
     final colors = context.appColors;
+    final sumKnown = free + booked + reserved + sold;
+    final effectiveFree = (sumKnown == 0 && total > 0) ? total : free;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,9 +400,9 @@ class _ComplexCardState extends State<ComplexCard> {
                   )
                 : Row(
                     children: [
-                      if (free > 0)
+                      if (effectiveFree > 0)
                         _buildSegment(
-                          count: free,
+                          count: effectiveFree,
                           total: total,
                           color: ApartmentStatus.available.color,
                           isPercent: isPercent,

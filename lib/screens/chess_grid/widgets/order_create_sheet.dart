@@ -1,9 +1,14 @@
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
+import 'package:crm_task_manager/custom_widget/country_data_list.dart';
+import 'package:crm_task_manager/custom_widget/custom_button.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart' as order_api;
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
@@ -16,6 +21,22 @@ import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
+class _PickOption {
+  final String key;
+  final String title;
+
+  const _PickOption(this.key, this.title);
+
+  @override
+  bool operator ==(Object other) => other is _PickOption && other.key == key;
+
+  @override
+  int get hashCode => key.hashCode;
+
+  @override
+  String toString() => title;
+}
 
 class OrderCreateSheet extends StatefulWidget {
   final Apartment? apartment;
@@ -66,6 +87,8 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
   final _ownerFullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   String _formattedPhone = '';
+  Country? _phoneCountry;
+  int _phoneRevision = 0;
   String _selectedGender = 'm';
 
   // Passport & Identification
@@ -73,9 +96,12 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
   final _passportIssuePlaceController = TextEditingController();
   final _innController = TextEditingController();
   final _addressController = TextEditingController();
-  DateTime? _passportIssueDate;
-  DateTime? _passportExpiryDate;
-  DateTime? _birthDate;
+  final _issueDateController = TextEditingController();
+  final _expiryDateController = TextEditingController();
+  final _birthDateController = TextEditingController();
+  final _firstPaymentDateController = TextEditingController();
+  final _barterAmountController = TextEditingController();
+  final _barterNoteController = TextEditingController();
 
   // Pricing & Apartment specs
   final _pricePerSqmController = TextEditingController();
@@ -124,9 +150,95 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       _totalPriceController.text = _totalPrice.toStringAsFixed(0);
     }
 
+    final today = DateTime.now();
+    _firstPaymentDateController.text = DateFormat('dd/MM/yyyy').format(today);
     _recalculateInstallment();
     _loadOrderMeta();
   }
+
+  Future<void> _onLeadSelected(LeadData lead) async {
+    var phone = (lead.phone ?? '').trim();
+    String? birthday;
+    if (phone.isEmpty) {
+      try {
+        final card = await ApiService().getLeadById(lead.id);
+        if (!mounted) return;
+        final cardPhone = (card.phone ?? '').trim();
+        final whatsApp = (card.whatsApp ?? '').trim();
+        phone = cardPhone.isNotEmpty ? cardPhone : whatsApp;
+        birthday = card.birthday;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+
+    final parsed = parsePhoneCountryAndNumber(phone);
+    final localPhone = parsed.localNumber;
+    setState(() {
+      _selectedLeadId = lead.id.toString();
+      if (_ownerFullNameController.text.trim().isEmpty && lead.name.trim().isNotEmpty) {
+        _ownerFullNameController.text = lead.name;
+        _missingFields.remove('ownerFullName');
+      }
+      if (localPhone.isNotEmpty) {
+        _phoneCountry = parsed.country ?? _phoneCountry;
+        final dial = parsed.country?.dialCode ?? '';
+        _formattedPhone = dial.isNotEmpty ? '$dial$localPhone' : localPhone;
+        _phoneRevision++;
+        _missingFields.remove('phone');
+      }
+      if (_birthDateController.text.trim().isEmpty) {
+        final birthText = _formatBirthDate(birthday);
+        if (birthText != null) _birthDateController.text = birthText;
+      }
+      if (lead.managerId != null) {
+        _selectedManagerId = lead.managerId.toString();
+      }
+    });
+    if (localPhone.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _phoneController.text = localPhone;
+      });
+    }
+  }
+
+  String? _formatBirthDate(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty || value.toLowerCase() == 'null') return null;
+    final iso = DateTime.tryParse(value);
+    if (iso != null) return DateFormat('dd/MM/yyyy').format(iso);
+    for (final pattern in ['dd.MM.yyyy', 'dd/MM/yyyy', 'yyyy-MM-dd']) {
+      try {
+        return DateFormat('dd/MM/yyyy').format(DateFormat(pattern).parseStrict(value));
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  DateTime? _parseUiDate(String text) {
+    final value = text.trim();
+    if (value.isEmpty) return null;
+    try {
+      return DateFormat('dd/MM/yyyy').parseStrict(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _apiDateFrom(TextEditingController controller) {
+    final date = _parseUiDate(controller.text);
+    if (date == null) return null;
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  double _money(TextEditingController controller) {
+    return double.tryParse(controller.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0;
+  }
+
+  double get _barterAmount =>
+      _selectedDealType == DealType.mixed ? _money(_barterAmountController) : 0;
+
+  double get _payableAmount => (_totalPrice - _barterAmount).clamp(0.0, double.infinity);
 
   Future<void> _loadOrderMeta() async {
     try {
@@ -165,11 +277,6 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     return currency?.symbolCode?.trim() ?? '';
   }
 
-  String? _apiDate(DateTime? date) {
-    if (date == null) return null;
-    return DateFormat('yyyy-MM-dd').format(date);
-  }
-
   order_api.OrderStatus? get _selectedOrderStatus {
     for (final status in _orderStatuses) {
       if (status.id == _selectedStatusId) return status;
@@ -185,6 +292,12 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     _passportIssuePlaceController.dispose();
     _innController.dispose();
     _addressController.dispose();
+    _issueDateController.dispose();
+    _expiryDateController.dispose();
+    _birthDateController.dispose();
+    _firstPaymentDateController.dispose();
+    _barterAmountController.dispose();
+    _barterNoteController.dispose();
     _pricePerSqmController.dispose();
     _totalAreaController.dispose();
     _totalPriceController.dispose();
@@ -201,7 +314,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       _totalPrice = sqPrice * _totalArea;
       _totalPriceController.text = _totalPrice > 0 ? _totalPrice.toStringAsFixed(0) : '';
     }
-    _recalculateInstallment();
+    setState(_recalculateInstallment);
   }
 
   void _onTotalPriceChanged() {
@@ -211,14 +324,15 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       final sqPrice = tp / _totalArea;
       _pricePerSqmController.text = sqPrice > 0 ? sqPrice.toStringAsFixed(0) : '';
     }
-    _recalculateInstallment();
+    setState(_recalculateInstallment);
   }
 
   void _recalculateInstallment() {
-    final down = double.tryParse(_downPaymentController.text.replaceAll(' ', '')) ?? 0;
-    final months = int.tryParse(_monthsController.text.replaceAll(' ', '')) ?? 12;
+    final down = _money(_downPaymentController);
+    final months = int.tryParse(_monthsController.text.replaceAll(' ', '')) ?? 0;
+    final base = _selectedDealType == DealType.cash ? _totalPrice : _payableAmount;
 
-    _installmentSum = (_totalPrice - down).clamp(0.0, double.infinity);
+    _installmentSum = (base - down).clamp(0.0, double.infinity);
     _monthlyPayment = months > 0 ? (_installmentSum / months) : 0;
 
     _installmentSumController.text =
@@ -306,48 +420,12 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Клиент (список лидов из CRM)
-                  Text(
-                    'Клиент (Лид из CRM)',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   LeadWithManager(
                     selectedLead: _selectedLeadId,
-                    onSelectLead: (lead) {
-                      setState(() {
-                        _selectedLeadId = lead.id.toString();
-                        if (_ownerFullNameController.text.trim().isEmpty) {
-                          _ownerFullNameController.text = lead.name;
-                        }
-                        if ((lead.phone ?? '').isNotEmpty) {
-                          _phoneController.text = lead.phone!;
-                          _formattedPhone = lead.phone!;
-                        }
-                        if (lead.managerId != null) {
-                          _selectedManagerId = lead.managerId.toString();
-                        }
-                      });
-                    },
+                    onSelectLead: _onLeadSelected,
                   ),
                   const SizedBox(height: 14),
 
-                  // 2. Менеджер (список менеджеров)
-                  Text(
-                    'Ответственный менеджер',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   ManagerForLead(
                     selectedManager: _selectedManagerId,
                     onSelectManager: (manager) {
@@ -359,80 +437,14 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 3. Статус (выпадающий список)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Статус',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Gilroy',
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      DropdownButtonFormField<int>(
-                        key: ValueKey(_selectedStatusId),
-                        initialValue: _selectedStatusId,
-                        isExpanded: true,
-                        isDense: true,
-                        menuMaxHeight: 240,
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                        ),
-                        dropdownColor: colors.surfacePrimary,
-                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.iconSecondary),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          filled: true,
-                          fillColor: colors.fieldBg,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                          border: AppFieldStyle.outline(context),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: AppFieldStyle.radius,
-                            borderSide: AppFieldStyle.side(context),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: AppFieldStyle.radius,
-                            borderSide: AppFieldStyle.side(context, focused: true),
-                          ),
-                        ),
-                        hint: Text(
-                          _loadingMeta ? 'Загрузка статусов...' : 'Нет статусов заказа',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 14,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        items: _orderStatuses.map((st) {
-                          return DropdownMenuItem<int>(
-                            value: st.id,
-                            child: Text(
-                              st.name,
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _orderStatuses.isEmpty
-                            ? null
-                            : (val) {
-                                if (val != null) {
-                                  setState(() => _selectedStatusId = val);
-                                }
-                              },
-                      ),
-                    ],
+                  _buildOptionDropdown(
+                    label: 'Статус',
+                    hint: _loadingMeta ? 'Загрузка статусов...' : 'Выберите статус',
+                    items: _orderStatuses
+                        .map((status) => _PickOption(status.id.toString(), status.name))
+                        .toList(),
+                    selectedKey: _selectedStatusId?.toString(),
+                    onChanged: (key) => setState(() => _selectedStatusId = int.tryParse(key)),
                   ),
                   const SizedBox(height: 14),
 
@@ -465,9 +477,11 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                     focus: _firstMissingField == 'phone',
                     pulse: _fieldErrorPulse,
                     message: 'Укажите номер телефона',
-                    child: CustomPhoneNumberInput(
+                    child:                   CustomPhoneNumberInput(
+                      key: ValueKey('phone-$_phoneRevision-${_phoneCountry?.dialCode ?? ''}'),
                       controller: _phoneController,
-                      label: 'Номер телефона *',
+                      label: 'Телефон *',
+                      initialCountry: _phoneCountry,
                       onInputChanged: (val) {
                         _formattedPhone = val;
                         if (val.trim().isNotEmpty && _missingFields.contains('phone')) {
@@ -481,23 +495,15 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 6. Пол (М или Ж)
-                  Text(
-                    'Пол',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildGenderChip('m', 'Мужской (М)', Icons.male_rounded),
-                      const SizedBox(width: 10),
-                      _buildGenderChip('f', 'Женский (Ж)', Icons.female_rounded),
+                  _buildOptionDropdown(
+                    label: 'Пол',
+                    hint: 'Выберите пол',
+                    items: const [
+                      _PickOption('m', 'М'),
+                      _PickOption('f', 'Ж'),
                     ],
+                    selectedKey: _selectedGender,
+                    onChanged: (key) => setState(() => _selectedGender = key),
                   ),
                   const SizedBox(height: 18),
 
@@ -550,6 +556,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                     hintText: 'Введите ИНН / ПИНФЛ',
                     label: 'ИНН',
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
                   const SizedBox(height: 14),
 
@@ -561,36 +568,28 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 11 & 12. Дата выдачи и Срок действия (дата)
                   Row(
                     children: [
                       Expanded(
-                        child: _buildDateField(
-                          context: context,
+                        child: CustomTextFieldDate(
+                          controller: _issueDateController,
                           label: 'Дата выдачи',
-                          value: _passportIssueDate,
-                          onPicked: (d) => setState(() => _passportIssueDate = d),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildDateField(
-                          context: context,
+                        child: CustomTextFieldDate(
+                          controller: _expiryDateController,
                           label: 'Срок действия',
-                          value: _passportExpiryDate,
-                          onPicked: (d) => setState(() => _passportExpiryDate = d),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
 
-                  // 13. Дата рождения собственника (дата)
-                  _buildDateField(
-                    context: context,
+                  CustomTextFieldDate(
+                    controller: _birthDateController,
                     label: 'Дата рождения собственника',
-                    value: _birthDate,
-                    onPicked: (d) => setState(() => _birthDate = d),
                   ),
                   const SizedBox(height: 20),
 
@@ -631,233 +630,140 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 16. Тип сделки (список: наличными, рассрочка, смешанные)
-                  Text(
-                    'Тип сделки',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildDealChip(DealType.cash, 'Наличными'),
-                      const SizedBox(width: 8),
-                      _buildDealChip(DealType.installment, 'Рассрочка'),
-                      const SizedBox(width: 8),
-                      _buildDealChip(DealType.mixed, 'Смешанные'),
+                  _buildOptionDropdown(
+                    label: 'Тип сделки',
+                    hint: 'Выберите тип сделки',
+                    items: const [
+                      _PickOption('cash', 'Наличными'),
+                      _PickOption('installment', 'Рассрочка'),
+                      _PickOption('mixed', 'Смешанные'),
                     ],
+                    selectedKey: switch (_selectedDealType) {
+                      DealType.cash => 'cash',
+                      DealType.installment => 'installment',
+                      DealType.mixed => 'mixed',
+                    },
+                    onChanged: (key) {
+                      setState(() {
+                        _selectedDealType = switch (key) {
+                          'installment' => DealType.installment,
+                          'mixed' => DealType.mixed,
+                          _ => DealType.cash,
+                        };
+                        _recalculateInstallment();
+                      });
+                    },
                   ),
                   const SizedBox(height: 14),
 
-                  // 17 & 18. Сумма (общая стоимость) & Тип валюты (доллар, сомон, сум, евро)
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: CustomTextField(
-                          controller: _totalPriceController,
-                          hintText: 'Общая сумма',
-                          label: 'Сумма (общая стоимость)',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (_) => _onTotalPriceChanged(),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        flex: 2,
-                        child: _buildCurrencySelector(colors),
-                      ),
-                    ],
+                  CustomTextField(
+                    controller: _totalPriceController,
+                    hintText: 'Общая сумма',
+                    label: 'Сумма',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => _onTotalPriceChanged(),
                   ),
+                  const SizedBox(height: 14),
 
-                  // 19. Поля рассрочки (отображаются ТОЛЬКО при рассрочке или смешанных)
+                  _buildCurrencyDropdown(),
+
+                  if (_selectedDealType == DealType.mixed) ...[
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _barterAmountController,
+                      hintText: '0',
+                      label: 'Оценка бартера',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(_recalculateInstallment),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _barterNoteController,
+                      hintText: 'Старая квартира, машина',
+                      label: 'Что отдают в бартер',
+                    ),
+                  ],
+
                   if (_selectedDealType != DealType.cash) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colors.buttonPrimaryBg.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colors.buttonPrimaryBg.withValues(alpha: 0.22),
-                        ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _downPaymentController,
+                      hintText: '0',
+                      label: 'Первоначальный взнос',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(_recalculateInstallment),
+                    ),
+                    const SizedBox(height: 14),
+                    RequiredFieldSlot(
+                      invalid: _missingFields.contains('months'),
+                      focus: _firstMissingField == 'months',
+                      pulse: _fieldErrorPulse,
+                      message: 'Укажите срок в месяцах',
+                      child: CustomTextField(
+                        controller: _monthsController,
+                        hintText: '12',
+                        label: _installmentSum > 0 ? 'Срок рассрочки (мес.) *' : 'Срок рассрочки (мес.)',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        hasError: _missingFields.contains('months'),
+                        onChanged: (val) {
+                          if (val.trim().isNotEmpty && _missingFields.contains('months')) {
+                            setState(() => _missingFields.remove('months'));
+                          }
+                          setState(_recalculateInstallment);
+                        },
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calculate_rounded, size: 18, color: colors.buttonPrimaryBg),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Параметры рассрочки',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14.5,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ],
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _installmentSumController,
+                      hintText: '0',
+                      label: 'Сумма рассрочки',
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _monthlyPaymentController,
+                      hintText: '0',
+                      label: 'Ежемесячная оплата',
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 14),
+                    RequiredFieldSlot(
+                      invalid: _missingFields.contains('firstPayment'),
+                      focus: _firstMissingField == 'firstPayment',
+                      pulse: _fieldErrorPulse,
+                      message: 'Укажите дату первого платежа',
+                      child: CustomTextFieldDate(
+                        controller: _firstPaymentDateController,
+                        label: _installmentSum > 0 ? 'Дата первого платежа *' : 'Дата первого платежа',
+                        hasError: _missingFields.contains('firstPayment'),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _openSchedulePreview,
+                        child: Text(
+                          'График платежей',
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: colors.buttonPrimaryBg,
                           ),
-                          const SizedBox(height: 14),
-
-                          // Первоначальный взнос & Срок рассрочки (в месяцах)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _downPaymentController,
-                                  hintText: '0',
-                                  label: 'Первоначальный взнос',
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(_recalculateInstallment),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: RequiredFieldSlot(
-                                  invalid: _missingFields.contains('months'),
-                                  focus: _firstMissingField == 'months',
-                                  pulse: _fieldErrorPulse,
-                                  message: 'Укажите срок',
-                                  child: CustomTextField(
-                                    controller: _monthsController,
-                                    hintText: '12',
-                                    label: 'Срок рассрочки (мес.) *',
-                                    keyboardType: TextInputType.number,
-                                    hasError: _missingFields.contains('months'),
-                                    onChanged: (val) {
-                                      if (val.trim().isNotEmpty && _missingFields.contains('months')) {
-                                        setState(() => _missingFields.remove('months'));
-                                      }
-                                      setState(_recalculateInstallment);
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Сумма рассрочки & Ежемесячная оплата
-                          Row(
-                            children: [
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _installmentSumController,
-                                  hintText: '0',
-                                  label: 'Сумма рассрочки',
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (val) {
-                                    final sum = double.tryParse(val.replaceAll(' ', '')) ?? 0;
-                                    _installmentSum = sum;
-                                    final m = int.tryParse(_monthsController.text) ?? 12;
-                                    _monthlyPayment = m > 0 ? (_installmentSum / m) : 0;
-                                    _monthlyPaymentController.text =
-                                        _monthlyPayment > 0 ? _monthlyPayment.toStringAsFixed(2) : '0';
-                                    setState(() {});
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: CustomTextField(
-                                  controller: _monthlyPaymentController,
-                                  hintText: '0',
-                                  label: 'Ежемесячная оплата',
-                                  readOnly: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Summary Banner
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceElevated.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Платёж в месяц:',
-                                  style: TextStyle(
-                                    fontFamily: 'Golos',
-                                    fontSize: 13,
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                                Text(
-                                  '${_monthlyPayment.toStringAsFixed(2)} ${_currencyTitle(_selectedCurrency)} / мес.',
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                    color: colors.buttonPrimaryBg,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // График платежей button
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: _openSchedulePreview,
-                              icon: Icon(Icons.calendar_month_rounded, size: 16, color: colors.buttonPrimaryBg),
-                              label: Text(
-                                'Посмотреть график платежей',
-                                style: TextStyle(
-                                  fontFamily: 'Gilroy',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12.5,
-                                  color: colors.buttonPrimaryBg,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
 
-                  const SizedBox(height: 24),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _saving ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.buttonPrimaryBg,
-                        foregroundColor: colors.buttonPrimaryFg,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        _saving
-                            ? 'Сохранение...'
-                            : 'Сохранить${_selectedOrderStatus == null ? '' : ' (${_selectedOrderStatus!.name})'}',
-                        style: const TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 8),
+                  CustomButton(
+                    buttonText: _saving ? 'Сохранение...' : 'Сохранить',
+                    buttonColor: colors.buttonPrimaryBg,
+                    textColor: colors.buttonPrimaryFg,
+                    isLoading: _saving,
+                    onPressed: _saving ? null : _handleSubmit,
                   ),
                 ],
               ),
@@ -868,240 +774,166 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     );
   }
 
-  Widget _buildGenderChip(String code, String title, IconData icon) {
-    final colors = context.appColors;
-    final isSelected = _selectedGender == code;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() => _selectedGender = code);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.buttonPrimaryBg
-                : colors.surfaceElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? colors.buttonPrimaryFg : colors.iconSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 13,
-                  color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDealChip(DealType type, String label) {
-    final colors = context.appColors;
-    final isSelected = _selectedDealType == type;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _selectedDealType = type;
-            _recalculateInstallment();
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.buttonPrimaryBg
-                : colors.surfaceElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 12.5,
-                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCurrencySelector(dynamic colors) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Валюта',
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
-            color: colors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.borderSubtle),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedCurrency?.id,
-              isExpanded: true,
-              hint: Text(
-                _loadingMeta ? '...' : 'Валюта',
-                style: TextStyle(
-                  fontFamily: 'Gilroy',
-                  fontSize: 12.5,
-                  color: colors.textSecondary,
-                ),
-              ),
-              icon: Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: colors.iconSecondary),
-              items: _currencies.map((cur) {
-                return DropdownMenuItem<int>(
-                  value: cur.id,
-                  child: Text(
-                    _currencyTitle(cur),
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.5,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val == null) return;
-                SupplierCurrency? picked;
-                for (final item in _currencies) {
-                  if (item.id == val) {
-                    picked = item;
-                    break;
-                  }
-                }
-                if (picked != null) setState(() => _selectedCurrency = picked);
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required BuildContext context,
+  Widget _buildOptionDropdown({
     required String label,
-    required DateTime? value,
-    required ValueChanged<DateTime> onPicked,
+    required String hint,
+    required List<_PickOption> items,
+    required String? selectedKey,
+    required ValueChanged<String> onChanged,
   }) {
     final colors = context.appColors;
-    final formatted = value != null ? DateFormat('dd.MM.yyyy').format(value) : '';
+    _PickOption? selected;
+    for (final item in items) {
+      if (item.key == selectedKey) {
+        selected = item;
+        break;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
+          style: context.appTextStyles.bodyMd.copyWith(
             fontWeight: FontWeight.w500,
-            fontSize: 13,
             color: colors.textPrimary,
           ),
         ),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: value ?? DateTime.now(),
-              firstDate: DateTime(1930),
-              lastDate: DateTime(2050),
-              builder: (ctx, child) {
-                return Theme(
-                  data: Theme.of(ctx).copyWith(
-                    colorScheme: ColorScheme.light(
-                      primary: colors.buttonPrimaryBg,
-                      onPrimary: colors.buttonPrimaryFg,
-                      surface: colors.surfacePrimary,
-                      onSurface: colors.textPrimary,
-                    ),
-                  ),
-                  child: child ?? const SizedBox.shrink(),
-                );
-              },
-            );
-            if (picked != null) {
-              onPicked(picked);
-            }
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: colors.surfaceElevated.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.borderSubtle),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  formatted.isNotEmpty ? formatted : 'Выберите дату',
-                  style: TextStyle(
-                    fontFamily: 'Golos',
-                    fontSize: 13,
-                    color: formatted.isNotEmpty
-                        ? colors.textPrimary
-                        : colors.textSecondary.withValues(alpha: 0.6),
-                  ),
-                ),
-                Icon(
-                  Icons.calendar_today_rounded,
-                  size: 16,
-                  color: colors.iconSecondary,
-                ),
-              ],
+        const SizedBox(height: 4),
+        CustomDropdown<_PickOption>.search(
+          key: ValueKey('$label-${selected?.key}-${items.length}'),
+          items: items,
+          initialItem: selected,
+          enabled: items.isNotEmpty,
+          excludeSelected: false,
+          canClear: false,
+          overlayHeight: 280,
+          searchHintText: 'Поиск',
+          noResultFoundText: 'Ничего не найдено',
+          listItemPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          closedHeaderPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: AppFieldStyle.dropdownDecoration(context),
+          listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+            item.title,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
             ),
           ),
+          headerBuilder: (context, selectedItem, enabled) => Text(
+            selectedItem.title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: colors.textPrimary,
+            ),
+          ),
+          hintBuilder: (context, hintText, enabled) => Text(
+            items.isEmpty ? hint : hint,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Gilroy',
+              color: colors.textSecondary,
+            ),
+          ),
+          onChanged: (value) {
+            if (value != null) onChanged(value.key);
+          },
         ),
+      ],
+    );
+  }
+
+  Widget _buildCurrencyDropdown() {
+    final colors = context.appColors;
+    SupplierCurrency? selected;
+    for (final currency in _currencies) {
+      if (currency.id != null && currency.id == _selectedCurrency?.id) {
+        selected = currency;
+        break;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Тип валюты',
+          style: context.appTextStyles.bodyMd.copyWith(
+            fontWeight: FontWeight.w500,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        if (_loadingMeta)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              color: colors.fieldBg,
+              borderRadius: AppFieldStyle.radius,
+              border: Border.all(color: colors.borderSubtle),
+            ),
+            child: Text(
+              'Загрузка...',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colors.textSecondary,
+              ),
+            ),
+          )
+        else
+          CustomDropdown<SupplierCurrency>.search(
+            key: ValueKey('currency-${selected?.id}-${_currencies.length}'),
+            items: _currencies,
+            initialItem: selected,
+            enabled: _currencies.isNotEmpty,
+            excludeSelected: false,
+            canClear: false,
+            overlayHeight: 280,
+            searchHintText: 'Поиск',
+            noResultFoundText: 'Ничего не найдено',
+            listItemPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            closedHeaderPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: AppFieldStyle.dropdownDecoration(context),
+            listItemBuilder: (context, item, isSelected, onItemSelect) => Text(
+              _currencyTitle(item),
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+            headerBuilder: (context, selectedItem, enabled) => Text(
+              _currencyTitle(selectedItem),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: colors.textPrimary,
+              ),
+            ),
+            hintBuilder: (context, hint, enabled) => Text(
+              'Выберите валюту',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Gilroy',
+                color: colors.textSecondary,
+              ),
+            ),
+            onChanged: (value) {
+              if (value != null) setState(() => _selectedCurrency = value);
+            },
+          ),
       ],
     );
   }
@@ -1128,7 +960,8 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         monthlyPayment: _monthlyPayment,
         schedule: PaymentDetails.generateSchedule(
           totalInstallmentSum: _installmentSum,
-          months: int.tryParse(_monthsController.text) ?? 12,
+          months: int.tryParse(_monthsController.text) ?? 0,
+          firstDueDate: _parseUiDate(_firstPaymentDateController.text),
         ),
       ),
     );
@@ -1145,14 +978,34 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     final managerId = int.tryParse(_selectedManagerId ?? '');
     final currencyId = _selectedCurrency?.id;
     final isInstallment = _selectedDealType != DealType.cash;
+    final down = _money(_downPaymentController);
+    final months = int.tryParse(_monthsController.text.replaceAll(' ', '')) ?? 0;
+    final needsSchedule = isInstallment && _installmentSum > 0;
+
+    if (_selectedDealType == DealType.mixed && _barterAmount > _totalPrice) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Оценка бартера не может быть больше суммы сделки',
+        isSuccess: false,
+      );
+      return;
+    }
+    if (isInstallment && down > _payableAmount) {
+      showCustomSnackBar(
+        context: context,
+        message: 'Первоначальный взнос больше остатка сделки',
+        isSuccess: false,
+      );
+      return;
+    }
 
     final missing = <String>[];
     if (ownerName.isEmpty) missing.add('ownerFullName');
     if (phone.isEmpty) missing.add('phone');
     if (passport.isEmpty) missing.add('passport');
-    if (isInstallment) {
-      final m = int.tryParse(_monthsController.text) ?? 0;
-      if (m <= 0) missing.add('months');
+    if (needsSchedule && months <= 0) missing.add('months');
+    if (needsSchedule && _parseUiDate(_firstPaymentDateController.text) == null) {
+      missing.add('firstPayment');
     }
 
     if (leadId == null || managerId == null || _selectedStatusId == null || currencyId == null || missing.isNotEmpty) {
@@ -1170,6 +1023,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         if (missing.contains('phone')) 'телефон',
         if (missing.contains('passport')) 'паспорт',
         if (missing.contains('months')) 'срок рассрочки',
+        if (missing.contains('firstPayment')) 'дата первого платежа',
       ];
       showCustomSnackBar(
         context: context,
@@ -1197,9 +1051,11 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     }
 
     setState(() => _saving = true);
-    final down = double.tryParse(_downPaymentController.text.replaceAll(' ', '')) ?? 0;
-    final months = int.tryParse(_monthsController.text.replaceAll(' ', '')) ?? 0;
-    final sqPrice = double.tryParse(_pricePerSqmController.text.replaceAll(' ', '')) ?? 0;
+    final sqPrice = _money(_pricePerSqmController);
+    final sendSchedule = needsSchedule && months > 0;
+    final issueDate = _parseUiDate(_issueDateController.text);
+    final expiryDate = _parseUiDate(_expiryDateController.text);
+    final birthDate = _parseUiDate(_birthDateController.text);
     final inn = int.tryParse(_innController.text.replaceAll(RegExp(r'[^0-9]'), ''));
     final dealType = switch (_selectedDealType) {
       DealType.cash => 'cash',
@@ -1250,17 +1106,23 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         gender: _selectedGender,
         passport: passport,
         passportIssuedBy: _passportIssuePlaceController.text.trim(),
-        passportIssuedAt: _apiDate(_passportIssueDate),
-        passportExpiresAt: _apiDate(_passportExpiryDate),
-        ownerBirthDate: _apiDate(_birthDate),
+        passportIssuedAt: _apiDateFrom(_issueDateController),
+        passportExpiresAt: _apiDateFrom(_expiryDateController),
+        ownerBirthDate: _apiDateFrom(_birthDateController),
         inn: inn,
         residenceAddress: _addressController.text.trim(),
         goodId: apartment.id,
         variantId: variantId,
         pricePerM2: sqPrice,
+        totalArea: _totalArea > 0 ? _totalArea : null,
         dealType: dealType,
-        downPayment: isInstallment ? down : null,
-        installmentMonths: isInstallment ? months : null,
+        downPayment: !isInstallment
+            ? null
+            : (sendSchedule || down > 0 ? down : null),
+        installmentMonths: sendSchedule ? months : null,
+        firstPaymentDate: sendSchedule ? _apiDateFrom(_firstPaymentDateController) : null,
+        barterAmount: _selectedDealType == DealType.mixed && _barterAmount > 0 ? _barterAmount : null,
+        barterNote: _selectedDealType == DealType.mixed ? _barterNoteController.text.trim() : null,
       );
       if (!mounted) return;
       if (result['success'] != true) {
@@ -1308,9 +1170,9 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         passportIssuePlace: _passportIssuePlaceController.text.trim(),
         inn: inn?.toString(),
         address: _addressController.text.trim(),
-        passportIssueDate: _passportIssueDate,
-        passportExpiryDate: _passportExpiryDate,
-        birthDate: _birthDate,
+        passportIssueDate: issueDate,
+        passportExpiryDate: expiryDate,
+        birthDate: birthDate,
         pricePerSqm: sqPrice,
         totalArea: _totalArea,
         customPrice: _totalPrice,

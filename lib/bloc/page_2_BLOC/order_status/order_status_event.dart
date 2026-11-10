@@ -110,6 +110,7 @@ class CreateOrder extends OrderEvent {
   final List<Map<String, dynamic>>? customFields;
   final List<Map<String, int>>? directoryValues;
   final List<FileHelper>? files;
+  final Map<String, dynamic>? extraFields;
 
   CreateOrder({
     required this.phone,
@@ -130,6 +131,7 @@ class CreateOrder extends OrderEvent {
     this.customFields,
     this.directoryValues,
     this.files,
+    this.extraFields,
   });
 }
 

@@ -37,6 +37,7 @@ class Order {
   final int? reasonForRefusalId;
   final String? reasonForRefusalComment;
   final String? refusalReasonText;
+  final Map<String, dynamic>? rawJson;
 
   Order({
     required this.id,
@@ -69,6 +70,7 @@ class Order {
     this.reasonForRefusalId,
     this.reasonForRefusalComment,
     this.refusalReasonText,
+    this.rawJson,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -136,6 +138,7 @@ class Order {
         files: SafeConverters.toList(json['files'])
             .map((item) => OrderFile.fromJson(SafeConverters.toMap(item)))
             .toList(),
+        rawJson: json,
       );
     } catch (e) {
       //print('Error parsing Order: $e');

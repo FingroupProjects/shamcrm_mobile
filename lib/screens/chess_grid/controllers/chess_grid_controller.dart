@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/complex_photo_store.dart';
 
 class ChessGridController extends ChangeNotifier {
   static ChessGridController? _instance;
@@ -82,23 +83,30 @@ class ChessGridController extends ChangeNotifier {
 
     try {
       final fetchedComplexes = await _apiService.getResidentialComplexes();
+
+      // Enrich complexes with locally cached photos if backend response doesn't provide them
+      for (int i = 0; i < fetchedComplexes.length; i++) {
+        final c = fetchedComplexes[i];
+        if (c.photos.isEmpty) {
+          final cached = await ComplexPhotoStore.getPhotos(c.id);
+          if (cached.isNotEmpty) {
+            fetchedComplexes[i] = c.copyWith(photos: cached);
+          }
+        } else {
+          await ComplexPhotoStore.savePhotos(c.id, c.photos);
+        }
+      }
+
       complexes = fetchedComplexes;
 
       if (complexes.isNotEmpty) {
         if (_selectedComplexId == 0 || !complexes.any((c) => c.id == _selectedComplexId)) {
           _selectedComplexId = complexes.first.id;
         }
-        apartments = [];
-        orders = [];
-        parkingSpots = [];
         final c = complex;
         if (c.buildings.isNotEmpty) {
           if (_selectedBuildingKey.isEmpty || !c.buildings.any((b) => b.key == _selectedBuildingKey)) {
             _selectedBuildingKey = c.buildings.first.key;
-          }
-          final firstB = c.buildings.firstWhereOrNull((b) => b.key == _selectedBuildingKey);
-          if (firstB != null && firstB.id != null) {
-            await loadApartmentsForBuilding(buildingId: firstB.id, buildingKey: firstB.key);
           }
         } else {
           _selectedBuildingKey = '';
@@ -119,7 +127,6 @@ class ChessGridController extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 
   void selectComplex(int id) {
     if (_selectedComplexId == id) return;
@@ -725,7 +732,11 @@ class ChessGridController extends ChangeNotifier {
         payload,
         filePaths: photos,
       );
-      complexes.insert(0, created);
+      List<String> effectivePhotos = created.photos;
+      if (photos != null && photos.isNotEmpty) {
+        effectivePhotos = await ComplexPhotoStore.savePhotos(created.id, photos);
+      }
+      complexes.insert(0, created.copyWith(photos: effectivePhotos));
       selectComplex(created.id);
       await loadDataFromApi(showLoading: false);
       return true;
@@ -779,9 +790,13 @@ class ChessGridController extends ChangeNotifier {
         payload,
         filePaths: photos,
       );
+      List<String> effectivePhotos = updated.photos;
+      if (photos != null && photos.isNotEmpty) {
+        effectivePhotos = await ComplexPhotoStore.savePhotos(id, photos);
+      }
       final idx = complexes.indexWhere((c) => c.id == id);
       if (idx != -1) {
-        complexes[idx] = updated;
+        complexes[idx] = updated.copyWith(photos: effectivePhotos);
       }
       notifyListeners();
       await loadDataFromApi(showLoading: false);

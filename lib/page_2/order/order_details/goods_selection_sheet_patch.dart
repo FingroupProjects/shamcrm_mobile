@@ -416,6 +416,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     final selectedProducts = _selectedVariants.values
         .map((variant) => {
               'id': variant.id,
+              'goodId': variant.goodId,
               'name': _getDisplayName(variant),
               'price': variant.price ?? 0.0,
               'quantity': _isTojsokhtmontjTenant

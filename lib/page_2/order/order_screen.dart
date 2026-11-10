@@ -15,6 +15,7 @@ import 'package:crm_task_manager/models/page_2/order_status_model.dart';
 import 'package:crm_task_manager/page_2/order/order_cache.dart';
 import 'package:crm_task_manager/page_2/order/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/delete_status_order.dart';
+import 'package:crm_task_manager/page_2/order/order_details/new_chess_deal_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_column.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_status_add.dart';
@@ -30,12 +31,14 @@ class OrderScreen extends StatefulWidget {
   final int? organizationId;
   final String? title;
   final bool hideAppBar;
+  final bool residentialDeal;
 
   const OrderScreen({
     super.key,
     this.organizationId,
     this.title,
     this.hideAppBar = false,
+    this.residentialDeal = false,
   });
 
   @override
@@ -830,6 +833,7 @@ class _OrderScreenState extends State<OrderScreen>
                                           return OrderColumn(
                                             statusId: status.id,
                                             name: status.name,
+                                            residentialDeal: widget.residentialDeal,
                                             canCreateOrder: _canCreateOrderStatus,
                                             searchQuery: _isSearching
                                                 ? _searchController.text
@@ -870,9 +874,11 @@ class _OrderScreenState extends State<OrderScreen>
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => OrderAddScreen(
-                        organizationId: widget.organizationId,
-                      ),
+                      builder: (context) => widget.residentialDeal
+                          ? const NewChessDealScreen()
+                          : OrderAddScreen(
+                              organizationId: widget.organizationId,
+                            ),
                     ),
                   );
 
@@ -1256,9 +1262,11 @@ class _OrderScreenState extends State<OrderScreen>
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => OrderAddScreen(
-                                        organizationId: widget.organizationId,
-                                      ),
+                                      builder: (context) => widget.residentialDeal
+                                          ? const NewChessDealScreen()
+                                          : OrderAddScreen(
+                                              organizationId: widget.organizationId,
+                                            ),
                                     ),
                                   );
                                 }
@@ -1285,6 +1293,7 @@ class _OrderScreenState extends State<OrderScreen>
                     }
                   },
                   onTabChange: (int p1) {},
+                  residentialDeal: widget.residentialDeal,
                 );
               },
             );

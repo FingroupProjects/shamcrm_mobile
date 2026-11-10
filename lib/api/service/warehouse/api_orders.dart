@@ -473,10 +473,19 @@ extension ApiWarehouseOrdersX on ApiService {
     List<Map<String, dynamic>>? customFields,
     List<Map<String, int>>? directoryValues,
     List<FileHelper>? files,
+    Map<String, dynamic>? extraFields,
   }) async {
     try {
       final token = await getToken();
       if (token == null) throw Exception('Токен не найден');
+
+      void writeExtra(void Function(String key, Object value) write) {
+        extraFields?.forEach((key, value) {
+          if (value == null) return;
+          if (value is String && value.trim().isEmpty) return;
+          write(key, value);
+        });
+      }
 
       // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
       final path = await _appendQueryParams('/order');
@@ -555,6 +564,10 @@ extension ApiWarehouseOrdersX on ApiService {
                 value['directory_id'].toString();
           }
         }
+
+        writeExtra((key, value) {
+          request.fields[key] = value.toString();
+        });
 
         final newFiles = files.where((f) => f.id == 0).toList();
         for (final fileData in newFiles) {
@@ -635,6 +648,10 @@ extension ApiWarehouseOrdersX on ApiService {
       if (directoryValues != null && directoryValues.isNotEmpty) {
         body['directory_values'] = directoryValues;
       }
+
+      writeExtra((key, value) {
+        body[key] = value;
+      });
 
       ////debugPrint('ApiService: Тело запроса для создания заказа: ${jsonEncode(body)}');
 

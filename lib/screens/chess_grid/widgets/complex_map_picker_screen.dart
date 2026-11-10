@@ -684,52 +684,72 @@ class _ComplexMapPickerScreenState extends State<ComplexMapPickerScreen> {
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A).withValues(alpha: 0.90),
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.92),
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(color: Colors.white12),
                             boxShadow: const [
                               BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
                             ],
                           ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: _searchAddress,
-                            style: const TextStyle(
-                              fontFamily: 'Golos',
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: context.tr('chess_grid_search_address_hint', fallback: 'Поиск улицы, города, объекта...'),
-                              hintStyle: const TextStyle(
-                                fontFamily: 'Golos',
-                                fontSize: 13,
-                                color: Colors.white60,
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              inputDecorationTheme: const InputDecorationTheme(
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
                               ),
-                              prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF38BDF8)),
-                              suffixIcon: _isSearching
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: Center(
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _searchAddress,
+                              cursorColor: const Color(0xFF38BDF8),
+                              textAlignVertical: TextAlignVertical.center,
+                              style: const TextStyle(
+                                fontFamily: 'Golos',
+                                fontSize: 13.5,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                isDense: true,
+                                hintText: context.tr('chess_grid_search_address_hint', fallback: 'Поиск улицы, города, объекта...'),
+                                hintStyle: const TextStyle(
+                                  fontFamily: 'Golos',
+                                  fontSize: 13,
+                                  color: Colors.white60,
+                                ),
+                                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF38BDF8)),
+                                suffixIcon: _isSearching
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(12),
                                         child: SizedBox(
                                           width: 14,
                                           height: 14,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF38BDF8)),
                                         ),
-                                      ),
-                                    )
-                                  : (_searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear_rounded, size: 16, color: Colors.white70),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            setState(() => _searchResults = []);
-                                          },
-                                        )
-                                      : null),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                                      )
+                                    : (_searchController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear_rounded, size: 16, color: Colors.white70),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              setState(() => _searchResults = []);
+                                            },
+                                          )
+                                        : null),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                              ),
                             ),
                           ),
                         ),

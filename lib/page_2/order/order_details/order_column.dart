@@ -4,6 +4,7 @@ import 'package:crm_task_manager/bloc/page_2_BLOC/order_status/order_status_stat
 import 'package:crm_task_manager/custom_widget/animation.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_card.dart';
+import 'package:crm_task_manager/page_2/order/order_details/new_chess_deal_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_add.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +20,7 @@ class OrderColumn extends StatefulWidget {
   final void Function(int newStatusId) onStatusId;
   final Function(int) onTabChange;
   final bool canCreateOrder;
+  final bool residentialDeal;
 
   const OrderColumn({
     required this.statusId,
@@ -29,6 +31,7 @@ class OrderColumn extends StatefulWidget {
     required this.onStatusId,
     required this.onTabChange,
     this.canCreateOrder = false,
+    this.residentialDeal = false,
   });
 
   @override
@@ -188,6 +191,7 @@ class _OrderColumnState extends State<OrderColumn> {
                       onStatusUpdated: widget.onStatusUpdated,
                       onStatusId: widget.onStatusId,
                       onTabChange: widget.onTabChange,
+                      residentialDeal: widget.residentialDeal,
                     );
                   },
                 ),
@@ -227,9 +231,11 @@ class _OrderColumnState extends State<OrderColumn> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => OrderAddScreen(
-          organizationId: widget.organizationId,
-        ),
+        builder: (context) => widget.residentialDeal
+            ? const NewChessDealScreen()
+            : OrderAddScreen(
+                organizationId: widget.organizationId,
+              ),
       ),
     );
     if (!mounted) return;

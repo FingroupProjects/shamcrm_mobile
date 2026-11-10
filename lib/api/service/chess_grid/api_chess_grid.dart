@@ -84,20 +84,44 @@ extension ApiChessGridX on ApiService {
   }) async {
     const path = '/residential-complexes';
     final allFiles = <String>[];
+    final remotePhotos = <String>[];
     if (filePaths != null && filePaths.isNotEmpty) {
-      allFiles.addAll(filePaths);
+      for (final p in filePaths) {
+        if (p.startsWith('http://') || p.startsWith('https://')) {
+          remotePhotos.add(p);
+        } else {
+          allFiles.add(p);
+        }
+      }
     }
     if (body.containsKey('photos') && body['photos'] is List) {
       for (final p in (body['photos'] as List)) {
-        if (p is String && p.isNotEmpty) allFiles.add(p);
+        if (p is String && p.isNotEmpty) {
+          if (p.startsWith('http://') || p.startsWith('https://')) {
+            remotePhotos.add(p);
+          } else {
+            allFiles.add(p);
+          }
+        }
       }
       body.remove('photos');
     }
     if (body.containsKey('files') && body['files'] is List) {
       for (final f in (body['files'] as List)) {
-        if (f is String && f.isNotEmpty) allFiles.add(f);
+        if (f is String && f.isNotEmpty) {
+          if (f.startsWith('http://') || f.startsWith('https://')) {
+            remotePhotos.add(f);
+          } else {
+            allFiles.add(f);
+          }
+        }
       }
       body.remove('files');
+    }
+
+    if (remotePhotos.isNotEmpty) {
+      body['photos'] = json.encode(remotePhotos);
+      body['photo'] = remotePhotos.first;
     }
 
     if (kDebugMode) {
@@ -138,6 +162,28 @@ extension ApiChessGridX on ApiService {
             filePath,
             filename: fileName,
           ));
+          // Also attach single-file fields commonly expected by Laravel/PHP controllers:
+          if (request.files.where((mf) => mf.field == 'photo').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'photo',
+              filePath,
+              filename: fileName,
+            ));
+          }
+          if (request.files.where((mf) => mf.field == 'image').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'image',
+              filePath,
+              filename: fileName,
+            ));
+          }
+          if (request.files.where((mf) => mf.field == 'file').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'file',
+              filePath,
+              filename: fileName,
+            ));
+          }
         }
       } catch (e) {
         debugPrint('Error attaching complex photo file $filePath: $e');
@@ -164,20 +210,44 @@ extension ApiChessGridX on ApiService {
   }) async {
     final path = '/residential-complexes/$id';
     final allFiles = <String>[];
+    final remotePhotos = <String>[];
     if (filePaths != null && filePaths.isNotEmpty) {
-      allFiles.addAll(filePaths);
+      for (final p in filePaths) {
+        if (p.startsWith('http://') || p.startsWith('https://')) {
+          remotePhotos.add(p);
+        } else {
+          allFiles.add(p);
+        }
+      }
     }
     if (body.containsKey('photos') && body['photos'] is List) {
       for (final p in (body['photos'] as List)) {
-        if (p is String && p.isNotEmpty) allFiles.add(p);
+        if (p is String && p.isNotEmpty) {
+          if (p.startsWith('http://') || p.startsWith('https://')) {
+            remotePhotos.add(p);
+          } else {
+            allFiles.add(p);
+          }
+        }
       }
       body.remove('photos');
     }
     if (body.containsKey('files') && body['files'] is List) {
       for (final f in (body['files'] as List)) {
-        if (f is String && f.isNotEmpty) allFiles.add(f);
+        if (f is String && f.isNotEmpty) {
+          if (f.startsWith('http://') || f.startsWith('https://')) {
+            remotePhotos.add(f);
+          } else {
+            allFiles.add(f);
+          }
+        }
       }
       body.remove('files');
+    }
+
+    if (remotePhotos.isNotEmpty) {
+      body['photos'] = json.encode(remotePhotos);
+      body['photo'] = remotePhotos.first;
     }
 
     if (kDebugMode) {
@@ -217,6 +287,27 @@ extension ApiChessGridX on ApiService {
             filePath,
             filename: fileName,
           ));
+          if (request.files.where((mf) => mf.field == 'photo').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'photo',
+              filePath,
+              filename: fileName,
+            ));
+          }
+          if (request.files.where((mf) => mf.field == 'image').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'image',
+              filePath,
+              filename: fileName,
+            ));
+          }
+          if (request.files.where((mf) => mf.field == 'file').isEmpty) {
+            request.files.add(await http.MultipartFile.fromPath(
+              'file',
+              filePath,
+              filename: fileName,
+            ));
+          }
         }
       } catch (e) {
         debugPrint('Error attaching complex photo file $filePath: $e');
@@ -618,9 +709,13 @@ extension ApiChessGridX on ApiService {
     required int goodId,
     required int variantId,
     required double pricePerM2,
+    double? totalArea,
     required String dealType,
     double? downPayment,
     int? installmentMonths,
+    String? firstPaymentDate,
+    double? barterAmount,
+    String? barterNote,
   }) async {
     final organizationId = await resolveSelectedOrganizationId();
     final body = <String, dynamic>{
@@ -667,9 +762,26 @@ extension ApiChessGridX on ApiService {
     if (residenceAddress != null && residenceAddress.trim().isNotEmpty) {
       body['residence_address'] = residenceAddress.trim();
     }
+    if (totalArea != null && totalArea > 0) {
+      body['total_area'] = totalArea;
+    }
     if (dealType == 'installment' || dealType == 'mixed') {
-      body['down_payment'] = downPayment ?? 0;
-      body['installment_months'] = installmentMonths ?? 0;
+      if (barterAmount != null && barterAmount > 0) {
+        body['barter_amount'] = barterAmount;
+      }
+      if (barterNote != null && barterNote.trim().isNotEmpty) {
+        body['barter_note'] = barterNote.trim();
+      }
+      if (downPayment != null) {
+        body['down_payment'] = downPayment;
+      }
+      final months = installmentMonths ?? 0;
+      if (months > 0) {
+        body['installment_months'] = months;
+        if (firstPaymentDate != null && firstPaymentDate.isNotEmpty) {
+          body['first_payment_date'] = firstPaymentDate;
+        }
+      }
     }
 
     final response = await _postRequest('/order', body);
@@ -690,6 +802,115 @@ extension ApiChessGridX on ApiService {
     return {
       'success': false,
       'error': _orderErrorText(decoded) ?? 'Не удалось создать заказ (${response.statusCode})',
+    };
+  }
+
+  Future<Map<String, dynamic>> updateResidentialOrder({
+    required int orderId,
+    required int leadId,
+    required int managerId,
+    required int orderStatusId,
+    required int integrationId,
+    required String phone,
+    required double sum,
+    required int currencyId,
+    required String ownerName,
+    required String gender,
+    required String passport,
+    String? passportIssuedBy,
+    String? passportIssuedAt,
+    String? passportExpiresAt,
+    String? ownerBirthDate,
+    int? inn,
+    String? residenceAddress,
+    required int goodId,
+    required int variantId,
+    required double pricePerM2,
+    double? totalArea,
+    required String dealType,
+    double? downPayment,
+    int? installmentMonths,
+    String? firstPaymentDate,
+    double? barterAmount,
+    String? barterNote,
+  }) async {
+    final organizationId = await resolveSelectedOrganizationId();
+    final body = <String, dynamic>{
+      'lead_id': leadId,
+      'manager_id': managerId,
+      'order_status_id': orderStatusId,
+      'status_id': orderStatusId,
+      'integration_id': integrationId,
+      'phone': phone,
+      'sum': sum,
+      'currency_id': currencyId,
+      'owner_name': ownerName,
+      'gender': gender,
+      'passport': passport,
+      'goods': [
+        {
+          'good_id': goodId,
+          'variant_id': variantId,
+          'quantity': 1,
+          'price': sum,
+        },
+      ],
+      'price_per_m2': pricePerM2,
+      'deal_type': dealType,
+      'organization_id': organizationId,
+      'deliveryType': 'pickup',
+      '_method': 'PUT',
+    };
+
+    if (passportIssuedBy != null && passportIssuedBy.trim().isNotEmpty) {
+      body['passport_issued_by'] = passportIssuedBy.trim();
+    }
+    if (passportIssuedAt != null && passportIssuedAt.isNotEmpty) {
+      body['passport_issued_at'] = passportIssuedAt;
+    }
+    if (passportExpiresAt != null && passportExpiresAt.isNotEmpty) {
+      body['passport_expires_at'] = passportExpiresAt;
+    }
+    if (ownerBirthDate != null && ownerBirthDate.isNotEmpty) {
+      body['owner_birth_date'] = ownerBirthDate;
+    }
+    if (inn != null) {
+      body['inn'] = inn;
+    }
+    if (residenceAddress != null && residenceAddress.trim().isNotEmpty) {
+      body['residence_address'] = residenceAddress.trim();
+    }
+    if (totalArea != null && totalArea > 0) {
+      body['total_area'] = totalArea;
+    }
+    if (dealType == 'installment' || dealType == 'mixed') {
+      if (barterAmount != null && barterAmount > 0) {
+        body['barter_amount'] = barterAmount;
+      }
+      if (barterNote != null && barterNote.trim().isNotEmpty) {
+        body['barter_note'] = barterNote.trim();
+      }
+      if (downPayment != null) {
+        body['down_payment'] = downPayment;
+      }
+      final months = installmentMonths ?? 0;
+      if (months > 0) {
+        body['installment_months'] = months;
+        if (firstPaymentDate != null && firstPaymentDate.isNotEmpty) {
+          body['first_payment_date'] = firstPaymentDate;
+        }
+      }
+    }
+
+    final response = await _postRequest('/order/$orderId', body);
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+    if (<int>[200, 201, 202, 203, 204].contains(response.statusCode)) {
+      return {'success': true};
+    }
+
+    return {
+      'success': false,
+      'error': _orderErrorText(decoded) ?? 'Не удалось обновить заказ (${response.statusCode})',
     };
   }
 

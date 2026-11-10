@@ -382,6 +382,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         return OrderScreen(
           title: context.tr('chess_grid_tab_orders', fallback: 'Сделка'),
           hideAppBar: true,
+          residentialDeal: true,
         );
 
       case ChessViewMode.parking:

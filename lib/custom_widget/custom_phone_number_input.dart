@@ -13,6 +13,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
   final String? Function(String?)? validator;
   final String label;
   final Country? initialCountry;
+  final bool hasError;
 
   const CustomPhoneNumberInput({
     super.key,
@@ -21,6 +22,7 @@ class CustomPhoneNumberInput extends StatefulWidget {
     this.onInputChanged,
     this.validator,
     this.initialCountry,
+    this.hasError = false,
   });
 
   @override
@@ -400,8 +402,12 @@ class _CustomPhoneNumberInputState extends State<CustomPhoneNumberInput> {
                 ),
               ),
               errorStyle: AppFieldStyle.errorTextStyle(context),
-              enabledBorder: AppFieldStyle.outline(context),
-              focusedBorder: AppFieldStyle.outline(context, focused: true),
+              enabledBorder: AppFieldStyle.outline(context, hasError: widget.hasError),
+              focusedBorder: AppFieldStyle.outline(
+                context,
+                focused: !widget.hasError,
+                hasError: widget.hasError,
+              ),
               errorBorder: AppFieldStyle.outline(context, hasError: true),
               focusedErrorBorder:
                   AppFieldStyle.outline(context, hasError: true),
