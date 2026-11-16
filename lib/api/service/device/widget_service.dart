@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
+import 'package:crm_task_manager/core/navigation/lead_link_coordinator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -74,6 +75,17 @@ class WidgetService {
     
     debugPrint('WidgetService: _pendingScreenNavigation = $_pendingScreenNavigation');
     await _consumePendingNativePush();
+    await _consumePendingLeadLink();
+  }
+
+  static Future<void> _consumePendingLeadLink() async {
+    try {
+      final url = await platform.invokeMethod<String>('getPendingLeadLink');
+      if (url == null || url.isEmpty) return;
+      LeadLinkCoordinator.instance.receive(url);
+    } catch (e) {
+      debugPrint('WidgetService: Error consuming pending lead link: $e');
+    }
   }
 
   /// Повторно читает тап, если Dart стартовал раньше, чем iOS сохранил пуш.
@@ -120,6 +132,15 @@ class WidgetService {
     debugPrint('WidgetService: Method: ${call.method}');
     debugPrint('WidgetService: Arguments: ${call.arguments}');
     debugPrint('WidgetService: onNavigateFromWidgetByScreen is null: ${onNavigateFromWidgetByScreen == null}');
+
+    if (call.method == 'openLeadLink') {
+      final args = call.arguments;
+      final url = args is Map ? args['url']?.toString() : null;
+      if (url != null && url.isNotEmpty) {
+        LeadLinkCoordinator.instance.receive(url);
+      }
+      return;
+    }
 
     if (call.method == 'openFromPush') {
       final args = call.arguments;

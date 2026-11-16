@@ -796,7 +796,7 @@ class _ApartmentRoomLayoutViewState extends State<ApartmentRoomLayoutView> {
 
     if (isStudio) {
       layoutType = LayoutArchitectureType.studio;
-      typeLabel = 'Студия Open-Space';
+      typeLabel = 'Open-Space';
       final bathArea = (auxiliaryTotal * 0.55).clamp(3.5, 7.0);
       final hallArea = (auxiliaryTotal - bathArea).clamp(2.5, 6.0);
       final balconyArea = (total * 0.06).clamp(2.0, 5.0);

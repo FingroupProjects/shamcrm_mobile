@@ -110,6 +110,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   List<FieldConfiguration> fieldConfigurations = [];
   bool isConfigurationLoaded = false;
   bool _isTojsokhtmontjTenant = false;
+  bool _isBiovecoTenant = false;
   int? _editingPriceIndex;
 
   // Режим настроек
@@ -221,9 +222,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   Future<void> _loadTenantFlags() async {
     final isTojsokhtmontjTenant = await _apiService.isTojsokhtmontjTenant();
+    final isBiovecoTenant = await _apiService.isAdminbiovecotjTenant();
     if (!mounted) return;
     setState(() {
       _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
+      _isBiovecoTenant = isBiovecoTenant;
     });
   }
 
@@ -365,6 +368,18 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     super.dispose();
   }
 
+  int? _selectedGoodsLeadId() {
+    final id = _selectedLead?.id ?? 0;
+    if (id <= 0) return null;
+    return id;
+  }
+
+  Map<String, dynamic>? _goodsLeadFilter() {
+    final leadId = _selectedGoodsLeadId();
+    if (leadId == null) return null;
+    return {'lead_id': leadId};
+  }
+
   Future<void> _scanBarcode() async {
     final barcode = await Navigator.push<String>(
       context,
@@ -377,8 +392,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     final apiService = ApiService();
     try {
-      final variantResponse =
-          await apiService.getVariants(search: barcode, perPage: 1);
+      final variantResponse = await apiService.getVariants(
+        search: barcode,
+        perPage: 1,
+        filters: _goodsLeadFilter(),
+      );
       final variants = variantResponse.data;
 
       if (variants.isEmpty) {
@@ -485,7 +503,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
-      builder: (context) => ProductSelectionSheetAdd(order: tempOrder),
+      builder: (context) => ProductSelectionSheetAdd(
+        order: tempOrder,
+        leadId: _selectedGoodsLeadId(),
+      ),
     );
 
     if (result != null && result is List<Map<String, dynamic>> && mounted) {
@@ -545,8 +566,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
     final apiService = ApiService();
     try {
-      final variantResponse =
-          await apiService.getVariants(search: barcode, perPage: 1);
+      final variantResponse = await apiService.getVariants(
+        search: barcode,
+        perPage: 1,
+        filters: _goodsLeadFilter(),
+      );
       final variants = variantResponse.data;
 
       if (variants.isEmpty) {
@@ -2356,6 +2380,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   void _handlePriceInput(int index, String value) {
+    if (_isBiovecoTenant) return;
     final price = double.tryParse(value.replaceAll(',', '.'));
     if (price == null || index < 0 || index >= _items.length) return;
     final oldPrice = (_items[index]['price'] as num?)?.toDouble() ?? 0;
@@ -2392,6 +2417,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   void _startPriceEditing(int index, [Offset? localPosition]) {
+    if (_isBiovecoTenant) return;
     if (index < 0 || index >= _items.length) return;
     final controller = _getPriceController(index);
     final value =
@@ -2446,7 +2472,6 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   Widget _buildEditablePrice(int index, dynamic price) {
-    final isEditing = _editingPriceIndex == index;
     final textStyle = TextStyle(
       fontSize: 14,
       fontFamily: 'Gilroy',
@@ -2456,6 +2481,10 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     final formatted = _formatPrice(
       (price as num?)?.toDouble() ?? double.tryParse('$price') ?? 0,
     );
+    if (_isBiovecoTenant) {
+      return Text(formatted, style: textStyle);
+    }
+    final isEditing = _editingPriceIndex == index;
     final parts = formatted.split(' ');
     final symbol = parts.length > 1 ? parts.last : '';
 

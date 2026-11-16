@@ -100,7 +100,9 @@ class Scene3DBreadcrumbs extends StatelessWidget {
                 if (state.level.index >= Scene3DLevel.floor.index) ...[
                   _buildSeparator(),
                   _buildCrumb(
-                    title: '${context.tr('chess_grid_floor', fallback: 'Этаж')} ${state.selectedFloor}',
+                    title: state.selectedFloor == 0
+                        ? 'Паркинг'
+                        : '${context.tr('chess_grid_floor', fallback: 'Этаж')} ${state.selectedFloor}',
                     isActive: state.level == Scene3DLevel.floor,
                     onTap: () => onSelectLevel(Scene3DLevel.floor),
                   ),

@@ -15,17 +15,21 @@ import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_cell.dart
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_filter_dialog.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_parking_view.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/chess_payments_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_settings_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/parking_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/chess_grid_3d_view.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
 enum ChessViewMode {
+  sections,
   model3D,
   matrix,
   list,
   orders,
+  payments,
   parking,
   admin,
   settings,
@@ -50,7 +54,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
   late final ChessGridController _controller;
   late final TransformationController _transformationController;
   double _currentScale = 1.0;
-  ChessViewMode _currentView = ChessViewMode.matrix;
+  ChessViewMode _currentView = ChessViewMode.sections;
   ApartmentStatus? _quickStatusFilter;
   final ChessZoomLevel _zoomLevel = ChessZoomLevel.standard100;
 
@@ -100,15 +104,50 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     final complex = _controller.complex;
     final building = _controller.currentBuilding;
 
-    final apts = _controller.getApartmentsForComplex(complex.id);
-    final freeCount = _controller.getAvailableCount(complex.id);
-    final bookedCount = _controller.getBookedCount(complex.id);
-    final soldCount = _controller.getSoldCount(complex.id);
-    final reservedCount = _controller.getReservedCount(complex.id);
+    final selectedEntrance = _controller.filter.entrance;
+    final complexApts = _controller.getApartmentsForComplex(complex.id);
+    final visibleApts = complexApts.where((apt) {
+      if (building != null) {
+        final sameBuilding = apt.buildingKey == building.key ||
+            (building.id != null && apt.buildingId == building.id);
+        if (!sameBuilding) return false;
+      }
+      if (selectedEntrance != 0 && apt.entrance != selectedEntrance) return false;
+      return true;
+    }).toList();
+    final visibleParking = _controller.parkingSpots.where((spot) {
+      if (building == null) {
+        final buildingIds = complex.buildings.map((item) => item.id).whereType<int>().toSet();
+        final keys = complex.buildings.map((item) => item.key).toSet();
+        return buildingIds.contains(spot.buildingId) ||
+            keys.contains(spot.buildingKey) ||
+            spot.complexId == complex.id;
+      }
+      return (building.id != null && spot.buildingId == building.id) ||
+          spot.buildingKey == building.key;
+    }).toList();
+
+    int countByStatus(ApartmentStatus status) {
+      return visibleApts.where((apt) => apt.status == status).length +
+          visibleParking.where((spot) => spot.status == status).length;
+    }
+
+    final totalCount = visibleApts.length + visibleParking.length;
+    final freeCount = countByStatus(ApartmentStatus.available);
+    final bookedCount = countByStatus(ApartmentStatus.booked);
+    final soldCount = countByStatus(ApartmentStatus.sold);
+    final reservedCount = countByStatus(ApartmentStatus.reserved);
 
     final hasActiveFilter = !_controller.filter.isDefault || _quickStatusFilter != null;
 
-    return Scaffold(
+    return PopScope(
+      canPop: _currentView == ChessViewMode.sections,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && mounted) {
+          setState(() => _currentView = ChessViewMode.sections);
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.transparent,
       appBar: _buildAppBar(context, complex, building, hasActiveFilter),
       floatingActionButton: (_currentView == ChessViewMode.matrix || _currentView == ChessViewMode.list)
@@ -145,200 +184,186 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
               children: [
                 const SizedBox(height: 4),
 
-                // View Mode Tabs Switcher (Шахматка, Список, Заказы, Парковка, Настройки)
-                _buildNavTabBar(context),
-
-                // Quick Status Filters (Visible in matrix and list modes)
-                if (_currentView == ChessViewMode.matrix || _currentView == ChessViewMode.list)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildStatusFilterChip(
-                            status: null,
-                            label: context.tr('chess_grid_filter_all', fallback: 'Все'),
-                            count: apts.length,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip(
-                            status: ApartmentStatus.available,
-                            label: context.tr('chess_grid_filter_available', fallback: 'Свободно'),
-                            count: freeCount,
-                            color: ApartmentStatus.available.color,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip(
-                            status: ApartmentStatus.booked,
-                            label: context.tr('chess_grid_filter_booked', fallback: 'Бронь'),
-                            count: bookedCount,
-                            color: ApartmentStatus.booked.color,
-                          ),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip(
-                            status: ApartmentStatus.sold,
-                            label: context.tr('chess_grid_filter_sold', fallback: 'Продано'),
-                            count: soldCount,
-                            color: ApartmentStatus.sold.color,
-                          ),
-                          if (reservedCount > 0) ...[
+                if (_currentView == ChessViewMode.sections)
+                  Expanded(child: _buildSectionGrid(context))
+                else ...[
+                  if (_currentView == ChessViewMode.matrix || _currentView == ChessViewMode.list)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildStatusFilterChip(
+                              status: null,
+                              label: context.tr('chess_grid_filter_all', fallback: 'Все'),
+                              count: totalCount,
+                              color: colors.buttonPrimaryBg,
+                            ),
                             const SizedBox(width: 6),
                             _buildStatusFilterChip(
-                              status: ApartmentStatus.reserved,
-                              label: context.tr('chess_grid_filter_reserved', fallback: 'Резерв'),
-                              count: reservedCount,
-                              color: ApartmentStatus.reserved.color,
+                              status: ApartmentStatus.available,
+                              label: context.tr('chess_grid_filter_available', fallback: 'Свободно'),
+                              count: freeCount,
+                              color: ApartmentStatus.available.color,
                             ),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                              status: ApartmentStatus.booked,
+                              label: context.tr('chess_grid_filter_booked', fallback: 'Бронь'),
+                              count: bookedCount,
+                              color: ApartmentStatus.booked.color,
+                            ),
+                            const SizedBox(width: 6),
+                            _buildStatusFilterChip(
+                              status: ApartmentStatus.sold,
+                              label: context.tr('chess_grid_filter_sold', fallback: 'Продано'),
+                              count: soldCount,
+                              color: ApartmentStatus.sold.color,
+                            ),
+                            if (reservedCount > 0) ...[
+                              const SizedBox(width: 6),
+                              _buildStatusFilterChip(
+                                status: ApartmentStatus.reserved,
+                                label: context.tr('chess_grid_filter_reserved', fallback: 'Резерв'),
+                                count: reservedCount,
+                                color: ApartmentStatus.reserved.color,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
+                  Expanded(
+                    child: (_controller.isLoadingComplex || _controller.isLoadingApartments)
+                        ? const Center(child: CircularProgressIndicator())
+                        : _buildCurrentViewBody(context, building),
                   ),
-
-                // Main View Body
-                Expanded(
-                  child: (_controller.isLoadingComplex || _controller.isLoadingApartments)
-                      ? const Center(child: CircularProgressIndicator())
-                      : _buildCurrentViewBody(context, building),
-                ),
+                ],
               ],
             ),
           ),
         ],
       ),
+    ),
     );
   }
 
-  Widget _buildNavTabBar(BuildContext context) {
+  Widget _buildSectionGrid(BuildContext context) {
     final colors = context.appColors;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.45)),
-        boxShadow: context.appShadows.card,
+    final tiles = <({ChessViewMode mode, String label, IconData icon})>[
+      if (ComplexChessScreen.is3DEnabled)
+        (mode: ChessViewMode.model3D, label: '3D', icon: Icons.view_in_ar_rounded),
+      (
+        mode: ChessViewMode.matrix,
+        label: context.tr('chess_grid_tab_chess', fallback: 'Шахматка'),
+        icon: Icons.grid_view_rounded,
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            if (ComplexChessScreen.is3DEnabled) ...[
-              _buildNavTabItem(
-                mode: ChessViewMode.model3D,
-                label: '3D',
-                icon: Icons.view_in_ar_rounded,
-              ),
-              const SizedBox(width: 4),
-            ],
-            _buildNavTabItem(
-              mode: ChessViewMode.matrix,
-              label: context.tr('chess_grid_tab_chess', fallback: 'Шахматка'),
-              icon: Icons.grid_view_rounded,
-            ),
-            const SizedBox(width: 4),
-            _buildNavTabItem(
-              mode: ChessViewMode.list,
-              label: context.tr('chess_grid_tab_list', fallback: 'Список'),
-              icon: Icons.view_agenda_rounded,
-            ),
-            const SizedBox(width: 4),
-            _buildNavTabItem(
-              mode: ChessViewMode.orders,
-              label: context.tr('chess_grid_tab_orders', fallback: 'Сделка'),
-              icon: Icons.receipt_long_rounded,
-            ),
-            const SizedBox(width: 4),
-            _buildNavTabItem(
-              mode: ChessViewMode.parking,
-              label: context.tr('chess_grid_tab_parking', fallback: 'Парковка'),
-              icon: Icons.local_parking_rounded,
-              badge: _controller.parkingSpots.length,
-            ),
-            const SizedBox(width: 4),
-            _buildNavTabItem(
-              mode: ChessViewMode.admin,
-              label: context.tr('chess_grid_tab_management', fallback: 'Управление'),
-              icon: Icons.domain_add_rounded,
-            ),
-            const SizedBox(width: 4),
-            _buildNavTabItem(
-              mode: ChessViewMode.settings,
-              label: context.tr('chess_grid_tab_settings', fallback: 'Настройки'),
-              icon: Icons.tune_rounded,
-            ),
-          ],
-        ),
+      (
+        mode: ChessViewMode.list,
+        label: context.tr('chess_grid_tab_list', fallback: 'Список'),
+        icon: Icons.view_agenda_rounded,
       ),
-    );
-  }
+      (
+        mode: ChessViewMode.orders,
+        label: context.tr('chess_grid_tab_orders', fallback: 'Сделка'),
+        icon: Icons.receipt_long_rounded,
+      ),
+      (mode: ChessViewMode.payments, label: 'Платежи', icon: Icons.payments_outlined),
+      (
+        mode: ChessViewMode.parking,
+        label: context.tr('chess_grid_tab_parking', fallback: 'Парковка'),
+        icon: Icons.local_parking_rounded,
+      ),
+      (
+        mode: ChessViewMode.admin,
+        label: context.tr('chess_grid_tab_management', fallback: 'Управление'),
+        icon: Icons.domain_add_rounded,
+      ),
+      (
+        mode: ChessViewMode.settings,
+        label: context.tr('chess_grid_tab_settings', fallback: 'Настройки'),
+        icon: Icons.tune_rounded,
+      ),
+    ];
 
-  Widget _buildNavTabItem({
-    required ChessViewMode mode,
-    required String label,
-    required IconData icon,
-    int? badge,
-  }) {
-    final colors = context.appColors;
-    final isSelected = _currentView == mode;
-
-    return InkWell(
-      onTap: () => setState(() => _currentView = mode),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.buttonPrimaryBg
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? colors.buttonPrimaryFg : colors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 12.5,
-                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
-              ),
-            ),
-            if (badge != null && badge > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.buttonPrimaryFg.withValues(alpha: 0.22)
-                      : colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$badge',
-                  style: TextStyle(
-                    fontFamily: 'Golos',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? colors.buttonPrimaryFg : colors.textSecondary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 600
+            ? 2
+            : constraints.maxWidth < 900
+                ? 3
+                : 4;
+        const spacing = 10.0;
+        final itemWidth = (constraints.maxWidth - 32 - spacing * (columns - 1)) / columns;
+        final itemHeight = itemWidth / (constraints.maxWidth < 400 ? 1.0 : 1.1);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (final tile in tiles)
+                SizedBox(
+                  width: itemWidth,
+                  height: itemHeight,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => setState(() => _currentView = tile.mode),
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          color: colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: colors.borderSubtle),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.shadow.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: colors.buttonPrimaryBg.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(tile.icon, size: 24, color: colors.buttonPrimaryBg),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                tile.label,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontFamily: 'Gilroy',
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.textPrimary,
+                                  height: 1.1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -346,6 +371,8 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     final colors = context.appColors;
 
     switch (_currentView) {
+      case ChessViewMode.sections:
+        return const SizedBox.shrink();
       case ChessViewMode.model3D:
         final currentComplex = _controller.complex.id == widget.complex.id &&
                 _controller.complex.buildings.isNotEmpty
@@ -354,6 +381,11 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         return ChessGrid3DView(
           complex: currentComplex,
           apartments: _controller.getApartmentsForComplex(widget.complex.id),
+          parkingSpots: _controller.parkingSpots.where((spot) {
+            final buildingIds = currentComplex.buildings.map((item) => item.id).whereType<int>().toSet();
+            final keys = currentComplex.buildings.map((item) => item.key).toSet();
+            return buildingIds.contains(spot.buildingId) || keys.contains(spot.buildingKey);
+          }).toList(),
           onSwitchTo2D: () {
             setState(() {
               _currentView = ChessViewMode.matrix;
@@ -384,6 +416,9 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           hideAppBar: true,
           residentialDeal: true,
         );
+
+      case ChessViewMode.payments:
+        return const ChessPaymentsView();
 
       case ChessViewMode.parking:
         return ChessGridParkingView(
@@ -561,6 +596,13 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         ? List.generate(effectiveEntranceCount, (i) => i + 1)
         : [selectedEntrance];
 
+    final parkingSpots = _parkingForMatrix(building);
+    final rawSlots = entrances.length * effectiveApartsPerFloor;
+    final slotsPerRow = rawSlots < 1 ? 1 : rawSlots;
+    final parkingRowCount = parkingSpots.isEmpty
+        ? 0
+        : (parkingSpots.length + slotsPerRow - 1) ~/ slotsPerRow;
+
     final isMicro = _zoomLevel == ChessZoomLevel.micro50;
     final cellWidth = _zoomLevel.cellWidth;
     final cellHeight = _zoomLevel.cellHeight;
@@ -618,6 +660,48 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
               ],
             ),
           ),
+        if (parkingRowCount > 0)
+          for (int row = 0; row < parkingRowCount; row++)
+            Container(
+              width: floorWidth,
+              height: cellHeight,
+              margin: EdgeInsets.only(
+                top: marginVal,
+                bottom: marginVal + rowGap,
+                right: 6,
+                left: 2,
+              ),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colors.buttonPrimaryBg.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'P',
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: Color(0xFF1D9BF0),
+                    ),
+                  ),
+                  Text(
+                    parkingRowCount == 1 ? 'парк' : '-${row + 1}',
+                    style: const TextStyle(
+                      fontFamily: 'Golos',
+                      fontSize: 9.5,
+                      color: Color(0xFF1D9BF0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
       ],
     );
 
@@ -678,6 +762,19 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
               ],
             ),
           ),
+        if (parkingRowCount > 0)
+          for (int row = 0; row < parkingRowCount; row++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: rowGap),
+              child: Row(
+                children: [
+                  for (int slot = 0; slot < slotsPerRow; slot++)
+                    row * slotsPerRow + slot < parkingSpots.length
+                        ? _buildParkingCell(parkingSpots[row * slotsPerRow + slot])
+                        : _buildEmptyMatrixSlot(),
+                ],
+              ),
+            ),
       ],
     );
 
@@ -766,6 +863,128 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     );
   }
 
+  List<ParkingSpot> _parkingForMatrix(Building building) {
+    return _controller.parkingSpots.where((spot) {
+      final sameBuilding = (building.id != null && spot.buildingId == building.id) ||
+          spot.buildingKey == building.key;
+      if (!sameBuilding) return false;
+      if (_quickStatusFilter != null && spot.status != _quickStatusFilter) return false;
+      return true;
+    }).toList();
+  }
+
+  Widget _buildEmptyMatrixSlot() {
+    final cellWidth = _zoomLevel.cellWidth;
+    final cellHeight = _zoomLevel.cellHeight;
+    final isMicro = _zoomLevel == ChessZoomLevel.micro50;
+    return Container(
+      width: cellWidth,
+      height: cellHeight,
+      margin: EdgeInsets.all(isMicro ? 2.0 : 3.0),
+      decoration: BoxDecoration(
+        color: context.appColors.surfaceElevated.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(isMicro ? 8 : 12),
+      ),
+    );
+  }
+
+  Widget _buildParkingCell(ParkingSpot spot) {
+    final colors = context.appColors;
+    final cellWidth = _zoomLevel.cellWidth;
+    final cellHeight = _zoomLevel.cellHeight;
+    final isMicro = _zoomLevel == ChessZoomLevel.micro50;
+    final statusColor = spot.status.color;
+    final areaLabel = spot.area > 0 ? '${spot.area.toStringAsFixed(0)} м²' : spot.type;
+    final priceLabel = spot.price > 0 ? _formatMatrixPrice(spot.price) : '';
+
+    return GestureDetector(
+      onTap: () => ParkingDetailSheet.show(
+        context: context,
+        spot: spot,
+        onCreateOrder: () {
+          OrderCreateSheet.show(context: context, parking: spot).then((_) {
+            if (mounted) setState(() {});
+          });
+        },
+      ),
+      child: Container(
+        width: cellWidth,
+        height: cellHeight,
+        margin: EdgeInsets.all(isMicro ? 2.0 : 3.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMicro ? 2 : 5,
+          vertical: isMicro ? 2 : 5,
+        ),
+        decoration: BoxDecoration(
+          color: spot.status.bgColor,
+          borderRadius: BorderRadius.circular(isMicro ? 8 : 11),
+          border: Border.all(color: statusColor.withValues(alpha: 0.55), width: 1.2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    '№${spot.number}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      fontSize: isMicro ? 11.5 : 13.5,
+                      color: colors.textPrimary,
+                      height: 1.1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              areaLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Golos',
+                fontWeight: FontWeight.w500,
+                fontSize: isMicro ? 9 : 11,
+                color: colors.textSecondary,
+                height: 1.1,
+              ),
+            ),
+            Text(
+              priceLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                fontSize: isMicro ? 9 : 11,
+                color: statusColor,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatMatrixPrice(double price) {
+    if (price >= 1000000) return '${(price / 1000000).toStringAsFixed(1)} млн';
+    if (price >= 1000) return '${(price / 1000).toStringAsFixed(0)} тыс';
+    return price.toStringAsFixed(0);
+  }
+
   Widget _buildCellSlot({
     required List<Apartment> filteredApts,
     required Building building,
@@ -849,23 +1068,45 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     );
   }
 
-  void _openApartmentDetail(Apartment apt) {
+  Future<void> _openApartmentDetail(Apartment apt) async {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    Apartment fresh;
+    try {
+      fresh = await _controller.loadApartmentById(apt);
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        showCustomSnackBar(
+          context: context,
+          message: e.toString().replaceFirst('Exception: ', ''),
+          isSuccess: false,
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
     ApartmentDetailSheet.show(
       context: context,
-      apartment: apt,
+      apartment: fresh,
       onCreateOrder: () {
         OrderCreateSheet.show(
           context: context,
-          apartment: apt,
+          apartment: fresh,
         ).then((_) {
           if (mounted) setState(() {});
         });
       },
       onToggleReserve: () {
-        _controller.toggleApartmentReserve(apt);
+        _controller.toggleApartmentReserve(fresh);
         showCustomSnackBar(
           context: context,
-          message: apt.status == ApartmentStatus.reserved
+          message: fresh.status == ApartmentStatus.reserved
               ? context.tr('chess_grid_unreserved_success', fallback: 'Квартира снята с резерва')
               : context.tr('chess_grid_reserved_success', fallback: 'Квартира поставлена в резерв'),
           isSuccess: true,
@@ -914,7 +1155,13 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           gradientColors: appBarGradient,
           borderColor: subtleBorder,
           child: IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (_currentView != ChessViewMode.sections) {
+                setState(() => _currentView = ChessViewMode.sections);
+                return;
+              }
+              Navigator.pop(context);
+            },
             icon: Icon(
               Icons.arrow_back_rounded,
               size: 20,
@@ -985,36 +1232,36 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           padding: EdgeInsets.zero,
           gradientColors: appBarGradient,
           borderColor: subtleBorder,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.tune_rounded,
-                  size: 20,
-                  color: hasActiveFilter
-                      ? colors.buttonPrimaryBg
-                      : primaryText,
+          child: IconButton(
+            onPressed: () => ChessGridFilterDialog.show(
+              context: context,
+              controller: _controller,
+            ),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  'assets/icons/AppBar/filter.png',
+                  width: 20,
+                  height: 20,
+                  color: hasActiveFilter ? colors.buttonPrimaryBg : primaryText,
                 ),
-                onPressed: () => ChessGridFilterDialog.show(
-                  context: context,
-                  controller: _controller,
-                ),
-              ),
-              if (hasActiveFilter)
-                Positioned(
-                  top: 9,
-                  right: 9,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: colors.buttonPrimaryBg,
-                      shape: BoxShape.circle,
+                if (hasActiveFilter)
+                  Positioned(
+                    top: -1,
+                    right: -1,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: colors.buttonPrimaryBg,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

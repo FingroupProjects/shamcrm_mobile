@@ -75,8 +75,6 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
     final statusColor = apartment.status.color;
     final controller = ChessGridController.instance;
     final photos = _allPhotos;
-    final currency = apartment.currency;
-
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.90,
@@ -101,34 +99,22 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
             ),
           ),
 
-          // Top Header (matches TZ image 4: Title, ID, Print & Share icons)
+          // Top Header (title and close)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        'КВАРТИРА № ${apartment.number}',
-                        style: TextStyle(
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16.5,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'ID ${apartment.id}',
-                        style: TextStyle(
-                          fontFamily: 'Golos',
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    '№ ${apartment.displayNumber}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16.5,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ),
                 Row(
@@ -322,7 +308,7 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${apartment.totalPrice.toStringAsFixed(0)} $currency',
+                              apartment.totalPrice.toStringAsFixed(0),
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w800,
@@ -371,7 +357,7 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${apartment.pricePerSqm.toStringAsFixed(0)} $currency / м²',
+                              '${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontWeight: FontWeight.w700,
@@ -412,7 +398,7 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                         _buildDivider(colors),
                         _buildParamRow(context, 'Площадь кухни', '${apartment.kitchenArea.toStringAsFixed(1)} м²'),
                         _buildDivider(colors),
-                        _buildParamRow(context, 'Кол-во комнат', apartment.rooms == 0 ? 'Студия' : '${apartment.rooms}'),
+                        _buildParamRow(context, 'Кол-во комнат', '${apartment.rooms}'),
                         _buildDivider(colors),
                         // [Скрыто по требованию]
                         // _buildParamRow(context, 'Тип планировки', apartment.layoutType ?? 'A'),
@@ -473,23 +459,13 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                         ),
                         elevation: isAvailable ? 2 : 0,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isAvailable ? Icons.add_shopping_cart_rounded : Icons.lock_outline_rounded,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isAvailable ? 'В сделку' : 'Заказ недоступен (не свободно)',
-                            style: const TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        isAvailable ? 'В сделку' : 'Сделка недоступна (не свободно)',
+                        style: const TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 
 import '../../../../models/page_2/dashboard/dashboard_goods_report.dart';
@@ -19,11 +20,19 @@ class GoodsContent extends StatefulWidget {
 class _GoodsContentState extends State<GoodsContent> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
+  bool _showPrice = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _loadTenantFlags();
+  }
+
+  Future<void> _loadTenantFlags() async {
+    final showPrice = await ApiService().isAdminbiovecotjTenant();
+    if (!mounted) return;
+    setState(() => _showPrice = showPrice);
   }
 
   @override
@@ -91,6 +100,7 @@ class _GoodsContentState extends State<GoodsContent> {
 
           return GoodsCard(
             goods: goods[index],
+            showPrice: _showPrice,
             onClick: (e) => showGoodsStoragesDetailsDialog(context, e),
             onLongPress: (e) {},
           );

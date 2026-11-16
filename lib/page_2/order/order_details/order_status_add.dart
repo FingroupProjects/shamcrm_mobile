@@ -11,8 +11,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CreateOrderStatusDialog extends StatefulWidget {
   final OrderBloc orderBloc;
+  final bool chessStatuses;
 
-  const CreateOrderStatusDialog({super.key, required this.orderBloc});
+  const CreateOrderStatusDialog({
+    super.key,
+    required this.orderBloc,
+    this.chessStatuses = false,
+  });
 
   @override
   State<CreateOrderStatusDialog> createState() =>
@@ -24,6 +29,40 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
   final _messageController = TextEditingController();
   bool _isSuccess = false;
   bool _isFailed = false;
+  bool _isBooked = false;
+  bool _isReserved = false;
+  bool _submitting = false;
+
+  void _setStatusFlag({bool? success, bool? failed, bool? booked, bool? reserved}) {
+    setState(() {
+      if (success == true) {
+        _isSuccess = true;
+        _isFailed = false;
+        _isBooked = false;
+        _isReserved = false;
+      } else if (failed == true) {
+        _isFailed = true;
+        _isSuccess = false;
+        _isBooked = false;
+        _isReserved = false;
+      } else if (booked == true) {
+        _isBooked = true;
+        _isSuccess = false;
+        _isFailed = false;
+        _isReserved = false;
+      } else if (reserved == true) {
+        _isReserved = true;
+        _isSuccess = false;
+        _isFailed = false;
+        _isBooked = false;
+      } else {
+        if (success == false) _isSuccess = false;
+        if (failed == false) _isFailed = false;
+        if (booked == false) _isBooked = false;
+        if (reserved == false) _isReserved = false;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -80,13 +119,19 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
             ),
           ),
         ),
-        Text(label, style: TextStyle(
-          fontSize: 16,
-          fontFamily: 'Gilroy',
-          fontWeight: FontWeight.w500,
-          color: colors.textPrimary,
-          overflow: TextOverflow.ellipsis,
-        )),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w500,
+              color: colors.textPrimary,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -124,14 +169,9 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
       child: BlocListener<OrderBloc, OrderState>(
         listener: (context, state) {
           if (state is OrderStatusCreated) {
-            showCustomSnackBar(
-              context: context,
-              message: 'status_created_successfully',
-              isSuccess: true,
-              aboveDialogs: true,
-            );
             Navigator.of(context).pop(true);
           } else if (state is OrderError) {
+            if (mounted) setState(() => _submitting = false);
             showCustomSnackBar(
               context: context,
               message: 'Ошибка создания статуса!',
@@ -209,37 +249,57 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                               color: colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Row(
+                            child: Column(
                               children: [
-                                Expanded(
-                                  child: _buildCheckbox(
-                                    localizations.translate('successful'),
-                                    _isSuccess,
-                                    (v) {
-                                      if (v != null) {
-                                        setState(() {
-                                          _isSuccess = v;
-                                          if (_isSuccess) _isFailed = false;
-                                        });
-                                      }
-                                    },
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCheckbox(
+                                        localizations.translate('successful'),
+                                        _isSuccess,
+                                        (v) {
+                                          if (v != null) _setStatusFlag(success: v);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildCheckbox(
+                                        localizations.translate('is_failed'),
+                                        _isFailed,
+                                        (v) {
+                                          if (v != null) _setStatusFlag(failed: v);
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildCheckbox(
-                                    localizations.translate('is_failed'),
-                                    _isFailed,
-                                    (v) {
-                                      if (v != null) {
-                                        setState(() {
-                                          _isFailed = v;
-                                          if (_isFailed) _isSuccess = false;
-                                        });
-                                      }
-                                    },
+                                if (widget.chessStatuses) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildCheckbox(
+                                          localizations.translate('chess_grid_booked'),
+                                          _isBooked,
+                                          (v) {
+                                            if (v != null) _setStatusFlag(booked: v);
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildCheckbox(
+                                          localizations.translate('chess_grid_reserved'),
+                                          _isReserved,
+                                          (v) {
+                                            if (v != null) _setStatusFlag(reserved: v);
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -259,16 +319,21 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                       const SizedBox(width: 12),
                       _buildActionButton(
                         label: localizations.translate('add'),
-                        onPressed: () {
+                        onPressed: _submitting
+                            ? () {}
+                            : () {
                           final title = _titleController.text.trim();
                           final message = _messageController.text.trim();
 
                           if (title.isNotEmpty && message.isNotEmpty) {
+                            setState(() => _submitting = true);
                             widget.orderBloc.add(CreateOrderStatus(
                               title: title,
                               notificationMessage: message,
                               isSuccess: _isSuccess,
                               isFailed: _isFailed,
+                              isBooked: widget.chessStatuses ? _isBooked : null,
+                              isReserved: widget.chessStatuses ? _isReserved : null,
                             ));
                           } else {
                             showCustomSnackBar(

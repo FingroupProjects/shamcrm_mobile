@@ -259,7 +259,7 @@ class _ChessDealGoodsSheetState extends State<ChessDealGoodsSheet> {
                   ),
                 ),
                 Text(
-                  'Добавление товара',
+                  'Добавление',
                   style: TextStyle(
                     fontSize: 18,
                     fontFamily: 'Gilroy',
@@ -535,7 +535,7 @@ class _ChessDealGoodsSheetState extends State<ChessDealGoodsSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Квартира № ${apartment.number}',
+                      'Квартира № ${apartment.displayNumber}',
                       style: TextStyle(
                         fontSize: 15,
                         fontFamily: 'Gilroy',

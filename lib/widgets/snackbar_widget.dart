@@ -23,11 +23,16 @@ void showCustomSnackBar({
   final safeMessage = localizeApiValidationMessage(friendlyError(message), loc);
   final text = loc?.translate(safeMessage) ?? safeMessage;
 
-  if (aboveDialogs) {
+  // Модалка и нижний лист закрывают Scaffold под собой, и обычный SnackBar
+  // остаётся позади. Поверх окна сообщение показываем в корневом оверлее.
+  final coveredByModal = aboveDialogs || ModalRoute.of(context) is PopupRoute<dynamic>;
+  if (coveredByModal) {
     _showOverlaySnackBar(
       context: context,
       text: text,
       isSuccess: isSuccess,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
     return;
   }
@@ -87,6 +92,8 @@ void _showOverlaySnackBar({
   required BuildContext context,
   required String text,
   required bool isSuccess,
+  String? actionLabel,
+  VoidCallback? onAction,
 }) {
   final overlay = Overlay.of(context, rootOverlay: true);
   final colors = context.appColors;
@@ -104,34 +111,58 @@ void _showOverlaySnackBar({
         left: 16,
         right: 16,
         bottom: _overlaySnackBarBottom(overlayContext),
-        child: IgnorePointer(
-          child: Material(
-            color: Colors.transparent,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: background,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: shadow.withValues(alpha: 0.28),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                child: Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: foreground,
-                  ),
+        child: Material(
+          color: Colors.transparent,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: shadow.withValues(alpha: 0.28),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: foreground,
+                      ),
+                    ),
+                  ),
+                  if (actionLabel != null && onAction != null) ...[
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () {
+                        if (identical(_overlaySnackBarEntry, entry)) {
+                          entry.remove();
+                          _overlaySnackBarEntry = null;
+                        }
+                        onAction();
+                      },
+                      child: Text(
+                        actionLabel,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: foreground,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),

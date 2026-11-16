@@ -164,7 +164,6 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
             child: Row(
               children: [
                 _buildRoomChip(null, context.tr('chess_grid_all', fallback: 'Все')),
-                _buildRoomChip(0, context.tr('chess_grid_studios', fallback: 'Студии')),
                 _buildRoomChip(1, context.tr('chess_grid_rooms_1', fallback: '1-комн.')),
                 _buildRoomChip(2, context.tr('chess_grid_rooms_2', fallback: '2-комн.')),
                 _buildRoomChip(3, context.tr('chess_grid_rooms_3', fallback: '3-комн.')),
@@ -261,7 +260,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
 
   Widget _buildApartmentCard(BuildContext context, Apartment apt, dynamic colors) {
     final status = apt.status;
-    final roomsLabel = apt.rooms == 0 ? 'Студия' : '${apt.rooms}-комнатная';
+    final roomsLabel = apt.rooms > 0 ? '${apt.rooms}-комнатная' : '${apt.totalArea.toStringAsFixed(0)} м²';
     final priceStr = _formatPriceFull(apt.totalPrice);
 
     return Container(
@@ -324,13 +323,17 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            '№ ${apt.number}',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15.5,
-                              color: colors.textPrimary,
+                          Flexible(
+                            child: Text(
+                              '№ ${apt.displayNumber}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15.5,
+                                color: colors.textPrimary,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -391,7 +394,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '$priceStr \$',
+                      priceStr,
                       style: TextStyle(
                         fontFamily: 'Gilroy',
                         fontWeight: FontWeight.w800,
@@ -401,7 +404,7 @@ class _CatalogListViewV2State extends State<CatalogListViewV2> {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      '\$${apt.pricePerSqm.toStringAsFixed(0)} / м²',
+                      '${apt.pricePerSqm.toStringAsFixed(0)} / м²',
                       style: TextStyle(
                         fontFamily: 'Golos',
                         fontSize: 10.5,

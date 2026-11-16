@@ -19,6 +19,7 @@ import WidgetKit
     private let appGroupId = "group.com.softtech.crmTaskManager"
     private let pendingWidgetScreenKey = "flutter.pending_widget_screen"
     private let pendingPushKey = "ios_pending_push_tap_v1"
+    private let pendingLeadLinkKey = "ios_pending_lead_link_v1"
     private let chatReplyCategoryId = "CHAT_MESSAGE_REPLY"
     private let chatReplyActionId = "CHAT_REPLY"
     private let chatMarkReadActionId = "CHAT_MARK_READ"
@@ -196,6 +197,11 @@ import WidgetKit
             case "ackPendingPush":
                 UserDefaults.standard.removeObject(forKey: self.pendingPushKey)
                 result(true)
+            case "getPendingLeadLink":
+                result(UserDefaults.standard.string(forKey: self.pendingLeadLinkKey))
+            case "ackPendingLeadLink":
+                UserDefaults.standard.removeObject(forKey: self.pendingLeadLinkKey)
+                result(true)
             case "showForegroundPush":
                 self.handleShowForegroundPush(call: call, result: result)
             default:
@@ -205,6 +211,7 @@ import WidgetKit
 
         // Канал мог появиться позже, чем тап, которым открыли приложение.
         deliverPendingPush()
+        deliverPendingLeadLink()
     }
 
     private func setupNetworkEventChannel(messenger: FlutterBinaryMessenger) {
@@ -547,10 +554,66 @@ import WidgetKit
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey: Any] = [:]
     ) -> Bool {
-        handleOpenURL(url)
+        if handleOpenURL(url) {
+            return true
+        }
+        return super.application(app, open: url, options: options)
+    }
+
+    override func application(
+        _ application: UIApplication,
+        continue userActivity: NSUserActivity,
+        restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+    ) -> Bool {
+        if handleUniversalLink(userActivity) {
+            return true
+        }
+        return super.application(
+            application,
+            continue: userActivity,
+            restorationHandler: restorationHandler
+        )
+    }
+
+    private func isLeadLink(_ url: URL) -> Bool {
+        let scheme = url.scheme?.lowercased() ?? ""
+        let host = url.host?.lowercased() ?? ""
+        if scheme == "shamcrm" {
+            return host != "widget"
+        }
+        if scheme != "https" && scheme != "http" {
+            return false
+        }
+        return host == "shamcrm.com" || host.hasSuffix(".shamcrm.com")
+    }
+
+    private func deliverPendingLeadLink() {
+        guard
+            let url = UserDefaults.standard.string(forKey: pendingLeadLinkKey),
+            let channel = widgetMethodChannel
+        else {
+            return
+        }
+        channel.invokeMethod("openLeadLink", arguments: ["url": url])
+    }
+
+    func handleUniversalLink(_ userActivity: NSUserActivity) -> Bool {
+        guard
+            userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+            let url = userActivity.webpageURL
+        else {
+            return false
+        }
+        return handleOpenURL(url)
     }
 
     func handleOpenURL(_ url: URL) -> Bool {
+        if isLeadLink(url) {
+            UserDefaults.standard.set(url.absoluteString, forKey: pendingLeadLinkKey)
+            deliverPendingLeadLink()
+            return true
+        }
+
         guard
             url.scheme == "shamcrm",
             url.host == "widget",

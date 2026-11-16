@@ -376,15 +376,16 @@ class ChessGridController extends ChangeNotifier {
   Future<bool> addBuilding(Building b) async {
     final c = complex;
     final complexId = b.residentialComplexId ?? c.id;
-    final selectedTypes = b.apartmentTypes.isNotEmpty ? b.apartmentTypes : ['Студия', 'Евроремонт'];
+    final selectedTypes = b.apartmentTypes.where((item) => !Apartment.isStudioLabel(item)).toList();
+    final types = selectedTypes.isNotEmpty ? selectedTypes : ['Евроремонт'];
     final payload = {
       'name': b.name,
       'residential_complex_id': complexId,
       'number_of_entrances': b.entranceCount,
       'number_of_floors': b.floorCount,
       'number_of_apartments_per_floor': b.apartsPerFloor,
-      'type_of_floors': selectedTypes,
-      'apartment_types': selectedTypes,
+      'type_of_floors': types,
+      'apartment_types': types,
     };
 
     try {
@@ -446,62 +447,84 @@ class ChessGridController extends ChangeNotifier {
     }
   }
 
+  int _freePosition(Apartment apt) {
+    final taken = apartments
+        .where((item) {
+          final sameBuilding = (apt.buildingId != null && item.buildingId == apt.buildingId) ||
+              (apt.buildingKey.isNotEmpty && item.buildingKey == apt.buildingKey);
+          return sameBuilding && item.entrance == apt.entrance && item.floor == apt.floor;
+        })
+        .map((item) => item.position)
+        .toSet();
+    if (!taken.contains(apt.position)) return apt.position;
+    var position = 0;
+    while (taken.contains(position)) {
+      position++;
+    }
+    return position;
+  }
+
   Future<void> addApartment(Apartment apt, {List<int>? copyToFloors}) async {
-    apartments.add(apt);
+    final building = complex.buildings.firstWhereOrNull((item) => item.key == apt.buildingKey);
+    final complexId = _selectedComplexId > 0
+        ? _selectedComplexId
+        : (apt.complexId > 0 ? apt.complexId : complex.id);
+    final placed = apt.copyWith(
+      complexId: complexId,
+      buildingId: apt.buildingId ?? building?.id,
+      buildingKey: building?.key ?? apt.buildingKey,
+      buildingName: apt.buildingName.trim().isNotEmpty
+          ? apt.buildingName
+          : (building?.name ?? apt.buildingName),
+      position: _freePosition(apt.copyWith(
+        complexId: complexId,
+        buildingId: apt.buildingId ?? building?.id,
+        buildingKey: building?.key ?? apt.buildingKey,
+      )),
+    );
+
+    final targetBuildingId = placed.buildingId ?? building?.id;
+    if (targetBuildingId == null) {
+      throw Exception('У корпуса нет идентификатора, квартиру создать нельзя');
+    }
+
+    await _apiService.createApartmentGood(
+      buildingId: targetBuildingId,
+      entranceId: placed.entranceId,
+      entrance: placed.entrance,
+      residentialComplexId: complexId,
+      number: placed.number,
+      floor: placed.floor,
+      rooms: placed.rooms,
+      totalArea: placed.totalArea,
+      livingArea: placed.livingArea,
+      kitchenArea: placed.kitchenArea,
+      totalPrice: placed.totalPrice,
+      pricePerSqm: placed.pricePerSqm,
+      type: placed.type,
+      apartmentType: placed.type,
+      status: placed.status,
+      position: placed.position,
+      buildingKey: placed.buildingKey,
+      buildingName: placed.buildingName,
+    );
+
+    // Сервер сам раскладывает квартиры по ячейкам. Повторяем ту же загрузку,
+    // что при входе на экран, иначе локальная копия мелькает и пропадает.
+    await loadComplexDetails(complexId);
+
     if (copyToFloors != null && copyToFloors.isNotEmpty) {
       int maxId = apartments.isNotEmpty ? apartments.map((a) => a.id).fold(0, max) : 0;
       for (final f in copyToFloors) {
-        if (f == apt.floor) continue;
-        apartments.add(apt.copyWith(
+        if (f == placed.floor) continue;
+        final copy = placed.copyWith(
           id: ++maxId,
           floor: f,
-          number: '${apt.number}-$f',
-        ));
-      }
-    }
-    notifyListeners();
-
-    // Persist to server via API (POST /good)
-    try {
-      final b = complex.buildings.firstWhereOrNull((item) => item.key == apt.buildingKey);
-      final targetBuildingId = b?.id;
-      if (targetBuildingId != null) {
-        final created = await _apiService.createApartmentGood(
-          buildingId: targetBuildingId,
-          entranceId: apt.entranceId,
-          entrance: apt.entrance,
-          residentialComplexId: apt.complexId > 0 ? apt.complexId : complex.id,
-          number: apt.number,
-          floor: apt.floor,
-          rooms: apt.rooms,
-          totalArea: apt.totalArea,
-          livingArea: apt.livingArea,
-          kitchenArea: apt.kitchenArea,
-          totalPrice: apt.totalPrice,
-          pricePerSqm: apt.pricePerSqm,
-          type: apt.type,
-          apartmentType: apt.type,
-          status: apt.status,
-          position: apt.position,
-          buildingKey: apt.buildingKey,
-          buildingName: apt.buildingName,
+          number: '${placed.number}-$f',
         );
-        final idx = apartments.indexOf(apt);
-        if (idx != -1) {
-          final mergedPlans = [
-            ...created.plans,
-            ...apt.plans.where((path) => path.isNotEmpty && !created.plans.contains(path)),
-          ];
-          final createdCover = created.layoutImageUrl?.trim() ?? '';
-          apartments[idx] = created.copyWith(
-            plans: mergedPlans,
-            layoutImageUrl: createdCover.isNotEmpty ? created.layoutImageUrl : apt.layoutImageUrl,
-          );
-          notifyListeners();
-        }
+        apartments.add(copy.copyWith(position: _freePosition(copy)));
       }
-    } catch (e) {
-      debugPrint('ChessGridController.addApartment API error: $e');
+      notifyListeners();
     }
   }
 
@@ -511,6 +534,52 @@ class ChessGridController extends ChangeNotifier {
       apartments[idx] = apt;
       notifyListeners();
     }
+  }
+
+  Future<Apartment> loadApartmentById(Apartment current) async {
+    final raw = await _apiService.getGoodById(current.id);
+    final data = raw['good'] is Map
+        ? Map<String, dynamic>.from(raw['good'] as Map)
+        : raw;
+    final fresh = Apartment.fromGood(
+      raw,
+      complexId: current.complexId,
+      buildingKey: current.buildingKey,
+      buildingName: current.buildingName,
+    );
+
+    bool sent(List<String> keys) {
+      if (keys.any((key) => data[key] != null && data[key].toString().trim().isNotEmpty)) {
+        return true;
+      }
+      final attrs = data['attributes'] ?? data['attribute_values'];
+      if (attrs is! List) return false;
+      for (final item in attrs) {
+        if (item is! Map) continue;
+        final attribute = item['attribute'];
+        final name = (attribute is Map ? attribute['name'] : item['name'])
+            ?.toString()
+            .toLowerCase();
+        if (name == null || name.isEmpty) continue;
+        if (keys.any(name.contains)) return true;
+      }
+      return false;
+    }
+
+    final merged = fresh.copyWith(
+      complexId: current.complexId > 0 ? current.complexId : fresh.complexId,
+      buildingId: fresh.buildingId ?? current.buildingId,
+      buildingKey: current.buildingKey.isNotEmpty ? current.buildingKey : fresh.buildingKey,
+      buildingName: current.buildingName.isNotEmpty ? current.buildingName : fresh.buildingName,
+      floor: sent(['floor', 'этаж', 'number_of_floors']) ? fresh.floor : current.floor,
+      entrance: sent(['entrance', 'подъезд', 'секция', 'entrance_id']) ? fresh.entrance : current.entrance,
+      entranceId: fresh.entranceId ?? current.entranceId,
+      position: sent(['position', 'позиция', 'apartment_position']) ? fresh.position : current.position,
+      variantId: fresh.variantId ?? current.variantId,
+    );
+
+    updateApartment(merged);
+    return merged;
   }
 
   bool deleteApartment(int id) {
@@ -534,7 +603,7 @@ class ChessGridController extends ChangeNotifier {
       throw Exception('У корпуса нет building_id, парковку создать нельзя');
     }
 
-    final created = await _apiService.createParkingGood(
+    await _apiService.createParkingGood(
       buildingId: buildingId,
       name: spot.number,
       parkingType: spot.type,
@@ -544,14 +613,10 @@ class ChessGridController extends ChangeNotifier {
       complexId: spot.complexId > 0 ? spot.complexId : complex.id,
       buildingKey: spot.buildingKey,
     );
-    parkingSpots.add(created.copyWith(
-      complexId: spot.complexId > 0 ? spot.complexId : complex.id,
-      buildingId: buildingId,
-      buildingKey: spot.buildingKey,
-      number: created.number.isNotEmpty ? created.number : spot.number,
-      type: spot.type,
-    ));
-    notifyListeners();
+    final complexId = spot.complexId > 0
+        ? spot.complexId
+        : (_selectedComplexId > 0 ? _selectedComplexId : complex.id);
+    await loadComplexDetails(complexId);
   }
 
   void updateParkingSpot(ParkingSpot spot) {
@@ -881,13 +946,13 @@ class ChessGridController extends ChangeNotifier {
     double? monthlyPaymentOverride,
   }) {
     if (apartment == null && parking == null) {
-      return 'Выберите помещение или паркинг для создания заказа';
+      return 'Выберите помещение или паркинг для создания сделки';
     }
 
     // Strict TZ rule. A server-created order is already accepted.
     if (!fromServer && apartment != null) {
       if (apartment.status != ApartmentStatus.available) {
-        return 'Заказ доступен только для свободных квартир!';
+        return 'Сделка доступна только для свободных квартир!';
       }
 
       if (apartment.bookingCountMonth >= monthlyBookingLimit) {
@@ -897,7 +962,7 @@ class ChessGridController extends ChangeNotifier {
 
     if (!fromServer && parking != null && apartment == null) {
       if (parking.status != ApartmentStatus.available) {
-        return 'Заказ доступен только для свободных парковочных мест!';
+        return 'Сделка доступна только для свободных парковочных мест!';
       }
     }
 

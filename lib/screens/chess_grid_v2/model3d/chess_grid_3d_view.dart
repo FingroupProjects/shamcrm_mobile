@@ -29,6 +29,7 @@ class ChessGrid3DView extends StatefulWidget {
   final ResidentialComplex complex;
   final VoidCallback? onSwitchTo2D;
   final List<Apartment>? apartments;
+  final List<ParkingSpot> parkingSpots;
   final Function(Apartment)? onToggleReserve;
 
   const ChessGrid3DView({
@@ -36,6 +37,7 @@ class ChessGrid3DView extends StatefulWidget {
     required this.complex,
     this.onSwitchTo2D,
     this.apartments,
+    this.parkingSpots = const [],
     this.onToggleReserve,
   });
 
@@ -66,6 +68,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
   List<EntranceRenderInfo> _entranceInfos = [];
   List<FloorRenderInfo> _floorInfos = [];
   List<Apartment3DRenderInfo> _apartmentInfos = [];
+  List<Parking3DRenderInfo> _parkingInfos = [];
 
   ResidentialComplex get _effectiveComplex {
     if (widget.complex.buildings.isNotEmpty) return widget.complex;
@@ -514,19 +517,33 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
         break;
 
       case Scene3DLevel.section:
+        FloorRenderInfo? tappedFloor;
+        var closest = double.infinity;
         for (final info in _floorInfos) {
-          if (info.hitBounds.contains(tapPos)) {
-            HapticFeedback.mediumImpact();
-            setState(() {
-              _state = _state.copyWith(selectedFloor: info.floorNumber);
-            });
-            _navigateLevel(Scene3DLevel.floor);
-            return;
+          if (!info.hitBounds.contains(tapPos)) continue;
+          final distance = (info.hitBounds.center - tapPos).distance;
+          if (distance < closest) {
+            closest = distance;
+            tappedFloor = info;
           }
+        }
+        if (tappedFloor != null) {
+          HapticFeedback.mediumImpact();
+          setState(() {
+            _state = _state.copyWith(selectedFloor: tappedFloor!.floorNumber);
+          });
+          _navigateLevel(Scene3DLevel.floor);
         }
         break;
 
       case Scene3DLevel.floor:
+        for (final parking in _parkingInfos) {
+          if (parking.hitBounds.contains(tapPos)) {
+            HapticFeedback.mediumImpact();
+            OrderCreateSheet.show(context: context, parking: parking.spot);
+            return;
+          }
+        }
         for (final info in _apartmentInfos) {
           if (info.hitBounds.contains(tapPos)) {
             HapticFeedback.mediumImpact();
@@ -571,12 +588,14 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               state: _state,
               complex: complex,
               allApartments: allApts,
+              parkingSpots: widget.parkingSpots,
               building: building,
-              onRenderFinished: (bInfos, eInfos, fInfos, aInfos) {
+              onRenderFinished: (bInfos, eInfos, fInfos, aInfos, pInfos) {
                 _buildingInfos = bInfos;
                 _entranceInfos = eInfos;
                 _floorInfos = fInfos;
                 _apartmentInfos = aInfos;
+                _parkingInfos = pInfos;
               },
             ),
             size: Size.infinite,
@@ -647,15 +666,12 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                   ? MediaQuery.paddingOf(context).bottom + 4
                   : 18),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Left: Status Legend
-              Flexible(
+              Expanded(
                 child: Scene3DStatusLegend(isNightMode: _state.isNightMode),
               ),
               const SizedBox(width: 8),
-              // Right: Next Level Button ("Смотреть этажи", "3D план этажа")
               Scene3DNextLevelButton(
                 state: _state,
                 onNextLevel: _onNextLevel,
@@ -680,18 +696,36 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
                       _state.camera.copyWith(panOffset: const Offset(0, -30)),
                 );
               }),
-              onOpenDetail: () {
+              onOpenDetail: () async {
+                final selected = _state.selectedApartment;
+                if (selected == null) return;
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+                Apartment fresh;
+                try {
+                  fresh = await ChessGridController.instance.loadApartmentById(selected);
+                } catch (_) {
+                  if (context.mounted) {
+                    Navigator.of(context, rootNavigator: true).pop();
+                  }
+                  return;
+                }
+                if (!context.mounted) return;
+                Navigator.of(context, rootNavigator: true).pop();
                 ApartmentDetailSheet.show(
                   context: context,
-                  apartment: _state.selectedApartment!,
+                  apartment: fresh,
                   onCreateOrder: () {
                     OrderCreateSheet.show(
                       context: context,
-                      apartment: _state.selectedApartment!,
+                      apartment: fresh,
                     );
                   },
                   onToggleReserve: () {
-                    _handleToggleReserve(_state.selectedApartment!);
+                    _handleToggleReserve(fresh);
                   },
                 );
               },
@@ -1002,8 +1036,9 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
             Positioned(
               left: pos.dx - 13,
               top: pos.dy - 11,
-              child: FloatingFloorBadge(
+                child: FloatingFloorBadge(
                 floorNumber: info.floorNumber,
+                label: info.floorNumber == 0 ? 'P' : '${info.floorNumber}',
                 isSelected: _state.selectedFloor == info.floorNumber,
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -1025,7 +1060,7 @@ class _ChessGrid3DViewState extends State<ChessGrid3DView>
               left: pos.dx - 32,
               top: pos.dy - 12,
               child: FloatingApartmentUnitBadge(
-                number: info.apartment.number,
+                number: info.apartment.displayNumber,
                 isSelected: info.isSelected,
                 onTap: () {
                   HapticFeedback.selectionClick();
@@ -1048,18 +1083,21 @@ class _Master3DScenePainter extends CustomPainter {
   final Scene3DState state;
   final ResidentialComplex complex;
   final List<Apartment> allApartments;
+  final List<ParkingSpot> parkingSpots;
   final Building? building;
   final Function(
     List<BuildingRenderInfo>,
     List<EntranceRenderInfo>,
     List<FloorRenderInfo>,
     List<Apartment3DRenderInfo>,
+    List<Parking3DRenderInfo>,
   ) onRenderFinished;
 
   _Master3DScenePainter({
     required this.state,
     required this.complex,
     required this.allApartments,
+    this.parkingSpots = const [],
     required this.building,
     required this.onRenderFinished,
   });
@@ -1079,6 +1117,7 @@ class _Master3DScenePainter extends CustomPainter {
     var eInfos = <EntranceRenderInfo>[];
     var fInfos = <FloorRenderInfo>[];
     var aInfos = <Apartment3DRenderInfo>[];
+    var pInfos = <Parking3DRenderInfo>[];
 
     // 2. Render 3D Model by active level
     switch (state.level) {
@@ -1120,6 +1159,7 @@ class _Master3DScenePainter extends CustomPainter {
             entrance: state.selectedEntrance,
             selectedFloor: state.selectedFloor,
             allApartments: allApartments,
+            parkingSpots: parkingSpots,
             isNightMode: state.isNightMode,
           );
         }
@@ -1134,6 +1174,13 @@ class _Master3DScenePainter extends CustomPainter {
                   a.floor == state.selectedFloor)
               .toList();
 
+          final floorParking = state.selectedFloor <= 0
+              ? parkingSpots.where((spot) {
+                  return spot.buildingKey == building!.key ||
+                      (building!.id != null && spot.buildingId == building!.id);
+                }).toList()
+              : const <ParkingSpot>[];
+
           aInfos = FloorPlan3DPainter.render(
             canvas: canvas,
             size: size,
@@ -1143,12 +1190,14 @@ class _Master3DScenePainter extends CustomPainter {
             floor: state.selectedFloor,
             floorApartments: floorApts,
             selectedApartment: state.selectedApartment,
+            parkingSpots: floorParking,
+            parkingHits: pInfos,
           );
         }
         break;
     }
 
-    onRenderFinished(bInfos, eInfos, fInfos, aInfos);
+    onRenderFinished(bInfos, eInfos, fInfos, aInfos, pInfos);
   }
 
   @override
@@ -1156,6 +1205,7 @@ class _Master3DScenePainter extends CustomPainter {
     return oldDelegate.state != state ||
         oldDelegate.complex != complex ||
         oldDelegate.allApartments != allApartments ||
+        oldDelegate.parkingSpots != parkingSpots ||
         oldDelegate.building != building;
   }
 }

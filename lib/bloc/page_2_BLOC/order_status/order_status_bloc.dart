@@ -710,17 +710,15 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   Future<void> _createOrderStatus(
       CreateOrderStatus event, Emitter<OrderState> emit) async {
-    // //print(
-    //     'OrderBloc: Начало _createOrderStatus с параметрами: title=${event.title}, notificationMessage=${event.notificationMessage}, isSuccess=${event.isSuccess}, isFailed=${event.isFailed}');
-    emit(OrderLoading());
-    //print('OrderBloc: Установлено состояние OrderLoading');
-
+    final previous = state;
     try {
       final response = await apiService.createOrderStatus(
         title: event.title,
         notificationMessage: event.notificationMessage,
         isSuccess: event.isSuccess,
         isFailed: event.isFailed,
+        isBooked: event.isBooked,
+        isReserved: event.isReserved,
       );
       // //print(
       //     'OrderBloc: Ответ сервера на создание статуса: statusCode=${response.statusCode}, body=${response.body}');
@@ -763,15 +761,21 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
           'Статус заказа успешно создан',
           newStatusId: newStatusId,
         ));
-        // //print(
-        //     'OrderBloc: Выдано состояние OrderStatusCreated с newStatusId=$newStatusId');
-
-        await Future.delayed(Duration(milliseconds: 500));
-        // //print(
-        //     'OrderBloc: Задержка завершена, добавляем событие FetchOrderStatuses');
-
-        add(FetchOrderStatuses());
-        //print('OrderBloc: Добавлено событие FetchOrderStatuses');
+        try {
+          final statuses = await apiService.getOrderStatuses();
+          for (final status in statuses) {
+            _orderCounts[status.id] = status.ordersCount;
+          }
+          final previousOrders = previous is OrderLoaded ? previous.orders : const <Order>[];
+          emit(OrderLoaded(
+            statuses,
+            orders: previousOrders,
+            pagination: previous is OrderLoaded ? previous.pagination : null,
+            orderCounts: Map.from(_orderCounts),
+          ));
+        } catch (_) {
+          if (previous is OrderLoaded) emit(previous);
+        }
       } else if (statusCode == 422) {
         //print('OrderBloc: Ошибка валидации данных (422)');
         emit(OrderError('Ошибка валидации данных: проверьте введенные данные'));
@@ -790,10 +794,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
 
   Future<void> _updateOrderStatus(
       UpdateOrderStatus event, Emitter<OrderState> emit) async {
-    // //print(
-    //     'OrderBloc: Начало _updateOrderStatus для statusId=${event.statusId}');
-    emit(OrderLoading());
-
+    final previous = state;
     try {
       final response = await apiService.updateOrderStatus(
         statusId: event.statusId,
@@ -801,11 +802,27 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
         notificationMessage: event.notificationMessage,
         isSuccess: event.isSuccess,
         isFailed: event.isFailed,
+        isBooked: event.isBooked,
+        isReserved: event.isReserved,
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         emit(OrderStatusUpdated('Статус успешно обновлен'));
-        add(FetchOrderStatuses());
+        try {
+          final statuses = await apiService.getOrderStatuses();
+          for (final status in statuses) {
+            _orderCounts[status.id] = status.ordersCount;
+          }
+          final previousOrders = previous is OrderLoaded ? previous.orders : const <Order>[];
+          emit(OrderLoaded(
+            statuses,
+            orders: previousOrders,
+            pagination: previous is OrderLoaded ? previous.pagination : null,
+            orderCounts: Map.from(_orderCounts),
+          ));
+        } catch (_) {
+          if (previous is OrderLoaded) emit(previous);
+        }
       } else if (response.statusCode == 422) {
         emit(OrderError('Ошибка валидации данных: проверьте введенные данные'));
       } else if (response.statusCode == 500) {

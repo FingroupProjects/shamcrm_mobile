@@ -169,7 +169,9 @@ class _OrderColumnState extends State<OrderColumn> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.only(top: 4, bottom: 80),
+                  padding: widget.residentialDeal
+                      ? const EdgeInsets.only(top: 4, bottom: 80)
+                      : EdgeInsets.zero,
                   itemCount: orders.length + (_isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == orders.length && _isLoadingMore) {
@@ -217,10 +219,10 @@ class _OrderColumnState extends State<OrderColumn> {
       },
       child: HelpfulEmptyState(
         icon: Icons.shopping_bag_outlined,
-        title: l10n.translate('empty_orders_title'),
-        subtitle: l10n.translate('empty_orders_subtitle'),
+        title: l10n.translate(widget.residentialDeal ? 'empty_deals_title' : 'empty_orders_title'),
+        subtitle: l10n.translate(widget.residentialDeal ? 'empty_deals_subtitle' : 'empty_orders_subtitle'),
         actionLabel: widget.canCreateOrder
-            ? l10n.translate('empty_orders_action')
+            ? l10n.translate(widget.residentialDeal ? 'empty_deals_action' : 'empty_orders_action')
             : null,
         onAction: widget.canCreateOrder ? _openCreateOrder : null,
       ),

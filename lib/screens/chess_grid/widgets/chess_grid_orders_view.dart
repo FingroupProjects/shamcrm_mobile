@@ -83,7 +83,7 @@ class _ChessGridOrdersViewState extends State<ChessGridOrdersView> {
                       Icon(Icons.inbox_rounded, size: 48, color: colors.iconSecondary),
                       const SizedBox(height: 12),
                       Text(
-                        'Нет заказов в этой категории',
+                        'Нет сделок в этой категории',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontSize: 15,
@@ -173,7 +173,7 @@ class _ChessGridOrdersViewState extends State<ChessGridOrdersView> {
     final park = controller.findParkingById(order.parkingId);
 
     final itemTitle = apt != null
-        ? 'Кв. № ${apt.number}'
+        ? 'Кв. № ${apt.displayNumber}'
         : (park != null ? 'Парк. ${park.number}' : 'Объект');
 
     final statusColor = order.status.color;
@@ -232,7 +232,7 @@ class _ChessGridOrdersViewState extends State<ChessGridOrdersView> {
                   ],
                 ),
                 Text(
-                  '${order.price.toStringAsFixed(0)} \$',
+                  order.price.toStringAsFixed(0),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,

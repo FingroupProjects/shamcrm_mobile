@@ -26,7 +26,7 @@ class ChessGridCell extends StatelessWidget {
     final statusColor = apartment.status.color;
     final bgColor = apartment.status.bgColor;
 
-    final roomsLabel = apartment.rooms == 0 ? 'Ст' : '${apartment.rooms}к';
+    final roomsLabel = apartment.rooms > 0 ? '${apartment.rooms}к' : '';
     final priceFormatted = _formatPrice(apartment.totalPrice);
 
     final width = zoomLevel.cellWidth;
@@ -97,7 +97,7 @@ class ChessGridCell extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              apartment.number,
+              apartment.displayNumber,
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w700,
@@ -139,7 +139,7 @@ class ChessGridCell extends StatelessWidget {
                 const SizedBox(width: 3),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -154,7 +154,9 @@ class ChessGridCell extends StatelessWidget {
               ],
             ),
             Text(
-              '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)}м²',
+              roomsLabel.isEmpty
+                  ? '${apartment.totalArea.toStringAsFixed(0)}м²'
+                  : '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)}м²',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontWeight: FontWeight.w600,
@@ -187,7 +189,7 @@ class ChessGridCell extends StatelessWidget {
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -202,7 +204,9 @@ class ChessGridCell extends StatelessWidget {
               ],
             ),
             Text(
-              '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)} м²',
+              roomsLabel.isEmpty
+                  ? '${apartment.totalArea.toStringAsFixed(0)} м²'
+                  : '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)} м²',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontWeight: FontWeight.w500,
@@ -247,7 +251,7 @@ class ChessGridCell extends StatelessWidget {
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w800,
@@ -259,23 +263,25 @@ class ChessGridCell extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    roomsLabel,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                      color: statusColor,
+                if (roomsLabel.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      roomsLabel,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        color: statusColor,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
             Text(
@@ -309,10 +315,10 @@ class ChessGridCell extends StatelessWidget {
 
   static String _formatPrice(double price) {
     if (price >= 1e6) {
-      return '${(price / 1e6).toStringAsFixed(1)} млн \$';
+      return '${(price / 1e6).toStringAsFixed(1)} млн';
     } else if (price >= 1e3) {
-      return '${(price / 1e3).toStringAsFixed(0)} тыс \$';
+      return '${(price / 1e3).toStringAsFixed(0)} тыс';
     }
-    return '${price.toStringAsFixed(0)} \$';
+    return price.toStringAsFixed(0);
   }
 }

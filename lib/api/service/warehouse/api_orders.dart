@@ -137,6 +137,11 @@ extension ApiWarehouseOrdersX on ApiService {
         path += '&storage_id=${filters['storage_id']}';
       }
 
+      final leadId = filters['lead_id'];
+      if (leadId != null && leadId.toString().isNotEmpty && leadId != 0) {
+        path += '&lead_id=$leadId';
+      }
+
       if (filters.containsKey('category_id')) {
         final categoryId = filters['category_id'];
         if (categoryId is int) {
@@ -1008,6 +1013,8 @@ extension ApiWarehouseOrdersX on ApiService {
     required String notificationMessage,
     required bool isSuccess,
     required bool isFailed,
+    bool? isBooked,
+    bool? isReserved,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status');
@@ -1015,16 +1022,16 @@ extension ApiWarehouseOrdersX on ApiService {
       //debugPrint('ApiService: createOrderStatus - Generated path: $path');
     }
 
-    final response = await _postRequest(
-      path,
-      {
-        'title': title,
-        'notification_message': notificationMessage,
-        'is_success': isSuccess,
-        'is_failed': isFailed,
-        'color': '#FFFFF', // Добавляем параметр color
-      },
-    );
+    final body = <String, dynamic>{
+      'title': title,
+      'notification_message': notificationMessage,
+      'is_success': isSuccess,
+      'is_failed': isFailed,
+      'color': '#FFFFF',
+    };
+    if (isBooked != null) body['is_booked'] = isBooked;
+    if (isReserved != null) body['is_reserved'] = isReserved;
+    final response = await _postRequest(path, body);
     return response;
   }
 
@@ -1034,6 +1041,8 @@ extension ApiWarehouseOrdersX on ApiService {
     required String notificationMessage,
     required bool isSuccess,
     required bool isFailed,
+    bool? isBooked,
+    bool? isReserved,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order-status/$statusId');
@@ -1041,15 +1050,15 @@ extension ApiWarehouseOrdersX on ApiService {
       //debugPrint('ApiService: updateOrderStatus - Generated path: $path');
     }
 
-    final response = await _patchRequest(
-      path,
-      {
-        'title': title,
-        'notification_message': notificationMessage,
-        'is_success': isSuccess,
-        'is_failed': isFailed,
-      },
-    );
+    final body = <String, dynamic>{
+      'title': title,
+      'notification_message': notificationMessage,
+      'is_success': isSuccess,
+      'is_failed': isFailed,
+    };
+    if (isBooked != null) body['is_booked'] = isBooked;
+    if (isReserved != null) body['is_reserved'] = isReserved;
+    final response = await _patchRequest(path, body);
     return response;
   }
 

@@ -212,12 +212,16 @@ class CreateOrderStatus extends OrderEvent {
   final String notificationMessage;
   final bool isSuccess;
   final bool isFailed;
+  final bool? isBooked;
+  final bool? isReserved;
 
   CreateOrderStatus({
     required this.title,
     required this.notificationMessage,
     required this.isSuccess,
     required this.isFailed,
+    this.isBooked,
+    this.isReserved,
   });
 }
 
@@ -227,6 +231,8 @@ class UpdateOrderStatus extends OrderEvent {
   final String notificationMessage;
   final bool isSuccess;
   final bool isFailed;
+  final bool? isBooked;
+  final bool? isReserved;
 
   UpdateOrderStatus({
     required this.statusId,
@@ -234,6 +240,8 @@ class UpdateOrderStatus extends OrderEvent {
     required this.notificationMessage,
     required this.isSuccess,
     required this.isFailed,
+    this.isBooked,
+    this.isReserved,
   });
 }
 

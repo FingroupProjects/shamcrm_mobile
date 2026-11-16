@@ -635,7 +635,7 @@ class _InteractiveFacadeViewState extends State<InteractiveFacadeView> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${floorApts.length} квартир · $freeCount своб.${minPrice > 0 ? " · от ${minPrice.toStringAsFixed(0)}\$" : ""}',
+                    '${floorApts.length} квартир · $freeCount своб.${minPrice > 0 ? " · от ${minPrice.toStringAsFixed(0)}" : ""}',
                     style: const TextStyle(
                       fontFamily: 'Golos',
                       fontSize: 12,
@@ -730,7 +730,7 @@ class _InteractiveFacadeViewState extends State<InteractiveFacadeView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '№${apt.number}',
+                  '№${apt.displayNumber}',
                   style: const TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w800,
@@ -750,7 +750,7 @@ class _InteractiveFacadeViewState extends State<InteractiveFacadeView> {
             ),
             const SizedBox(height: 2),
             Text(
-              '${apt.totalArea.toStringAsFixed(0)}м² · ${apt.totalPrice.toStringAsFixed(0)}\$',
+              '${apt.totalArea.toStringAsFixed(0)}м² · ${apt.totalPrice.toStringAsFixed(0)}',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontSize: 9.5,

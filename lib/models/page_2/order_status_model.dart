@@ -1,3 +1,5 @@
+bool _statusFlag(dynamic value) => value == true || value == 1 || value == '1';
+
 class OrderStatus {
   final int id;
   final String name;
@@ -5,6 +7,8 @@ class OrderStatus {
   final DateTime updatedAt;
   final bool isSuccess;
   final bool isFailed;
+  final bool isBooked;
+  final bool isReserved;
   final bool canceled;
   final String? notificationMessage;
   final String color;
@@ -18,6 +22,8 @@ class OrderStatus {
     required this.updatedAt,
     required this.isSuccess,
     required this.isFailed,
+    this.isBooked = false,
+    this.isReserved = false,
     required this.canceled,
     this.notificationMessage,
     required this.color,
@@ -31,9 +37,11 @@ class OrderStatus {
       name: json['name'] ?? '',
       createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toString()),
       updatedAt: DateTime.parse(json['updated_at'] ?? DateTime.now().toString()),
-      isSuccess: json['is_success'] == 1,
-      isFailed: json['is_failed'] == 1,
-      canceled: json['canceled'] == 1,
+      isSuccess: _statusFlag(json['is_success']),
+      isFailed: _statusFlag(json['is_failed']),
+      isBooked: _statusFlag(json['is_booked']),
+      isReserved: _statusFlag(json['is_reserved']),
+      canceled: _statusFlag(json['canceled']),
       notificationMessage: json['notification_message'],
       color: json['color'] ?? '#000',
       position: json['position'] ?? 0,
@@ -49,6 +57,8 @@ class OrderStatus {
       'updated_at': updatedAt.toIso8601String(),
       'is_success': isSuccess ? 1 : 0,
       'is_failed': isFailed ? 1 : 0,
+      'is_booked': isBooked ? 1 : 0,
+      'is_reserved': isReserved ? 1 : 0,
       'canceled': canceled ? 1 : 0,
       'notification_message': notificationMessage,
       'color': color,

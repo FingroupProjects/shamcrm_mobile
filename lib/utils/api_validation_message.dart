@@ -66,7 +66,10 @@ String _replaceKnownFieldNames(String message, AppLocalizations loc) {
     ..sort((a, b) => b.length.compareTo(a.length));
   for (final alias in aliases) {
     result = result.replaceAllMapped(
-      RegExp(RegExp.escape(alias), caseSensitive: false),
+      RegExp(
+        '(?<![A-Za-z0-9_])${RegExp.escape(alias)}(?![A-Za-z0-9_])',
+        caseSensitive: false,
+      ),
       (_) => loc.translate(_fieldAliasToKey[alias]!),
     );
   }

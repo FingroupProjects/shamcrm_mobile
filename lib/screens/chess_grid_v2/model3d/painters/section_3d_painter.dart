@@ -27,6 +27,7 @@ class Section3DPainter {
     required int entrance,
     required int selectedFloor,
     required List<Apartment> allApartments,
+    List<ParkingSpot> parkingSpots = const [],
     bool isNightMode = false,
   }) {
     final result = <FloorRenderInfo>[];
@@ -41,6 +42,10 @@ class Section3DPainter {
     final sectionApts = allApartments
         .where((a) => a.buildingKey == building.key && a.entrance == entrance)
         .toList();
+    final sectionParking = parkingSpots.where((spot) {
+      return spot.buildingKey == building.key ||
+          (building.id != null && spot.buildingId == building.id);
+    }).toList();
 
     // 1. Dark architectural roof structure
     final totalH = floors * floorHeight;
@@ -95,20 +100,66 @@ class Section3DPainter {
       // Screen position for the floor badge (pinned to the left in 3D)
       final badgePoint3D = Vector3D(-(secWidth / 2) - 22.0, floorCenterY, (secDepth / 2));
       final badgePos = camera.project(badgePoint3D, size);
-
-      // Hit area for tapping the floor
-      final floorRightScreen = camera.project(Vector3D((secWidth / 2) + 10.0, floorCenterY, (secDepth / 2)), size);
-      final hitRect = Rect.fromCenter(
-        center: Offset((badgePos.dx + floorRightScreen.dx) / 2, badgePos.dy),
-        width: (floorRightScreen.dx - badgePos.dx).abs().clamp(120.0, 320.0),
-        height: (floorHeight * camera.zoom).clamp(16.0, 50.0),
-      );
+      final bottomY = floorBottomY - 0.5;
+      final hitRect = _volumeHitBounds(
+        camera: camera,
+        size: size,
+        bottomY: bottomY,
+        topY: bottomY + floorHeight + 1.2,
+        secWidth: secWidth,
+        secDepth: secDepth,
+      ).expandToInclude(Rect.fromCenter(center: badgePos, width: 36, height: 36));
 
       result.add(FloorRenderInfo(
         floorNumber: f,
         badgePosition: badgePos,
         hitBounds: hitRect,
         apartments: fApts,
+      ));
+    }
+
+    if (sectionParking.isNotEmpty) {
+      const parkingFloor = 0;
+      final floorCenterY = -floorHeight / 2;
+      allPolys.addAll(Poly3D.createBox(
+        center: Vector3D(0, -floorHeight + (slabHeight / 2), 0),
+        width: secWidth,
+        height: slabHeight,
+        depth: secDepth,
+        topColor: isNightMode ? const Color(0xFF243140) : const Color(0xFFD7E3EA),
+        frontColor: isNightMode ? const Color(0xFF1B2833) : const Color(0xFFC5D4DC),
+        sideColor: isNightMode ? const Color(0xFF152029) : const Color(0xFFB7C6CE),
+        strokeColor: isNightMode ? const Color(0xFF101820) : const Color(0xFF9AADB8),
+        strokeWidth: 0.6,
+        camera: camera,
+      ));
+      allPolys.addAll(Poly3D.createBox(
+        center: Vector3D(0, floorCenterY, 0),
+        width: secWidth - 1.5,
+        height: floorHeight - slabHeight,
+        depth: secDepth - 1.5,
+        topColor: isNightMode ? const Color(0xFF1E3344) : const Color(0xFFE7F2F6),
+        frontColor: isNightMode ? const Color(0xFF173041) : const Color(0xFFD5E6EE),
+        sideColor: isNightMode ? const Color(0xFF122838) : const Color(0xFFC3D7E1),
+        strokeColor: isNightMode ? const Color(0xFF0E1C28) : const Color(0xFFA9C0CC),
+        strokeWidth: 0.5,
+        camera: camera,
+      ));
+      final badgePoint3D = Vector3D(-(secWidth / 2) - 22.0, floorCenterY, (secDepth / 2));
+      final badgePos = camera.project(badgePoint3D, size);
+      final bottomY = -floorHeight - 0.5;
+      result.add(FloorRenderInfo(
+        floorNumber: parkingFloor,
+        badgePosition: badgePos,
+        hitBounds: _volumeHitBounds(
+          camera: camera,
+          size: size,
+          bottomY: bottomY,
+          topY: bottomY + floorHeight + 1.2,
+          secWidth: secWidth,
+          secDepth: secDepth,
+        ).expandToInclude(Rect.fromCenter(center: badgePos, width: 36, height: 36)),
+        apartments: const [],
       ));
     }
 
@@ -122,6 +173,9 @@ class Section3DPainter {
 
     // 3. Render Status-Colored Apartment blocks on the front facade of each floor (Media 3)
     _renderFloorFacadeUnits(canvas, size, camera, floors, floorHeight, secWidth, secDepth, sectionApts);
+    if (sectionParking.isNotEmpty) {
+      _renderParkingFacade(canvas, size, camera, floorHeight, secWidth, secDepth, sectionParking);
+    }
 
     // 4. Render Neon Blue highlight box around the selected floor (Media 3 - Floor 7)
     _renderSelectedFloorNeonFrame(
@@ -214,6 +268,44 @@ class Section3DPainter {
     }
   }
 
+  static void _renderParkingFacade(
+    Canvas canvas,
+    Size size,
+    Camera3D camera,
+    double floorHeight,
+    double secWidth,
+    double secDepth,
+    List<ParkingSpot> spots,
+  ) {
+    final visible = spots.take(6).toList();
+    const double unitW = 12.0;
+    const double unitH = 8.0;
+    final floorCenterY = -floorHeight / 2;
+    final spacing = secWidth / (visible.length + 1);
+
+    for (var i = 0; i < visible.length; i++) {
+      final spot = visible[i];
+      final posX = -(secWidth / 2) + ((i + 1) * spacing);
+      final unitColor = switch (spot.status) {
+        ApartmentStatus.available => const Color(0xFF10B981),
+        ApartmentStatus.booked => const Color(0xFFF59E0B),
+        ApartmentStatus.sold => const Color(0xFF94A3B8),
+        ApartmentStatus.reserved => const Color(0xFF3B82F6),
+      };
+      final p0 = camera.project(Vector3D(posX - unitW / 2, floorCenterY - unitH / 2, (secDepth / 2) + 0.6), size);
+      final p1 = camera.project(Vector3D(posX + unitW / 2, floorCenterY - unitH / 2, (secDepth / 2) + 0.6), size);
+      final p2 = camera.project(Vector3D(posX + unitW / 2, floorCenterY + unitH / 2, (secDepth / 2) + 0.6), size);
+      final p3 = camera.project(Vector3D(posX - unitW / 2, floorCenterY + unitH / 2, (secDepth / 2) + 0.6), size);
+      final path = Path()
+        ..moveTo(p0.dx, p0.dy)
+        ..lineTo(p1.dx, p1.dy)
+        ..lineTo(p2.dx, p2.dy)
+        ..lineTo(p3.dx, p3.dy)
+        ..close();
+      canvas.drawPath(path, Paint()..color = unitColor);
+    }
+  }
+
   static void _renderSelectedFloorNeonFrame({
     required Canvas canvas,
     required Size size,
@@ -224,10 +316,63 @@ class Section3DPainter {
     required double secWidth,
     required double secDepth,
   }) {
+    if (selectedFloor == 0) {
+      final bottomY = -floorHeight - 0.5;
+      final topY = bottomY + floorHeight + 1.2;
+      _paintNeonFrame(canvas, size, camera, bottomY, topY, secWidth, secDepth);
+      return;
+    }
     if (selectedFloor < 1 || selectedFloor > floors) return;
 
     final bottomY = (selectedFloor - 1) * floorHeight - 0.5;
     final topY = bottomY + floorHeight + 1.2;
+    _paintNeonFrame(canvas, size, camera, bottomY, topY, secWidth, secDepth);
+  }
+
+  /// Screen box of the whole floor volume, so a tap on the floor itself
+  /// (not only the side badge) opens it.
+  static Rect _volumeHitBounds({
+    required Camera3D camera,
+    required Size size,
+    required double bottomY,
+    required double topY,
+    required double secWidth,
+    required double secDepth,
+  }) {
+    final hw = (secWidth / 2) + 2.5;
+    final hd = (secDepth / 2) + 2.5;
+    final points = <Offset>[
+      camera.project(Vector3D(-hw, bottomY, -hd), size),
+      camera.project(Vector3D(hw, bottomY, -hd), size),
+      camera.project(Vector3D(hw, bottomY, hd), size),
+      camera.project(Vector3D(-hw, bottomY, hd), size),
+      camera.project(Vector3D(-hw, topY, -hd), size),
+      camera.project(Vector3D(hw, topY, -hd), size),
+      camera.project(Vector3D(hw, topY, hd), size),
+      camera.project(Vector3D(-hw, topY, hd), size),
+    ];
+    var minX = points.first.dx;
+    var maxX = points.first.dx;
+    var minY = points.first.dy;
+    var maxY = points.first.dy;
+    for (final point in points) {
+      if (point.dx < minX) minX = point.dx;
+      if (point.dx > maxX) maxX = point.dx;
+      if (point.dy < minY) minY = point.dy;
+      if (point.dy > maxY) maxY = point.dy;
+    }
+    return Rect.fromLTRB(minX - 6, minY - 6, maxX + 6, maxY + 6);
+  }
+
+  static void _paintNeonFrame(
+    Canvas canvas,
+    Size size,
+    Camera3D camera,
+    double bottomY,
+    double topY,
+    double secWidth,
+    double secDepth,
+  ) {
 
     final hw = (secWidth / 2) + 2.5;
     final hd = (secDepth / 2) + 2.5;

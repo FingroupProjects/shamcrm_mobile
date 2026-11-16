@@ -207,11 +207,22 @@ class ResidentialDealFieldsState extends State<ResidentialDealFields> {
       final currencies = await ApiService().getCurrencies();
       final savedId = await LocalizationService.getCurrencyId();
       if (!mounted) return;
+      final preferredId = widget.initialData?.currencyId ?? savedId;
+      final preferredSymbol = widget.initialData?.cleanCurrencySymbol.trim() ?? '';
       SupplierCurrency? selected;
       for (final item in currencies) {
-        if (item.id != null && item.id == savedId) {
+        if (item.id != null && item.id == preferredId) {
           selected = item;
           break;
+        }
+      }
+      if (selected == null && preferredSymbol.isNotEmpty && preferredSymbol != '\$') {
+        for (final item in currencies) {
+          final symbol = (item.symbolCode ?? item.name ?? '').trim();
+          if (symbol == preferredSymbol) {
+            selected = item;
+            break;
+          }
         }
       }
       selected ??= currencies.isNotEmpty ? currencies.first : null;
@@ -549,8 +560,9 @@ class ResidentialDealFieldsState extends State<ResidentialDealFields> {
           label: 'Сумма',
           readOnly: true,
         ),
-        const SizedBox(height: 8),
-        _required('currency', _currencyDropdown()),
+        // Поле валюты в шахматке пока не показываем.
+        // const SizedBox(height: 8),
+        // _required('currency', _currencyDropdown()),
         if (_dealType == 'mixed') ...[
           const SizedBox(height: 8),
           CustomTextField(
@@ -691,6 +703,8 @@ class ResidentialDealFieldsState extends State<ResidentialDealFields> {
     );
   }
 
+  // Поле валюты в шахматке пока скрыто.
+  // ignore: unused_element
   Widget _currencyDropdown() {
     final colors = context.appColors;
     SupplierCurrency? selected;

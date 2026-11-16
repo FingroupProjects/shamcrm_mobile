@@ -36,8 +36,10 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
   Map<String, dynamic>? _variantFilters({
     int? categoryId,
     int? storageId,
+    int? leadId,
   }) {
     final resolvedStorageId = storageId ?? state.storageId;
+    final resolvedLeadId = leadId ?? state.leadId;
     final filters = <String, dynamic>{};
     if (resolvedStorageId != null) {
       filters['storage_id'] = resolvedStorageId;
@@ -45,15 +47,23 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
     if (categoryId != null) {
       filters['category_id'] = categoryId;
     }
+    if (resolvedLeadId != null && resolvedLeadId > 0) {
+      filters['lead_id'] = resolvedLeadId;
+    }
     return filters.isEmpty ? null : filters;
   }
 
-  String _allCacheKey(int page, {int? storageId, bool? isService}) {
-    return 'all_${storageId ?? 'any'}_${isService ?? 'any'}_$page';
+  void _rememberLeadId(int? leadId, Emitter<VariantBottomSheetState> emit) {
+    if (state.leadId == leadId) return;
+    emit(state.copyWith(leadId: leadId));
   }
 
-  String _categoryCacheKey(int categoryId, {int? storageId}) {
-    return '${storageId ?? state.storageId ?? 'any'}_$categoryId';
+  String _allCacheKey(int page, {int? storageId, bool? isService, int? leadId}) {
+    return 'all_${storageId ?? 'any'}_${isService ?? 'any'}_${leadId ?? 'none'}_$page';
+  }
+
+  String _categoryCacheKey(int categoryId, {int? storageId, int? leadId}) {
+    return '${storageId ?? state.storageId ?? 'any'}_${leadId ?? state.leadId ?? 'none'}_$categoryId';
   }
 
   VariantBottomSheetBloc(this.apiService) : super(VariantBottomSheetState.initial()) {
@@ -69,6 +79,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
   // ================== UNIFIED SEARCH ==================
   Future<void> _searchAll(SearchAll event, Emitter<VariantBottomSheetState> emit) async {
+    _rememberLeadId(event.leadId, emit);
     if (event.query.isEmpty) {
       // Clear search state
       emit(state.copyWith(
@@ -95,8 +106,9 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
         (v.barcode != null && v.barcode!.toLowerCase().contains(lowerQuery))
     ).toList();
 
-    // 2. Если нашли локально, возвращаем сразу и не делаем запрос
-    if (localVariants.isNotEmpty) {
+    // Локальный список может быть без фильтра лида, поэтому при lead_id
+    // всегда идём на сервер.
+    if (event.leadId == null && localVariants.isNotEmpty) {
       emit(state.copyWith(
         isSearching: false,
         searchQuery: event.query,
@@ -246,10 +258,12 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
   // ================== ALL VARIANTS ==================
   Future<void> _fetchVariants(FetchVariants event, Emitter<VariantBottomSheetState> emit) async {
+    _rememberLeadId(event.leadId, emit);
     final cacheKey = _allCacheKey(
       event.page,
       storageId: event.storageId,
       isService: event.isService,
+      leadId: event.leadId,
     );
 
     // Check cache
@@ -332,6 +346,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       nextPage,
       storageId: state.storageId,
       isService: state.isService,
+      leadId: state.leadId,
     );
 
     // Check if already at last page
@@ -383,6 +398,7 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
 
   // ================== CATEGORIES ==================
   Future<void> _fetchCategories(FetchCategories event, Emitter<VariantBottomSheetState> emit) async {
+    _rememberLeadId(event.leadId, emit);
     // Check cache (skip if force reload or searching)
     if (!event.forceReload &&
         event.search == null &&
@@ -472,9 +488,11 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       FetchVariantsByCategory event,
       Emitter<VariantBottomSheetState> emit,
       ) async {
+    _rememberLeadId(event.leadId, emit);
     final categoryCacheKey = _categoryCacheKey(
       event.categoryId,
       storageId: event.storageId,
+      leadId: event.leadId,
     );
 
     // Check cache
@@ -559,7 +577,10 @@ class VariantBottomSheetBloc extends Bloc<VariantBottomSheetEvent, VariantBottom
       Emitter<VariantBottomSheetState> emit,
       ) async {
     if (state.isLoadingMore) return;
-    final categoryCacheKey = _categoryCacheKey(event.categoryId);
+    final categoryCacheKey = _categoryCacheKey(
+      event.categoryId,
+      leadId: state.leadId,
+    );
     if (_categoryFullyLoaded[categoryCacheKey] == true) return;
 
     final nextPage = event.currentPage + 1;

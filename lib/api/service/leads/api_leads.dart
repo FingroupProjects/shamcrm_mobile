@@ -55,7 +55,7 @@ dynamic _readCreateValue(dynamic node, List<String> keys, int depth) {
 extension ApiLeadsX on ApiService {
   Future<LeadById> getLeadById(int leadId) async {
     try {
-      final path = await _appendQueryParams('/lead/$leadId');
+      final path = await _appendQueryParams('/v3/lead/$leadId');
       //debugPrint('ApiService: getLeadById - Generated path: $path');
 
       final response = await _analyticsRequest(path, bypassCache: true);
@@ -70,6 +70,12 @@ extension ApiLeadsX on ApiService {
       //debugPrint('ApiService: getLeadById - Error:');
       throw Exception('Ошибка загрузки лида ID!');
     }
+  }
+
+  /// Сырой ответ GET /v3/lead/{id}. Ссылке нужно отличить «лида нет»
+  /// от обрыва сети: [getLeadById] оба случая прячет в одну ошибку.
+  Future<http.Response> fetchLeadByIdResponse(int leadId) {
+    return _getRequest('/v3/lead/$leadId');
   }
 
   Future<Map<String, dynamic>> uniteLead(

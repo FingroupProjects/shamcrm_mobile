@@ -20,16 +20,24 @@ class ChessGridCatalogView extends StatelessWidget {
     final apartments = controller.filteredApartments;
 
     if (apartments.isEmpty) {
+      final filtersActive = !controller.filter.isDefault;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off_rounded, size: 48, color: colors.iconSecondary),
+              Icon(
+                filtersActive ? Icons.search_off_rounded : Icons.apartment_outlined,
+                size: 48,
+                color: colors.iconSecondary,
+              ),
               const SizedBox(height: 12),
               Text(
-                'Нет квартир по выбранным фильтрам',
+                filtersActive
+                    ? 'Нет квартир по выбранным фильтрам'
+                    : 'Квартир пока нет',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w600,
@@ -39,7 +47,9 @@ class ChessGridCatalogView extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Попробуйте сбросить фильтры или расширить диапазон цен и площади',
+                filtersActive
+                    ? 'Попробуйте сбросить фильтры или расширить диапазон цен и площади'
+                    : 'В этом корпусе ещё нет квартир',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Golos',
@@ -47,11 +57,13 @@ class ChessGridCatalogView extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 14),
-              OutlinedButton(
-                onPressed: () => controller.resetFilter(),
-                child: const Text('Сбросить фильтры'),
-              ),
+              if (filtersActive) ...[
+                const SizedBox(height: 14),
+                OutlinedButton(
+                  onPressed: () => controller.resetFilter(),
+                  child: const Text('Сбросить фильтры'),
+                ),
+              ],
             ],
           ),
         ),
@@ -89,54 +101,56 @@ class ChessGridCatalogView extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: apt.status.bgColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: apt.status.bgColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: statusColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  apt.status.labelRu,
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11,
-                                    color: statusColor,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 5),
+                            Text(
+                              apt.status.labelRu,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                                color: statusColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '№ ${apt.number}',
-                            style: TextStyle(
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '№ ${apt.displayNumber}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        '${apt.totalPrice.toStringAsFixed(0)} \$',
+                        apt.totalPrice.toStringAsFixed(0),
+                        maxLines: 1,
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -148,11 +162,12 @@ class ChessGridCatalogView extends StatelessWidget {
                   ),
                 ),
 
-                // Location info
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Text(
-                    '${apt.buildingName}, подъезд ${apt.entrance}, ${apt.floor} этаж · ${apt.rooms == 0 ? "Студия" : "${apt.rooms}-комнатная"} (${apt.type})',
+                    '${apt.buildingName}, подъезд ${apt.entrance}, ${apt.floor} этаж${apt.rooms > 0 ? ' · ${apt.rooms}-комн.' : ''}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Golos',
                       fontSize: 12,
@@ -174,7 +189,7 @@ class ChessGridCatalogView extends StatelessWidget {
                       _buildChip(context, Icons.kitchen_outlined, '${apt.kitchenArea} м² кух.'),
                       const Spacer(),
                       Text(
-                        '${apt.pricePerSqm.toStringAsFixed(0)} \$/м²',
+                        '${apt.pricePerSqm.toStringAsFixed(0)} / м²',
                         style: TextStyle(
                           fontFamily: 'Golos',
                           fontWeight: FontWeight.w600,
@@ -197,7 +212,7 @@ class ChessGridCatalogView extends StatelessWidget {
                       Text(
                         isAvailable
                             ? 'Свободно для сделки'
-                            : 'Бронь/Продано: заказ недоступен',
+                            : 'Бронь/Продано: сделка недоступна',
                         style: TextStyle(
                           fontFamily: 'Golos',
                           fontSize: 11,
@@ -219,7 +234,7 @@ class ChessGridCatalogView extends StatelessWidget {
                           elevation: isAvailable ? 1 : 0,
                         ),
                         child: const Text(
-                          'Создать заказ',
+                          'Создать сделку',
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w700,

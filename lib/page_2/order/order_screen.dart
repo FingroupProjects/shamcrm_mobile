@@ -208,40 +208,42 @@ class _OrderScreenState extends State<OrderScreen>
   }
 
   void _onSearch(String query) {
-    _lastSearchQuery = query;
+    final trimmed = query.trim();
+    _lastSearchQuery = trimmed;
     setState(() {
-      _isSearching = query.isNotEmpty;
+      _isSearching = trimmed.isNotEmpty;
     });
-    if (_statuses.isEmpty || _currentTabIndex >= _statuses.length) return;
+    _reloadCurrentTab(query: trimmed.isEmpty ? null : trimmed);
+  }
 
-    if (_isSearching || _currentFilters.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          _isFilterLoading = true;
-          _shouldShowLoader = true;
-        });
-      }
-      _orderBloc.add(FetchOrders(
-        statusId: _statuses[_currentTabIndex].id,
-        page: 1,
-        perPage: 20,
-        query: query,
-        forceRefresh: true,
-        managerIds: _currentFilters['managers'],
-        regionsIds: _currentFilters['regions'],
-        leadIds: _currentFilters['leads'],
-        fromDate: _currentFilters['fromDate'],
-        toDate: _currentFilters['toDate'],
-        paymentMethod: _currentFilters['paymentMethod'],
-        deliveryType: _currentFilters['deliveryType'],
-        reasonForRefusalIds: _currentReasonForRefusalIds(),
-        customFieldFilters: (_currentFilters['custom_field_filters'] as Map?)
-            ?.map((key, value) => MapEntry(
-                  key.toString(),
-                  List<String>.from(value as List),
-                )),
-      ));
+  void _reloadCurrentTab({String? query}) {
+    if (_statuses.isEmpty || _currentTabIndex >= _statuses.length) return;
+    if (mounted) {
+      setState(() {
+        _isFilterLoading = true;
+        _shouldShowLoader = true;
+      });
     }
+    _orderBloc.add(FetchOrders(
+      statusId: _statuses[_currentTabIndex].id,
+      page: 1,
+      perPage: 20,
+      query: query,
+      forceRefresh: true,
+      managerIds: _currentFilters['managers'],
+      regionsIds: _currentFilters['regions'],
+      leadIds: _currentFilters['leads'],
+      fromDate: _currentFilters['fromDate'],
+      toDate: _currentFilters['toDate'],
+      paymentMethod: _currentFilters['paymentMethod'],
+      deliveryType: _currentFilters['deliveryType'],
+      reasonForRefusalIds: _currentReasonForRefusalIds(),
+      customFieldFilters: (_currentFilters['custom_field_filters'] as Map?)
+          ?.map((key, value) => MapEntry(
+                key.toString(),
+                List<String>.from(value as List),
+              )),
+    ));
   }
 
   void _onStatusUpdated(int oldStatusId, int newStatusId) {
@@ -361,12 +363,9 @@ class _OrderScreenState extends State<OrderScreen>
           builder: (context) => EditStatusOrder(
             status: _statuses[index],
             orderBloc: _orderBloc,
+            chessStatuses: widget.residentialDeal,
           ),
-        ).then((result) {
-          if (result == true) {
-            _orderBloc.add(FetchOrderStatuses());
-          }
-        });
+        );
       } else if (value == 'delete') {
         showDialog(
           context: context,
@@ -419,12 +418,11 @@ class _OrderScreenState extends State<OrderScreen>
                 setState(() {
                   _isSearching = false;
                   _searchController.clear();
+                  _lastSearchQuery = '';
+                  if (_currentFilters.isEmpty) _showCustomTabBar = true;
                 });
                 if (_currentFilters.isEmpty) {
-                  setState(() {
-                    _showCustomTabBar = true;
-                  });
-                  _orderBloc.add(FetchOrderStatuses());
+                  _reloadCurrentTab();
                 } else {
                   _orderBloc.add(FetchOrders(
                     statusId: _statuses.isNotEmpty
@@ -688,6 +686,41 @@ class _OrderScreenState extends State<OrderScreen>
                         }
                       } else if (state is OrderStatusCreated) {
                         final snackColors = context.appColors;
+                        final createdMessage = widget.residentialDeal
+                            ? 'Статус сделки создан'
+                            : state.message;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              createdMessage,
+                              style: TextStyle(
+                                fontFamily: 'Gilroy',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: snackColors.textInverse,
+                              ),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            backgroundColor: snackColors.success,
+                            elevation: 3,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                        setState(() {
+                          _navigateToNewStatus = true;
+                          _newStatusId = state.newStatusId;
+                          _isInitialLoad = false;
+                          _isFilterLoading = false;
+                          _shouldShowLoader = false;
+                        });
+                      } else if (state is OrderStatusUpdated) {
+                        final snackColors = context.appColors;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -711,21 +744,19 @@ class _OrderScreenState extends State<OrderScreen>
                             duration: const Duration(seconds: 3),
                           ),
                         );
-                        _resetScreenState();
-                        setState(() {
-                          _navigateToNewStatus = true;
-                          _newStatusId = state.newStatusId;
-                        });
-                        _orderBloc.add(FetchOrderStatuses());
-                      } else if (state is OrderStatusDeleted ||
-                          state is OrderStatusUpdated) {
+                        if (mounted) {
+                          setState(() {
+                            _isInitialLoad = false;
+                            _isFilterLoading = false;
+                            _shouldShowLoader = false;
+                          });
+                        }
+                      } else if (state is OrderStatusDeleted) {
                         final snackColors = context.appColors;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              state is OrderStatusDeleted
-                                  ? state.message
-                                  : (state as OrderStatusUpdated).message,
+                              state.message,
                               style: TextStyle(
                                 fontFamily: 'Gilroy',
                                 fontSize: 16,
@@ -818,7 +849,7 @@ class _OrderScreenState extends State<OrderScreen>
                           },
                           child: Column(
                             children: [
-                              SizedBox(height: widget.hideAppBar ? 4 : 10),
+                              SizedBox(height: widget.hideAppBar ? 4 : 15),
                               if (widget.hideAppBar) _buildEmbeddedSearchBar(context),
                               if (!_isSearching && _showCustomTabBar)
                                 _buildCustomTabBar(context),
@@ -992,12 +1023,8 @@ class _OrderScreenState extends State<OrderScreen>
             suffixIcon: _searchController.text.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _isSearching = false;
-                        _searchController.clear();
-                        _lastSearchQuery = '';
-                      });
-                      _orderBloc.add(FetchOrderStatuses());
+                      _searchController.clear();
+                      _onSearch('');
                     },
                     child: Icon(
                       Icons.close_rounded,
@@ -1015,20 +1042,24 @@ class _OrderScreenState extends State<OrderScreen>
 
   Widget _buildCustomTabBar(BuildContext context) {
     final colors = context.appColors;
+    final compact = widget.residentialDeal;
     return Container(
-      margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+      margin: EdgeInsets.fromLTRB(compact ? 14 : 16, 0, compact ? 14 : 16, compact ? 8 : 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 5 : 10,
+        vertical: compact ? 5 : 10,
+      ),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 14 : 24),
         border: Border.all(
           color: colors.borderSubtle.withValues(alpha: 0.48),
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: colors.shadow.withValues(alpha: compact ? 0.05 : 0.08),
+            blurRadius: compact ? 10 : 18,
+            offset: Offset(0, compact ? 3 : 6),
           ),
         ],
       ),
@@ -1042,36 +1073,39 @@ class _OrderScreenState extends State<OrderScreen>
                 _tabKeys.add(GlobalKey());
               }
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
+                padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 6),
                 child: _buildTabButton(index),
               );
             }),
             if (_canCreateOrderStatus)
               Padding(
-                padding: const EdgeInsets.only(left: 3),
+                padding: EdgeInsets.only(left: compact ? 3 : 4),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(compact ? 10 : 18),
                     onTap: () async {
                       await showDialog(
                         context: context,
                         builder: (context) =>
-                            CreateOrderStatusDialog(orderBloc: _orderBloc),
+                            CreateOrderStatusDialog(
+                              orderBloc: _orderBloc,
+                              chessStatuses: widget.residentialDeal,
+                            ),
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(7),
+                      padding: EdgeInsets.all(compact ? 7 : 10),
                       decoration: BoxDecoration(
                         color: colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(compact ? 10 : 18),
                         border: Border.all(
                           color: colors.borderSubtle.withValues(alpha: 0.52),
                         ),
                       ),
                       child: Icon(
                         Icons.add,
-                        size: 17,
+                        size: compact ? 17 : 20,
                         color: colors.iconPrimary,
                       ),
                     ),
@@ -1118,6 +1152,7 @@ class _OrderScreenState extends State<OrderScreen>
 
   Widget _buildTabButtonUI(int index, bool isActive, int orderCount) {
     final colors = context.appColors;
+    final compact = widget.residentialDeal;
     final title = _statuses[index].name;
 
     return GestureDetector(
@@ -1135,14 +1170,17 @@ class _OrderScreenState extends State<OrderScreen>
         _showStatusOptions(context, index);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: compact ? 200 : 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+        padding: EdgeInsets.symmetric(
+          vertical: compact ? 6 : 10,
+          horizontal: compact ? 10 : 14,
+        ),
         decoration: BoxDecoration(
           color: isActive
               ? colors.buttonPrimaryBg
               : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(compact ? 10 : 18),
           border: Border.all(
             color: isActive
                 ? colors.buttonPrimaryBg
@@ -1152,8 +1190,8 @@ class _OrderScreenState extends State<OrderScreen>
               ? [
                   BoxShadow(
                     color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    blurRadius: compact ? 10 : 14,
+                    offset: Offset(0, compact ? 3 : 5),
                   ),
                 ]
               : const [],
@@ -1162,7 +1200,7 @@ class _OrderScreenState extends State<OrderScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
+              constraints: BoxConstraints(maxWidth: compact ? 130 : 140),
               child: Text(
                 title.isEmpty ? 'Статус' : title,
                 overflow: TextOverflow.ellipsis,
@@ -1170,24 +1208,31 @@ class _OrderScreenState extends State<OrderScreen>
                   color: isActive
                       ? colors.buttonPrimaryFg
                       : colors.textPrimary,
-                  fontSize: 12.5,
+                  fontSize: compact ? 12.5 : 14,
                   fontFamily: 'Gilroy',
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: compact ? 6 : 10),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 8,
+                vertical: compact ? 2 : 3,
+              ),
               decoration: BoxDecoration(
                 color: isActive
-                    ? colors.buttonPrimaryFg.withValues(alpha: 0.22)
-                    : colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                    ? colors.buttonPrimaryFg.withValues(alpha: compact ? 0.22 : 0.18)
+                    : colors.buttonPrimaryBg.withValues(alpha: compact ? 0.12 : 0.10),
+                borderRadius: BorderRadius.circular(compact ? 8 : 12),
                 border: Border.all(
                   color: isActive
-                      ? colors.buttonPrimaryFg.withValues(alpha: 0.4)
-                      : colors.buttonPrimaryBg.withValues(alpha: 0.25),
+                      ? (compact
+                          ? colors.buttonPrimaryFg.withValues(alpha: 0.4)
+                          : colors.buttonPrimaryBg.withValues(alpha: 0.85))
+                      : (compact
+                          ? colors.buttonPrimaryBg.withValues(alpha: 0.25)
+                          : colors.textInverse.withValues(alpha: 0.22)),
                   width: 1,
                 ),
               ),
@@ -1197,7 +1242,7 @@ class _OrderScreenState extends State<OrderScreen>
                   color: isActive
                       ? colors.buttonPrimaryFg
                       : colors.textPrimary,
-                  fontSize: 11,
+                  fontSize: compact ? 11 : 12,
                   fontFamily: 'Gilroy',
                   fontWeight: FontWeight.w700,
                 ),
@@ -1249,13 +1294,18 @@ class _OrderScreenState extends State<OrderScreen>
                   SizedBox(height: MediaQuery.sizeOf(context).height * 0.16),
                   _isSearching
                       ? HelpfulEmptyState.search(l10n)
-                      : HelpfulEmptyState.section(
-                          l10n: l10n,
+                      : HelpfulEmptyState(
                           icon: Icons.shopping_bag_outlined,
-                          titleKey: 'empty_orders_title',
-                          subtitleKey: 'empty_orders_subtitle',
-                          actionKey: _canCreateOrderStatus
-                              ? 'empty_orders_action'
+                          title: l10n.translate(widget.residentialDeal
+                              ? 'empty_deals_title'
+                              : 'empty_orders_title'),
+                          subtitle: l10n.translate(widget.residentialDeal
+                              ? 'empty_deals_subtitle'
+                              : 'empty_orders_subtitle'),
+                          actionLabel: _canCreateOrderStatus
+                              ? l10n.translate(widget.residentialDeal
+                                  ? 'empty_deals_action'
+                                  : 'empty_orders_action')
                               : null,
                           onAction: _canCreateOrderStatus
                               ? () {

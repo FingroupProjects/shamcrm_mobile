@@ -10,6 +10,7 @@ class GoodsCard extends StatelessWidget {
   final Function(DashboardGoods) onLongPress;
   final bool isSelectionMode;
   final bool isSelected;
+  final bool showPrice;
 
   const GoodsCard({
     super.key,
@@ -18,6 +19,7 @@ class GoodsCard extends StatelessWidget {
     required this.onLongPress,
     this.isSelectionMode = false,
     this.isSelected = false,
+    this.showPrice = false,
   });
 
   @override
@@ -88,6 +90,16 @@ class GoodsCard extends StatelessWidget {
                       color: colors.textPrimary,
                     ),
                   ),
+                  if (showPrice) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${localizations.translate('price')}${goods.price}',
+                      style: textStyles.bodyMd.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
                   if (goods.author != null && goods.author!.trim().isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(

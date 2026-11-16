@@ -39,7 +39,6 @@ class PaymentSchedulePdfService {
     final doc = pw.Document();
     final fontRegular = await _loadRegularFont();
     final fontBold = await _loadBoldFont();
-    final logoImage = await _loadLogoImage();
 
     final theme = pw.ThemeData.withFont(
       base: fontRegular,
@@ -48,7 +47,6 @@ class PaymentSchedulePdfService {
 
     final dateFormat = DateFormat('dd.MM.yyyy');
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
-    final currency = apartment?.currency ?? '\$';
 
     final orderId = order.id.isNotEmpty ? order.id : 'ГП-${DateTime.now().millisecondsSinceEpoch % 10000}';
     final createdDateStr = dateFormat.format(DateTime.now());
@@ -109,17 +107,6 @@ class PaymentSchedulePdfService {
                   ],
                 ),
               ),
-              if (logoImage != null)
-                pw.Container(
-                  width: 55,
-                  height: 55,
-                  margin: const pw.EdgeInsets.only(left: 12),
-                  child: pw.ClipRRect(
-                    horizontalRadius: 6,
-                    verticalRadius: 6,
-                    child: pw.Image(logoImage, fit: pw.BoxFit.cover),
-                  ),
-                ),
             ],
           ),
           pw.SizedBox(height: 12),
@@ -163,7 +150,7 @@ class PaymentSchedulePdfService {
               if (apartment != null) ...[
                 _buildTableRow('Подъезд', '${apartment.entrance}', fontBold),
                 _buildTableRow('Этаж', '${apartment.floor}', fontBold),
-                _buildTableRow('Квартира', '№ ${apartment.number}', fontBold),
+                _buildTableRow('Квартира', '№ ${apartment.displayNumber}', fontBold),
                 _buildTableRow('Общая площадь', '${apartment.totalArea.toStringAsFixed(1)} м²', fontBold),
                 if (apartment.layoutType != null && apartment.layoutType!.isNotEmpty)
                   _buildTableRow('Тип планировки', apartment.layoutType!, fontBold),
@@ -186,20 +173,22 @@ class PaymentSchedulePdfService {
               1: const pw.FlexColumnWidth(3.8),
             },
             children: [
-              _buildTableRow('Общая стоимость объекта', '${numberFormat.format(order.price)} $currency', fontBold),
-              _buildTableRow('Первоначальный взнос', '${numberFormat.format(details.downPayment)} $currency', fontBold),
+              _buildTableRow('Общая стоимость объекта', '${numberFormat.format(order.price)}', fontBold),
+              _buildTableRow('Первоначальный взнос', '${numberFormat.format(details.downPayment)}', fontBold),
               if (details.barterAmount > 0)
                 _buildTableRow(
                   'Зачет по бартеру (${details.barterSubject ?? "Бартер"})',
-                  '${numberFormat.format(details.barterAmount)} $currency',
+                  '${numberFormat.format(details.barterAmount)}',
                   fontBold,
                 ),
-              _buildTableRow('Остаток к оплате в рассрочку', '${numberFormat.format(details.installmentSum)} $currency', fontBold),
+              _buildTableRow('Остаток к оплате в рассрочку', '${numberFormat.format(details.installmentSum)}', fontBold),
               _buildTableRow('Срок рассрочки', '${details.months} месяцев', fontBold),
               _buildTableRow('Дата первого платежа', firstPayDate, fontBold),
               _buildTableRow('Дата последнего платежа', lastPayDate, fontBold),
-              _buildTableRow('Плановый ежемесячный платёж', '${numberFormat.format(details.monthlyPayment)} $currency', fontBold),
-              _buildTableRow('Валюта платежей', currency, fontBold),
+              _buildTableRow('Плановый ежемесячный платёж', '${numberFormat.format(details.monthlyPayment)}', fontBold),
+              // Поле валюты в шахматке пока не показываем.
+              // _buildTableRow('Валюта платежей', currency, fontBold),
+
             ],
           ),
           pw.SizedBox(height: 4),
@@ -227,8 +216,8 @@ class PaymentSchedulePdfService {
                 children: [
                   _buildTableCell('№', fontBold, align: pw.TextAlign.center),
                   _buildTableCell('Дата платежа', fontBold, align: pw.TextAlign.center),
-                  _buildTableCell('Сумма платежа ($currency)', fontBold, align: pw.TextAlign.right),
-                  _buildTableCell('Остаток задолженности ($currency)', fontBold, align: pw.TextAlign.right),
+                  _buildTableCell('Сумма платежа', fontBold, align: pw.TextAlign.right),
+                  _buildTableCell('Остаток задолженности', fontBold, align: pw.TextAlign.right),
                 ],
               ),
               // Schedule items
@@ -319,15 +308,6 @@ class PaymentSchedulePdfService {
             ],
           ),
 
-          pw.SizedBox(height: 20),
-          pw.Divider(thickness: 0.5, color: PdfColors.grey400),
-          pw.SizedBox(height: 4),
-          pw.Center(
-            child: pw.Text(
-              'Документ сформирован в системе shamCRM',
-              style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
-            ),
-          ),
         ],
       ),
     );
@@ -352,7 +332,6 @@ class PaymentSchedulePdfService {
     );
 
     final numberFormat = NumberFormat('#,##0.00', 'ru_RU');
-    final currency = apartment.currency;
 
     doc.addPage(
       pw.Page(
@@ -401,7 +380,7 @@ class PaymentSchedulePdfService {
               crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
                 pw.Text(
-                  'КВАРТИРА № ${apartment.number}',
+                  'КВАРТИРА № ${apartment.displayNumber}',
                   style: pw.TextStyle(font: fontBold, fontSize: 20, color: PdfColors.blueGrey900),
                 ),
                 pw.Container(
@@ -415,11 +394,11 @@ class PaymentSchedulePdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
-                        '${numberFormat.format(apartment.totalPrice)} $currency',
+                        '${numberFormat.format(apartment.totalPrice)}',
                         style: pw.TextStyle(font: fontBold, fontSize: 16, color: PdfColors.blueGrey900),
                       ),
                       pw.Text(
-                        '${numberFormat.format(apartment.pricePerSqm)} $currency / м²',
+                        '${numberFormat.format(apartment.pricePerSqm)} / м²',
                         style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey800),
                       ),
                     ],
@@ -442,12 +421,13 @@ class PaymentSchedulePdfService {
                 _buildTableRow('Площадь общая', '${apartment.totalArea.toStringAsFixed(1)} м²', fontBold),
                 _buildTableRow('Жилая площадь', '${apartment.livingArea.toStringAsFixed(1)} м²', fontBold),
                 _buildTableRow('Площадь кухни', '${apartment.kitchenArea.toStringAsFixed(1)} м²', fontBold),
-                _buildTableRow('Количество комнат', '${apartment.rooms == 0 ? "Студия" : apartment.rooms}', fontBold),
+                _buildTableRow('Количество комнат', '${apartment.rooms}', fontBold),
                 _buildTableRow('Тип планировки', apartment.layoutType ?? 'A', fontBold),
                 _buildTableRow('Количество балконов / лоджий', '${apartment.balconiesCount}', fontBold),
                 _buildTableRow('Количество совмещенных санузлов', '${apartment.combinedBathroomsCount}', fontBold),
                 _buildTableRow('Этаж', '${apartment.floor}', fontBold),
-                _buildTableRow('Тип отделки', apartment.type, fontBold),
+                if (!Apartment.isStudioLabel(apartment.type))
+                  _buildTableRow('Тип отделки', apartment.type, fontBold),
                 _buildTableRow('Статус', apartment.status.labelRu, fontBold),
               ],
             ),

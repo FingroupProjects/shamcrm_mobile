@@ -868,17 +868,13 @@ class _LeadDetailsScreenState extends State<LeadDetailsScreen> {
 
   String _getFieldValue(FieldConfiguration fc, LeadById lead) {
     if (fc.isCustomField && fc.customFieldId != null) {
+      final configFieldId = fc.customFieldId.toString();
       for (final field in lead.leadCustomFieldValues) {
-        if (field.value == fc.fieldName) {
-          if (field.value.isNotEmpty) {
-            return field.value;
-          }
-          break;
-        }
-      }
-
-      for (final field in lead.leadCustomFieldValues) {
-        if (field.id == fc.customFieldId) {
+        final matchesId = field.customFieldId.toString() == configFieldId ||
+            field.customField?.id.toString() == configFieldId;
+        final matchesName = (field.customField?.name ?? '').trim() ==
+            fc.fieldName.trim();
+        if (matchesId || matchesName) {
           if (field.value.isNotEmpty) {
             return field.value;
           }

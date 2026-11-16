@@ -151,6 +151,10 @@ class ResidentialDealData {
 
   factory ResidentialDealData.fromServerMap(int orderId, Map<String, dynamic> raw) {
     String str(dynamic val) => val?.toString().trim() ?? '';
+    String? opt(dynamic val) {
+      final text = str(val);
+      return text.isEmpty ? null : text;
+    }
     double? dbl(dynamic val) => (val is num) ? val.toDouble() : double.tryParse(val?.toString() ?? '');
     int? integer(dynamic val) => (val is num) ? val.toInt() : int.tryParse(val?.toString() ?? '');
 
@@ -178,12 +182,12 @@ class ResidentialDealData {
       ownerName: str(raw['owner_name'] ?? raw['ownerName'] ?? raw['buyer_name']),
       gender: str(raw['gender']).isNotEmpty ? str(raw['gender']) : 'm',
       passport: str(raw['passport']),
-      passportIssuedBy: str(raw['passport_issued_by'] ?? raw['passportIssuedBy']),
-      passportIssuedAt: str(raw['passport_issued_at'] ?? raw['passportIssuedAt']),
-      passportExpiresAt: str(raw['passport_expires_at'] ?? raw['passportExpiresAt']),
-      ownerBirthDate: str(raw['owner_birth_date'] ?? raw['ownerBirthDate']),
+      passportIssuedBy: opt(raw['passport_issued_by'] ?? raw['passportIssuedBy']),
+      passportIssuedAt: opt(raw['passport_issued_at'] ?? raw['passportIssuedAt']),
+      passportExpiresAt: opt(raw['passport_expires_at'] ?? raw['passportExpiresAt']),
+      ownerBirthDate: opt(raw['owner_birth_date'] ?? raw['ownerBirthDate']),
       inn: integer(raw['inn']),
-      residenceAddress: str(raw['residence_address'] ?? raw['residenceAddress']),
+      residenceAddress: opt(raw['residence_address'] ?? raw['residenceAddress']),
       dealType: str(raw['deal_type'] ?? raw['dealType']).isNotEmpty
           ? str(raw['deal_type'] ?? raw['dealType'])
           : 'cash',
@@ -194,14 +198,14 @@ class ResidentialDealData {
       currencySymbol: extractCurrency(raw['currency']) ?? extractCurrency(raw['currency_symbol']) ?? extractCurrency(raw['currencySymbol']),
       downPayment: dbl(raw['down_payment']),
       installmentMonths: integer(raw['installment_months']),
-      firstPaymentDate: str(raw['first_payment_date']),
+      firstPaymentDate: opt(raw['first_payment_date']),
       barterAmount: dbl(raw['barter_amount']),
-      barterNote: str(raw['barter_note']),
+      barterNote: opt(raw['barter_note']),
       goodId: integer(raw['good_id']),
       variantId: integer(raw['variant_id']),
-      goodName: str(raw['good_name'] ?? raw['apartment_number']),
-      buildingName: str(raw['building_name']),
-      phone: str(raw['phone']),
+      goodName: opt(raw['good_name'] ?? raw['apartment_number'] ?? raw['apartment_name']),
+      buildingName: opt(raw['building_name']),
+      phone: opt(raw['phone']),
     );
   }
 
@@ -304,22 +308,35 @@ class ResidentialDealStore {
             sum: order.sum,
           );
 
+    String? nonEmpty(String? value) {
+      final text = value?.trim() ?? '';
+      return text.isEmpty ? null : text;
+    }
+
+    int? positive(int? value) => value != null && value > 0 ? value : null;
+
     // Extract good info from order.goods if available
-    String? goodName = serverData.goodName;
-    int? goodId = serverData.goodId;
-    int? variantId = serverData.variantId;
+    String? goodsName;
+    int? goodsId;
+    int? goodsVariantId;
     if (order.goods.isNotEmpty) {
       final firstGood = order.goods.first;
-      goodName ??= firstGood.getCorrectGoodName();
-      goodId ??= firstGood.good.id > 0 ? firstGood.good.id : (firstGood.goodId > 0 ? firstGood.goodId : null);
-      variantId ??= firstGood.goodId > 0 ? firstGood.goodId : null;
+      goodsName = nonEmpty(firstGood.getCorrectGoodName());
+      goodsId = positive(firstGood.good.id) ?? positive(firstGood.goodId);
+      goodsVariantId = positive(firstGood.goodId);
     }
+
+    final goodName = nonEmpty(serverData.goodName) ?? goodsName ?? nonEmpty(cached?.goodName);
+    final goodId = positive(serverData.goodId) ?? goodsId ?? positive(cached?.goodId);
+    final variantId = positive(serverData.variantId) ?? goodsVariantId ?? positive(cached?.variantId);
+    final buildingName = nonEmpty(serverData.buildingName) ?? nonEmpty(cached?.buildingName);
 
     if (cached == null) {
       return serverData.copyWith(
         goodName: goodName,
         goodId: goodId,
         variantId: variantId,
+        buildingName: buildingName,
       );
     }
 
@@ -362,10 +379,10 @@ class ResidentialDealStore {
       barterNote: (serverData.barterNote != null && serverData.barterNote!.isNotEmpty)
           ? serverData.barterNote
           : cached.barterNote,
-      goodId: goodId ?? cached.goodId,
-      variantId: variantId ?? cached.variantId,
-      goodName: goodName ?? cached.goodName,
-      buildingName: serverData.buildingName ?? cached.buildingName,
+      goodId: goodId,
+      variantId: variantId,
+      goodName: goodName,
+      buildingName: buildingName,
       phone: (serverData.phone != null && serverData.phone!.isNotEmpty)
           ? serverData.phone
           : (cached.phone != null && cached.phone!.isNotEmpty

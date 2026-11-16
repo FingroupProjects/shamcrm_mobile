@@ -20,7 +20,7 @@ class ChessGridAdminView extends StatefulWidget {
 }
 
 class _ChessGridAdminViewState extends State<ChessGridAdminView> {
-  int _selectedSubTab = 0; // 0=ЖК, 1=Дома, 2=Номенклатура, 3=Доп. поля
+  int _selectedSubTab = 0; // 0=ЖК, 1=Дома, 2=Объекты
 
   // Complex Form Controllers
   late TextEditingController _complexNameController;
@@ -37,12 +37,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
   // Nomenclature filter
   String _nomType = 'all'; // all, flat, park
   final _nomSearchController = TextEditingController();
-
-  // Custom field creation
-  final _newFieldNameController = TextEditingController();
-  String _newFieldScope = 'flat';
-  String _newFieldType = 'текст';
-  bool _newFieldRequired = false;
+  bool _isSavingComplex = false;
 
   @override
   void initState() {
@@ -76,7 +71,6 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     _salesPhoneController.dispose();
     _salesHoursController.dispose();
     _nomSearchController.dispose();
-    _newFieldNameController.dispose();
     super.dispose();
   }
 
@@ -85,19 +79,16 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
 
     return Column(
       children: [
-        // Sub-tabs bar: [ ЖК ] [ Дома ] [ Номенклатура ] [ Доп. поля ]
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        // Sub-tabs bar: [ ЖК ] [ Дома ] [ Объекты ]
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Row(
             children: [
-              _buildSubTab(0, 'Жилой комплекс'),
-              const SizedBox(width: 8),
-              _buildSubTab(1, 'Дома (Корпуса)'),
-              const SizedBox(width: 8),
-              _buildSubTab(2, 'Номенклатура'),
-              const SizedBox(width: 8),
-              _buildSubTab(3, 'Доп. поля'),
+              _buildSubTab(0, 'Комплекс'),
+              const SizedBox(width: 6),
+              _buildSubTab(1, 'Дома'),
+              const SizedBox(width: 6),
+              _buildSubTab(2, 'Объекты'),
             ],
           ),
         ),
@@ -117,25 +108,34 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     final colors = context.appColors;
     final isSelected = _selectedSubTab == index;
 
-    return GestureDetector(
-      onTap: () => setState(() => _selectedSubTab = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.buttonPrimaryBg : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
+    return Expanded(
+      flex: isSelected ? 3 : 2,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedSubTab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 34,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? colors.buttonPrimaryBg : colors.surfacePrimary,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? colors.buttonPrimaryBg : colors.borderSubtle,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Gilroy',
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 12.5,
-            color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 12.5,
+                color: isSelected ? colors.buttonPrimaryFg : colors.textPrimary,
+              ),
+            ),
           ),
         ),
       ),
@@ -150,8 +150,6 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
         return _buildBuildingsTab(context);
       case 2:
         return _buildNomenclatureTab(context);
-      case 3:
-        return _buildCustomFieldsTab(context);
       default:
         return const SizedBox.shrink();
     }
@@ -211,7 +209,12 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
+                  onPressed: _isSavingComplex
+                      ? null
+                      : () async {
+                    if (_isSavingComplex) return;
+                    setState(() => _isSavingComplex = true);
+                    try {
                     final localPhone = _salesPhoneController.text.trim();
                     final dial = _selectedSalesCountry?.dialCode ?? '';
                     final phoneToSave = _formattedSalesPhone.isNotEmpty
@@ -274,13 +277,26 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
                     if (mounted) {
                       showCustomSnackBar(context: context, message: 'Данные ЖК успешно сохранены', isSuccess: true);
                     }
+                  } finally {
+                    if (mounted) setState(() => _isSavingComplex = false);
+                  }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.buttonPrimaryBg,
                     foregroundColor: colors.buttonPrimaryFg,
+                    disabledBackgroundColor: colors.buttonPrimaryBg,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text('Сохранить данные ЖК'),
+                  child: _isSavingComplex
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryFg),
+                          ),
+                        )
+                      : const Text('Сохранить данные ЖК'),
                 ),
               ),
             ],
@@ -359,11 +375,6 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
                           '${b.entranceCount} подъезда · ${b.floorCount} этажей · ${b.apartsPerFloor} кв. на этаже',
                           style: TextStyle(fontFamily: 'Golos', fontSize: 12, color: colors.textSecondary),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Добавлено квартир: ${controller.apartments.where((a) => a.buildingKey == b.key).length} из ${b.entranceCount * b.floorCount * b.apartsPerFloor}',
-                          style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.buttonPrimaryBg, fontWeight: FontWeight.w600),
-                        ),
                       ],
                     ),
                   ),
@@ -377,8 +388,60 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     );
   }
 
+  Widget _buildObjectTypeSwitch(BuildContext context) {
+    final colors = context.appColors;
+    const options = <(String, String)>[
+      ('all', 'Все'),
+      ('flat', 'Квартиры'),
+      ('park', 'Парковка'),
+    ];
+
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          for (final option in options)
+            Expanded(
+              flex: _nomType == option.$1 ? 3 : 2,
+              child: GestureDetector(
+                onTap: () => setState(() => _nomType = option.$1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: _nomType == option.$1 ? colors.buttonPrimaryBg : Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      option.$2,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontWeight: _nomType == option.$1 ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: 12.5,
+                        color: _nomType == option.$1 ? colors.buttonPrimaryFg : colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
-  // TAB 3: NOMENCLATURE (НОМЕНКЛАТУРА)
+  // TAB 3: OBJECTS (ОБЪЕКТЫ)
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildNomenclatureTab(BuildContext context) {
@@ -403,21 +466,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Top filter bar
-        Row(
-          children: [
-            Expanded(
-              child: SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'all', label: Text('Все')),
-                  ButtonSegment(value: 'flat', label: Text('Квартиры')),
-                  ButtonSegment(value: 'park', label: Text('Парковка')),
-                ],
-                selected: {_nomType},
-                onSelectionChanged: (val) => setState(() => _nomType = val.first),
-              ),
-            ),
-          ],
-        ),
+        _buildObjectTypeSwitch(context),
         const SizedBox(height: 10),
 
         Row(
@@ -427,7 +476,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
                 controller: _nomSearchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Поиск по номеру...',
+                  hintText: 'Поиск',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   isDense: true,
                   filled: true,
@@ -458,7 +507,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
             context,
             title: 'Квартира № ${a.number}',
             subtitle: '${a.buildingName}, ${a.floor} эт., ${a.rooms}к, ${a.totalArea} м²',
-            price: '${a.totalPrice.toStringAsFixed(0)} \$',
+            price: a.totalPrice.toStringAsFixed(0),
             status: a.status,
             onEdit: () => ApartmentFormSheet.show(context: context, existingApartment: a),
             onDelete: () {
@@ -466,7 +515,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               if (ok) {
                 showCustomSnackBar(context: context, message: 'Квартира удалена', isSuccess: true);
               } else {
-                showCustomSnackBar(context: context, message: 'Нельзя удалить: есть активный заказ', isSuccess: false);
+                showCustomSnackBar(context: context, message: 'Нельзя удалить: есть активная сделка', isSuccess: false);
               }
             },
           ),
@@ -477,7 +526,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
             context,
             title: 'Место ${p.number}',
             subtitle: '${p.type} парковка · Корпус ${p.buildingKey} · ${p.area} м²',
-            price: '${p.price.toStringAsFixed(0)} \$',
+            price: p.price.toStringAsFixed(0),
             status: p.status,
             onEdit: () => ApartmentFormSheet.show(context: context, existingParking: p),
             onDelete: () {
@@ -485,7 +534,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
               if (ok) {
                 showCustomSnackBar(context: context, message: 'Парковка удалена', isSuccess: true);
               } else {
-                showCustomSnackBar(context: context, message: 'Нельзя удалить: есть активный заказ', isSuccess: false);
+                showCustomSnackBar(context: context, message: 'Нельзя удалить: есть активная сделка', isSuccess: false);
               }
             },
           ),
@@ -513,11 +562,15 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
         border: Border.all(color: colors.borderSubtle),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -532,12 +585,23 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
                   subtitle,
                   style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
                 ),
+                const SizedBox(height: 4),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Сумма  ',
+                        style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
+                      ),
+                      TextSpan(
+                        text: price,
+                        style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13, color: colors.buttonPrimaryBg),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-          Text(
-            price,
-            style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13.5, color: colors.buttonPrimaryBg),
           ),
           const SizedBox(width: 8),
           IconButton(
@@ -555,136 +619,6 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
           ),
         ],
       ),
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // TAB 4: CUSTOM FIELDS (ДОП. ПОЛЯ)
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildCustomFieldsTab(BuildContext context) {
-    final colors = context.appColors;
-    final controller = widget.controller;
-    final fields = controller.customFields;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCard(
-          title: 'Дополнительные поля (${fields.length})',
-          child: Column(
-            children: [
-              for (final f in fields) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            f.name,
-                            style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13, color: colors.textPrimary),
-                          ),
-                          Text(
-                            'Форма: ${f.scope == "flat" ? "Квартира" : "Заказ"} · Тип: ${f.type}',
-                            style: TextStyle(fontFamily: 'Golos', fontSize: 11.5, color: colors.textSecondary),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete_outline, size: 18, color: colors.error),
-                        onPressed: () {
-                          controller.deleteCustomField(f.id);
-                          showCustomSnackBar(context: context, message: 'Поле удалено', isSuccess: true);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        _buildCard(
-          title: 'Создать новое поле',
-          child: Column(
-            children: [
-              _buildTextField(_newFieldNameController, 'Название поля *'),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _newFieldScope,
-                      decoration: const InputDecoration(labelText: 'Форма', isDense: true),
-                      items: const [
-                        DropdownMenuItem(value: 'flat', child: Text('Квартира')),
-                        DropdownMenuItem(value: 'order', child: Text('Заказ')),
-                      ],
-                      onChanged: (val) => setState(() => _newFieldScope = val ?? 'flat'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _newFieldType,
-                      decoration: const InputDecoration(labelText: 'Тип поля', isDense: true),
-                      items: const [
-                        DropdownMenuItem(value: 'текст', child: Text('Текст')),
-                        DropdownMenuItem(value: 'число', child: Text('Число')),
-                        DropdownMenuItem(value: 'дата', child: Text('Дата')),
-                        DropdownMenuItem(value: 'флажок', child: Text('Флажок')),
-                      ],
-                      onChanged: (val) => setState(() => _newFieldType = val ?? 'текст'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              CheckboxListTile(
-                title: const Text('Обязательно для заполнения', style: TextStyle(fontFamily: 'Golos', fontSize: 12)),
-                value: _newFieldRequired,
-                onChanged: (val) => setState(() => _newFieldRequired = val ?? false),
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final name = _newFieldNameController.text.trim();
-                    if (name.isEmpty) {
-                      showCustomSnackBar(context: context, message: 'Укажите название поля', isSuccess: false);
-                      return;
-                    }
-                    controller.addCustomField(CustomField(
-                      id: DateTime.now().millisecondsSinceEpoch,
-                      scope: _newFieldScope,
-                      name: name,
-                      type: _newFieldType,
-                      isRequired: _newFieldRequired,
-                    ));
-                    _newFieldNameController.clear();
-                    showCustomSnackBar(context: context, message: 'Поле добавлено', isSuccess: true);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.buttonPrimaryBg,
-                    foregroundColor: colors.buttonPrimaryFg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Добавить поле'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

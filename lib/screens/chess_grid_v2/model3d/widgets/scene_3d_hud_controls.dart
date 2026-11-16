@@ -158,6 +158,8 @@ class Scene3DNextLevelButton extends StatelessWidget {
       icon: const Icon(Icons.arrow_forward_rounded, size: 16),
       label: Text(
         label,
+        maxLines: 1,
+        softWrap: false,
         style: const TextStyle(
           fontFamily: 'Gilroy',
           fontWeight: FontWeight.w700,
@@ -169,7 +171,8 @@ class Scene3DNextLevelButton extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 4,
         shadowColor: Colors.black45,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -222,20 +225,23 @@ class Scene3DStatusLegend extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _legendDot(const Color(0xFF2ECC71), context.tr('chess_grid_available', fallback: 'Свободно')),
-              const SizedBox(width: 6),
-              _legendDot(const Color(0xFFF39C12), context.tr('chess_grid_booked', fallback: 'Бронь')),
-              const SizedBox(width: 6),
-              _legendDot(
-                isNightMode ? const Color(0xFFFFD166) : const Color(0xFF95A5A6),
-                context.tr('chess_grid_sold', fallback: 'Продано'),
-              ),
-              const SizedBox(width: 6),
-              _legendDot(const Color(0xFF1ABC9C), context.tr('chess_grid_reserved', fallback: 'Резерв')),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _legendDot(const Color(0xFF2ECC71), context.tr('chess_grid_available', fallback: 'Свободно')),
+                const SizedBox(width: 8),
+                _legendDot(const Color(0xFFF39C12), context.tr('chess_grid_booked', fallback: 'Бронь')),
+                const SizedBox(width: 8),
+                _legendDot(
+                  isNightMode ? const Color(0xFFFFD166) : const Color(0xFF95A5A6),
+                  context.tr('chess_grid_sold', fallback: 'Продано'),
+                ),
+                const SizedBox(width: 8),
+                _legendDot(const Color(0xFF1ABC9C), context.tr('chess_grid_reserved', fallback: 'Резерв')),
+              ],
+            ),
           ),
         ),
       ),

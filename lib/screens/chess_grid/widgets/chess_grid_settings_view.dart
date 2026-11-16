@@ -96,7 +96,7 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
           // 1. Roles & Duration (Collapsible)
           _buildCard(
             title: 'Срок бронирования по ролям',
-            subtitle: 'Срок начинается при создании заказа. Когда он истекает, заказ получает статус «Неуспешно», а квартира снова становится свободной.',
+            subtitle: 'Срок начинается при создании сделки. Когда он истекает, сделка получает статус «Неуспешно», а квартира снова становится свободной.',
             isCollapsible: true,
             isExpanded: _isRolesExpanded,
             trailingBadge: '${controller.roleSettings.length}',
@@ -185,7 +185,7 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
           /*
           _buildCard(
             title: 'Автоматические статусы',
-            subtitle: 'Правила синхронизации статусов заказа и квартиры согласно ТЗ.',
+            subtitle: 'Правила синхронизации статусов сделки и квартиры согласно ТЗ.',
             child: Table(
               border: TableBorder.all(color: colors.borderSubtle),
               children: [
@@ -193,13 +193,13 @@ class _ChessGridSettingsViewState extends State<ChessGridSettingsView> {
                   decoration: BoxDecoration(color: colors.surfaceElevated),
                   children: [
                     _buildTh('Событие'),
-                    _buildTh('Заказ'),
+                    _buildTh('Сделка'),
                     _buildTh('Квартира'),
                   ],
                 ),
-                _buildRuleRow('Создание заказа', 'В работе', 'Бронь'),
-                _buildRuleRow('Заказ успешно завершён', 'Успешно', 'Продано'),
-                _buildRuleRow('Заказ закрыт без продажи', 'Неуспешно', 'Свободно'),
+                _buildRuleRow('Создание сделки', 'В работе', 'Бронь'),
+                _buildRuleRow('Сделка успешно завершена', 'Успешно', 'Продано'),
+                _buildRuleRow('Сделка закрыта без продажи', 'Неуспешно', 'Свободно'),
                 _buildRuleRow('Истёк срок бронирования', 'Неуспешно', 'Свободно'),
               ],
             ),

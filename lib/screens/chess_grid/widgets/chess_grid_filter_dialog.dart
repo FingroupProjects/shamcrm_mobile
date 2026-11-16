@@ -3,7 +3,6 @@ import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
-import 'package:crm_task_manager/screens/chess_grid/widgets/building_form_sheet.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridFilterDialog extends StatefulWidget {
@@ -198,70 +197,20 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Building Dropdown + Add button
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: _buildDropdown<String>(
-                          label: context.tr('chess_grid_building', fallback: 'Корпус'),
-                          value: _buildingKey,
-                          items: buildings.map((b) {
-                            return DropdownMenuItem(value: b.key, child: Text(b.name));
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _buildingKey = val;
-                                _entrance = 0;
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Tooltip(
-                          message: context.tr('chess_grid_action_add_building', fallback: 'Добавить корпус'),
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pop(context);
-                              BuildingFormSheet.show(context: context);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: colors.buttonPrimaryBg.withValues(alpha: 0.4),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.add_rounded, size: 18, color: colors.buttonPrimaryBg),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    context.tr('chess_grid_building', fallback: 'Корпус'),
-                                    style: TextStyle(
-                                      fontFamily: 'Gilroy',
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                      color: colors.buttonPrimaryBg,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  _buildDropdown<String>(
+                    label: context.tr('chess_grid_building', fallback: 'Корпус'),
+                    value: _buildingKey,
+                    items: buildings.map((b) {
+                      return DropdownMenuItem(value: b.key, child: Text(b.name));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _buildingKey = val;
+                          _entrance = 0;
+                        });
+                      }
+                    },
                   ),
                   const SizedBox(height: 14),
 

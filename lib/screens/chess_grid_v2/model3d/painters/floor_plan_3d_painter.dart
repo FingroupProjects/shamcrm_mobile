@@ -17,6 +17,16 @@ class Apartment3DRenderInfo {
   });
 }
 
+class Parking3DRenderInfo {
+  final ParkingSpot spot;
+  final Rect hitBounds;
+
+  const Parking3DRenderInfo({
+    required this.spot,
+    required this.hitBounds,
+  });
+}
+
 /// Renders Level 4: 3D Volumetric Architectural Floor Plan (Media 4 in Web)
 class FloorPlan3DPainter {
   static List<Apartment3DRenderInfo> render({
@@ -28,7 +38,19 @@ class FloorPlan3DPainter {
     required int floor,
     required List<Apartment> floorApartments,
     Apartment? selectedApartment,
+    List<ParkingSpot> parkingSpots = const [],
+    List<Parking3DRenderInfo>? parkingHits,
   }) {
+    if (floor <= 0 && parkingSpots.isNotEmpty) {
+      _renderParkingPlan(
+        canvas: canvas,
+        size: size,
+        camera: camera,
+        parkingSpots: parkingSpots,
+        parkingHits: parkingHits,
+      );
+      return [];
+    }
     final result = <Apartment3DRenderInfo>[];
     final allPolys = <Poly3D>[];
 
@@ -253,6 +275,91 @@ class FloorPlan3DPainter {
       canvas.drawLine(b1, t1, p);
       canvas.drawLine(b2, t2, p);
       canvas.drawLine(b3, t3, p);
+    }
+  }
+
+  static void _renderParkingPlan({
+    required Canvas canvas,
+    required Size size,
+    required Camera3D camera,
+    required List<ParkingSpot> parkingSpots,
+    List<Parking3DRenderInfo>? parkingHits,
+  }) {
+    final allPolys = <Poly3D>[];
+    const double slabWidth = 148.0;
+    const double slabDepth = 138.0;
+    const double slabThickness = 8.5;
+    allPolys.addAll(Poly3D.createBox(
+      center: const Vector3D(0, slabThickness / 2, 0),
+      width: slabWidth,
+      height: slabThickness,
+      depth: slabDepth,
+      topColor: const Color(0xFFE8F3F7),
+      frontColor: const Color(0xFFD0DEE6),
+      sideColor: const Color(0xFFC3D3DC),
+      strokeColor: const Color(0xFFA9BEC8),
+      strokeWidth: 0.8,
+      camera: camera,
+    ));
+    allPolys.sort((a, b) => b.depth.compareTo(a.depth));
+    for (final poly in allPolys) {
+      poly.render(canvas, size, camera);
+    }
+
+    final spots = parkingSpots.take(8).toList();
+    const columns = 4;
+    const stallW = 28.0;
+    const stallD = 46.0;
+    const stallH = 6.0;
+    for (var i = 0; i < spots.length; i++) {
+      final spot = spots[i];
+      final col = i % columns;
+      final row = i ~/ columns;
+      final x = -48.0 + col * 32.0;
+      final z = row == 0 ? -28.0 : 28.0;
+      final color = switch (spot.status) {
+        ApartmentStatus.available => const Color(0xFF10B981),
+        ApartmentStatus.booked => const Color(0xFFF59E0B),
+        ApartmentStatus.sold => const Color(0xFF94A3B8),
+        ApartmentStatus.reserved => const Color(0xFF3B82F6),
+      };
+      final boxes = Poly3D.createBox(
+        center: Vector3D(x, slabThickness + stallH / 2, z),
+        width: stallW,
+        height: stallH,
+        depth: stallD,
+        topColor: color,
+        frontColor: color.withValues(alpha: 0.85),
+        sideColor: color.withValues(alpha: 0.7),
+        strokeColor: Colors.white.withValues(alpha: 0.45),
+        strokeWidth: 0.7,
+        camera: camera,
+      );
+      for (final poly in boxes) {
+        poly.render(canvas, size, camera);
+      }
+      final labelPoint = camera.project(Vector3D(x, slabThickness + stallH + 1, z), size);
+      final painter = TextPainter(
+        text: TextSpan(
+          text: spot.number,
+          style: const TextStyle(
+            fontFamily: 'Gilroy',
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF102027),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      painter.paint(canvas, labelPoint - Offset(painter.width / 2, painter.height / 2));
+      parkingHits?.add(Parking3DRenderInfo(
+        spot: spot,
+        hitBounds: Rect.fromCenter(
+          center: labelPoint,
+          width: 54,
+          height: 42,
+        ),
+      ));
     }
   }
 }

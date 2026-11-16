@@ -181,7 +181,7 @@ class PaymentScheduleSheet extends StatelessWidget {
                         ['Корпус', apt.buildingName],
                         ['Подъезд', '${apt.entrance}'],
                         ['Этаж', '${apt.floor}'],
-                        ['Квартира', '№ ${apt.number}'],
+                        ['Квартира', '№ ${apt.displayNumber}'],
                         ['Общая площадь', '${apt.totalArea} м²'],
                       ] else if (park != null) ...[
                         ['Парковочное место', park.number],
@@ -195,18 +195,20 @@ class PaymentScheduleSheet extends StatelessWidget {
                     _buildSectionHeader(context, '2. Условия оплаты'),
                     const SizedBox(height: 8),
                     _buildDocTable(context, [
-                      ['Общая стоимость объекта', '${order.price.toStringAsFixed(2)} \$'],
-                      ['Первоначальный взнос', '${(pay?.downPayment ?? 0).toStringAsFixed(2)} \$'],
+                      ['Общая стоимость объекта', '${order.price.toStringAsFixed(2)}'],
+                      ['Первоначальный взнос', '${(pay?.downPayment ?? 0).toStringAsFixed(2)}'],
                       if (pay?.barterSubject != null && (pay?.barterAmount ?? 0) > 0)
-                        ['Бартер (${pay!.barterSubject})', '${pay.barterAmount.toStringAsFixed(2)} \$'],
-                      ['Остаток в рассрочку', '${(pay?.installmentSum ?? 0).toStringAsFixed(2)} \$'],
+                        ['Бартер (${pay!.barterSubject})', '${pay.barterAmount.toStringAsFixed(2)}'],
+                      ['Остаток в рассрочку', '${(pay?.installmentSum ?? 0).toStringAsFixed(2)}'],
                       ['Срок рассрочки', '${pay?.months ?? 12} мес.'],
                       if (schedule.isNotEmpty) ...[
                         ['Дата первого платежа', dateFormat.format(schedule.first.date)],
                         ['Дата последнего платежа', dateFormat.format(schedule.last.date)],
-                        ['Плановый ежемесячный платёж', '${schedule.first.paymentAmount.toStringAsFixed(2)} \$'],
+                        ['Плановый ежемесячный платёж', '${schedule.first.paymentAmount.toStringAsFixed(2)}'],
                       ],
-                      ['Валюта платежей', 'USD (\$)'],
+                      // Поле валюты в шахматке пока не показываем.
+                      // ['Валюта платежей', 'USD (\$)'],
+
                     ]),
                     const SizedBox(height: 16),
 
@@ -256,8 +258,8 @@ class PaymentScheduleSheet extends StatelessWidget {
                                   children: [
                                     _buildTd(context, '${row.number}', isCenter: true),
                                     _buildTd(context, dateFormat.format(row.date)),
-                                    _buildTd(context, '${row.paymentAmount.toStringAsFixed(2)} \$', isBold: true),
-                                    _buildTd(context, '${row.remainingDebt.toStringAsFixed(2)} \$'),
+                                    _buildTd(context, '${row.paymentAmount.toStringAsFixed(2)}', isBold: true),
+                                    _buildTd(context, '${row.remainingDebt.toStringAsFixed(2)}'),
                                   ],
                                 ),
                             ],
@@ -321,18 +323,6 @@ class PaymentScheduleSheet extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-                    Center(
-                      child: Text(
-                        'Документ сформирован в мобильной системе shamCRM',
-                        style: TextStyle(
-                          fontFamily: 'Golos',
-                          fontSize: 10,
-                          color: colors.textMuted,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
                     ),
                   ],
                 ),

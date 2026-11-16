@@ -166,12 +166,14 @@ class FloatingEntranceBadge extends StatelessWidget {
 /// Floating Floor Number Badge (Media 3)
 class FloatingFloorBadge extends StatelessWidget {
   final int floorNumber;
+  final String? label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const FloatingFloorBadge({
     super.key,
     required this.floorNumber,
+    this.label,
     required this.isSelected,
     required this.onTap,
   });
@@ -201,7 +203,7 @@ class FloatingFloorBadge extends StatelessWidget {
           ],
         ),
         child: Text(
-          '$floorNumber',
+          label ?? '$floorNumber',
           style: const TextStyle(
             fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,

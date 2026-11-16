@@ -526,7 +526,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 3,
             floorCount: 18,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт', 'Черновая', 'Пентхаус'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт', 'Черновая', 'Пентхаус'],
             buildingShape: 'cascading',
             imageUrl: 'assets/images/building_cascade.jpg',
           ),
@@ -538,7 +538,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 1,
             floorCount: 22,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт', 'Пентхаус'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт', 'Пентхаус'],
             buildingShape: 'curvedTower',
             imageUrl: 'assets/images/building_tower.jpg',
           ),
@@ -550,7 +550,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 2,
             floorCount: 12,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт', 'Черновая'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт', 'Черновая'],
             buildingShape: 'standard',
             imageUrl: 'assets/images/building_cascade.jpg',
           ),
@@ -581,7 +581,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 2,
             floorCount: 20,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт', 'Пентхаус'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт', 'Пентхаус'],
             buildingShape: 'curvedTower',
             imageUrl: 'assets/images/building_tower.jpg',
           ),
@@ -593,7 +593,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 2,
             floorCount: 16,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт', 'Черновая'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт', 'Черновая'],
             buildingShape: 'standard',
             imageUrl: 'assets/images/building_cascade.jpg',
           ),
@@ -648,7 +648,7 @@ class ChessGridV2Controller extends ChangeNotifier {
             entranceCount: 2,
             floorCount: 8,
             apartsPerFloor: 4,
-            apartmentTypes: ['Студия', 'Евроремонт'],
+            apartmentTypes: ['1-комнатная', 'Евроремонт'],
             buildingShape: 'cascading',
             imageUrl: 'assets/images/building_cascade.jpg',
           ),
@@ -744,7 +744,7 @@ class ChessGridV2Controller extends ChangeNotifier {
 
               final aptType = isPenthouse
                   ? 'Пентхаус с террасой'
-                  : (rooms == 1 ? 'Студия' : (rooms == 2 ? 'Евроремонт' : 'Черновая'));
+                  : (rooms == 1 ? '1-комнатная' : (rooms == 2 ? 'Евроремонт' : 'Черновая'));
 
               final aptId = aptIdCounter++;
               final apt = Apartment(

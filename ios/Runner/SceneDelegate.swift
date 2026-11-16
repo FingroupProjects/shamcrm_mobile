@@ -17,6 +17,12 @@ class SceneDelegate: FlutterSceneDelegate {
         if let response = connectionOptions.notificationResponse {
             appDelegate?.capturePushTap(response.notification.request.content.userInfo)
         }
+        for context in connectionOptions.urlContexts {
+            _ = appDelegate?.handleOpenURL(context.url)
+        }
+        for activity in connectionOptions.userActivities {
+            _ = appDelegate?.handleUniversalLink(activity)
+        }
         super.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 
@@ -48,5 +54,12 @@ class SceneDelegate: FlutterSceneDelegate {
         if !handled {
             super.scene(scene, openURLContexts: URLContexts)
         }
+    }
+
+    override func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if appDelegate?.handleUniversalLink(userActivity) == true {
+            return
+        }
+        super.scene(scene, continue: userActivity)
     }
 }

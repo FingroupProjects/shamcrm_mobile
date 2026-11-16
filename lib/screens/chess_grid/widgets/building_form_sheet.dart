@@ -45,7 +45,7 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
   int _fieldErrorPulse = 0;
 
   // static const List<String> _defaultTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
-  final List<String> _availableTypes = ['Студия', 'Евроремонт', 'Предчистовая', 'Черновая'];
+  final List<String> _availableTypes = ['Евроремонт', 'Предчистовая', 'Черновая'];
   final Set<String> _selectedTypes = {};
 
   @override
@@ -58,8 +58,8 @@ class _BuildingFormSheetState extends State<BuildingFormSheet> {
       _floorController.text = '${b.floorCount}';
       _perFloorController.text = '${b.apartsPerFloor}';
       _selectedTypes.clear();
-      _selectedTypes.addAll(b.apartmentTypes);
-      for (final t in b.apartmentTypes) {
+      _selectedTypes.addAll(b.apartmentTypes.where((item) => !Apartment.isStudioLabel(item)));
+      for (final t in b.apartmentTypes.where((item) => !Apartment.isStudioLabel(item))) {
         if (!_availableTypes.contains(t)) _availableTypes.add(t);
       }
     }

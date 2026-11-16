@@ -1,5 +1,6 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/core/theme/theme_extensions.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/chess_deal_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/order_details_screen.dart';
@@ -123,7 +124,7 @@ class _OrderCardState extends State<OrderCard> {
   String _formatSum(double? sum) {
     if (sum == null) sum = 0;
 
-    if (_hideTojsokhtmontjOrderPaymentBadges) {
+    if (widget.residentialDeal || _hideTojsokhtmontjOrderPaymentBadges) {
       return NumberFormat('#,##0.00', 'ru_RU').format(sum);
     }
 
@@ -147,6 +148,18 @@ class _OrderCardState extends State<OrderCard> {
     }
 
     return '${NumberFormat('#,##0.00', 'ru_RU').format(sum)} $symbol';
+  }
+
+  bool _isContentLong() {
+    final orderNumber = 'Заказ №${widget.order.orderNumber}';
+    final clientName = widget.order.lead.name;
+    final phone = widget.order.phone;
+    final managerName = widget.order.manager?.name ?? 'Система';
+
+    return orderNumber.length > 15 ||
+        clientName.length > 20 ||
+        phone.length > 15 ||
+        managerName.length > 15;
   }
 
   @override
@@ -188,7 +201,20 @@ class _OrderCardState extends State<OrderCard> {
           widget.onStatusUpdated(oldStatusId, newStatusId);
         }
       },
-      child: Container(
+      child: widget.residentialDeal
+          ? _buildDealCard(context, colors, cardBg, primaryText, secondaryText)
+          : _buildClassicOrderCard(context, colors, cardBg, primaryText, secondaryText),
+    );
+  }
+
+  Widget _buildDealCard(
+    BuildContext context,
+    AppThemeColors colors,
+    Color cardBg,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    return Container(
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 14),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -214,7 +240,7 @@ class _OrderCardState extends State<OrderCard> {
                 Expanded(
                   flex: 3,
                   child: Text(
-                    'Заказ №${widget.order.orderNumber}',
+                    'Сделка №${widget.order.orderNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontSize: 15.5,
@@ -245,16 +271,6 @@ class _OrderCardState extends State<OrderCard> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
-                        const SizedBox(width: 4),
-                        SizedBox(
-                          width: 28,
-                          height: 16,
-                          child: getPaymentStatusStyle(
-                                  widget.order.paymentStatus, context)
-                              .content,
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -344,77 +360,321 @@ class _OrderCardState extends State<OrderCard> {
             const SizedBox(height: 8),
 
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Icon(
+                  Icons.person_outline_rounded,
+                  color: secondaryText,
+                  size: 16,
+                ),
+                const SizedBox(width: 5),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline_rounded,
-                        color: secondaryText,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          widget.order.lead.name,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: primaryText,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    widget.order.lead.name,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: primaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.phone_outlined,
+                  color: secondaryText,
+                  size: 14,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    widget.order.phone.isNotEmpty
+                        ? widget.order.phone
+                        : AppLocalizations.of(context)!.translate('no_phone'),
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: secondaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: colors.borderSubtle.withValues(alpha: 0.4),
+                          width: 0.6,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        widget.order.phone.isNotEmpty
-                            ? widget.order.phone
-                            : AppLocalizations.of(context)!.translate('no_phone'),
+                      child: Text(
+                        widget.order.manager?.name ?? 'Система',
                         style: TextStyle(
+                          fontSize: 10.5,
                           fontFamily: 'Gilroy',
-                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: secondaryText,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.35,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: colors.borderSubtle.withValues(alpha: 0.4),
-                      width: 0.6,
                     ),
-                  ),
-                  child: Text(
-                    widget.order.manager?.name ?? 'Система',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w500,
-                      color: secondaryText,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
             ),
           ],
         ),
+    );
+  }
+
+  Widget _buildClassicOrderCard(
+    BuildContext context,
+    AppThemeColors colors,
+    Color cardBg,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    final hasLongContent = _isContentLong();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Заказ №${widget.order.orderNumber}',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Создан: ${_formatDate(widget.order.createdAt)}',
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: secondaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (!_hideTojsokhtmontjOrderPaymentBadges) ...[
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        width: 32,
+                        height: 18,
+                        child: getPaymentStatusStyle(
+                                widget.order.paymentStatus, context)
+                            .content,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: hasLongContent ? 18 : 14),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: GestureDetector(
+                  onTap: () {
+                    OrderDropdownBottomSheet(
+                      context,
+                      dropdownValue,
+                      (String newValue, int newStatusId) {
+                        if (!mounted) return;
+                        setState(() {
+                          dropdownValue = newValue;
+                          statusId = newStatusId;
+                        });
+                        widget.onStatusUpdated(
+                          widget.order.orderStatus.id,
+                          newStatusId,
+                        );
+                      },
+                      widget.order,
+                      onTabChange: widget.onTabChange,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colors.borderSubtle,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: colors.fieldBg.withValues(alpha: 0.55),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            dropdownValue,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: primaryText,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 20,
+                          color: colors.iconSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  _formatSum(widget.order.sum),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: hasLongContent ? 20 : 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.42,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                widget.order.manager?.name ?? 'Система',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: secondaryText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          SizedBox(height: hasLongContent ? 20 : 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      color: secondaryText,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        widget.order.lead.name,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: primaryText,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  widget.order.phone.isNotEmpty
+                      ? widget.order.phone
+                      : AppLocalizations.of(context)!.translate('no_phone'),
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: primaryText,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
       ),
     );
   }

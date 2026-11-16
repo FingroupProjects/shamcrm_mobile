@@ -154,7 +154,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Новый заказ',
+                        'Новая сделка',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -201,7 +201,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                           _buildInfoRow('Подъезд, этаж', 'Подъезд ${widget.apartment!.entrance}, ${widget.apartment!.floor} этаж'),
                           _buildInfoRow('Комнат', '${widget.apartment!.rooms} (${widget.apartment!.type})'),
                           _buildInfoRow('Площадь', '${widget.apartment!.totalArea} м²'),
-                          _buildInfoRow('Цена за м²', '${widget.apartment!.pricePerSqm.toStringAsFixed(0)} \$'),
+                          _buildInfoRow('Цена за м²', '${widget.apartment!.pricePerSqm.toStringAsFixed(0)}'),
                         ] else ...[
                           _buildInfoRow('Тип парковки', widget.parking!.type),
                           _buildInfoRow('Площадь', '${widget.parking!.area} м²'),
@@ -209,7 +209,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                         const Divider(height: 16),
                         _buildInfoRow(
                           'Общая стоимость',
-                          '${_totalPrice.toStringAsFixed(0)} \$',
+                          '${_totalPrice.toStringAsFixed(0)}',
                           isBold: true,
                         ),
                       ],
@@ -513,11 +513,11 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                             ),
                             child: Column(
                               children: [
-                                _buildInfoRow('Сумма в рассрочку', '${_installmentSum.toStringAsFixed(0)} \$'),
+                                _buildInfoRow('Сумма в рассрочку', '${_installmentSum.toStringAsFixed(0)}'),
                                 const SizedBox(height: 4),
                                 _buildInfoRow(
                                   'Ежемесячный платёж',
-                                  '${_monthlyPayment.toStringAsFixed(2)} \$',
+                                  '${_monthlyPayment.toStringAsFixed(2)}',
                                   isBold: true,
                                 ),
                               ],
@@ -585,7 +585,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
                         elevation: 2,
                       ),
                       child: const Text(
-                        'Подтвердить и создать заказ',
+                        'Подтвердить и создать сделку',
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,
@@ -695,7 +695,7 @@ class _OrderCreateDialogState extends State<OrderCreateDialog> {
 
     showCustomSnackBar(
       context: context,
-      message: 'Заказ успешно создан! Статус обновлён на «Бронь».',
+      message: 'Сделка успешно создана! Статус обновлён на «Бронь».',
       isSuccess: true,
     );
   }

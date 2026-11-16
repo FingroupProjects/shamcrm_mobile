@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/firebase/firebase_api.dart';
 import 'package:crm_task_manager/api/service/device/widget_service.dart';
+import 'package:crm_task_manager/core/navigation/lead_link_coordinator.dart';
 import 'package:crm_task_manager/api/service/http/dio_client.dart';
 import 'package:crm_task_manager/app/app_feature_flags.dart';
 import 'package:crm_task_manager/utils/section_tab_memory.dart';
@@ -155,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
         _handleInitialMessage();
         _checkPendingWidgetNavigation();
+        unawaited(LeadLinkCoordinator.instance.markHomeReady());
       }
     });
   }
@@ -229,6 +231,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
             ChatUnreadCounterService.instance.refreshCounts(silent: true);
             _checkPendingWidgetNavigation();
+            unawaited(LeadLinkCoordinator.instance.markHomeReady());
           }
         });
       }
@@ -269,6 +272,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     WidgetService.onNavigateFromWidget = null;
     WidgetService.onNavigateFromWidgetByScreen = null;
+    LeadLinkCoordinator.instance.markHomeNotReady();
     AppUpdateGate.setHomeVisible(false);
     FirebaseApi().markHomeNotReady();
     _searchController.dispose();
@@ -1254,14 +1258,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
 
-    // Шахматка
     widgetsGroup1.add(const ChessGridScreen());
     titleKeysGroup1.add('appbar_chess_grid');
     navBarTitleKeysGroup1.add('appbar_chess_grid');
     activeIconsGroup1.add('assets/icons/MyNavBar/chess_grid_ON.png');
     inactiveIconsGroup1.add('assets/icons/MyNavBar/chess_grid_OFF.png');
 
-    // Шахматка 2
     widgetsGroup1.add(const ChessGridV2Screen());
     titleKeysGroup1.add('appbar_chess_grid_v2');
     navBarTitleKeysGroup1.add('appbar_chess_grid_v2');

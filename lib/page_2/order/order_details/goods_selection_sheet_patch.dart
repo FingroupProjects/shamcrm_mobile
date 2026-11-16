@@ -19,8 +19,9 @@ import 'package:crm_task_manager/page_2/widgets/product_network_image.dart';
 
 class ProductSelectionSheetAdd extends StatefulWidget {
   final Order? order;
+  final int? leadId;
 
-  const ProductSelectionSheetAdd({this.order, super.key});
+  const ProductSelectionSheetAdd({this.order, this.leadId, super.key});
 
   @override
   State<ProductSelectionSheetAdd> createState() =>
@@ -43,6 +44,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
   Timer? _searchDebounce;
   int? currencyId;
   bool _isTojsokhtmontjTenant = false;
+
+  int? get _leadId {
+    final id = widget.leadId;
+    if (id == null || id <= 0) return null;
+    return id;
+  }
 
   // Для хранения выбранных товаров
   final Map<int, Variant> _selectedVariants = {};
@@ -150,9 +157,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
 
     if (mounted) {
       if (_showAllMode) {
-        _bloc.add(FetchVariants(forceReload: true));
+        _bloc.add(FetchVariants(forceReload: true, leadId: _leadId));
       } else {
-        _bloc.add(FetchCategories(forceReload: true));
+        _bloc.add(FetchCategories(forceReload: true, leadId: _leadId));
       }
     }
   }
@@ -233,7 +240,7 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(_searchDebounceDelay, () {
       if (mounted) {
-        _bloc.add(SearchAll(query));
+        _bloc.add(SearchAll(query, leadId: _leadId));
       }
     });
   }
@@ -247,9 +254,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     _saveDisplayMode(_showAllMode);
 
     if (_showAllMode) {
-      _bloc.add(FetchVariants());
+      _bloc.add(FetchVariants(leadId: _leadId));
     } else {
-      _bloc.add(FetchCategories());
+      _bloc.add(FetchCategories(leadId: _leadId));
     }
   }
 
@@ -257,11 +264,12 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
     _bloc.add(FetchVariantsByCategory(
       categoryId: categoryId,
       categoryName: categoryName,
+      leadId: _leadId,
     ));
   }
 
   void _onBackFromCategory() {
-    _bloc.add(FetchCategories());
+    _bloc.add(FetchCategories(leadId: _leadId));
   }
 
   void _onVariantTap(Variant variant) {
@@ -494,9 +502,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                 _searchController.clear();
                 // Вместо SearchAll('') возвращаемся к предыдущему режиму
                 if (_showAllMode) {
-                  _bloc.add(FetchVariants());
+                  _bloc.add(FetchVariants(leadId: _leadId));
                 } else {
-                  _bloc.add(FetchCategories());
+                  _bloc.add(FetchCategories(leadId: _leadId));
                 }
               } else if (state.isInCategoryMode) {
                 _onBackFromCategory();
@@ -679,9 +687,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
                           _searchController.clear();
                           // Вместо SearchAll('') возвращаемся к предыдущему режиму
                           if (_showAllMode) {
-                            _bloc.add(FetchVariants());
+                            _bloc.add(FetchVariants(leadId: _leadId));
                           } else {
-                            _bloc.add(FetchCategories());
+                            _bloc.add(FetchCategories(leadId: _leadId));
                           }
                         },
                       )
@@ -767,9 +775,9 @@ class _ProductSelectionSheetAddState extends State<ProductSelectionSheetAdd> {
             ElevatedButton(
               onPressed: () {
                 if (_showAllMode) {
-                  _bloc.add(FetchVariants(forceReload: true));
+                  _bloc.add(FetchVariants(forceReload: true, leadId: _leadId));
                 } else {
-                  _bloc.add(FetchCategories(forceReload: true));
+                  _bloc.add(FetchCategories(forceReload: true, leadId: _leadId));
                 }
               },
               child: Text(localizations.translate('retry')),

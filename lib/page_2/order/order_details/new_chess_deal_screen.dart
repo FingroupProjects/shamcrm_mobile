@@ -7,6 +7,7 @@ import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/models/lead/manager_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/models/page_2/goods_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/page_2/order/order_details/residential_deal_fields.dart';
 import 'package:crm_task_manager/page_2/order/order_details/residential_deal_store.dart';
@@ -78,6 +79,7 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
   int? _goodId;
   int? _variantId;
   Apartment? _apartment;
+  String? _loadedGoodName;
   double _sum = 0;
   double? _area;
   double? _pricePerSqm;
@@ -88,6 +90,12 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
     super.initState();
     _initFromExisting();
     _loadStatuses();
+    _hydrateApartment();
+  }
+
+  String? _nonEmpty(String? value) {
+    final text = value?.trim() ?? '';
+    return text.isEmpty ? null : text;
   }
 
   void _initFromExisting() {
@@ -139,7 +147,72 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
       if (data.dealType.isNotEmpty) {
         _dealType = data.dealType;
       }
+      _loadedGoodName = _nonEmpty(data.goodName);
     }
+
+    _loadedGoodName ??= _goodNameFromOrder(order);
+  }
+
+  String? _goodNameFromOrder(Order? order) {
+    if (order == null || order.goods.isEmpty) return null;
+    return _nonEmpty(order.goods.first.getCorrectGoodName());
+  }
+
+  Future<void> _hydrateApartment() async {
+    if (!widget.isEdit || _apartment != null) return;
+    final id = _goodId;
+    if (id == null || id <= 0) return;
+    try {
+      final goods = await _api.getGoodsById(id);
+      if (!mounted || goods.isEmpty) return;
+      final good = goods.first;
+      final name = _nonEmpty(good.name);
+      final variantId = (good.variants != null && good.variants!.isNotEmpty)
+          ? good.variants!.first.id
+          : null;
+      final apartment = _apartmentFromGood(good);
+      setState(() {
+        if (name != null) _loadedGoodName = name;
+        if ((_variantId == null || _variantId! <= 0) &&
+            variantId != null &&
+            variantId > 0) {
+          _variantId = variantId;
+        }
+        if (apartment != null) {
+          _apartment = apartment;
+          if ((_area == null || _area! <= 0) && apartment.totalArea > 0) {
+            _area = apartment.totalArea;
+          }
+          if ((_pricePerSqm == null || _pricePerSqm! <= 0) &&
+              apartment.pricePerSqm > 0) {
+            _pricePerSqm = apartment.pricePerSqm;
+          }
+          _fillToken++;
+        }
+      });
+    } catch (_) {}
+  }
+
+  Apartment? _apartmentFromGood(Goods good) {
+    if (good.attributes.isEmpty) return null;
+    final json = <String, dynamic>{
+      'id': good.id,
+      'name': good.name,
+      'attributes': good.attributes
+          .map((item) => {'name': item.name, 'value': item.value})
+          .toList(),
+      if (_area != null && _area! > 0) 'total_area': _area,
+      if (_pricePerSqm != null && _pricePerSqm! > 0) 'price_per_m2': _pricePerSqm,
+      if (_sum > 0) 'price': _sum,
+      if (_nonEmpty(widget.existingData?.buildingName) != null)
+        'building_name': widget.existingData!.buildingName,
+      if (_variantId != null && _variantId! > 0) 'variant_id': _variantId,
+      if (good.variants != null && good.variants!.isNotEmpty)
+        'variants': good.variants!.map((variant) => {'id': variant.id}).toList(),
+    };
+    final apartment = Apartment.fromGood(json);
+    if (apartment.id <= 0 && _nonEmpty(apartment.number) == null) return null;
+    return apartment;
   }
 
   @override
@@ -520,11 +593,11 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
             if (apartment.floor > 0) 'этаж ${apartment.floor}',
           ].join(' · ');
 
-    final existingGoodName = widget.existingData?.goodName ??
-        (widget.existingOrder?.goods.isNotEmpty == true
-            ? widget.existingOrder!.goods.first.getCorrectGoodName()
-            : null);
-    final hasExistingGood = existingGoodName != null && existingGoodName.trim().isNotEmpty;
+    final existingGoodName = _loadedGoodName ??
+        _nonEmpty(widget.existingData?.goodName) ??
+        _goodNameFromOrder(widget.existingOrder);
+    final hasLinkedGood = _goodId != null && _goodId! > 0;
+    final hasExistingGood = existingGoodName != null || hasLinkedGood;
     final hasSelected = apartment != null || hasExistingGood;
 
     return Material(
@@ -610,7 +683,7 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  existingGoodName,
+                                  existingGoodName ?? 'Квартира',
                                   style: TextStyle(
                                     fontFamily: 'Gilroy',
                                     fontSize: 18,
@@ -945,6 +1018,10 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
                       foregroundColor: colors.textPrimary,
                       elevation: 0,
                       shadowColor: Colors.transparent,
+                      side: BorderSide(
+                        color: colors.textPrimary.withValues(alpha: 0.55),
+                        width: 1.4,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
                       ),

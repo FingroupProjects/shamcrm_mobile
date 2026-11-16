@@ -297,7 +297,7 @@ class Apartment {
   final int? buildingId;
   final String number;
   final ApartmentStatus status;
-  final String type; // 'Студия', 'Евроремонт', 'Предчистовая', 'Черновая'
+  final String type; // отделка: 'Евроремонт', 'Предчистовая', 'Черновая'
   final int rooms;
   final double totalArea;
   final double livingArea;
@@ -349,6 +349,32 @@ class Apartment {
     this.bookingCountMonth = 0,
     this.customFields = const {},
   });
+
+  /// Номер для карточек, сетки и 3D: без префикса «Квартира» и без «Студия».
+  String get displayNumber => cleanDisplayNumber(number);
+
+  static String cleanDisplayNumber(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return value;
+    value = value.replaceAll(RegExp(r'студи[яюи]|studio|studiya', caseSensitive: false), '');
+    var previous = '';
+    while (value != previous) {
+      previous = value;
+      value = value.replaceFirst(
+        RegExp(r'^(?:квартира|apartment|kvartira)\s*(?:№|#)?\s*', caseSensitive: false),
+        '',
+      );
+      value = value.replaceFirst(RegExp(r'^[№#]\s*'), '');
+    }
+    value = value.replaceAll(RegExp(r'\s*,\s*'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    value = value.replaceAll(RegExp(r'^[,\s]+|[,\s]+$'), '').trim();
+    return value.isEmpty ? raw.trim() : value;
+  }
+
+  static bool isStudioLabel(String raw) {
+    final value = raw.trim().toLowerCase();
+    return value.contains('студи') || value == 'studio' || value == 'studiya';
+  }
 
   factory Apartment.fromJson(Map<String, dynamic> json) => Apartment.fromGood(json);
 
@@ -460,9 +486,10 @@ class Apartment {
         typeVal = rawType;
       }
     }
-    if (typeVal.isEmpty) {
-      typeVal = roomsVal == 1 ? 'Студия' : (roomsVal == 2 ? 'Евроремонт' : 'Черновая');
+    if (typeVal.isEmpty || Apartment.isStudioLabel(typeVal)) {
+      typeVal = roomsVal > 0 ? '$roomsVal-комнатная' : '';
     }
+    number = Apartment.cleanDisplayNumber(number);
 
     // Areas
     final totalAreaVal = SafeConverters.toDoubleOrNull(data['total_area'] ?? json['total_area'] ?? data['area'] ?? json['area'] ?? data['square']) ??
@@ -935,7 +962,7 @@ class Building {
       types = (json['apartmentTypes'] as List).map((e) => e.toString()).toList();
     }
     if (types.isEmpty) {
-      types = ['Студия', 'Евроремонт', 'Черновая'];
+      types = ['Евроремонт', 'Черновая'];
     }
 
     final key = json['key']?.toString() ?? (id != null ? id.toString() : name);

@@ -37,9 +37,9 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
     final status = apartment.status;
     final isAvailable = status == ApartmentStatus.available;
     final priceStr = _formatPriceFull(apartment.totalPrice);
-    final roomsLabel = apartment.rooms == 0
-        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
-        : '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
+    final roomsLabel = apartment.rooms > 0
+        ? '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}'
+        : '${apartment.totalArea.toStringAsFixed(0)} м²';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 16),
@@ -98,7 +98,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                     Row(
                       children: [
                         Text(
-                          '№ ${apartment.number}',
+                          '№ ${apartment.displayNumber}',
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w800,
@@ -143,7 +143,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '$priceStr \$',
+                    priceStr,
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w800,
@@ -152,7 +152,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                     ),
                   ),
                   Text(
-                    '\$${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
+                    '${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
                     style: TextStyle(
                       fontFamily: 'Golos',
                       fontSize: 10.5,
@@ -295,7 +295,7 @@ class _ApartmentQuickDockV2State extends State<ApartmentQuickDockV2> {
                       const SizedBox(width: 5),
                       Text(
                         isAvailable
-                            ? context.tr('chess_grid_take_order', fallback: 'Заказ')
+                            ? context.tr('chess_grid_take_order', fallback: 'Сделка')
                             : context.tr('chess_grid_unavailable', fallback: 'Недоступно'),
                         style: const TextStyle(
                           fontFamily: 'Gilroy',

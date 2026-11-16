@@ -22,9 +22,10 @@ export 'package:crm_task_manager/app/my_app.dart';
 // Разработано компанией Softtech Group.
 // Разработчик: Авезов Д. И.
 
+
 void main() {
   // В магазине печати не нужны: их тысячи, и на слабом телефоне они тратят время.
-  // В отладке логи остаются.
+  // В отладке логи остаются. 
   if (kReleaseMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }

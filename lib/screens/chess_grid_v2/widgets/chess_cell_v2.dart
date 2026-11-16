@@ -95,7 +95,7 @@ class ChessCellV2 extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              apartment.number,
+              apartment.displayNumber,
               style: TextStyle(
                 fontFamily: 'Gilroy',
                 fontWeight: FontWeight.w700,
@@ -128,9 +128,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0
-        ? context.tr('chess_grid_studio_short', fallback: 'Ст')
-        : '${apartment.rooms}${context.tr('chess_grid_room_short_letter', fallback: 'к')}';
+    final roomsLabel = apartment.rooms > 0
+        ? '${apartment.rooms}${context.tr('chess_grid_room_short_letter', fallback: 'к')}'
+        : '';
 
     return GestureDetector(
       onTap: () {
@@ -188,7 +188,7 @@ class ChessCellV2 extends StatelessWidget {
                 const SizedBox(width: 3),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -203,7 +203,9 @@ class ChessCellV2 extends StatelessWidget {
               ],
             ),
             Text(
-              '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)}м²',
+              roomsLabel.isEmpty
+                  ? '${apartment.totalArea.toStringAsFixed(0)} м²'
+                  : '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)} м²',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontWeight: FontWeight.w600,
@@ -227,9 +229,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0
-        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
-        : '${apartment.rooms} ${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
+    final roomsLabel = apartment.rooms > 0
+        ? '${apartment.rooms} ${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}'
+        : '';
     final priceStr = _formatPrice(apartment.totalPrice);
 
     return GestureDetector(
@@ -289,7 +291,7 @@ class ChessCellV2 extends StatelessWidget {
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -305,7 +307,9 @@ class ChessCellV2 extends StatelessWidget {
             ),
             // Middle: Rooms and Area
             Text(
-              '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)}м²',
+              roomsLabel.isEmpty
+                  ? '${apartment.totalArea.toStringAsFixed(0)} м²'
+                  : '$roomsLabel · ${apartment.totalArea.toStringAsFixed(0)} м²',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontWeight: FontWeight.w500,
@@ -342,9 +346,9 @@ class ChessCellV2 extends StatelessWidget {
     Color statusColor,
     Color bgColor,
   ) {
-    final roomsLabel = apartment.rooms == 0
-        ? context.tr('chess_grid_studio_full', fallback: 'Студия')
-        : '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}';
+    final roomsLabel = apartment.rooms > 0
+        ? '${apartment.rooms}-${context.tr('chess_grid_rooms_count_short', fallback: 'комн.')}'
+        : '';
     final priceStr = _formatPrice(apartment.totalPrice);
 
     return GestureDetector(
@@ -403,7 +407,7 @@ class ChessCellV2 extends StatelessWidget {
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
-                    '№${apartment.number}',
+                    '№${apartment.displayNumber}',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w800,
@@ -418,7 +422,9 @@ class ChessCellV2 extends StatelessWidget {
               ],
             ),
             Text(
-              '$roomsLabel · ${apartment.totalArea.toStringAsFixed(1)} м²',
+              roomsLabel.isEmpty
+                  ? '${apartment.totalArea.toStringAsFixed(1)} м²'
+                  : '$roomsLabel · ${apartment.totalArea.toStringAsFixed(1)} м²',
               style: TextStyle(
                 fontFamily: 'Golos',
                 fontWeight: FontWeight.w600,
@@ -449,10 +455,10 @@ class ChessCellV2 extends StatelessWidget {
 
   static String _formatPrice(double price) {
     if (price >= 1e6) {
-      return '${(price / 1e6).toStringAsFixed(1)} млн \$';
+      return '${(price / 1e6).toStringAsFixed(1)} млн';
     } else if (price >= 1e3) {
-      return '${(price / 1e3).toStringAsFixed(0)} тыс \$';
+      return '${(price / 1e3).toStringAsFixed(0)} тыс';
     }
-    return '${price.toStringAsFixed(0)} \$';
+    return price.toStringAsFixed(0);
   }
 }

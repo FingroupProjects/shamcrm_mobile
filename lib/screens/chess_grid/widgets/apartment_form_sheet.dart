@@ -119,6 +119,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
   Set<String> _missingFields = {};
   String? _firstMissingField;
   int _fieldErrorPulse = 0;
+  bool _isSaving = false;
 
   static const String _fieldTable = 'goods';
   static const String _fieldModelType = 'good';
@@ -710,6 +711,38 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     );
   }
 
+  String _fieldDisplayName(FieldConfiguration config) {
+    if (config.isCustomField || config.isDirectory) return config.fieldName;
+
+    const known = <String, (String, String)>{
+      'name': ('goods_name', 'Название'),
+      'category_id': ('category', 'Категория'),
+      'description': ('description_list', 'Описание'),
+      'price': ('goods_price', 'Цена'),
+      'unit_id': ('unit', 'Ед. изм.'),
+      'is_service': ('service', 'Услуга'),
+      'article': ('goods_article', 'Артикул'),
+      'barcode': ('barcode', 'Штрихкод'),
+      'quantity': ('quantity', 'Количество'),
+    };
+    final mapped = known[config.fieldName];
+    if (mapped != null) return context.tr(mapped.$1, fallback: mapped.$2);
+
+    final parts = config.fieldName
+        .split('_')
+        .where((part) => part.isNotEmpty && part != 'id' && part != 'is');
+    if (parts.isEmpty) return config.fieldName;
+    return parts
+        .map((part) {
+          final value = context.tr(part).replaceAll(RegExp(r':\s*$'), '').trim();
+          if (value.isEmpty || value == part) {
+            return part[0].toUpperCase() + part.substring(1);
+          }
+          return value;
+        })
+        .join(' ');
+  }
+
   String _fieldTypeLabel(FieldConfiguration config) {
     if (config.isDirectory) return context.tr('directory', fallback: 'Справочник');
     if (config.isCustomField) return context.tr('custom_field', fallback: 'Пользовательское поле');
@@ -822,7 +855,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            config.fieldName,
+                            _fieldDisplayName(config),
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontSize: 16,
@@ -947,7 +980,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         ? context.tr('field_settings', fallback: 'Настройка полей')
                         : isEditing
                             ? context.tr('chess_grid_edit_item', fallback: 'Редактировать товар')
-                            : context.tr('chess_grid_add_to_catalog', fallback: 'Добавить в номенклатуру'),
+                            : context.tr('chess_grid_add_to_catalog', fallback: 'Добавить в объекты'),
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -962,7 +995,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                       : context.tr('settings', fallback: 'Настройки'),
                   onPressed: _toggleFieldSettings,
                   icon: Icon(
-                    _isSettingsMode ? Icons.close_rounded : Icons.settings_rounded,
+                    _isSettingsMode ? Icons.arrow_back_rounded : Icons.settings_rounded,
                     color: colors.iconSecondary,
                   ),
                 ),
@@ -1259,15 +1292,16 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                     ),
                     const SizedBox(height: 14),
 
-                    _buildCurrencyDropdown(),
-                    const SizedBox(height: 14),
+                    // Поле валюты в шахматке пока не показываем.
+                    // _buildCurrencyDropdown(),
+                    // const SizedBox(height: 14),
 
                     // Photos of Floor Plan Section — same drop zone as goods create
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          context.tr('chess_grid_layout_photos', fallback: 'Фотографии планировки'),
+                          context.tr('chess_grid_layout_photos', fallback: 'Файлы объекта'),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -1340,6 +1374,7 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
 
                     // [Дополнительные поля скрыты по требованию: вид из окна, высота потолков]
                     // if (_customFieldControllers.isNotEmpty) ...[
@@ -1478,26 +1513,25 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-
-                    // Linked apartment selector
-                    _buildDropdown<int?>(
-                      label: context.tr('chess_grid_link_to_apartment', fallback: 'Привязка к квартире'),
-                      value: _linkedApartmentId,
-                      items: [
-                        DropdownMenuItem(
-                          value: null,
-                          child: Text(context.tr('chess_grid_no_link', fallback: 'Без привязки')),
-                        ),
-                        ...controller.apartments.where((a) => a.buildingKey == _buildingKey).map((a) {
-                          return DropdownMenuItem(
-                            value: a.id,
-                            child: Text('${context.tr('chess_grid_apartment_num', fallback: 'Кв. №')} ${a.number} (${a.floor} ${context.tr('chess_grid_floor_short', fallback: 'эт.')})'),
-                          );
-                        }),
-                      ],
-                      onChanged: (val) => setState(() => _linkedApartmentId = val),
-                    ),
+                    // Привязка к квартире в шахматке пока не нужна.
+                    // const SizedBox(height: 14),
+                    // _buildDropdown<int?>(
+                    //   label: context.tr('chess_grid_link_to_apartment', fallback: 'Привязка к квартире'),
+                    //   value: _linkedApartmentId,
+                    //   items: [
+                    //     DropdownMenuItem(
+                    //       value: null,
+                    //       child: Text(context.tr('chess_grid_no_link', fallback: 'Без привязки')),
+                    //     ),
+                    //     ...controller.apartments.where((a) => a.buildingKey == _buildingKey).map((a) {
+                    //       return DropdownMenuItem(
+                    //         value: a.id,
+                    //         child: Text('${context.tr('chess_grid_apartment_num', fallback: 'Кв. №')} ${a.number} (${a.floor} ${context.tr('chess_grid_floor_short', fallback: 'эт.')})'),
+                    //       );
+                    //     }),
+                    //   ],
+                    //   onChanged: (val) => setState(() => _linkedApartmentId = val),
+                    // ),
                   ],
 
                   const SizedBox(height: 24),
@@ -1507,18 +1541,29 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: _handleSave,
+                      onPressed: _isSaving ? null : _handleSave,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.buttonPrimaryBg,
                         foregroundColor: colors.buttonPrimaryFg,
+                        disabledBackgroundColor: colors.buttonPrimaryBg,
+                        disabledForegroundColor: colors.buttonPrimaryFg,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text(
-                        isEditing
-                            ? context.tr('chess_grid_save_changes', fallback: 'Сохранить изменения')
-                            : context.tr('chess_grid_action_add', fallback: 'Добавить'),
-                        style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
-                      ),
+                      child: _isSaving
+                          ? SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryFg),
+                              ),
+                            )
+                          : Text(
+                              isEditing
+                                  ? context.tr('chess_grid_save_changes', fallback: 'Сохранить изменения')
+                                  : context.tr('chess_grid_action_add', fallback: 'Добавить'),
+                              style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
                     ),
                   ),
                 ],
@@ -1585,7 +1630,8 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     }
   }
 
-  void _handleSave() {
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
     final controller = ChessGridController.instance;
     final no = _numberController.text.trim();
     final price = double.tryParse(_totalPriceController.text) ?? 0;
@@ -1631,8 +1677,10 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
       });
     }
 
+    setState(() => _isSaving = true);
+    try {
     if (_isParking) {
-      _saveParking(
+      await _saveParking(
         controller: controller,
         number: no,
         price: price,
@@ -1643,7 +1691,10 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
 
     // Apartment save
     final rooms = int.tryParse(_roomsController.text) ?? 1;
-    final type = _typeController.text.trim().isNotEmpty ? _typeController.text.trim() : 'Студия';
+    final typed = _typeController.text.trim();
+    final type = typed.isNotEmpty && !Apartment.isStudioLabel(typed)
+        ? typed
+        : (rooms > 0 ? '$rooms-комнатная' : '');
     final live = double.tryParse(_livingAreaController.text) ?? (area * 0.58);
     final kit = double.tryParse(_kitchenAreaController.text) ?? 10.0;
     final pm = double.tryParse(_pricePerM2Controller.text) ?? (area > 0 ? price / area : 800);
@@ -1694,41 +1745,60 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
         copyFloorsList = _parseFloors(_copyFloorsController.text, b?.floorCount ?? 9);
       }
 
-      controller.addApartment(
-        Apartment(
-          id: maxId + 1,
-          number: no,
-          buildingKey: _buildingKey,
-          buildingName: bName,
-          entrance: _entrance,
-          entranceId: _selectedEntranceId,
-          floor: _floor,
-          position: _position,
-          rooms: rooms,
-          type: type,
-          totalArea: area,
-          livingArea: live,
-          kitchenArea: kit,
-          pricePerSqm: pm,
-          totalPrice: price,
-          currency: _currency,
-          layoutType: layoutType,
-          balconiesCount: balconies,
-          combinedBathroomsCount: bathrooms,
-          plans: _planImages,
-          customFields: customFieldMap,
-          status: _status,
-        ),
-        copyToFloors: copyFloorsList,
-      );
+      try {
+        await controller.addApartment(
+          Apartment(
+            id: maxId + 1,
+            complexId: controller.selectedComplexId > 0
+                ? controller.selectedComplexId
+                : controller.complex.id,
+            buildingId: b?.id,
+            number: no,
+            buildingKey: _buildingKey,
+            buildingName: bName,
+            entrance: _entrance,
+            entranceId: _selectedEntranceId,
+            floor: _floor,
+            position: _position,
+            rooms: rooms,
+            type: type,
+            totalArea: area,
+            livingArea: live,
+            kitchenArea: kit,
+            pricePerSqm: pm,
+            totalPrice: price,
+            currency: _currency,
+            layoutType: layoutType,
+            balconiesCount: balconies,
+            combinedBathroomsCount: bathrooms,
+            plans: _planImages,
+            customFields: customFieldMap,
+            status: _status,
+          ),
+          copyToFloors: copyFloorsList,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        showCustomSnackBar(
+          context: context,
+          message: e.toString().replaceFirst('Exception: ', ''),
+          isSuccess: false,
+        );
+        return;
+      }
     }
 
-    Navigator.pop(context);
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    navigator.pop();
     showCustomSnackBar(
-      context: context,
+      context: navigator.context,
       message: widget.existingApartment != null ? 'Квартира обновлена' : 'Квартира успешно добавлена',
       isSuccess: true,
     );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   List<int> _parseFloors(String str, int maxFloor) {
@@ -1805,6 +1875,8 @@ class _ApartmentFormSheetState extends State<ApartmentFormSheet> {
     );
   }
 
+  // Поле валюты в шахматке пока скрыто.
+  // ignore: unused_element
   Widget _buildCurrencyDropdown() {
     final colors = context.appColors;
     final label = context.tr('chess_grid_currency_label', fallback: 'Валюта');

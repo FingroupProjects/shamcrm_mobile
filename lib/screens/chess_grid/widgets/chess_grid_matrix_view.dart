@@ -353,7 +353,7 @@ class ChessGridMatrixView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${spot.price.toStringAsFixed(0)} \$',
+                  spot.price.toStringAsFixed(0),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,

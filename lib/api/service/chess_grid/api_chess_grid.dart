@@ -552,8 +552,11 @@ extension ApiChessGridX on ApiService {
     String buildingKey = '',
     String buildingName = '',
   }) async {
-    final effectiveType = apartmentType ?? type;
-    final aptName = 'Квартира № $number, $effectiveType';
+    final rawType = (apartmentType ?? type).trim();
+    final effectiveType = rawType.isEmpty || Apartment.isStudioLabel(rawType)
+        ? (rooms > 0 ? '$rooms-комнатная' : '')
+        : rawType;
+    final aptName = 'Квартира № $number';
 
     final body = <String, dynamic>{
       'name': aptName,
@@ -675,6 +678,24 @@ extension ApiChessGridX on ApiService {
     }
   }
 
+  /// GET /good/{id}
+  Future<Map<String, dynamic>> getGoodById(int goodId) async {
+    final path = await _appendQueryParams('/good/$goodId');
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      throw Exception('Не удалось загрузить квартиру');
+    }
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : null;
+    if (decoded is Map && decoded['result'] is Map) {
+      return Map<String, dynamic>.from(decoded['result'] as Map);
+    }
+    if (decoded is Map && decoded['data'] is Map) {
+      return Map<String, dynamic>.from(decoded['data'] as Map);
+    }
+    if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    throw Exception('Неверный ответ сервера');
+  }
+
   /// DELETE /good/{id}
   Future<bool> deleteApartmentGood(int goodId) async {
     final path = '/good/$goodId';
@@ -707,7 +728,7 @@ extension ApiChessGridX on ApiService {
     int? inn,
     String? residenceAddress,
     required int goodId,
-    required int variantId,
+    int? variantId,
     required double pricePerM2,
     double? totalArea,
     required String dealType,
@@ -716,6 +737,9 @@ extension ApiChessGridX on ApiService {
     String? firstPaymentDate,
     double? barterAmount,
     String? barterNote,
+    List<Map<String, dynamic>>? orderCustomFields,
+    List<Map<String, int>>? directoryValues,
+    List<String>? filePaths,
   }) async {
     final organizationId = await resolveSelectedOrganizationId();
     final body = <String, dynamic>{
@@ -732,8 +756,7 @@ extension ApiChessGridX on ApiService {
       'passport': passport,
       'goods': [
         {
-          'good_id': goodId,
-          'variant_id': variantId,
+          'variant_id': (variantId != null && variantId > 0) ? variantId : goodId,
           'quantity': 1,
           'price': sum,
         },
@@ -783,8 +806,19 @@ extension ApiChessGridX on ApiService {
         }
       }
     }
+    if (orderCustomFields != null && orderCustomFields.isNotEmpty) {
+      body['order_custom_fields'] = orderCustomFields;
+    }
+    if (directoryValues != null && directoryValues.isNotEmpty) {
+      body['directory_values'] = directoryValues;
+    }
 
-    final response = await _postRequest('/order', body);
+    final localFiles = (filePaths ?? const <String>[])
+        .where((path) => path.isNotEmpty && !path.startsWith('http'))
+        .toList();
+    final response = localFiles.isEmpty
+        ? await _postRequest('/order', body)
+        : await _postResidentialOrderWithFiles('/order', body, localFiles);
     final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
     if (<int>[200, 201, 202, 203, 204].contains(response.statusCode)) {
       String? orderId;
@@ -803,6 +837,51 @@ extension ApiChessGridX on ApiService {
       'success': false,
       'error': _orderErrorText(decoded) ?? 'Не удалось создать заказ (${response.statusCode})',
     };
+  }
+
+  Future<http.Response> _postResidentialOrderWithFiles(
+    String path,
+    Map<String, dynamic> body,
+    List<String> filePaths,
+  ) async {
+    final token = await getToken();
+    final updatedPath = await _appendQueryParams(path);
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+      'Device': 'mobile',
+    });
+
+    void writeField(String key, dynamic value) {
+      if (value == null) return;
+      if (value is List) {
+        for (var i = 0; i < value.length; i++) {
+          writeField('$key[$i]', value[i]);
+        }
+        return;
+      }
+      if (value is Map) {
+        value.forEach((nestedKey, nestedValue) {
+          writeField('$key[$nestedKey]', nestedValue);
+        });
+        return;
+      }
+      request.fields[key] = value.toString();
+    }
+
+    body.forEach(writeField);
+    for (final filePath in filePaths) {
+      final file = File(filePath);
+      if (!file.existsSync()) continue;
+      request.files.add(await http.MultipartFile.fromPath(
+        'files[]',
+        filePath,
+        filename: filePath.split(Platform.pathSeparator).last,
+      ));
+    }
+
+    return _multipartPostRequest('', request);
   }
 
   Future<Map<String, dynamic>> updateResidentialOrder({
@@ -859,7 +938,6 @@ extension ApiChessGridX on ApiService {
       'deal_type': dealType,
       'organization_id': organizationId,
       'deliveryType': 'pickup',
-      '_method': 'PUT',
     };
 
     if (passportIssuedBy != null && passportIssuedBy.trim().isNotEmpty) {
@@ -932,6 +1010,311 @@ extension ApiChessGridX on ApiService {
       }
     }
     return null;
+  }
+
+  dynamic _apiResult(dynamic decoded) {
+    if (decoded is Map && decoded.containsKey('result')) return decoded['result'];
+    if (decoded is Map && decoded.containsKey('data')) return decoded['data'];
+    return decoded;
+  }
+
+  List<Map<String, dynamic>> _apiMapList(dynamic value) {
+    if (value is List) {
+      return value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+    }
+    if (value is Map) {
+      for (final key in ['data', 'result', 'items', 'templates', 'contracts']) {
+        if (value[key] is List) return _apiMapList(value[key]);
+      }
+    }
+    return [];
+  }
+
+  Map<String, dynamic> _apiMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return {};
+  }
+
+  Never _throwApi(http.Response response, String fallback) {
+    dynamic decoded;
+    try {
+      decoded = response.body.isNotEmpty ? json.decode(response.body) : null;
+    } catch (_) {}
+    throw Exception(_orderErrorText(decoded) ?? '$fallback (${response.statusCode})');
+  }
+
+  Future<List<Map<String, dynamic>>> getOrderContracts(int orderId) async {
+    final response = await _getRequest('/order/$orderId/contracts');
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось загрузить договоры');
+    final decoded = json.decode(response.body);
+    return _apiMapList(_apiResult(decoded));
+  }
+
+  Future<List<Map<String, dynamic>>> getContractTemplates(int organizationId) async {
+    final response = await _getRequest('/contract-templates?organization_id=$organizationId');
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось загрузить шаблоны');
+    return _apiMapList(_apiResult(json.decode(response.body)))
+        .where((item) => item['is_active'] != false && item['is_active'] != 0 && item['is_active'] != '0')
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> getContractRequisites(int organizationId) async {
+    final response = await _getRequest('/contract-requisites?organization_id=$organizationId');
+    if (response.statusCode != 200) return {};
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> getOrderContract({
+    required int orderId,
+    required int contractId,
+  }) async {
+    final response = await _getRequest('/order/$orderId/contracts/$contractId');
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось открыть договор');
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<List<Map<String, dynamic>>> getContractDocumentTypes() async {
+    final response = await _getRequest('/contract-document-types');
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось загрузить типы документов');
+    return _apiMapList(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> previewOrderContract({
+    required int orderId,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await _postRequest('/order/$orderId/contracts/preview', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось построить предпросмотр');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> createOrderContract({
+    required int orderId,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await _postRequest('/order/$orderId/contracts', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось создать договор');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> generateOrderContract({
+    required int orderId,
+    required int contractId,
+  }) async {
+    final response = await _postRequest('/order/$orderId/contracts/$contractId/generate', {});
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось сформировать договор');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> createOrderContractVersion({
+    required int orderId,
+    required int contractId,
+  }) async {
+    final response = await _postRequest('/order/$orderId/contracts/$contractId/versions', {});
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось создать версию');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<void> deleteOrderContract({
+    required int orderId,
+    required int contractId,
+  }) async {
+    final response = await _deleteRequest('/order/$orderId/contracts/$contractId');
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      _throwApi(response, 'Не удалось удалить договор');
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadOrderContract({
+    required int orderId,
+    required int organizationId,
+    required String documentType,
+    required String title,
+    required String filePath,
+    String? number,
+    String? contractDate,
+    String? notes,
+    int? relatedContractId,
+  }) async {
+    if (baseUrl == null) {
+      await _initializeIfDomainExists();
+    }
+    final path = await _appendQueryParams('/order/$orderId/contracts/upload');
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    request.fields['organization_id'] = organizationId.toString();
+    request.fields['document_type'] = documentType;
+    request.fields['title'] = title;
+    if (number != null && number.trim().isNotEmpty) request.fields['number'] = number.trim();
+    if (contractDate != null && contractDate.isNotEmpty) request.fields['contract_date'] = contractDate;
+    if (notes != null && notes.trim().isNotEmpty) request.fields['notes'] = notes.trim();
+    if (relatedContractId != null) request.fields['related_contract_id'] = relatedContractId.toString();
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    final response = await _multipartPostRequest('', request);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось загрузить договор');
+    }
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+    return _apiMap(_apiResult(decoded));
+  }
+
+  Future<Map<String, dynamic>> changeOrderContractStatus({
+    required int orderId,
+    required int contractId,
+    required String status,
+    String? signedAt,
+    String? scanPath,
+  }) async {
+    if (scanPath == null || scanPath.isEmpty) {
+      final body = <String, dynamic>{'status': status};
+      if (signedAt != null && signedAt.isNotEmpty) body['signed_at'] = signedAt;
+      final response = await _postRequest('/order/$orderId/contracts/$contractId/status', body);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        _throwApi(response, 'Не удалось сменить статус');
+      }
+      return _apiMap(_apiResult(json.decode(response.body)));
+    }
+
+    if (baseUrl == null) await _initializeIfDomainExists();
+    final path = await _appendQueryParams('/order/$orderId/contracts/$contractId/status');
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    request.fields['status'] = status;
+    if (signedAt != null && signedAt.isNotEmpty) request.fields['signed_at'] = signedAt;
+    request.files.add(await http.MultipartFile.fromPath('file', scanPath));
+    final response = await _multipartPostRequest('', request);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось подписать договор');
+    }
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+    return _apiMap(_apiResult(decoded));
+  }
+
+  Future<List<int>> downloadOrderContractBytes({
+    required int orderId,
+    required int contractId,
+    bool scan = false,
+  }) async {
+    final suffix = scan ? '?kind=scan' : '';
+    final response = await _getRequest('/order/$orderId/contracts/$contractId/file$suffix');
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось скачать файл');
+    return response.bodyBytes;
+  }
+
+  Future<List<Map<String, dynamic>>> getOrderInstallments() async {
+    final response = await _getRequest('/order/installments');
+    if (response.statusCode != 200) {
+      _throwApi(response, 'Не удалось загрузить платежи');
+    }
+    final decoded = response.body.isNotEmpty ? json.decode(response.body) : null;
+    final items = _apiMapList(_apiResult(decoded));
+    await _fillInstallmentBuyerNames(items);
+    return items;
+  }
+
+  Future<void> _fillInstallmentBuyerNames(List<Map<String, dynamic>> items) async {
+    final missingLeadIds = <int>{};
+    for (final item in items) {
+      final buyer = item['buyer']?.toString().trim() ?? '';
+      if (buyer.isNotEmpty && buyer != 'null') continue;
+      final leadId = int.tryParse(item['lead_id']?.toString() ?? '');
+      if (leadId != null && leadId > 0) missingLeadIds.add(leadId);
+    }
+    if (missingLeadIds.isEmpty) return;
+
+    final names = <int, String>{};
+    await Future.wait(missingLeadIds.map((leadId) async {
+      try {
+        final response = await fetchLeadByIdResponse(leadId);
+        if (response.statusCode != 200 || response.body.isEmpty) return;
+        final decoded = json.decode(response.body);
+        final result = decoded is Map ? decoded['result'] : null;
+        if (result is! Map) return;
+        final name = result['name']?.toString().trim() ?? '';
+        if (name.isNotEmpty) names[leadId] = name;
+      } catch (_) {}
+    }));
+
+    for (final item in items) {
+      final buyer = item['buyer']?.toString().trim() ?? '';
+      if (buyer.isNotEmpty && buyer != 'null') continue;
+      final leadId = int.tryParse(item['lead_id']?.toString() ?? '');
+      final name = leadId == null ? null : names[leadId];
+      if (name != null) item['buyer'] = name;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getOrderInstallment(int orderId) async {
+    final response = await _getRequest('/order/$orderId/installment');
+    if (response.statusCode == 404) return null;
+    if (response.statusCode != 200) _throwApi(response, 'Не удалось загрузить рассрочку');
+    final result = _apiResult(json.decode(response.body));
+    if (result == null) return null;
+    final map = _apiMap(result);
+    if (map.isEmpty) return null;
+    return map;
+  }
+
+  Future<Map<String, dynamic>> createInstallmentPayment({
+    required int orderId,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await _postRequest('/order/$orderId/installment/payments', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось записать поступление');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<Map<String, dynamic>> confirmInstallmentPayment({
+    required int orderId,
+    required int paymentId,
+    required List<Map<String, dynamic>> allocations,
+  }) async {
+    final response = await _postRequest(
+      '/order/$orderId/installment/payments/$paymentId/confirm',
+      {'allocations': allocations},
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось подтвердить платёж');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
+
+  Future<void> reverseInstallmentPayment({
+    required int orderId,
+    required int paymentId,
+    required String reason,
+  }) async {
+    final response = await _postRequest(
+      '/order/$orderId/installment/payments/$paymentId/reverse',
+      {'reason': reason},
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось отменить платёж');
+    }
+  }
+
+  Future<void> refundInstallmentPayment({
+    required int orderId,
+    required int paymentId,
+    required double amount,
+    required String reason,
+  }) async {
+    final response = await _postRequest(
+      '/order/$orderId/installment/payments/$paymentId/refund',
+      {'amount': amount, 'reason': reason},
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось оформить возврат');
+    }
   }
 }
 

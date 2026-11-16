@@ -5,11 +5,13 @@ class FetchVariants extends VariantBottomSheetEvent {
   final bool forceReload;
   final bool? isService;
   final int? storageId;
+  final int? leadId;
   FetchVariants({
     this.page = 1,
     this.forceReload = false,
     this.isService,
     this.storageId,
+    this.leadId,
   });
 }
 
@@ -32,7 +34,8 @@ class FilterVariants extends VariantBottomSheetEvent {
 class FetchCategories extends VariantBottomSheetEvent {
   final String? search;
   final bool forceReload;
-  FetchCategories({this.search, this.forceReload = false});
+  final int? leadId;
+  FetchCategories({this.search, this.forceReload = false, this.leadId});
 }
 
 class FetchVariantsByCategory extends VariantBottomSheetEvent {
@@ -42,6 +45,7 @@ class FetchVariantsByCategory extends VariantBottomSheetEvent {
   final bool forceReload;
   final bool? isService;
   final int? storageId;
+  final int? leadId;
   FetchVariantsByCategory({
     required this.categoryId,
     this.categoryName,
@@ -49,6 +53,7 @@ class FetchVariantsByCategory extends VariantBottomSheetEvent {
     this.forceReload = false,
     this.isService,
     this.storageId,
+    this.leadId,
   });
 }
 
@@ -66,7 +71,8 @@ class SearchAll extends VariantBottomSheetEvent {
   final String query;
   final bool? isService;
   final int? storageId;
-  SearchAll(this.query, {this.isService, this.storageId});
+  final int? leadId;
+  SearchAll(this.query, {this.isService, this.storageId, this.leadId});
 }
 
 // Подгрузка следующей страницы результатов поиска

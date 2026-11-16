@@ -145,6 +145,7 @@ class MainActivity : FlutterFragmentActivity() {
         private const val PREFS_NAME = "WidgetNavigation"
         private const val KEY_PENDING_SCREEN = "pending_screen"
         private const val KEY_PENDING_PUSH = "pending_push_payload"
+        private const val KEY_PENDING_LEAD_LINK = "pending_lead_link"
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,6 +170,7 @@ class MainActivity : FlutterFragmentActivity() {
         }
         
         handleWidgetIntent(intent)
+        handleLeadLinkIntent(intent)
         handlePushIntent(intent)
         updateIncomingCallWindowMode(intent)
         handleSipNotificationAction(intent, "activity-create")
@@ -207,6 +209,13 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 "getPendingPush" -> {
                     result.success(consumePendingPush())
+                }
+                "getPendingLeadLink" -> {
+                    result.success(getPendingLeadLink())
+                }
+                "ackPendingLeadLink" -> {
+                    clearPendingLeadLink()
+                    result.success(true)
                 }
                 "showForegroundPush" -> {
                     val title = call.argument<String>("title")
@@ -474,6 +483,7 @@ class MainActivity : FlutterFragmentActivity() {
         })
 
         Log.d("MainActivity", "✅ Channels configured")
+        handler.postDelayed({ deliverPendingLeadLink() }, 500)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -481,6 +491,7 @@ class MainActivity : FlutterFragmentActivity() {
         
         setIntent(intent)
         handleWidgetIntent(intent)
+        handleLeadLinkIntent(intent)
         handlePushIntent(intent)
         updateIncomingCallWindowMode(intent)
         handleSipNotificationAction(intent, "activity-new-intent")
@@ -892,6 +903,47 @@ class MainActivity : FlutterFragmentActivity() {
 
     // ВАШ СУЩЕСТВУЮЩИЙ КОД (виджеты)
     
+    private fun handleLeadLinkIntent(intent: Intent?) {
+        val url = intent?.data ?: return
+        if (!isLeadLink(url)) return
+        Log.d("MainActivity", "Lead link: $url")
+        savePendingLeadLink(url.toString())
+        handler.postDelayed({ deliverPendingLeadLink() }, 300)
+    }
+
+    private fun isLeadLink(uri: Uri): Boolean {
+        val scheme = uri.scheme?.lowercase() ?: return false
+        val host = uri.host?.lowercase().orEmpty()
+        if (scheme == "shamcrm") return host != "widget"
+        if (scheme != "https" && scheme != "http") return false
+        return host == "shamcrm.com" || host.endsWith(".shamcrm.com")
+    }
+
+    private fun savePendingLeadLink(url: String) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_PENDING_LEAD_LINK, url)
+            .apply()
+    }
+
+    private fun getPendingLeadLink(): String? {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_PENDING_LEAD_LINK, null)
+    }
+
+    private fun clearPendingLeadLink() {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_PENDING_LEAD_LINK)
+            .apply()
+    }
+
+    private fun deliverPendingLeadLink() {
+        val url = getPendingLeadLink() ?: return
+        val channel = methodChannel ?: return
+        channel.invokeMethod("openLeadLink", mapOf("url" to url))
+    }
+
     private fun handleWidgetIntent(intent: Intent?) {
         intent?.let {
             val screenIdentifier = it.getStringExtra("screen_identifier")

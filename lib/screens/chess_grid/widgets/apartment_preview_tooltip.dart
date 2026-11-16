@@ -66,9 +66,9 @@ class ApartmentPreviewTooltip extends StatelessWidget {
     final colors = context.appColors;
     final status = apartment.status;
     final priceStr = _formatPriceFull(apartment.totalPrice);
-    final roomsLabel = apartment.rooms == 0
-        ? 'Студия'
-        : '${apartment.rooms}-комнатная';
+    final roomsLabel = apartment.rooms > 0
+        ? '${apartment.rooms}-комнатная'
+        : '${apartment.totalArea.toStringAsFixed(0)} м²';
 
     return Material(
       color: Colors.transparent,
@@ -110,7 +110,7 @@ class ApartmentPreviewTooltip extends StatelessWidget {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: apartment.number.startsWith('№') ? apartment.number : '№ ${apartment.number}',
+                            text: '№ ${apartment.displayNumber}',
                             style: TextStyle(
                               fontFamily: 'Gilroy',
                               fontWeight: FontWeight.w800,
@@ -174,7 +174,7 @@ class ApartmentPreviewTooltip extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '\$${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
+                        '${apartment.pricePerSqm.toStringAsFixed(0)} / м²',
                         style: TextStyle(
                           fontFamily: 'Golos',
                           fontSize: 11.5,
@@ -228,7 +228,7 @@ class ApartmentPreviewTooltip extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        '$priceStr \$',
+                        priceStr,
                         style: TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w800,
@@ -355,7 +355,7 @@ class ApartmentPreviewTooltip extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'ПЛАН ЭТАЖА · ${apartment.rooms == 0 ? "СТУДИЯ" : "${apartment.rooms}К"}',
+                'ПЛАН ЭТАЖА · ${apartment.rooms > 0 ? "${apartment.rooms}К" : "${apartment.totalArea.toStringAsFixed(0)} м²"}',
                 style: const TextStyle(
                   fontFamily: 'Golos',
                   fontWeight: FontWeight.w700,

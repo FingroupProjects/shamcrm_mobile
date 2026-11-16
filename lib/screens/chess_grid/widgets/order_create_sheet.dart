@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/api/service/localization/localization_service.dart';
@@ -5,22 +8,82 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/custom_widget/country_data_list.dart';
 import 'package:crm_task_manager/custom_widget/custom_button.dart';
+import 'package:crm_task_manager/custom_widget/custom_create_field_widget.dart';
 import 'package:crm_task_manager/custom_widget/custom_phone_number_input.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield_deadline.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
+import 'package:crm_task_manager/models/field/field_configuration.dart';
+import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart' as order_api;
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
+import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/payment_schedule_sheet.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/add_custom_directory_dialog.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_model.dart' as crm_fields;
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
+import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _DealFormSlot {
+  final String key;
+  final String title;
+  final bool active;
+  final bool custom;
+  final bool directory;
+  final int? configId;
+
+  const _DealFormSlot({
+    required this.key,
+    required this.title,
+    required this.active,
+    this.custom = false,
+    this.directory = false,
+    this.configId,
+  });
+
+  _DealFormSlot copyWith({bool? active}) {
+    return _DealFormSlot(
+      key: key,
+      title: title,
+      active: active ?? this.active,
+      custom: custom,
+      directory: directory,
+      configId: configId,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'key': key,
+        'title': title,
+        'active': active,
+        'custom': custom,
+        'directory': directory,
+        'configId': configId,
+      };
+
+  factory _DealFormSlot.fromJson(Map<String, dynamic> json) {
+    return _DealFormSlot(
+      key: json['key']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      active: json['active'] != false,
+      custom: json['custom'] == true,
+      directory: json['directory'] == true,
+      configId: json['configId'] is int ? json['configId'] as int : int.tryParse('${json['configId']}'),
+    );
+  }
+}
 
 class _PickOption {
   final String key;
@@ -82,6 +145,42 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
   int? _selectedStatusId;
   bool _loadingMeta = true;
   bool _saving = false;
+  final List<FileHelper> _attachedFiles = [];
+
+  static const _fieldLayoutKey = 'chess_deal_form_fields_v1';
+  static const _fieldTable = 'orders';
+  static const _lockedFieldKeys = {'client', 'manager', 'status', 'owner', 'phone', 'passport'};
+  static const _builtinFields = <(String, String)>[
+    ('client', 'Клиент'),
+    ('manager', 'Менеджер'),
+    ('status', 'Статус'),
+    ('owner', 'ФИО собственника'),
+    ('phone', 'Телефон'),
+    ('gender', 'Пол'),
+    ('passport', 'Паспорт'),
+    ('issue_place', 'Место выдачи'),
+    ('inn', 'ИНН'),
+    ('address', 'Адрес проживания'),
+    ('passport_dates', 'Даты паспорта'),
+    ('birth', 'Дата рождения'),
+    ('price_area', 'Цена и площадь'),
+    ('deal_type', 'Тип сделки'),
+    ('sum', 'Сумма'),
+    ('barter', 'Бартер'),
+    ('installment', 'Рассрочка'),
+  ];
+
+  final _apiService = ApiService();
+  final GlobalKey _addFieldButtonKey = GlobalKey();
+  final List<crm_fields.CustomField> _crmFields = [];
+  List<FieldConfiguration> _fieldConfigurations = [];
+  List<_DealFormSlot> _fieldSlots = [
+    for (final field in _builtinFields)
+      _DealFormSlot(key: field.$1, title: field.$2, active: true),
+  ];
+  List<_DealFormSlot>? _fieldSlotsBackup;
+  bool _isSettingsMode = false;
+  bool _isSavingFieldOrder = false;
 
   // Owner & Contact
   final _ownerFullNameController = TextEditingController();
@@ -154,6 +253,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     _firstPaymentDateController.text = DateFormat('dd/MM/yyyy').format(today);
     _recalculateInstallment();
     _loadOrderMeta();
+    _loadDealFieldLayout();
   }
 
   Future<void> _onLeadSelected(LeadData lead) async {
@@ -305,7 +405,302 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     _monthsController.dispose();
     _installmentSumController.dispose();
     _monthlyPaymentController.dispose();
+    for (final field in _crmFields) {
+      field.dispose();
+    }
     super.dispose();
+  }
+
+  bool _fieldActive(String key) {
+    for (final slot in _fieldSlots) {
+      if (slot.key == key) return slot.active;
+    }
+    return true;
+  }
+
+  Future<void> _loadDealFieldLayout() async {
+    List<_DealFormSlot> saved = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_fieldLayoutKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          saved = decoded
+              .whereType<Map>()
+              .map((item) => _DealFormSlot.fromJson(Map<String, dynamic>.from(item)))
+              .where((slot) => slot.key.isNotEmpty)
+              .toList();
+        }
+      }
+    } catch (_) {}
+
+    List<FieldConfiguration> configs = [];
+    try {
+      final response = await _apiService.getFieldPositions(tableName: _fieldTable);
+      configs = response.result.where((field) => field.isCustomField || field.isDirectory).toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+    } catch (error) {
+      debugPrint('OrderCreateSheet fields: $error');
+    }
+    if (!mounted) return;
+
+    final builtinTitles = {for (final field in _builtinFields) field.$1: field.$2};
+    final customByKey = <String, FieldConfiguration>{
+      for (final config in configs) 'crm_${config.id}': config,
+    };
+    final merged = <_DealFormSlot>[];
+    final seen = <String>{};
+
+    for (final slot in saved) {
+      if (builtinTitles.containsKey(slot.key)) {
+        merged.add(_DealFormSlot(key: slot.key, title: builtinTitles[slot.key]!, active: slot.active));
+        seen.add(slot.key);
+      } else if (customByKey.containsKey(slot.key)) {
+        final config = customByKey[slot.key]!;
+        merged.add(_DealFormSlot(
+          key: slot.key,
+          title: config.fieldName,
+          active: slot.active,
+          custom: true,
+          directory: config.isDirectory,
+          configId: config.id,
+        ));
+        seen.add(slot.key);
+      }
+    }
+
+    for (final field in _builtinFields) {
+      if (seen.contains(field.$1)) continue;
+      merged.add(_DealFormSlot(key: field.$1, title: field.$2, active: true));
+    }
+    for (final config in configs) {
+      final key = 'crm_${config.id}';
+      if (seen.contains(key)) continue;
+      merged.add(_DealFormSlot(
+        key: key,
+        title: config.fieldName,
+        active: config.isActive,
+        custom: true,
+        directory: config.isDirectory,
+        configId: config.id,
+      ));
+    }
+
+    setState(() {
+      _fieldConfigurations = configs;
+      _fieldSlots = merged;
+    });
+  }
+
+  Future<void> _persistFieldSlots() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_fieldLayoutKey, jsonEncode(_fieldSlots.map((slot) => slot.toJson()).toList()));
+  }
+
+  Future<void> _toggleFieldSettings() async {
+    if (_isSettingsMode) {
+      final backup = _fieldSlotsBackup;
+      setState(() {
+        if (backup != null) _fieldSlots = backup;
+        _fieldSlotsBackup = null;
+        _isSettingsMode = false;
+      });
+      return;
+    }
+    setState(() {
+      _fieldSlotsBackup = _fieldSlots.map((slot) => slot.copyWith()).toList();
+      _isSettingsMode = true;
+    });
+  }
+
+  Future<void> _saveFieldOrder() async {
+    setState(() => _isSavingFieldOrder = true);
+    try {
+      await _persistFieldSlots();
+      if (!mounted) return;
+      setState(() {
+        _fieldSlotsBackup = null;
+        _isSettingsMode = false;
+      });
+      showCustomSnackBar(
+        context: context,
+        message: context.tr('field_settings_saved', fallback: 'Настройки полей сохранены'),
+        isSuccess: true,
+      );
+    } finally {
+      if (mounted) setState(() => _isSavingFieldOrder = false);
+    }
+  }
+
+  crm_fields.CustomField _crmFieldFor(_DealFormSlot slot) {
+    final config = _fieldConfigurations.cast<FieldConfiguration?>().firstWhere(
+          (field) => field?.id == slot.configId,
+          orElse: () => null,
+        );
+    if (slot.directory && slot.configId != null) {
+      final existing = _crmFields.cast<crm_fields.CustomField?>().firstWhere(
+            (field) => field?.directoryId == config?.directoryId,
+            orElse: () => null,
+          );
+      if (existing != null) return existing;
+      final created = crm_fields.CustomField(
+        fieldName: slot.title,
+        isDirectoryField: true,
+        directoryId: config?.directoryId,
+        controller: TextEditingController(),
+      );
+      _crmFields.add(created);
+      return created;
+    }
+
+    final existing = _crmFields.cast<crm_fields.CustomField?>().firstWhere(
+          (field) => field?.isCustomField == true && field?.fieldName == slot.title,
+          orElse: () => null,
+        );
+    if (existing != null) return existing;
+    final created = crm_fields.CustomField(
+      fieldName: slot.title,
+      controller: TextEditingController(),
+      type: config?.type,
+      isCustomField: true,
+    );
+    _crmFields.add(created);
+    return created;
+  }
+
+  Future<void> _addDealField(
+    String fieldName, {
+    bool isDirectory = false,
+    int? directoryId,
+    String? type,
+  }) async {
+    if (isDirectory && directoryId != null) {
+      final alreadyAdded = _fieldConfigurations.any((field) => field.isDirectory && field.directoryId == directoryId);
+      if (alreadyAdded) {
+        showCustomSnackBar(
+          context: context,
+          message: context.tr('directory_already_added', fallback: 'Справочник уже добавлен'),
+          isSuccess: false,
+        );
+        return;
+      }
+      try {
+        final organizationId = await _apiService.getSelectedOrganization();
+        await _apiService.linkDirectory(
+          directoryId: directoryId,
+          modelType: 'order',
+          organizationId: organizationId?.toString() ?? '',
+        );
+        if (!mounted) return;
+        showCustomSnackBar(
+          context: context,
+          message: context.tr('directory_added', fallback: 'Справочник успешно добавлен'),
+          isSuccess: true,
+        );
+        await _reloadFieldsKeepingOrder();
+      } catch (error) {
+        if (!mounted) return;
+        showCustomSnackBar(context: context, message: error.toString(), isSuccess: false);
+      }
+      return;
+    }
+
+    try {
+      await _apiService.addNewField(
+        tableName: _fieldTable,
+        fieldName: fieldName,
+        fieldType: type ?? 'string',
+      );
+      if (!mounted) return;
+      await _reloadFieldsKeepingOrder();
+    } catch (error) {
+      if (!mounted) return;
+      showCustomSnackBar(
+        context: context,
+        message: '${context.tr('add_field_error', fallback: 'Ошибка при добавлении поля')}: $error',
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<void> _reloadFieldsKeepingOrder() async {
+    final previous = _fieldSlots.map((slot) => slot.copyWith()).toList();
+    await _loadDealFieldLayout();
+    if (!mounted) return;
+    final fresh = {for (final slot in _fieldSlots) slot.key: slot};
+    final merged = <_DealFormSlot>[];
+    final seen = <String>{};
+    for (final slot in previous) {
+      final next = fresh[slot.key];
+      if (next == null) continue;
+      merged.add(next.copyWith(active: slot.active));
+      seen.add(slot.key);
+    }
+    for (final slot in _fieldSlots) {
+      if (seen.add(slot.key)) merged.add(slot);
+    }
+    setState(() => _fieldSlots = merged);
+  }
+
+  Future<void> _showAddFieldMenu() async {
+    final box = _addFieldButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final overlay = Navigator.of(context).overlay?.context.findRenderObject() as RenderBox?;
+    var position = const RelativeRect.fromLTRB(24, 120, 24, 0);
+    if (box != null && overlay != null) {
+      final topLeft = box.localToGlobal(Offset.zero, ancestor: overlay);
+      position = RelativeRect.fromLTRB(
+        topLeft.dx,
+        topLeft.dy + box.size.height + 8,
+        overlay.size.width - topLeft.dx - box.size.width,
+        overlay.size.height - topLeft.dy - box.size.height,
+      );
+    }
+
+    final choice = await showMenu<String>(
+      context: context,
+      position: position,
+      color: context.appColors.fieldBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: [
+        PopupMenuItem(
+          value: 'manual',
+          child: Text(
+            context.tr('manual_input', fallback: 'Ручной ввод'),
+            style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: context.appColors.textPrimary),
+          ),
+        ),
+        PopupMenuItem(
+          value: 'directory',
+          child: Text(
+            context.tr('directory', fallback: 'Справочник'),
+            style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w500, color: context.appColors.textPrimary),
+          ),
+        ),
+      ],
+    );
+    if (!mounted || choice == null) return;
+
+    if (choice == 'manual') {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AddCustomFieldDialog(
+          onAddField: (name, {String? type}) {
+            if (type != null) _addDealField(name, type: type);
+          },
+        ),
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AddCustomDirectoryDialog(
+        onAddDirectory: (directory) {
+          _addDealField(directory.name, isDirectory: true, directoryId: directory.id);
+        },
+      ),
+    );
   }
 
   void _onPricePerSqmChanged() {
@@ -341,6 +736,514 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         _monthlyPayment > 0 ? _monthlyPayment.toStringAsFixed(2) : '0';
   }
 
+  List<Widget> _visibleDealFields(dynamic colors) {
+    final widgets = <Widget>[];
+    for (final slot in _fieldSlots.where((item) => item.active)) {
+      final field = slot.custom ? _customDealField(slot) : _builtinDealField(slot.key, colors);
+      if (field == null) continue;
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 14));
+      widgets.add(field);
+    }
+    return widgets;
+  }
+
+  Widget? _customDealField(_DealFormSlot slot) {
+    final field = _crmFieldFor(slot);
+    if (slot.directory && field.directoryId != null) {
+      return MainFieldDropdownWidget(
+        directoryId: field.directoryId!,
+        directoryName: slot.title,
+        selectedField: null,
+        controller: field.controller,
+        initialEntryIds: field.selectedEntryIds,
+        onSelectField: (List<MainField> selected) {
+          final index = _crmFields.indexWhere((item) => item.directoryId == field.directoryId);
+          if (index == -1) return;
+          setState(() => _crmFields[index] = _crmFields[index].withDirectorySelection(selected));
+        },
+        onSelectEntryId: (List<int> entryIds) {
+          final index = _crmFields.indexWhere((item) => item.directoryId == field.directoryId);
+          if (index == -1) return;
+          setState(() => _crmFields[index] = _crmFields[index].copyWith(entryIds: entryIds));
+        },
+      );
+    }
+    return CustomFieldWidget(
+      fieldName: slot.title,
+      valueController: field.controller,
+      type: field.type,
+      isCustomField: true,
+    );
+  }
+
+  Widget? _builtinDealField(String key, dynamic colors) {
+    switch (key) {
+      case 'client':
+        return LeadWithManager(
+          selectedLead: _selectedLeadId,
+          onSelectLead: _onLeadSelected,
+        );
+      case 'manager':
+        return ManagerForLead(
+          selectedManager: _selectedManagerId,
+          onSelectManager: (manager) {
+            setState(() {
+              _selectedManagerId = manager.id.toString();
+              _selectedManagerName = manager.name;
+            });
+          },
+        );
+      case 'status':
+        return _buildOptionDropdown(
+          label: 'Статус',
+          hint: _loadingMeta ? 'Загрузка статусов...' : 'Выберите статус',
+          items: _orderStatuses.map((status) => _PickOption(status.id.toString(), status.name)).toList(),
+          selectedKey: _selectedStatusId?.toString(),
+          onChanged: (value) => setState(() => _selectedStatusId = int.tryParse(value)),
+        );
+      case 'owner':
+        return RequiredFieldSlot(
+          invalid: _missingFields.contains('ownerFullName'),
+          focus: _firstMissingField == 'ownerFullName',
+          pulse: _fieldErrorPulse,
+          message: 'Укажите ФИО собственника',
+          child: CustomTextField(
+            controller: _ownerFullNameController,
+            hintText: 'Введите ФИО собственника',
+            label: 'ФИО собственника *',
+            hasError: _missingFields.contains('ownerFullName'),
+            onChanged: (val) {
+              if (val.trim().isNotEmpty && _missingFields.contains('ownerFullName')) {
+                setState(() {
+                  _missingFields.remove('ownerFullName');
+                  if (_firstMissingField == 'ownerFullName') _firstMissingField = null;
+                });
+              }
+            },
+          ),
+        );
+      case 'phone':
+        return RequiredFieldSlot(
+          invalid: _missingFields.contains('phone'),
+          focus: _firstMissingField == 'phone',
+          pulse: _fieldErrorPulse,
+          message: 'Укажите номер телефона',
+          child: CustomPhoneNumberInput(
+            key: ValueKey('phone-$_phoneRevision-${_phoneCountry?.dialCode ?? ''}'),
+            controller: _phoneController,
+            label: 'Телефон *',
+            initialCountry: _phoneCountry,
+            onInputChanged: (val) {
+              _formattedPhone = val;
+              if (val.trim().isNotEmpty && _missingFields.contains('phone')) {
+                setState(() {
+                  _missingFields.remove('phone');
+                  if (_firstMissingField == 'phone') _firstMissingField = null;
+                });
+              }
+            },
+          ),
+        );
+      case 'gender':
+        return _buildOptionDropdown(
+          label: 'Пол',
+          hint: 'Выберите пол',
+          items: const [
+            _PickOption('m', 'М'),
+            _PickOption('f', 'Ж'),
+          ],
+          selectedKey: _selectedGender,
+          onChanged: (value) => setState(() => _selectedGender = value),
+        );
+      case 'passport':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Паспортные данные и идентификация',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            RequiredFieldSlot(
+              invalid: _missingFields.contains('passport'),
+              focus: _firstMissingField == 'passport',
+              pulse: _fieldErrorPulse,
+              message: 'Укажите серию и номер паспорта',
+              child: CustomTextField(
+                controller: _passportSeriesNumberController,
+                hintText: 'например: AA 1234567',
+                label: 'Паспорт (серия и номер) *',
+                hasError: _missingFields.contains('passport'),
+                onChanged: (val) {
+                  if (val.trim().isNotEmpty && _missingFields.contains('passport')) {
+                    setState(() {
+                      _missingFields.remove('passport');
+                      if (_firstMissingField == 'passport') _firstMissingField = null;
+                    });
+                  }
+                },
+              ),
+            ),
+          ],
+        );
+      case 'issue_place':
+        return CustomTextField(
+          controller: _passportIssuePlaceController,
+          hintText: 'Кем выдан паспорт',
+          label: 'Место выдачи',
+        );
+      case 'inn':
+        return CustomTextField(
+          controller: _innController,
+          hintText: 'Введите ИНН / ПИНФЛ',
+          label: 'ИНН',
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        );
+      case 'address':
+        return CustomTextField(
+          controller: _addressController,
+          hintText: 'Введите адрес проживания',
+          label: 'Адрес проживания',
+        );
+      case 'passport_dates':
+        return Row(
+          children: [
+            Expanded(
+              child: CustomTextFieldDate(
+                controller: _issueDateController,
+                label: 'Дата выдачи',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: CustomTextFieldDate(
+                controller: _expiryDateController,
+                label: 'Срок действия',
+              ),
+            ),
+          ],
+        );
+      case 'birth':
+        return CustomTextFieldDate(
+          controller: _birthDateController,
+          label: 'Дата рождения собственника',
+        );
+      case 'price_area':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Параметры объекта и оплаты',
+              style: TextStyle(
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    controller: _pricePerSqmController,
+                    hintText: 'Цена за м²',
+                    label: 'Цена за квадрат',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => _onPricePerSqmChanged(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CustomTextField(
+                    controller: _totalAreaController,
+                    hintText: 'Общая площадь',
+                    label: 'Общая площадь',
+                    readOnly: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      case 'deal_type':
+        return _buildOptionDropdown(
+          label: 'Тип сделки',
+          hint: 'Выберите тип сделки',
+          items: const [
+            _PickOption('cash', 'Наличными'),
+            _PickOption('installment', 'Рассрочка'),
+            _PickOption('mixed', 'Смешанные'),
+          ],
+          selectedKey: switch (_selectedDealType) {
+            DealType.cash => 'cash',
+            DealType.installment => 'installment',
+            DealType.mixed => 'mixed',
+          },
+          onChanged: (value) {
+            setState(() {
+              _selectedDealType = switch (value) {
+                'installment' => DealType.installment,
+                'mixed' => DealType.mixed,
+                _ => DealType.cash,
+              };
+              _recalculateInstallment();
+            });
+          },
+        );
+      case 'sum':
+        return CustomTextField(
+          controller: _totalPriceController,
+          hintText: 'Общая сумма',
+          label: 'Сумма',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (_) => _onTotalPriceChanged(),
+        );
+      case 'barter':
+        if (_selectedDealType != DealType.mixed) return null;
+        return Column(
+          children: [
+            CustomTextField(
+              controller: _barterAmountController,
+              hintText: '0',
+              label: 'Оценка бартера',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(_recalculateInstallment),
+            ),
+            const SizedBox(height: 14),
+            CustomTextField(
+              controller: _barterNoteController,
+              hintText: 'Старая квартира, машина',
+              label: 'Что отдают в бартер',
+            ),
+          ],
+        );
+      case 'installment':
+        if (_selectedDealType == DealType.cash) return null;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomTextField(
+              controller: _downPaymentController,
+              hintText: '0',
+              label: 'Первоначальный взнос',
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(_recalculateInstallment),
+            ),
+            const SizedBox(height: 14),
+            RequiredFieldSlot(
+              invalid: _missingFields.contains('months'),
+              focus: _firstMissingField == 'months',
+              pulse: _fieldErrorPulse,
+              message: 'Укажите срок в месяцах',
+              child: CustomTextField(
+                controller: _monthsController,
+                hintText: '12',
+                label: _installmentSum > 0 ? 'Срок рассрочки (мес.) *' : 'Срок рассрочки (мес.)',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                hasError: _missingFields.contains('months'),
+                onChanged: (val) {
+                  if (val.trim().isNotEmpty && _missingFields.contains('months')) {
+                    setState(() => _missingFields.remove('months'));
+                  }
+                  setState(_recalculateInstallment);
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            CustomTextField(
+              controller: _installmentSumController,
+              hintText: '0',
+              label: 'Сумма рассрочки',
+              readOnly: true,
+            ),
+            const SizedBox(height: 14),
+            CustomTextField(
+              controller: _monthlyPaymentController,
+              hintText: '0',
+              label: 'Ежемесячная оплата',
+              readOnly: true,
+            ),
+            const SizedBox(height: 14),
+            RequiredFieldSlot(
+              invalid: _missingFields.contains('firstPayment'),
+              focus: _firstMissingField == 'firstPayment',
+              pulse: _fieldErrorPulse,
+              message: 'Укажите дату первого платежа',
+              child: CustomTextFieldDate(
+                controller: _firstPaymentDateController,
+                label: _installmentSum > 0 ? 'Дата первого платежа *' : 'Дата первого платежа',
+                hasError: _missingFields.contains('firstPayment'),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _openSchedulePreview,
+                child: Text(
+                  'График платежей',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: colors.buttonPrimaryBg,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildDealFieldSettings() {
+    final colors = context.appColors;
+    return Column(
+      children: [
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            itemCount: _fieldSlots.length + 1,
+            onReorder: (oldIndex, newIndex) {
+              if (oldIndex >= _fieldSlots.length) return;
+              setState(() {
+                if (newIndex > oldIndex) newIndex -= 1;
+                if (newIndex >= _fieldSlots.length) newIndex = _fieldSlots.length - 1;
+                final item = _fieldSlots.removeAt(oldIndex);
+                _fieldSlots.insert(newIndex, item);
+              });
+            },
+            itemBuilder: (context, index) {
+              if (index == _fieldSlots.length) {
+                return Container(
+                  key: _addFieldButtonKey,
+                  margin: const EdgeInsets.only(top: 4, bottom: 8),
+                  child: CustomButton(
+                    buttonText: context.tr('add_field', fallback: 'Добавить поле'),
+                    buttonColor: colors.fieldBg,
+                    textColor: colors.buttonPrimaryBg,
+                    borderColor: colors.buttonPrimaryBg,
+                    borderWidth: 1.4,
+                    onPressed: _showAddFieldMenu,
+                  ),
+                );
+              }
+
+              final slot = _fieldSlots[index];
+              final locked = _lockedFieldKeys.contains(slot.key);
+              final typeLabel = slot.directory
+                  ? context.tr('directory', fallback: 'Справочник')
+                  : slot.custom
+                      ? context.tr('custom_field', fallback: 'Пользовательское поле')
+                      : context.tr('system_field', fallback: 'Системное поле');
+              return Container(
+                key: ValueKey('chess_deal_field_${slot.key}'),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: colors.fieldBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.drag_handle, color: colors.textSecondary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            slot.title,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            typeLabel,
+                            style: TextStyle(
+                              fontFamily: 'Gilroy',
+                              fontSize: 12,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          if (!locked) ...[
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _fieldSlots[index] = slot.copyWith(active: !slot.active);
+                                });
+                              },
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: slot.active ? colors.buttonPrimaryBg : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: slot.active ? colors.buttonPrimaryBg : colors.borderSubtle,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: slot.active
+                                        ? Icon(Icons.check_rounded, size: 16, color: colors.textInverse)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    context.tr('show_field', fallback: 'Показать поле'),
+                                    style: TextStyle(
+                                      fontFamily: 'Gilroy',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: CustomButton(
+            buttonText: _isSavingFieldOrder
+                ? context.tr('saving', fallback: 'Сохранение...')
+                : context.tr('save', fallback: 'Сохранить'),
+            buttonColor: colors.buttonPrimaryBg,
+            textColor: colors.buttonPrimaryFg,
+            onPressed: _isSavingFieldOrder ? () {} : _saveFieldOrder,
+          ),
+        ),
+      ],
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -348,7 +1251,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     final park = widget.parking;
 
     final unitTitle = apt != null
-        ? 'Кв. № ${apt.number}'
+        ? 'Кв. № ${apt.displayNumber}'
         : (park != null ? 'Паркинг № ${park.number}' : 'Объект');
 
     return Container(
@@ -380,29 +1283,49 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Оформление / Сделка',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        color: colors.textPrimary,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isSettingsMode
+                            ? context.tr('field_settings', fallback: 'Настройка полей')
+                            : 'Сделка',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: colors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$unitTitle · ${_totalPrice.toStringAsFixed(0)} ${_currencyTitle(_selectedCurrency)}',
-                      style: TextStyle(
-                        fontFamily: 'Gilroy',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
-                        color: colors.buttonPrimaryBg,
-                      ),
-                    ),
-                  ],
+                      if (!_isSettingsMode) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '$unitTitle · ${_totalPrice.toStringAsFixed(0)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                            color: colors.buttonPrimaryBg,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: _isSettingsMode
+                      ? context.tr('close', fallback: 'Закрыть')
+                      : context.tr('settings', fallback: 'Настройки'),
+                  onPressed: _toggleFieldSettings,
+                  icon: Icon(
+                    _isSettingsMode ? Icons.close_rounded : Icons.settings_rounded,
+                    color: colors.iconSecondary,
+                  ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -413,351 +1336,18 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
           ),
           const Divider(height: 1),
 
-          // Form fields
           Expanded(
-            child: SingleChildScrollView(
+            child: _isSettingsMode
+                ? _buildDealFieldSettings()
+                : SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LeadWithManager(
-                    selectedLead: _selectedLeadId,
-                    onSelectLead: _onLeadSelected,
-                  ),
-                  const SizedBox(height: 14),
-
-                  ManagerForLead(
-                    selectedManager: _selectedManagerId,
-                    onSelectManager: (manager) {
-                      setState(() {
-                        _selectedManagerId = manager.id.toString();
-                        _selectedManagerName = manager.name;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildOptionDropdown(
-                    label: 'Статус',
-                    hint: _loadingMeta ? 'Загрузка статусов...' : 'Выберите статус',
-                    items: _orderStatuses
-                        .map((status) => _PickOption(status.id.toString(), status.name))
-                        .toList(),
-                    selectedKey: _selectedStatusId?.toString(),
-                    onChanged: (key) => setState(() => _selectedStatusId = int.tryParse(key)),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // 4. ФИО собственника (текстовое поле ручной ввод)
-                  RequiredFieldSlot(
-                    invalid: _missingFields.contains('ownerFullName'),
-                    focus: _firstMissingField == 'ownerFullName',
-                    pulse: _fieldErrorPulse,
-                    message: 'Укажите ФИО собственника',
-                    child: CustomTextField(
-                      controller: _ownerFullNameController,
-                      hintText: 'Введите ФИО собственника',
-                      label: 'ФИО собственника *',
-                      hasError: _missingFields.contains('ownerFullName'),
-                      onChanged: (val) {
-                        if (val.trim().isNotEmpty && _missingFields.contains('ownerFullName')) {
-                          setState(() {
-                            _missingFields.remove('ownerFullName');
-                            if (_firstMissingField == 'ownerFullName') _firstMissingField = null;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // 5. Телефон (подставляется из лида с возможностью изменить)
-                  RequiredFieldSlot(
-                    invalid: _missingFields.contains('phone'),
-                    focus: _firstMissingField == 'phone',
-                    pulse: _fieldErrorPulse,
-                    message: 'Укажите номер телефона',
-                    child:                   CustomPhoneNumberInput(
-                      key: ValueKey('phone-$_phoneRevision-${_phoneCountry?.dialCode ?? ''}'),
-                      controller: _phoneController,
-                      label: 'Телефон *',
-                      initialCountry: _phoneCountry,
-                      onInputChanged: (val) {
-                        _formattedPhone = val;
-                        if (val.trim().isNotEmpty && _missingFields.contains('phone')) {
-                          setState(() {
-                            _missingFields.remove('phone');
-                            if (_firstMissingField == 'phone') _firstMissingField = null;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  _buildOptionDropdown(
-                    label: 'Пол',
-                    hint: 'Выберите пол',
-                    items: const [
-                      _PickOption('m', 'М'),
-                      _PickOption('f', 'Ж'),
-                    ],
-                    selectedKey: _selectedGender,
-                    onChanged: (key) => setState(() => _selectedGender = key),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Паспортный блок
-                  Text(
-                    'Паспортные данные и идентификация',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // 7. Паспорт (серии и номер) - Обязательное поле текстовое
-                  RequiredFieldSlot(
-                    invalid: _missingFields.contains('passport'),
-                    focus: _firstMissingField == 'passport',
-                    pulse: _fieldErrorPulse,
-                    message: 'Укажите серию и номер паспорта',
-                    child: CustomTextField(
-                      controller: _passportSeriesNumberController,
-                      hintText: 'например: AA 1234567',
-                      label: 'Паспорт (серия и номер) *',
-                      hasError: _missingFields.contains('passport'),
-                      onChanged: (val) {
-                        if (val.trim().isNotEmpty && _missingFields.contains('passport')) {
-                          setState(() {
-                            _missingFields.remove('passport');
-                            if (_firstMissingField == 'passport') _firstMissingField = null;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // 8. Место выдачи (текстовое)
-                  CustomTextField(
-                    controller: _passportIssuePlaceController,
-                    hintText: 'Кем выдан паспорт',
-                    label: 'Место выдачи',
-                  ),
-                  const SizedBox(height: 14),
-
-                  // 9. ИНН (числовое)
-                  CustomTextField(
-                    controller: _innController,
-                    hintText: 'Введите ИНН / ПИНФЛ',
-                    label: 'ИНН',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // 10. Адрес проживания (текстовое)
-                  CustomTextField(
-                    controller: _addressController,
-                    hintText: 'Введите адрес проживания',
-                    label: 'Адрес проживания',
-                  ),
-                  const SizedBox(height: 14),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextFieldDate(
-                          controller: _issueDateController,
-                          label: 'Дата выдачи',
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: CustomTextFieldDate(
-                          controller: _expiryDateController,
-                          label: 'Срок действия',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  CustomTextFieldDate(
-                    controller: _birthDateController,
-                    label: 'Дата рождения собственника',
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Финансовый блок
-                  Text(
-                    'Параметры объекта и оплаты',
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // 14 & 15. Цена за квадрат (изменяемая) & Общая площадь (неизменяемая)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _pricePerSqmController,
-                          hintText: 'Цена за м²',
-                          label: 'Цена за квадрат',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          onChanged: (_) => _onPricePerSqmChanged(),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _totalAreaController,
-                          hintText: 'Общая площадь',
-                          label: 'Общая площадь',
-                          readOnly: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  _buildOptionDropdown(
-                    label: 'Тип сделки',
-                    hint: 'Выберите тип сделки',
-                    items: const [
-                      _PickOption('cash', 'Наличными'),
-                      _PickOption('installment', 'Рассрочка'),
-                      _PickOption('mixed', 'Смешанные'),
-                    ],
-                    selectedKey: switch (_selectedDealType) {
-                      DealType.cash => 'cash',
-                      DealType.installment => 'installment',
-                      DealType.mixed => 'mixed',
-                    },
-                    onChanged: (key) {
-                      setState(() {
-                        _selectedDealType = switch (key) {
-                          'installment' => DealType.installment,
-                          'mixed' => DealType.mixed,
-                          _ => DealType.cash,
-                        };
-                        _recalculateInstallment();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
-                  CustomTextField(
-                    controller: _totalPriceController,
-                    hintText: 'Общая сумма',
-                    label: 'Сумма',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (_) => _onTotalPriceChanged(),
-                  ),
-                  const SizedBox(height: 14),
-
-                  _buildCurrencyDropdown(),
-
-                  if (_selectedDealType == DealType.mixed) ...[
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      controller: _barterAmountController,
-                      hintText: '0',
-                      label: 'Оценка бартера',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(_recalculateInstallment),
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      controller: _barterNoteController,
-                      hintText: 'Старая квартира, машина',
-                      label: 'Что отдают в бартер',
-                    ),
-                  ],
-
-                  if (_selectedDealType != DealType.cash) ...[
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      controller: _downPaymentController,
-                      hintText: '0',
-                      label: 'Первоначальный взнос',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(_recalculateInstallment),
-                    ),
-                    const SizedBox(height: 14),
-                    RequiredFieldSlot(
-                      invalid: _missingFields.contains('months'),
-                      focus: _firstMissingField == 'months',
-                      pulse: _fieldErrorPulse,
-                      message: 'Укажите срок в месяцах',
-                      child: CustomTextField(
-                        controller: _monthsController,
-                        hintText: '12',
-                        label: _installmentSum > 0 ? 'Срок рассрочки (мес.) *' : 'Срок рассрочки (мес.)',
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        hasError: _missingFields.contains('months'),
-                        onChanged: (val) {
-                          if (val.trim().isNotEmpty && _missingFields.contains('months')) {
-                            setState(() => _missingFields.remove('months'));
-                          }
-                          setState(_recalculateInstallment);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      controller: _installmentSumController,
-                      hintText: '0',
-                      label: 'Сумма рассрочки',
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 14),
-                    CustomTextField(
-                      controller: _monthlyPaymentController,
-                      hintText: '0',
-                      label: 'Ежемесячная оплата',
-                      readOnly: true,
-                    ),
-                    const SizedBox(height: 14),
-                    RequiredFieldSlot(
-                      invalid: _missingFields.contains('firstPayment'),
-                      focus: _firstMissingField == 'firstPayment',
-                      pulse: _fieldErrorPulse,
-                      message: 'Укажите дату первого платежа',
-                      child: CustomTextFieldDate(
-                        controller: _firstPaymentDateController,
-                        label: _installmentSum > 0 ? 'Дата первого платежа *' : 'Дата первого платежа',
-                        hasError: _missingFields.contains('firstPayment'),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _openSchedulePreview,
-                        child: Text(
-                          'График платежей',
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
+                  ..._visibleDealFields(colors),
                   const SizedBox(height: 8),
+                  _buildFileAttachment(colors),
+                  const SizedBox(height: 16),
                   CustomButton(
                     buttonText: _saving ? 'Сохранение...' : 'Сохранить',
                     buttonColor: colors.buttonPrimaryBg,
@@ -849,6 +1439,8 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     );
   }
 
+  // Поле валюты в шахматке пока скрыто.
+  // ignore: unused_element
   Widget _buildCurrencyDropdown() {
     final colors = context.appColors;
     SupplierCurrency? selected;
@@ -968,6 +1560,181 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     PaymentScheduleSheet.show(context: context, order: previewOrder);
   }
 
+  Future<void> _pickDealFile() async {
+    final totalSize = _attachedFiles.fold<double>(0, (sum, file) {
+      if (file.path.startsWith('http://') || file.path.startsWith('https://')) {
+        return sum;
+      }
+      final local = File(file.path);
+      if (!local.existsSync()) return sum;
+      return sum + local.lengthSync() / (1024 * 1024);
+    });
+
+    final pickedFiles = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50,
+      currentTotalSizeMB: totalSize,
+      fileLabel: context.tr('file', fallback: 'Файл'),
+      galleryLabel: context.tr('gallery', fallback: 'Галерея'),
+      cameraLabel: context.tr('camera', fallback: 'Камера'),
+      cancelLabel: context.tr('cancel', fallback: 'Отмена'),
+      fileSizeTooLargeMessage: context.tr('file_size_too_large', fallback: 'Файл слишком большой'),
+      errorPickingFileMessage: context.tr('error_picking_file', fallback: 'Не удалось выбрать файл'),
+    );
+
+    if (pickedFiles == null || pickedFiles.isEmpty || !mounted) return;
+    setState(() {
+      for (final file in pickedFiles) {
+        _attachedFiles.add(FileHelper(
+          id: 0,
+          name: file.name,
+          path: file.path,
+          size: file.sizeKB,
+        ));
+      }
+    });
+  }
+
+  Widget _buildFileAttachment(dynamic colors) {
+    final fileCardColor = colors.fieldBg;
+    final fileTextColor = colors.textPrimary;
+    final fileBorderColor = colors.borderSubtle;
+    final addFileIconAsset = ThemeData.estimateBrightnessForColor(fileCardColor) == Brightness.dark
+        ? 'assets/icons/files/add_for_dark.png'
+        : 'assets/icons/files/add.png';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr('file', fallback: 'Файл'),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Gilroy',
+            color: fileTextColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _attachedFiles.isEmpty ? 1 : _attachedFiles.length + 1,
+            itemBuilder: (context, index) {
+              if (_attachedFiles.isEmpty || index == _attachedFiles.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: _saving ? null : _pickDealFile,
+                    child: Container(
+                      width: 100,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: fileCardColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: fileBorderColor),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ColorFiltered(
+                            colorFilter: ColorFilter.mode(fileTextColor, BlendMode.srcIn),
+                            child: Image.asset(addFileIconAsset, width: 54, height: 54),
+                          ),
+                          const SizedBox(height: 6),
+                          Flexible(
+                            child: Text(
+                              context.tr('add_file', fallback: 'Загрузить файл'),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: fileTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final fileName = _attachedFiles[index].name;
+              final fileExtension = fileName.split('.').last.toLowerCase();
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: fileCardColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: fileBorderColor),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Center(
+                              child: buildFileIcon(_attachedFiles, fileName, fileExtension),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Flexible(
+                            child: Text(
+                              fileName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Gilroy',
+                                color: fileTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: -2,
+                      top: -6,
+                      child: GestureDetector(
+                        onTap: _saving ? null : () => setState(() => _attachedFiles.removeAt(index)),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.shadow.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close, size: 16, color: fileTextColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _handleSubmit() async {
     if (_saving) return;
 
@@ -1000,9 +1767,9 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     }
 
     final missing = <String>[];
-    if (ownerName.isEmpty) missing.add('ownerFullName');
-    if (phone.isEmpty) missing.add('phone');
-    if (passport.isEmpty) missing.add('passport');
+    if (_fieldActive('owner') && ownerName.isEmpty) missing.add('ownerFullName');
+    if (_fieldActive('phone') && phone.isEmpty) missing.add('phone');
+    if (_fieldActive('passport') && passport.isEmpty) missing.add('passport');
     if (needsSchedule && months <= 0) missing.add('months');
     if (needsSchedule && _parseUiDate(_firstPaymentDateController.text) == null) {
       missing.add('firstPayment');
@@ -1037,7 +1804,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     if (apartment == null) {
       showCustomSnackBar(
         context: context,
-        message: 'Бэкенд принимает заказ только по квартире: нужны good_id и variant_id. Для паркинга такого метода нет.',
+        message: 'Сделку можно оформить только по квартире. Для паркинга такого метода нет.',
         isSuccess: false,
       );
       return;
@@ -1067,31 +1834,45 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       final api = ApiService();
       var variantId = apartment.variantId;
       if (variantId == null || variantId <= 0) {
-        final goods = await api.getGoodsById(apartment.id);
-        final variants = goods.isNotEmpty ? goods.first.variants : null;
-        if (variants != null && variants.isNotEmpty && variants.first.id > 0) {
-          variantId = variants.first.id;
-        }
+        try {
+          final goods = await api.getGoodsById(apartment.id);
+          final variants = goods.isNotEmpty ? goods.first.variants : null;
+          if (variants != null && variants.isNotEmpty && variants.first.id > 0) {
+            variantId = variants.first.id;
+          }
+        } catch (_) {}
       }
       if (!mounted) return;
-      if (variantId == null || variantId <= 0) {
-        showCustomSnackBar(
-          context: context,
-          message: 'У квартиры нет variant_id. Бэкенд без варианта товара заказ не примет.',
-          isSuccess: false,
-        );
-        return;
-      }
+      if (variantId != null && variantId <= 0) variantId = null;
 
       final integrationId = await api.resolveOrderMiniAppIntegrationId();
       if (!mounted) return;
       if (integrationId == null) {
         showCustomSnackBar(
           context: context,
-          message: 'Не найдена интеграция заказа (integration_id). Без неё сервер заказ не примет.',
+          message: 'Не найдена интеграция. Без неё сервер сделку не примет.',
           isSuccess: false,
         );
         return;
+      }
+
+      final customFieldMap = <Map<String, dynamic>>[];
+      final directoryValues = <Map<String, int>>[];
+      for (final slot in _fieldSlots.where((item) => item.active && item.custom)) {
+        final field = _crmFieldFor(slot);
+        if (field.isDirectoryField && field.directoryId != null) {
+          directoryValues.addAll(field.toDirectoryPayloads());
+          continue;
+        }
+        final value = field.controller.text.trim();
+        if (value.isEmpty) continue;
+        var fieldType = field.type;
+        if (fieldType == null || fieldType.isEmpty || fieldType == 'text') fieldType = 'string';
+        customFieldMap.add({
+          'key': field.fieldName,
+          'value': value,
+          'type': fieldType,
+        });
       }
 
       final result = await api.createResidentialOrder(
@@ -1112,7 +1893,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         inn: inn,
         residenceAddress: _addressController.text.trim(),
         goodId: apartment.id,
-        variantId: variantId,
+        variantId: variantId ?? apartment.id,
         pricePerM2: sqPrice,
         totalArea: _totalArea > 0 ? _totalArea : null,
         dealType: dealType,
@@ -1123,12 +1904,15 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         firstPaymentDate: sendSchedule ? _apiDateFrom(_firstPaymentDateController) : null,
         barterAmount: _selectedDealType == DealType.mixed && _barterAmount > 0 ? _barterAmount : null,
         barterNote: _selectedDealType == DealType.mixed ? _barterNoteController.text.trim() : null,
+        orderCustomFields: customFieldMap,
+        directoryValues: directoryValues,
+        filePaths: _attachedFiles.map((file) => file.path).toList(),
       );
       if (!mounted) return;
       if (result['success'] != true) {
         showCustomSnackBar(
           context: context,
-          message: result['error']?.toString() ?? 'Не удалось создать заказ',
+          message: result['error']?.toString() ?? 'Не удалось создать сделку',
           isSuccess: false,
         );
         return;
@@ -1181,11 +1965,21 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         monthlyPaymentOverride: isInstallment ? _monthlyPayment : null,
       );
 
-      Navigator.pop(context);
+      if (err != null) {
+        showCustomSnackBar(
+          context: context,
+          message: err,
+          isSuccess: false,
+        );
+        return;
+      }
+
+      final navigator = Navigator.of(context);
+      navigator.pop();
       showCustomSnackBar(
-        context: context,
-        message: err ?? 'Квартира № ${apartment.number}: заказ создан',
-        isSuccess: err == null,
+        context: navigator.context,
+        message: 'Квартира № ${apartment.displayNumber}: сделка создана',
+        isSuccess: true,
       );
     } catch (e) {
       if (!mounted) return;

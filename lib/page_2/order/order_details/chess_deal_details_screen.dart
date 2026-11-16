@@ -6,6 +6,8 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
 import 'package:crm_task_manager/models/page_2/order_status_model.dart';
+import 'package:crm_task_manager/page_2/order/order_details/deal_contracts_section.dart';
+import 'package:crm_task_manager/page_2/order/order_details/deal_installment_section.dart';
 import 'package:crm_task_manager/page_2/order/order_details/new_chess_deal_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_details/residential_deal_store.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart' as cm;
@@ -260,8 +262,6 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
     }
   }
 
-  String _curr(ResidentialDealData? d) => d?.cleanCurrencySymbol ?? '\$';
-
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -293,11 +293,6 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
             ),
           ),
           actions: [
-            IconButton(
-              icon: Icon(Icons.refresh_rounded, color: colors.iconSecondary),
-              tooltip: 'Обновить',
-              onPressed: _loadInitialData,
-            ),
             IconButton(
               icon: Icon(Icons.edit_rounded, color: colors.buttonPrimaryBg),
               tooltip: 'Редактировать',
@@ -335,6 +330,24 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
 
                       // Deal & Payment Parameters (Installment / Mixed)
                       _buildPaymentCard(colors, d),
+                      if ((d?.dealType == 'installment' || d?.dealType == 'mixed')) ...[
+                        const SizedBox(height: 14),
+                        DealInstallmentSection(
+                          orderId: widget.orderId,
+                          buyerName: (d?.ownerName.isNotEmpty == true) ? d!.ownerName : _order.lead.name,
+                          buyerPhone: _order.phone,
+                          currency: '',
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      DealContractsSection(
+                        orderId: widget.orderId,
+                        orderNumber: _order.orderNumber,
+                        buyerName: (d?.ownerName.isNotEmpty == true) ? d!.ownerName : _order.lead.name,
+                        buyerPhone: _order.phone.isNotEmpty ? _order.phone : (d?.phone ?? ''),
+                        buyerPassport: d?.passport ?? '',
+                        buyerAddress: d?.residenceAddress ?? '',
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -445,9 +458,23 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
     );
   }
 
+  String _withoutStudio(String raw) {
+    var value = raw.replaceAll(
+      RegExp(r',?\s*(студи[яюи]|studio|studiya)', caseSensitive: false),
+      '',
+    );
+    value = value
+        .replaceAll(RegExp(r'\s+,'), ',')
+        .replaceAll(RegExp(r',\s*$'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return value.isEmpty ? raw.trim() : value;
+  }
+
   Widget _buildPropertyCard(dynamic colors, ResidentialDealData? d) {
-    final goodTitle = d?.goodName ??
+    final rawTitle = d?.goodName ??
         (_order.goods.isNotEmpty ? _order.goods.first.getCorrectGoodName() : 'Помещение не выбрано');
+    final goodTitle = _withoutStudio(rawTitle);
     final area = d?.totalArea ?? 0;
     final pricePerM2 = d?.pricePerM2 ?? 0;
     final total = d?.sum ?? _order.sum ?? 0;
@@ -510,13 +537,13 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
           const SizedBox(height: 8),
           _buildInfoRow(
             'Цена за квадрат',
-            pricePerM2 > 0 ? '${_formatPrice(pricePerM2)} ${_curr(d)}' : '—',
+            pricePerM2 > 0 ? '${_formatPrice(pricePerM2)}' : '—',
             colors,
           ),
           const SizedBox(height: 8),
           _buildInfoRow(
             'Общая сумма',
-            '${_formatPrice(total)} ${_curr(d)}',
+            '${_formatPrice(total)}',
             colors,
             isHighlight: true,
           ),
@@ -551,16 +578,6 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Клиент и Менеджер',
-            style: TextStyle(
-              fontFamily: 'Gilroy',
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
           _buildInfoRow('Клиент (Лид)', _order.lead.name.isNotEmpty ? _order.lead.name : '—', colors),
           const SizedBox(height: 8),
           Row(
@@ -727,7 +744,7 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
           const SizedBox(height: 8),
           _buildInfoRow(
             'Общая стоимость',
-            '${_formatPrice(total)} ${_curr(d)}',
+            '${_formatPrice(total)}',
             colors,
             isHighlight: true,
           ),
@@ -737,19 +754,19 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
               padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(height: 1),
             ),
-            _buildInfoRow('Первоначальный взнос', '${_formatPrice(down)} ${_curr(d)}', colors),
+            _buildInfoRow('Первоначальный взнос', '${_formatPrice(down)}', colors),
             const SizedBox(height: 8),
             _buildInfoRow('Срок рассрочки', '$months мес.', colors),
             const SizedBox(height: 8),
-            _buildInfoRow('Сумма рассрочки', '${_formatPrice(installment)} ${_curr(d)}', colors),
+            _buildInfoRow('Сумма рассрочки', '${_formatPrice(installment)}', colors),
             const SizedBox(height: 8),
-            _buildInfoRow('Ежемесячная оплата', '${_formatPrice(monthly)} ${_curr(d)}', colors),
+            _buildInfoRow('Ежемесячная оплата', '${_formatPrice(monthly)}', colors),
             const SizedBox(height: 8),
             _buildInfoRow('Дата первого платежа', firstPayment, colors),
 
             if (dealType == 'mixed') ...[
               const SizedBox(height: 8),
-              _buildInfoRow('Оценка бартера', '${_formatPrice(barter)} ${_curr(d)}', colors),
+              _buildInfoRow('Оценка бартера', '${_formatPrice(barter)}', colors),
               if (barterNote.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 _buildInfoRow('Примечание к бартеру', barterNote, colors),

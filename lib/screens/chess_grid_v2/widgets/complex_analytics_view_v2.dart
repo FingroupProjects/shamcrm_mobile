@@ -140,7 +140,7 @@ class ComplexAnalyticsViewV2 extends StatelessWidget {
             Expanded(
               child: _buildMetricCard(
                 title: 'Общий пул продаж',
-                value: '\$${_formatCompactPrice(totalValue)}',
+                value: _formatCompactPrice(totalValue),
                 subtitle: '$total квартир',
                 icon: Icons.account_balance_wallet_rounded,
                 iconColor: colors.buttonPrimaryBg,
@@ -151,7 +151,7 @@ class ComplexAnalyticsViewV2 extends StatelessWidget {
             Expanded(
               child: _buildMetricCard(
                 title: 'Свободно в продаже',
-                value: '\$${_formatCompactPrice(availableValue)}',
+                value: _formatCompactPrice(availableValue),
                 subtitle: '${free.length} квартир',
                 icon: Icons.check_circle_outline_rounded,
                 iconColor: ApartmentStatus.available.color,
@@ -167,7 +167,7 @@ class ComplexAnalyticsViewV2 extends StatelessWidget {
             Expanded(
               child: _buildMetricCard(
                 title: 'Реализовано (Сумма)',
-                value: '\$${_formatCompactPrice(soldValue)}',
+                value: _formatCompactPrice(soldValue),
                 subtitle: '${sold.length} квартир',
                 icon: Icons.monetization_on_outlined,
                 iconColor: ApartmentStatus.sold.color,
@@ -178,7 +178,7 @@ class ComplexAnalyticsViewV2 extends StatelessWidget {
             Expanded(
               child: _buildMetricCard(
                 title: 'Средняя цена / м²',
-                value: '\$${avgPricePerSqm.toStringAsFixed(0)}',
+                value: avgPricePerSqm.toStringAsFixed(0),
                 subtitle: 'по всему комплексу',
                 icon: Icons.analytics_outlined,
                 iconColor: const Color(0xFF8B5CF6),
@@ -210,8 +210,6 @@ class ComplexAnalyticsViewV2 extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              _buildRoomBreakdownRow('Студии', apts.where((a) => a.rooms == 0).toList(), total, colors),
-              const Divider(height: 16),
               _buildRoomBreakdownRow('1-комнатные', apts.where((a) => a.rooms == 1).toList(), total, colors),
               const Divider(height: 16),
               _buildRoomBreakdownRow('2-комнатные', apts.where((a) => a.rooms == 2).toList(), total, colors),

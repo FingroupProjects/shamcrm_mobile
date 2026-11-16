@@ -1,7 +1,8 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
-import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_dialog.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/parking_detail_sheet.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridParkingView extends StatelessWidget {
@@ -94,7 +95,18 @@ class ChessGridParkingView extends StatelessWidget {
       linkedApt = controller.findApartmentById(spot.linkedApartmentId);
     }
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => ParkingDetailSheet.show(
+          context: context,
+          spot: spot,
+          onCreateOrder: () {
+            OrderCreateSheet.show(context: context, parking: spot);
+          },
+        ),
+        child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
@@ -219,7 +231,7 @@ class ChessGridParkingView extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${spot.price.toStringAsFixed(0)} \$',
+                  spot.price.toStringAsFixed(0),
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w800,
@@ -229,7 +241,7 @@ class ChessGridParkingView extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: isAvailable
-                      ? () => OrderCreateDialog.show(context: context, parking: spot)
+                      ? () => OrderCreateSheet.show(context: context, parking: spot)
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.buttonPrimaryBg,
@@ -241,7 +253,7 @@ class ChessGridParkingView extends StatelessWidget {
                     elevation: isAvailable ? 1 : 0,
                   ),
                   child: const Text(
-                    'Создать заказ',
+                    'Создать сделку',
                     style: TextStyle(
                       fontFamily: 'Gilroy',
                       fontWeight: FontWeight.w700,
@@ -253,6 +265,8 @@ class ChessGridParkingView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    ),
       ),
     );
   }

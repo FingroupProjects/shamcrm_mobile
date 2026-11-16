@@ -12,11 +12,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class EditStatusOrder extends StatefulWidget {
   final OrderStatus status;
   final OrderBloc orderBloc;
+  final bool chessStatuses;
 
   const EditStatusOrder({
     super.key,
     required this.status,
     required this.orderBloc,
+    this.chessStatuses = false,
   });
 
   @override
@@ -28,6 +30,39 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
   late TextEditingController _messageController;
   late bool _isSuccess;
   late bool _isFailed;
+  late bool _isBooked;
+  late bool _isReserved;
+
+  void _setStatusFlag({bool? success, bool? failed, bool? booked, bool? reserved}) {
+    setState(() {
+      if (success == true) {
+        _isSuccess = true;
+        _isFailed = false;
+        _isBooked = false;
+        _isReserved = false;
+      } else if (failed == true) {
+        _isFailed = true;
+        _isSuccess = false;
+        _isBooked = false;
+        _isReserved = false;
+      } else if (booked == true) {
+        _isBooked = true;
+        _isSuccess = false;
+        _isFailed = false;
+        _isReserved = false;
+      } else if (reserved == true) {
+        _isReserved = true;
+        _isSuccess = false;
+        _isFailed = false;
+        _isBooked = false;
+      } else {
+        if (success == false) _isSuccess = false;
+        if (failed == false) _isFailed = false;
+        if (booked == false) _isBooked = false;
+        if (reserved == false) _isReserved = false;
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -38,6 +73,8 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
     _messageController = TextEditingController(text: widget.status.notificationMessage);
     _isSuccess = widget.status.isSuccess;
     _isFailed = widget.status.isFailed;
+    _isBooked = widget.status.isBooked;
+    _isReserved = widget.status.isReserved;
   }
 
   @override
@@ -63,7 +100,9 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
             ),
           ),
         ),
-        Text(label, style: _textStyle()),
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: _textStyle()),
+        ),
       ],
     );
   }
@@ -141,12 +180,6 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
       child: BlocListener<OrderBloc, OrderState>(
         listener: (context, state) {
           if (state is OrderStatusUpdated) {
-            showCustomSnackBar(
-              context: context,
-              message: 'Статус успешно обновлен!',
-              isSuccess: true,
-              aboveDialogs: true,
-            );
             Navigator.of(context).pop(true);
           } else if (state is OrderError) {
             showCustomSnackBar(
@@ -225,37 +258,57 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                               color: colors.surfaceElevated,
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Row(
+                            child: Column(
                               children: [
-                                Expanded(
-                                  child: _buildCheckbox(
-                                    localizations.translate('successful'),
-                                    _isSuccess,
-                                    (v) {
-                                      if (v != null) {
-                                        setState(() {
-                                          _isSuccess = v;
-                                          if (_isSuccess) _isFailed = false;
-                                        });
-                                      }
-                                    },
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCheckbox(
+                                        localizations.translate('successful'),
+                                        _isSuccess,
+                                        (v) {
+                                          if (v != null) _setStatusFlag(success: v);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildCheckbox(
+                                        localizations.translate('is_failed'),
+                                        _isFailed,
+                                        (v) {
+                                          if (v != null) _setStatusFlag(failed: v);
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildCheckbox(
-                                    localizations.translate('is_failed'),
-                                    _isFailed,
-                                    (v) {
-                                      if (v != null) {
-                                        setState(() {
-                                          _isFailed = v;
-                                          if (_isFailed) _isSuccess = false;
-                                        });
-                                      }
-                                    },
+                                if (widget.chessStatuses) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildCheckbox(
+                                          localizations.translate('chess_grid_booked'),
+                                          _isBooked,
+                                          (v) {
+                                            if (v != null) _setStatusFlag(booked: v);
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildCheckbox(
+                                          localizations.translate('chess_grid_reserved'),
+                                          _isReserved,
+                                          (v) {
+                                            if (v != null) _setStatusFlag(reserved: v);
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -286,6 +339,8 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                               notificationMessage: message,
                               isSuccess: _isSuccess,
                               isFailed: _isFailed,
+                              isBooked: widget.chessStatuses ? _isBooked : null,
+                              isReserved: widget.chessStatuses ? _isReserved : null,
                             ));
                           } else {
                             showCustomSnackBar(
