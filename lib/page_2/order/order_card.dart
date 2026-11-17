@@ -35,8 +35,8 @@ class OrderCard extends StatefulWidget {
 }
 
 class _OrderCardState extends State<OrderCard> {
-  late String dropdownValue;
-  late int statusId;
+  late String dropdownValue; 
+  late int statusId;  
   int? currencyId;
   bool _hideTojsokhtmontjOrderPaymentBadges = false;
 

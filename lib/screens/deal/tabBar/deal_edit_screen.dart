@@ -1949,6 +1949,8 @@ class _DealEditScreenState extends State<DealEditScreen> {
                                         .translate('cancel'),
                                     buttonColor: _screenFieldBackground(context),
                                     textColor: _screenPrimaryText(context),
+                                    borderColor: subtleBorder,
+                                    borderWidth: 1,
                                     onPressed: () =>
                                         LeaveGate.requestPop(context),
                                   ),

@@ -405,7 +405,19 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
                                                 context,
                                                 MaterialPageRoute(
                                                   builder: (_) => ComplexChessScreen(
-                                                      complex: complex),
+                                                    complex: complex,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            onOpenChess: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ComplexChessScreen(
+                                                    complex: complex,
+                                                    initialView: ChessViewMode.matrix,
+                                                  ),
                                                 ),
                                               );
                                             },

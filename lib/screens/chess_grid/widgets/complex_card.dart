@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 class ComplexCard extends StatefulWidget {
   final ResidentialComplex complex;
   final VoidCallback onTap;
+  final VoidCallback? onOpenChess;
   final VoidCallback? onOpenCatalog;
   final VoidCallback? onEdit;
 
@@ -18,6 +19,7 @@ class ComplexCard extends StatefulWidget {
     super.key,
     required this.complex,
     required this.onTap,
+    this.onOpenChess,
     this.onOpenCatalog,
     this.onEdit,
   });
@@ -270,7 +272,7 @@ class _ComplexCardState extends State<ComplexCard> {
                         Expanded(
                           flex: 2,
                           child: ElevatedButton.icon(
-                            onPressed: widget.onTap,
+                            onPressed: widget.onOpenChess ?? widget.onTap,
                             icon: const Icon(Icons.apps_rounded, size: 15),
                             label: Text(context.tr('chess_grid_tab_chess', fallback: 'Шахматка')),
                             style: ElevatedButton.styleFrom(

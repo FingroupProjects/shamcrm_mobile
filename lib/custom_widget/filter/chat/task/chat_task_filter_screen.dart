@@ -647,7 +647,7 @@ class _ChatTaskFilterScreenState extends State<ChatTaskFilterScreen> {
             _buildDateRangeCard(
               label: _fromDate != null && _toDate != null
                   ? "${_fromDate!.day.toString().padLeft(2, '0')}.${_fromDate!.month.toString().padLeft(2, '0')}.${_fromDate!.year} - ${_toDate!.day.toString().padLeft(2, '0')}.${_toDate!.month.toString().padLeft(2, '0')}.${_toDate!.year}"
-                  : AppLocalizations.of(context)!.translate('select_date_range'),
+                  : AppLocalizations.of(context)!.translate('select_created_date_range'),
               onTap: _selectDateRange,
             ),
             const SizedBox(height: 8),

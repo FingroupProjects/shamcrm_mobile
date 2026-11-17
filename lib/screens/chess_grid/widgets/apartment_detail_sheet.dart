@@ -72,6 +72,9 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
     final colors = context.appColors;
     final apartment = widget.apartment;
     final isAvailable = apartment.status == ApartmentStatus.available;
+    final canEditDeal = apartment.status == ApartmentStatus.booked ||
+        apartment.status == ApartmentStatus.reserved;
+    final canOpenDeal = isAvailable || canEditDeal;
     final statusColor = apartment.status.color;
     final controller = ChessGridController.instance;
     final photos = _allPhotos;
@@ -443,7 +446,7 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: isAvailable
+                      onPressed: canOpenDeal
                           ? () {
                               Navigator.pop(context);
                               widget.onCreateOrder();
@@ -457,10 +460,14 @@ class _ApartmentDetailSheetState extends State<ApartmentDetailSheet> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        elevation: isAvailable ? 2 : 0,
+                        elevation: canOpenDeal ? 2 : 0,
                       ),
                       child: Text(
-                        isAvailable ? 'В сделку' : 'Сделка недоступна (не свободно)',
+                        isAvailable
+                            ? 'В сделку'
+                            : canEditDeal
+                                ? 'Редактировать сделку'
+                                : 'Проданную квартиру нельзя изменить',
                         style: const TextStyle(
                           fontFamily: 'Gilroy',
                           fontWeight: FontWeight.w700,

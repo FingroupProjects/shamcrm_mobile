@@ -1893,7 +1893,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         inn: inn,
         residenceAddress: _addressController.text.trim(),
         goodId: apartment.id,
-        variantId: variantId ?? apartment.id,
+        variantId: variantId,
         pricePerM2: sqPrice,
         totalArea: _totalArea > 0 ? _totalArea : null,
         dealType: dealType,

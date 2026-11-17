@@ -596,6 +596,8 @@ class _MyTaskEditScreenState extends State<MyTaskEditScreen> {
                             AppLocalizations.of(context)!.translate('cancel'),
                         buttonColor: colors.buttonSecondaryBg,
                         textColor: colors.buttonSecondaryFg,
+                        borderColor: colors.borderSubtle,
+                        borderWidth: 1,
                         onPressed: () => Navigator.pop(context, null),
                       ),
                     ),

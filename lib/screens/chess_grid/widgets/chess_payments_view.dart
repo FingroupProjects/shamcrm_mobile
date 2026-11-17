@@ -1,11 +1,21 @@
+import 'dart:io';
+
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
+import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
+import 'package:crm_task_manager/models/common/file_helper.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -84,6 +94,7 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
 
     final totalDebt = _items.fold<double>(0, (sum, item) => sum + _num(item['debt']));
     final totalOverdue = _items.fold<double>(0, (sum, item) => sum + _num(item['overdue_amount']));
+    final totalReceived = _items.fold<double>(0, (sum, item) => sum + _num(item['received']));
     final overdueBuyers = _items
         .where((item) => _num(item['overdue_amount']) > 0)
         .map((item) => _label(item['buyer'], item['order_id']?.toString() ?? ''))
@@ -99,7 +110,7 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
     }
 
     Future<void> createPayment() async {
-      final item = await _CreatePaymentPicker.show(context: context, items: _items);
+      final item = await _CreatePaymentPicker.show(context: context);
       if (item == null || !mounted) return;
       final orderId = int.tryParse(item['order_id']?.toString() ?? '') ?? 0;
       if (orderId <= 0) return;
@@ -125,11 +136,13 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
         showCustomSnackBar(context: context, message: 'У сделки нет графика платежей', isSuccess: false);
         return;
       }
-      final saved = await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => _AddPaymentSheet(orderId: orderId, installment: data!),
+      final saved = await _AddPaymentSheet.open(
+        context,
+        orderId: orderId,
+        installment: data,
+        buyer: item['buyer']?.toString(),
+        objectName: item['object']?.toString(),
+        dealNumber: item['order_number']?.toString(),
       );
       if (saved == true) _load();
     }
@@ -145,6 +158,7 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
               totalDebt: totalDebt,
               totalOverdue: totalOverdue,
               overdueBuyers: overdueBuyers,
+              totalReceived: totalReceived,
               biggest: biggest.take(3).toList(),
               longest: longest.take(3).toList(),
               onOpen: openItem,
@@ -163,6 +177,7 @@ class _PaymentsOverview extends StatelessWidget {
   final double totalDebt;
   final double totalOverdue;
   final int overdueBuyers;
+  final double totalReceived;
   final List<Map<String, dynamic>> biggest;
   final List<Map<String, dynamic>> longest;
   final ValueChanged<Map<String, dynamic>> onOpen;
@@ -172,6 +187,7 @@ class _PaymentsOverview extends StatelessWidget {
     required this.totalDebt,
     required this.totalOverdue,
     required this.overdueBuyers,
+    this.totalReceived = 0,
     required this.biggest,
     required this.longest,
     required this.onOpen,
@@ -195,14 +211,21 @@ class _PaymentsOverview extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _metric(colors, 'Общий долг', _money(totalDebt), colors.textPrimary),
+                _metric(colors, 'Общая задолженность', _money(totalDebt), colors.textPrimary),
                 const SizedBox(height: 10),
-                _metric(colors, 'Просрочено', _money(totalOverdue), totalOverdue > 0 ? colors.error : colors.textPrimary),
+                _metric(colors, 'Просроченная задолженность', _money(totalOverdue), totalOverdue > 0 ? colors.error : colors.textPrimary),
                 const SizedBox(height: 10),
-                _metric(colors, 'С просрочкой', '$overdueBuyers', colors.textPrimary),
+                _metric(colors, 'Ожидается за период (план)', '—', colors.textSecondary),
+                const SizedBox(height: 10),
+                _metric(colors, 'Получено за период (факт)', totalReceived > 0 ? _money(totalReceived) : '—', totalReceived > 0 ? colors.textPrimary : colors.textSecondary),
+                const SizedBox(height: 10),
+                _metric(colors, 'Покупателей с просрочкой', '$overdueBuyers', colors.textPrimary),
+                const SizedBox(height: 10),
+                _metric(colors, 'Платежи за период', '—', colors.textSecondary, subtitle: 'оплачено / частично / не в срок'),
               ],
             ),
           ),
+          /*
           if (biggest.isNotEmpty) ...[
             const SizedBox(height: 16),
             _sectionTitle(colors, 'Крупные долги'),
@@ -232,6 +255,7 @@ class _PaymentsOverview extends StatelessWidget {
               );
             }),
           ],
+          */
           const SizedBox(height: 14),
           Row(
             children: [
@@ -267,13 +291,28 @@ class _PaymentsOverview extends StatelessWidget {
     );
   }
 
-  Widget _metric(dynamic colors, String label, String value, Color valueColor) {
+  Widget _metric(dynamic colors, String label, String value, Color valueColor, {String? subtitle}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(label, style: TextStyle(fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label, style: TextStyle(fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontFamily: 'Gilroy', fontSize: 11, color: colors.textSecondary.withValues(alpha: 0.75)),
+                ),
+              ],
+            ],
+          ),
         ),
-        Text(value, style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w700, color: valueColor)),
+        const SizedBox(width: 8),
+        Text(value, style: TextStyle(fontFamily: 'Gilroy', fontSize: 15, fontWeight: FontWeight.w700, color: valueColor)),
       ],
     );
   }
@@ -282,6 +321,7 @@ class _PaymentsOverview extends StatelessWidget {
     return Text(text, style: TextStyle(fontFamily: 'Gilroy', fontSize: 15, fontWeight: FontWeight.w700, color: colors.textPrimary));
   }
 
+  // ignore: unused_element
   Widget _rankRow(
     dynamic colors, {
     required String title,
@@ -480,8 +520,10 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _data;
+  List<Map<String, dynamic>> _contracts = const [];
+  String? _contractsError;
+  Map<int, String> _staff = const {};
   bool _changed = false;
-  bool _history = false;
   bool _downloading = false;
 
   int get _orderId => int.tryParse(widget.item['order_id']?.toString() ?? '') ?? 0;
@@ -499,9 +541,20 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     });
     try {
       final data = await _api.getOrderInstallment(_orderId);
+      List<Map<String, dynamic>> contracts = const [];
+      String? contractsError;
+      try {
+        contracts = await _api.getOrderContracts(_orderId);
+      } catch (e) {
+        contractsError = e.toString().replaceFirst('Exception: ', '');
+      }
+      final staff = await _loadStaff();
       if (!mounted) return;
       setState(() {
         _data = data;
+        _contracts = contracts;
+        _contractsError = contractsError;
+        _staff = staff;
         _loading = false;
       });
     } catch (e) {
@@ -513,14 +566,16 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     }
   }
 
-  Future<void> _add({bool early = false}) async {
+  Future<void> _add() async {
     final data = _data;
     if (data == null) return;
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddPaymentSheet(orderId: _orderId, installment: data, early: early),
+    final saved = await _AddPaymentSheet.open(
+      context,
+      orderId: _orderId,
+      installment: data,
+      buyer: _buyerName(widget.item),
+      objectName: widget.item['object']?.toString(),
+      dealNumber: widget.item['order_number']?.toString(),
     );
     if (saved == true) {
       _changed = true;
@@ -644,7 +699,9 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
                             children: [
                               _metrics(colors, data, down),
                               const SizedBox(height: 12),
-                              _notices(colors, lines),
+                              _contractsBlock(colors),
+                              const SizedBox(height: 12),
+                              _notices(colors, lines, data: data, down: down),
                               const SizedBox(height: 12),
                               _actions(colors, data, down, lines),
                               if (payments.where((payment) => payment['status']?.toString() == 'draft').isNotEmpty) ...[
@@ -654,13 +711,13 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
                                   style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, height: 1.3, color: colors.textSecondary),
                                 ),
                               ],
-                              const SizedBox(height: 14),
-                              _tabs(colors),
+                              const SizedBox(height: 16),
+                              Text(
+                                'История операций',
+                                style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14, color: colors.textPrimary),
+                              ),
                               const SizedBox(height: 10),
-                              if (!_history)
-                                _schedule(colors, data, down, lines, payments)
-                              else
-                                _historyList(colors, payments),
+                              _historyList(colors, payments, lines),
                             ],
                           ),
           ),
@@ -687,56 +744,195 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
       _metric(colors, 'Ближайший платёж', next == null ? '—' : _money(next['amount']), next == null ? 'нет' : 'на ${_date(next['date'])}'),
       _metric(colors, 'Пени к оплате', _money(penalty), penalty > 0 ? 'начислено' : 'начислений нет'),
     ];
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 1.55,
-      children: cards,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - 8) / 2;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final card in cards) SizedBox(width: width, child: card),
+          ],
+        );
+      },
     );
   }
 
   Widget _metric(dynamic colors, String label, String value, String caption, {bool danger = false}) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
       decoration: BoxDecoration(
-        color: colors.surfaceElevated.withValues(alpha: 0.45),
+        color: danger ? colors.error.withValues(alpha: 0.06) : colors.surfaceElevated.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.7)),
+        border: Border.all(color: (danger ? colors.error : colors.borderSubtle).withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontSize: 11, fontWeight: FontWeight.w600, color: colors.textSecondary)),
-          const SizedBox(height: 4),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w800, color: danger ? colors.error : colors.textPrimary)),
-          const Spacer(),
+          const SizedBox(height: 2),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontSize: 15, fontWeight: FontWeight.w800, height: 1.15, color: danger ? colors.error : colors.textPrimary)),
+          const SizedBox(height: 2),
           Text(caption, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontSize: 10.5, height: 1.2, color: colors.textSecondary)),
         ],
       ),
     );
   }
 
-  Widget _notices(dynamic colors, List<Map<String, dynamic>> lines) {
-    final notes = <String>[];
-    final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day);
+  Widget _contractsBlock(dynamic colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Договор', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14, color: colors.textPrimary)),
+          const SizedBox(height: 8),
+          if (_contractsError != null)
+            Text(_contractsError!, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textSecondary))
+          else if (_contracts.isEmpty)
+            Text('Договор не составлен.', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textSecondary))
+          else
+            ..._contracts.map((item) => _contractRow(colors, item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _contractRow(dynamic colors, Map<String, dynamic> item) {
+    final number = _label(item['number'], 'без номера');
+    final type = _label(item['document_type_label'], 'Документ');
+    final status = _label(item['status_label'], '');
+    final date = _date(item['contract_date']);
+    final hasFile = item['has_file'] == true || item['has_file'] == 1;
+    final hasScan = item['has_scan'] == true || item['has_scan'] == 1;
+    final current = item['is_current'] == true || item['is_current'] == 1;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _label(item['title'], type),
+            style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13.5, color: colors.textPrimary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            [type, '№ $number', date == '—' ? '' : date, status, current ? '' : 'старая версия'].where((part) => part.isNotEmpty).join(' · '),
+            style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary),
+          ),
+          if (hasFile || hasScan) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: [
+                if (hasFile) _historyAction(colors, 'Файл', () => _openContract(item, scan: false)),
+                if (hasScan) _historyAction(colors, 'Скан', () => _openContract(item, scan: true)),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openContract(Map<String, dynamic> item, {required bool scan}) async {
+    final id = int.tryParse(item['id']?.toString() ?? '');
+    if (id == null) return;
+    try {
+      final bytes = await _api.downloadOrderContractBytes(orderId: _orderId, contractId: id, scan: scan);
+      final directory = await getTemporaryDirectory();
+      final ext = _fileExt(scan ? item['scan_url'] : item['file_url'], fallback: scan ? 'jpg' : 'pdf');
+      final file = File('${directory.path}/contract-$id${scan ? '-scan' : ''}.$ext');
+      await file.writeAsBytes(bytes, flush: true);
+      await OpenFile.open(file.path);
+    } catch (e) {
+      if (!mounted) return;
+      showCustomSnackBar(context: context, message: e.toString().replaceFirst('Exception: ', ''), isSuccess: false);
+    }
+  }
+
+  String _fileExt(dynamic url, {required String fallback}) {
+    final match = RegExp(r'\.([a-zA-Z0-9]{2,5})(?:\?|$)').firstMatch(url?.toString() ?? '');
+    return match?.group(1)?.toLowerCase() ?? fallback;
+  }
+
+  Widget _notices(
+    dynamic colors,
+    List<Map<String, dynamic>> lines, {
+    Map<String, dynamic>? data,
+    Map<String, dynamic>? down,
+  }) {
+    final notices = <_PaymentNotice>[];
+
+    // 1. Просроченные платежи
     for (final line in lines) {
       if (_num(line['remainder']) <= 0) continue;
-      final due = DateTime.tryParse(line['due_date']?.toString() ?? '');
       final overdueDays = int.tryParse(line['overdue_days']?.toString() ?? '') ?? 0;
-      final late = line['status']?.toString() == 'overdue' || overdueDays > 0;
-      if (late) {
-        notes.add('Просрочен платёж №${line['position'] ?? ''} от ${_date(line['due_date'])}: ${_money(line['remainder'])}, дней: ${overdueDays > 0 ? overdueDays : (due == null ? 0 : start.difference(DateTime(due.year, due.month, due.day)).inDays)}');
-      } else if (due != null) {
-        final left = DateTime(due.year, due.month, due.day).difference(start).inDays;
-        if (left >= 0 && left <= 3) {
-          notes.add('Скоро платёж №${line['position'] ?? ''} на ${_date(line['due_date'])}: ${_money(line['remainder'])}');
-        }
+      final isOverdue = line['status']?.toString() == 'overdue' || overdueDays > 0;
+      if (isOverdue) {
+        final pos = line['position'] ?? '';
+        final dStr = _date(line['due_date']);
+        final sumStr = _money(line['remainder']);
+        notices.add(_PaymentNotice(
+          date: dStr,
+          channel: 'CRM',
+          text: 'Просрочен платёж №$pos от $dStr: $sumStr',
+          isOverdue: true,
+        ));
       }
     }
+
+    // 2. Ближайший ожидаемый платёж (первая непросроченная открытая строка)
+    for (final line in lines) {
+      if (_num(line['remainder']) <= 0) continue;
+      final overdueDays = int.tryParse(line['overdue_days']?.toString() ?? '') ?? 0;
+      final isOverdue = line['status']?.toString() == 'overdue' || overdueDays > 0;
+      if (!isOverdue) {
+        final pos = line['position'] ?? '';
+        final dStr = _date(line['due_date']);
+        final sumStr = _money(line['remainder']);
+        notices.add(_PaymentNotice(
+          date: dStr,
+          channel: 'CRM',
+          text: 'Ожидается платёж №$pos от $dStr: $sumStr',
+          isOverdue: false,
+        ));
+        break;
+      }
+    }
+
+    // 3. Если в lines ничего не добавилось, проверяем next_payment
+    if (notices.isEmpty && data?['next_payment'] is Map) {
+      final next = data!['next_payment'] as Map;
+      final amount = _num(next['amount']);
+      if (amount > 0) {
+        final dStr = _date(next['date']);
+        notices.add(_PaymentNotice(
+          date: dStr,
+          channel: 'CRM',
+          text: 'Ожидается платёж от $dStr: ${_money(amount)}',
+          isOverdue: false,
+        ));
+      }
+    }
+
+    // 4. Если всё ещё пусто, но взнос не оплачен
+    if (notices.isEmpty && down != null && _num(down['remainder']) > 0) {
+      final dStr = _date(data?['first_payment_date'] ?? data?['created_at']);
+      final sumStr = _money(down['remainder']);
+      notices.add(_PaymentNotice(
+        date: dStr == '—' ? _date(DateTime.now().toIso8601String()) : dStr,
+        channel: 'CRM',
+        text: 'Ожидается первоначальный взнос: $sumStr',
+        isOverdue: false,
+      ));
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -748,17 +944,67 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Уведомления', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14, color: colors.textPrimary)),
-          const SizedBox(height: 6),
-          if (notes.isEmpty)
+          const SizedBox(height: 10),
+          if (notices.isEmpty)
             Text('Уведомлений пока нет', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textSecondary))
-          else
-            ...notes.map((note) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(note, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, height: 1.3, color: colors.textPrimary)),
+          else ...[
+            Row(
+              children: [
+                SizedBox(
+                  width: 85,
+                  child: Text('Дата', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+                ),
+                SizedBox(
+                  width: 50,
+                  child: Text('Канал', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Текст', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w600, color: colors.textSecondary)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...notices.map((n) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 85,
+                        child: Text(n.date, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textPrimary)),
+                      ),
+                      SizedBox(
+                        width: 50,
+                        child: Text(n.channel, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textPrimary)),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          n.text,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontSize: 12.5,
+                            height: 1.3,
+                            color: n.isOverdue ? colors.error : colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 )),
+          ],
         ],
       ),
     );
+  }
+
+  bool _isInstallment(Map<String, dynamic> data, List<Map<String, dynamic>> lines) {
+    final type = '${data['deal_type'] ?? widget.item['deal_type'] ?? ''}'.toLowerCase();
+    if (type.contains('cash') || type.contains('налич')) return false;
+    if (type.contains('install') || type.contains('рассроч') || type.contains('mixed') || type.contains('смеш')) return true;
+    if (lines.isNotEmpty) return true;
+    return _num(data['schedule_amount'] ?? widget.item['schedule_amount']) > 0;
   }
 
   Widget _actions(dynamic colors, Map<String, dynamic> data, Map<String, dynamic> down, List<Map<String, dynamic>> lines) {
@@ -766,9 +1012,9 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _actionButton(colors, 'Добавить платёж', filled: true, onTap: () => _add()),
-        _actionButton(colors, 'Досрочное погашение', onTap: () => _add(early: true)),
-        _actionButton(colors, _downloading ? 'Готовим файл…' : 'Скачать график', onTap: _downloading ? null : () => _download(data, down, lines)),
+        _actionButton(colors, 'Добавить платёж', filled: true, onTap: _add),
+        if (_isInstallment(data, lines))
+          _actionButton(colors, _downloading ? 'Готовим файл…' : 'Скачать график', onTap: _downloading ? null : () => _download(data, down, lines)),
       ],
     );
   }
@@ -795,72 +1041,7 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     );
   }
 
-  Widget _tabs(dynamic colors) {
-    return Row(
-      children: [
-        _tabChip(colors, 'График', !_history, () => setState(() => _history = false)),
-        const SizedBox(width: 8),
-        _tabChip(colors, 'История операций', _history, () => setState(() => _history = true)),
-      ],
-    );
-  }
-
-  Widget _tabChip(dynamic colors, String label, bool selected, VoidCallback onTap) {
-    return Material(
-      color: selected ? colors.buttonPrimaryBg : colors.surfaceElevated.withValues(alpha: 0.4),
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Text(label, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13, color: selected ? colors.buttonPrimaryFg : colors.textPrimary)),
-        ),
-      ),
-    );
-  }
-
-  Widget _schedule(dynamic colors, Map<String, dynamic> data, Map<String, dynamic> down, List<Map<String, dynamic>> lines, List<Map<String, dynamic>> payments) {
-    final version = data['version']?.toString();
-    final rows = <List<String>>[
-      ['Взнос', '—', _money(down['planned']), _money(down['paid']), _money(down['remainder']), '—', _lineStatus(down['status']?.toString()), _money(_firstNum(down, const ['penalty', 'penalty_amount']))],
-      ...lines.map((line) => [
-            '${line['position'] ?? ''}',
-            _date(line['due_date']),
-            _money(line['planned']),
-            _money(line['paid']),
-            _money(line['remainder']),
-            _lastPayment(payments, line['id']),
-            _lineStatus(line['status']?.toString()),
-            _money(_firstNum(line, const ['penalty', 'penalty_amount'])),
-          ]),
-    ];
-    const headers = ['№', 'Дата', 'По графику', 'Оплачено', 'Остаток', 'Последняя оплата', 'Статус', 'Пени'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (version != null && version.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text('График версии $version', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-          ),
-        SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingRowHeight: 36,
-        dataRowMinHeight: 36,
-        dataRowMaxHeight: 48,
-        headingTextStyle: TextStyle(fontFamily: 'Gilroy', fontSize: 11, fontWeight: FontWeight.w700, color: colors.textSecondary),
-        dataTextStyle: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w600, color: colors.textPrimary),
-        columns: headers.map((title) => DataColumn(label: Text(title))).toList(),
-        rows: rows.map((row) => DataRow(cells: row.map((cell) => DataCell(Text(cell))).toList())).toList(),
-      ),
-        ),
-      ],
-    );
-  }
-
-  Widget _historyList(dynamic colors, List<Map<String, dynamic>> payments) {
+  Widget _historyList(dynamic colors, List<Map<String, dynamic>> payments, List<Map<String, dynamic>> lines) {
     if (payments.isEmpty) {
       return Text('Операций пока нет', style: TextStyle(fontFamily: 'Gilroy', fontSize: 13, color: colors.textSecondary));
     }
@@ -868,6 +1049,9 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     return Column(
       children: sorted.map((payment) {
         final refund = payment['source_payment_id'] != null;
+        final status = payment['status']?.toString();
+        final entered = _person(payment['author'] ?? payment['author_name'] ?? payment['author_id']);
+        final confirmed = _person(payment['confirmed_by_user'] ?? payment['confirmer'] ?? payment['confirmed_by']);
         return Container(
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 8),
@@ -881,34 +1065,62 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
             children: [
               Row(
                 children: [
+                  Expanded(
+                    child: Text(_date(payment['paid_at']), style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 13, color: colors.textPrimary)),
+                  ),
+                  _statusChip(colors, status),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Expanded(child: Text(refund ? 'Возврат' : 'Платёж', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14, color: colors.textPrimary))),
                   Text('${refund ? '−' : ''}${_money(payment['amount'])}', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w800, fontSize: 15, color: colors.textPrimary)),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text('${_date(payment['paid_at'])} · ${_method(payment['method']?.toString())} · ${_payStatus(payment['status']?.toString())}', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-              Text('Документ: ${_label(payment['document_number'], '—')}', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-              Text(_allocationText(payment), style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-              if (_label(payment['reversal_reason'], '').isNotEmpty)
-                Text('Причина отмены: ${payment['reversal_reason']}', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-              if (payment['status']?.toString() != 'reversed') ...[
+              const SizedBox(height: 8),
+              _historyField(colors, 'Способ', _method(payment['method']?.toString())),
+              _historyField(colors, 'Документ', _label(payment['document_number'], '—')),
+              _historyField(colors, 'Распределение', _allocationText(payment, lines)),
+              _historyField(colors, 'Сотрудники', 'Внёс: $entered${confirmed == '—' ? '' : '\nПодтвердил: $confirmed'}'),
+              if (status == 'draft') ...[
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    if (payment['status']?.toString() == 'draft')
-                      _historyAction(colors, 'Подтвердить', () => _confirm(payment)),
-                    if (payment['status']?.toString() == 'confirmed' && !refund)
-                      _historyAction(colors, 'Вернуть', () => _refund(payment)),
-                    _historyAction(colors, 'Отменить', () => _reverse(payment)),
-                  ],
-                ),
+                _historyAction(colors, 'Подтвердить', () => _confirm(payment)),
               ],
             ],
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _historyField(dynamic colors, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 118,
+            child: Text(label, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
+          ),
+          Expanded(child: Text(value, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3, color: colors.textPrimary))),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(dynamic colors, String? status) {
+    final confirmed = status == 'confirmed';
+    final reversed = status == 'reversed';
+    final color = confirmed ? colors.success : reversed ? colors.error : colors.buttonPrimaryBg;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(_payStatus(status), style: TextStyle(fontFamily: 'Gilroy', fontSize: 11, fontWeight: FontWeight.w700, color: color)),
     );
   }
 
@@ -930,131 +1142,19 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
   Future<void> _confirm(Map<String, dynamic> payment) async {
     final data = _data;
     if (data == null) return;
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AddPaymentSheet(orderId: _orderId, installment: data, existing: payment),
+    final saved = await _AddPaymentSheet.open(
+      context,
+      orderId: _orderId,
+      installment: data,
+      existing: payment,
+      buyer: _buyerName(widget.item),
+      objectName: widget.item['object']?.toString(),
+      dealNumber: widget.item['order_number']?.toString(),
     );
     if (saved == true) {
       _changed = true;
       _load();
     }
-  }
-
-  Future<void> _reverse(Map<String, dynamic> payment) async {
-    final id = int.tryParse(payment['id']?.toString() ?? '');
-    if (id == null) return;
-    final reason = await _askText(title: 'Отмена операции', label: 'Причина', action: 'Отменить');
-    if (reason == null || reason.isEmpty) return;
-    try {
-      await _api.reverseInstallmentPayment(orderId: _orderId, paymentId: id, reason: reason);
-      _changed = true;
-      _load();
-    } catch (e) {
-      if (!mounted) return;
-      showCustomSnackBar(context: context, message: e.toString().replaceFirst('Exception: ', ''), isSuccess: false);
-    }
-  }
-
-  Future<void> _refund(Map<String, dynamic> payment) async {
-    final id = int.tryParse(payment['id']?.toString() ?? '');
-    if (id == null) return;
-    final values = await _askRefund(maxAmount: _num(payment['amount']));
-    if (values == null) return;
-    try {
-      await _api.refundInstallmentPayment(orderId: _orderId, paymentId: id, amount: values.$1, reason: values.$2);
-      _changed = true;
-      _load();
-    } catch (e) {
-      if (!mounted) return;
-      showCustomSnackBar(context: context, message: e.toString().replaceFirst('Exception: ', ''), isSuccess: false);
-    }
-  }
-
-  Future<String?> _askText({required String title, required String label, required String action}) {
-    final controller = TextEditingController();
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final colors = context.appColors;
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            decoration: BoxDecoration(color: colors.surfacePrimary, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w700, color: colors.textPrimary)),
-                const SizedBox(height: 12),
-                CustomTextField(controller: controller, label: label, hintText: 'Укажите причину'),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, controller.text.trim()),
-                    style: ElevatedButton.styleFrom(backgroundColor: colors.buttonPrimaryBg, foregroundColor: colors.buttonPrimaryFg, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                    child: Text(action, style: const TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<(double, String)?> _askRefund({required double maxAmount}) {
-    final amount = TextEditingController(text: _plain(maxAmount));
-    final reason = TextEditingController();
-    return showModalBottomSheet<(double, String)>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final colors = context.appColors;
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            decoration: BoxDecoration(color: colors.surfacePrimary, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Возврат средств', style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w700, color: colors.textPrimary)),
-                const SizedBox(height: 6),
-                Text('Не больше ${_money(maxAmount)}', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, color: colors.textSecondary)),
-                const SizedBox(height: 12),
-                CustomTextField(controller: amount, label: 'Сумма', hintText: '0', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-                const SizedBox(height: 10),
-                CustomTextField(controller: reason, label: 'Основание', hintText: 'Почему возвращаем'),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final value = double.tryParse(amount.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0;
-                      if (value <= 0 || value > maxAmount + 0.001 || reason.text.trim().isEmpty) return;
-                      Navigator.pop(context, (value, reason.text.trim()));
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: colors.buttonPrimaryBg, foregroundColor: colors.buttonPrimaryFg, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                    child: const Text('Оформить возврат', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   double _refunds(dynamic payments) {
@@ -1076,33 +1176,44 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     return 0;
   }
 
-  String _lastPayment(List<Map<String, dynamic>> payments, dynamic lineId) {
-    DateTime? best;
-    var amount = 0.0;
-    for (final payment in payments) {
-      if (payment['status']?.toString() == 'reversed') continue;
-      final allocs = payment['allocations'];
-      if (allocs is! List) continue;
-      for (final raw in allocs) {
-        if (raw is! Map) continue;
-        if (raw['schedule_line_id']?.toString() != lineId?.toString()) continue;
-        final date = DateTime.tryParse(payment['paid_at']?.toString() ?? '');
-        if (date != null && (best == null || date.isAfter(best))) {
-          best = date;
-          amount = _num(raw['amount']);
-        }
+  Future<Map<int, String>> _loadStaff() async {
+    try {
+      final response = await _api.getAllManager(perPage: 200);
+      final names = <int, String>{};
+      for (final manager in response.result ?? const []) {
+        final last = manager.lastname?.trim() ?? '';
+        final name = manager.name.trim();
+        if (name.isEmpty) continue;
+        names[manager.id] = last.isEmpty ? name : '$name ${last[0]}.';
       }
+      return names;
+    } catch (_) {
+      return const {};
     }
-    if (best == null) return '—';
-    return '${_date(best)} · ${_money(amount)}';
   }
 
-  String _allocationText(Map payment) {
+  String _person(dynamic value) {
+    if (value is Map) {
+      final name = '${value['name'] ?? value['full_name'] ?? ''}'.trim();
+      final last = '${value['lastname'] ?? value['last_name'] ?? ''}'.trim();
+      if (name.isNotEmpty && last.isNotEmpty) return '$name ${last[0]}.';
+      if (name.isNotEmpty) return name;
+      return '—';
+    }
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text == 'null') return '—';
+    final id = int.tryParse(text);
+    if (id != null) return _staff[id] ?? '—';
+    return text;
+  }
+
+  String _allocationText(Map payment, List<Map<String, dynamic>> lines) {
     if (payment['source_payment_id'] != null) {
-      return 'Возврат по платежу №${payment['source_payment_id']}';
+      final reason = _label(payment['reversal_reason'] ?? payment['comment'], '');
+      return 'К платежу №${payment['source_payment_id']}${reason.isEmpty ? '' : ': $reason'}';
     }
     final allocs = payment['allocations'];
-    if (allocs is! List || allocs.isEmpty) return 'Распределение: ещё не подтверждён';
+    if (allocs is! List || allocs.isEmpty) return 'Ещё не подтверждён';
     final parts = <String>[];
     for (final raw in allocs) {
       if (raw is! Map) continue;
@@ -1111,31 +1222,36 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
       if (type == 'down_payment') {
         parts.add('Взнос $amount');
       } else if (type == 'early_repayment') {
-        parts.add('Досрочно $amount');
+        parts.add('Досрочное погашение $amount');
+      } else if (type == 'unallocated') {
+        parts.add('Другой $amount');
       } else if (raw['schedule_line_id'] != null) {
-        parts.add('Строка ${raw['schedule_line_id']} $amount');
+        Map<String, dynamic>? line;
+        for (final item in lines) {
+          if (item['id']?.toString() == raw['schedule_line_id']?.toString()) {
+            line = item;
+            break;
+          }
+        }
+        final position = line?['position'];
+        parts.add(position == null ? 'Платёж $amount' : 'Платёж №$position $amount');
       } else {
         parts.add(amount);
       }
     }
-    return parts.isEmpty ? 'Распределение: —' : parts.join(', ');
+    return parts.isEmpty ? '—' : parts.join(', ');
   }
 }
 
 class _CreatePaymentPicker extends StatefulWidget {
-  final List<Map<String, dynamic>> items;
+  const _CreatePaymentPicker();
 
-  const _CreatePaymentPicker({required this.items});
-
-  static Future<Map<String, dynamic>?> show({
-    required BuildContext context,
-    required List<Map<String, dynamic>> items,
-  }) {
+  static Future<Map<String, dynamic>?> show({required BuildContext context}) {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CreatePaymentPicker(items: items),
+      builder: (_) => const _CreatePaymentPicker(),
     );
   }
 
@@ -1143,39 +1259,30 @@ class _CreatePaymentPicker extends StatefulWidget {
   State<_CreatePaymentPicker> createState() => _CreatePaymentPickerState();
 }
 
-class _PaymentClient {
-  final int key;
-  final String name;
-  final List<Map<String, dynamic>> deals;
+class _DealOption {
+  final Order order;
+  final String title;
 
-  const _PaymentClient({required this.key, required this.name, required this.deals});
+  const _DealOption(this.order, this.title);
+
+  @override
+  String toString() => title;
+
+  @override
+  bool operator ==(Object other) => other is _DealOption && other.order.id == order.id;
+
+  @override
+  int get hashCode => order.id.hashCode;
 }
 
 class _CreatePaymentPickerState extends State<_CreatePaymentPicker> {
-  late final List<_PaymentClient> _clients;
-  _PaymentClient? _client;
-  Map<String, dynamic>? _deal;
-  bool _clientsOpen = false;
-  bool _dealsOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final grouped = <int, List<Map<String, dynamic>>>{};
-    for (final item in widget.items) {
-      final leadId = int.tryParse(item['lead_id']?.toString() ?? '');
-      final orderId = int.tryParse(item['order_id']?.toString() ?? '') ?? 0;
-      final key = leadId != null && leadId > 0 ? leadId : -orderId;
-      grouped.putIfAbsent(key, () => []).add(item);
-    }
-    _clients = grouped.entries.map((entry) {
-      final named = entry.value
-          .map((item) => _label(item['buyer'], ''))
-          .firstWhere((name) => name.isNotEmpty, orElse: () => '');
-      return _PaymentClient(key: entry.key, name: named.isEmpty ? '—' : named, deals: entry.value);
-    }).toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-  }
+  final ApiService _api = ApiService();
+  LeadData? _lead;
+  _DealOption? _deal;
+  List<_DealOption> _deals = const [];
+  bool _dealsLoading = false;
+  String? _dealsError;
+  int _dealListVersion = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -1225,67 +1332,42 @@ class _CreatePaymentPickerState extends State<_CreatePaymentPicker> {
               shrinkWrap: true,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
               children: [
-                _fieldLabel(colors, 'Клиент'),
-                const SizedBox(height: 6),
-                _selector(
-                  colors,
-                  text: _client?.name ?? 'Выберите клиента',
-                  placeholder: _client == null,
-                  open: _clientsOpen,
-                  onTap: () => setState(() {
-                    _clientsOpen = !_clientsOpen;
-                    _dealsOpen = false;
-                  }),
+                LeadWithManager(
+                  selectedLead: _lead?.id.toString(),
+                  onSelectLead: _onLeadSelected,
                 ),
-                if (_clientsOpen) ...[
-                  const SizedBox(height: 8),
-                  ..._clients.map((client) => _option(
-                        colors,
-                        title: client.name,
-                        subtitle: _dealsCount(client.deals.length),
-                        selected: _client?.key == client.key,
-                        onTap: () => setState(() {
-                          _client = client;
-                          _deal = client.deals.length == 1 ? client.deals.first : null;
-                          _clientsOpen = false;
-                          _dealsOpen = client.deals.length != 1;
-                        }),
-                      )),
-                ],
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 _fieldLabel(colors, 'Сделка'),
                 const SizedBox(height: 6),
-                _selector(
-                  colors,
-                  text: _deal == null ? (_client == null ? 'Сначала выберите клиента' : 'Выберите сделку') : _dealCaption(_deal!),
-                  placeholder: _deal == null,
-                  enabled: _client != null,
-                  open: _dealsOpen,
-                  onTap: _client == null
-                      ? null
-                      : () => setState(() {
-                            _dealsOpen = !_dealsOpen;
-                            _clientsOpen = false;
-                          }),
-                ),
-                if (_dealsOpen && _client != null) ...[
-                  const SizedBox(height: 8),
-                  ..._client!.deals.map((deal) => _option(
-                        colors,
-                        title: _dealCaption(deal),
-                        subtitle: 'Долг ${_money(deal['debt'])}',
-                        selected: _deal?['order_id'] == deal['order_id'],
-                        onTap: () => setState(() {
-                          _deal = deal;
-                          _dealsOpen = false;
-                        }),
-                      )),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  'Показаны сделки выбранного клиента.',
-                  style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w500, color: colors.textSecondary),
-                ),
+                if (_lead == null)
+                  _closedHint(colors, 'Сначала выберите клиента')
+                else if (_dealsLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+                  )
+                else if (_dealsError != null)
+                  Text(_dealsError!, style: TextStyle(fontFamily: 'Gilroy', fontSize: 12.5, color: colors.textSecondary))
+                else if (_deals.isEmpty)
+                  _closedHint(colors, 'У клиента нет сделок')
+                else
+                  CustomDropdown<_DealOption>.search(
+                    key: ValueKey('payment_deal_${_lead!.id}_$_dealListVersion'),
+                    items: _deals,
+                    initialItem: _deal,
+                    hintText: 'Выберите сделку',
+                    searchHintText: 'Поиск',
+                    overlayHeight: 280,
+                    excludeSelected: false,
+                    decoration: AppFieldStyle.dropdownDecoration(context),
+                    listItemBuilder: (context, item, isSelected, onItemSelect) {
+                      return Text(item.title, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w500, fontSize: 14, color: colors.textPrimary));
+                    },
+                    headerBuilder: (context, item, enabled) {
+                      return Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w500, fontSize: 14, color: colors.textPrimary));
+                    },
+                    onChanged: (value) => setState(() => _deal = value),
+                  ),
               ],
             ),
           ),
@@ -1301,7 +1383,15 @@ class _CreatePaymentPickerState extends State<_CreatePaymentPicker> {
                 SizedBox(
                   height: 44,
                   child: ElevatedButton.icon(
-                    onPressed: _deal == null ? null : () => Navigator.pop(context, _deal),
+                    onPressed: _deal == null
+                        ? null
+                        : () => Navigator.pop(context, {
+                              'order_id': _deal!.order.id,
+                              'order_number': _deal!.order.orderNumber,
+                              'buyer': _lead?.name,
+                              'lead_id': _lead?.id,
+                              'object': _deal!.order.goods.isEmpty ? null : _deal!.order.goods.first.goodName,
+                            }),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                     label: const Text('Продолжить', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
@@ -1321,115 +1411,97 @@ class _CreatePaymentPickerState extends State<_CreatePaymentPicker> {
     );
   }
 
-  String _dealsCount(int count) {
-    final mod10 = count % 10;
-    final mod100 = count % 100;
-    if (mod10 == 1 && mod100 != 11) return '$count сделка';
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return '$count сделки';
-    return '$count сделок';
+  Future<void> _onLeadSelected(LeadData lead) async {
+    if (_lead?.id == lead.id && _deals.isNotEmpty) return;
+    setState(() {
+      _lead = lead;
+      _deal = null;
+      _deals = const [];
+      _dealsError = null;
+      _dealsLoading = true;
+      _dealListVersion++;
+    });
+    try {
+      final response = await _api.getOrdersByLead(leadId: lead.id, perPage: 50);
+      if (!mounted || _lead?.id != lead.id) return;
+      final deals = response.data.map((order) => _DealOption(order, _orderTitle(order))).toList();
+      setState(() {
+        _deals = deals;
+        _dealsLoading = false;
+        if (deals.length == 1) _deal = deals.first;
+      });
+    } catch (e) {
+      if (!mounted || _lead?.id != lead.id) return;
+      setState(() {
+        _dealsError = e.toString().replaceFirst('Exception: ', '');
+        _dealsLoading = false;
+      });
+    }
+  }
+
+  String _orderTitle(Order order) {
+    final number = order.orderNumber.trim().isEmpty ? order.id.toString() : order.orderNumber;
+    final sum = order.sum;
+    return sum == null ? 'Сделка №$number' : 'Сделка №$number · ${_money(sum)}';
+  }
+
+  Widget _closedHint(dynamic colors, String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: colors.fieldBackground,
+        borderRadius: AppFieldStyle.radius,
+        border: Border.all(color: colors.borderSubtle),
+      ),
+      child: Text(text, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w500, fontSize: 14, color: colors.textSecondary)),
+    );
   }
 
   Widget _fieldLabel(dynamic colors, String text) {
     return Text(text, style: TextStyle(fontFamily: 'Gilroy', fontSize: 13, fontWeight: FontWeight.w600, color: colors.textSecondary));
-  }
-
-  Widget _selector(
-    dynamic colors, {
-    required String text,
-    required bool placeholder,
-    required bool open,
-    required VoidCallback? onTap,
-    bool enabled = true,
-  }) {
-    return Material(
-      color: colors.surfaceElevated.withValues(alpha: enabled ? 0.55 : 0.28),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.8)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Gilroy',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: placeholder ? colors.textSecondary : colors.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(open ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: colors.iconSecondary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _option(
-    dynamic colors, {
-    required String title,
-    required String subtitle,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: selected ? colors.buttonPrimaryBg.withValues(alpha: 0.12) : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: selected ? colors.buttonPrimaryBg : colors.borderSubtle.withValues(alpha: 0.7)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13.5, color: colors.textPrimary)),
-                      Text(subtitle, style: TextStyle(fontFamily: 'Gilroy', fontSize: 11.5, color: colors.textSecondary)),
-                    ],
-                  ),
-                ),
-                if (selected) Icon(Icons.check_rounded, size: 18, color: colors.buttonPrimaryBg),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
 class _AddPaymentSheet extends StatefulWidget {
   final int orderId;
   final Map<String, dynamic> installment;
-  final bool early;
   final Map<String, dynamic>? existing;
+  final String? buyer;
+  final String? objectName;
+  final String? dealNumber;
 
   const _AddPaymentSheet({
     required this.orderId,
     required this.installment,
-    this.early = false,
     this.existing,
+    this.buyer,
+    this.objectName,
+    this.dealNumber,
   });
+
+  static Future<bool?> open(
+    BuildContext context, {
+    required int orderId,
+    required Map<String, dynamic> installment,
+    Map<String, dynamic>? existing,
+    String? buyer,
+    String? objectName,
+    String? dealNumber,
+  }) {
+    return Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _AddPaymentSheet(
+          orderId: orderId,
+          installment: installment,
+          existing: existing,
+          buyer: buyer,
+          objectName: objectName,
+          dealNumber: dealNumber,
+        ),
+      ),
+    );
+  }
 
   @override
   State<_AddPaymentSheet> createState() => _AddPaymentSheetState();
@@ -1440,6 +1512,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
   final _amount = TextEditingController();
   final _document = TextEditingController();
   final _comment = TextEditingController();
+  final List<FileHelper> _files = [];
   DateTime _paidAt = DateTime.now();
   String _method = 'cash';
   String _type = 'schedule_line';
@@ -1455,13 +1528,10 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
         : <String, dynamic>{};
     _obligationId = int.tryParse(down['obligation_id']?.toString() ?? '');
     final downLeft = _num(down['remainder']);
-    final lines = (widget.installment['lines'] as List?)?.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
-    Map<String, dynamic>? openLine;
-    for (final line in lines) {
-      if (_num(line['remainder']) > 0 && line['status']?.toString() != 'paid') {
-        openLine = line;
-        break;
-      }
+    final lines = _scheduleLines(widget.installment);
+    final openLine = _nextOpenLine(lines);
+    if (openLine != null) {
+      _lineId = int.tryParse(openLine['id']?.toString() ?? '');
     }
     final existing = widget.existing;
     if (existing != null) {
@@ -1475,24 +1545,42 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
         _type = 'down_payment';
       } else if (openLine != null) {
         _type = 'schedule_line';
-        _lineId = int.tryParse(openLine['id']?.toString() ?? '');
       }
-    } else if (widget.early) {
-      _type = 'early_repayment';
-      _amount.text = _plain(_num(widget.installment['debt']));
-      _paidAt = DateTime.now();
     } else if (downLeft > 0) {
       _type = 'down_payment';
-      _amount.text = _plain(downLeft);
     } else if (openLine != null) {
       _type = 'schedule_line';
-      _lineId = int.tryParse(openLine['id']?.toString() ?? '');
-      _amount.text = _plain(_num(openLine['remainder']));
-      final due = DateTime.tryParse(openLine['due_date']?.toString() ?? '');
-      if (due != null) _paidAt = due;
-    } else if (lines.isNotEmpty) {
-      _lineId = int.tryParse(lines.first['id']?.toString() ?? '');
     }
+  }
+
+  List<Map<String, dynamic>> _scheduleLines(Map<String, dynamic> installment) {
+    return (installment['lines'] as List?)?.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
+  }
+
+  double _lineRemainder(Map<String, dynamic> line) {
+    for (final key in const ['remainder', 'rest', 'left', 'balance']) {
+      if (line[key] != null) return _num(line[key]);
+    }
+    final planned = _num(line['planned']);
+    final paid = _num(line['paid']);
+    if (planned <= 0) return 0;
+    final left = planned - paid;
+    return left < 0 ? 0 : left;
+  }
+
+  List<Map<String, dynamic>> _openLines(List<Map<String, dynamic>> lines) {
+    final open = lines.where((line) => _lineRemainder(line) > 0 && line['status']?.toString() != 'paid').toList();
+    open.sort((a, b) {
+      final byDate = (a['due_date']?.toString() ?? '').compareTo(b['due_date']?.toString() ?? '');
+      if (byDate != 0) return byDate;
+      return _num(a['position']).compareTo(_num(b['position']));
+    });
+    return open;
+  }
+
+  Map<String, dynamic>? _nextOpenLine(List<Map<String, dynamic>> lines) {
+    final open = _openLines(lines);
+    return open.isEmpty ? null : open.first;
   }
 
   @override
@@ -1523,9 +1611,16 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
       showCustomSnackBar(context: context, message: 'Не найден взнос для зачисления', isSuccess: false);
       return;
     }
-    if (_type == 'schedule_line' && _lineId == null) {
-      showCustomSnackBar(context: context, message: 'Выберите месяц графика', isSuccess: false);
-      return;
+    if (_type == 'schedule_line') {
+      final open = _openLines(_scheduleLines(widget.installment));
+      final selected = open.where((line) => int.tryParse(line['id']?.toString() ?? '') == _lineId);
+      if (selected.isEmpty) {
+        _lineId = open.isEmpty ? null : int.tryParse(open.first['id']?.toString() ?? '');
+      }
+      if (_lineId == null) {
+        showCustomSnackBar(context: context, message: 'Нет месяца с остатком', isSuccess: false);
+        return;
+      }
     }
     setState(() => _busy = true);
     try {
@@ -1534,6 +1629,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
       if (paymentId == null) {
         final created = await _api.createInstallmentPayment(
           orderId: widget.orderId,
+          filePaths: _files.map((file) => file.path).toList(),
           body: {
             'paid_at': DateFormat('yyyy-MM-dd').format(_paidAt),
             'amount': amount,
@@ -1572,9 +1668,10 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
 
   Widget _choice<T>({
     required String label,
-    required T value,
+    required T? value,
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
+    String? hint,
   }) {
     final colors = context.appColors;
     return Column(
@@ -1585,6 +1682,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
         DropdownButtonFormField<T>(
           initialValue: value,
           isExpanded: true,
+          hint: hint == null ? null : Text(hint, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w500, color: colors.textSecondary)),
           items: items,
           onChanged: onChanged,
           decoration: InputDecoration(
@@ -1610,119 +1708,318 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
     );
   }
 
+  Widget _section(dynamic colors, String title, List<Widget> children) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700, fontSize: 15, color: colors.textPrimary)),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickPaymentFile() async {
+    final totalSize = _files.fold<double>(0, (sum, file) {
+      final local = File(file.path);
+      if (!local.existsSync()) return sum;
+      return sum + local.lengthSync() / (1024 * 1024);
+    });
+    final picked = await FilePickerDialog.show(
+      context: context,
+      allowMultiple: true,
+      maxSizeMB: 50,
+      currentTotalSizeMB: totalSize,
+      fileLabel: 'Файл',
+      galleryLabel: 'Галерея',
+      cameraLabel: 'Камера',
+      cancelLabel: 'Отмена',
+      fileSizeTooLargeMessage: 'Файл слишком большой',
+      errorPickingFileMessage: 'Не удалось выбрать файл',
+    );
+    if (picked == null || picked.isEmpty || !mounted) return;
+    setState(() {
+      for (final file in picked) {
+        _files.add(FileHelper(id: 0, name: file.name, path: file.path, size: file.sizeKB));
+      }
+    });
+  }
+
+  Widget _paymentFiles(dynamic colors) {
+    final addIcon = ThemeData.estimateBrightnessForColor(colors.fieldBg) == Brightness.dark
+        ? 'assets/icons/files/add_for_dark.png'
+        : 'assets/icons/files/add.png';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Подтверждающий документ', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13, color: colors.textPrimary)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 112,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _files.length + 1,
+            itemBuilder: (context, index) {
+              if (index == _files.length) {
+                return GestureDetector(
+                  onTap: _busy ? null : _pickPaymentFile,
+                  child: Container(
+                    width: 96,
+                    margin: const EdgeInsets.only(right: 10),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colors.fieldBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: colors.borderSubtle),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(addIcon, width: 42, height: 42),
+                        const SizedBox(height: 6),
+                        Text('Добавить файл', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Gilroy', fontSize: 11, color: colors.textPrimary)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              final file = _files[index];
+              final extension = file.name.split('.').last.toLowerCase();
+              return Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 96,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.fieldBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: colors.borderSubtle),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(child: buildFileIcon(_files, file.name, extension)),
+                          const SizedBox(height: 4),
+                          Text(file.name, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Gilroy', fontSize: 11, color: colors.textPrimary)),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: GestureDetector(
+                        onTap: _busy ? null : () => setState(() => _files.removeAt(index)),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(color: colors.surfacePrimary, shape: BoxShape.circle),
+                          child: Icon(Icons.close, size: 14, color: colors.textPrimary),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _dealNumberLabel() {
+    final raw = widget.dealNumber?.trim() ?? '';
+    if (raw.isEmpty || raw == 'null') {
+      return widget.orderId > 0 ? '№${widget.orderId}' : '—';
+    }
+    return raw.startsWith('№') ? raw : '№$raw';
+  }
+
+  Widget _readonly(dynamic colors, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13, color: colors.textPrimary)),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.fieldBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.borderSubtle),
+            ),
+            child: Text(value, style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 14, color: colors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final lines = (widget.installment['lines'] as List?)?.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    final openLines = _openLines(_scheduleLines(widget.installment));
+    return Scaffold(
+      backgroundColor: colors.surfacePrimary,
+      appBar: AppBar(
+        backgroundColor: colors.surfacePrimary,
+        foregroundColor: colors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(color: colors.borderSubtle, borderRadius: BorderRadius.circular(2)),
-                ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Информация о платеже', style: TextStyle(fontFamily: 'Gilroy', fontSize: 16, fontWeight: FontWeight.w700, color: colors.textPrimary)),
+            Text('Заполните информацию о новом платеже', style: TextStyle(fontFamily: 'Gilroy', fontSize: 12, fontWeight: FontWeight.w500, color: colors.textSecondary)),
+          ],
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+              _section(
+                colors,
+                'Сделка',
+                [
+                  _readonly(colors, 'Покупатель', _label(widget.buyer, '—')),
+                  _readonly(colors, 'Объект', _label(widget.objectName, '—')),
+                  _readonly(colors, 'Договор', _dealNumberLabel()),
+                  _readonly(colors, 'Остаток долга', _money(widget.installment['debt'])),
+                ],
               ),
-              Text(
-                widget.existing != null ? 'Подтвердить платёж' : widget.early ? 'Досрочное погашение' : 'Добавить платёж',
-                style: TextStyle(fontFamily: 'Gilroy', fontSize: 18, fontWeight: FontWeight.w700, color: colors.textPrimary),
-              ),
-              const SizedBox(height: 12),
-              CustomTextField(controller: _amount, label: 'Сумма', hintText: '0', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
               const SizedBox(height: 10),
-              Text('Дата оплаты', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13, color: colors.textPrimary)),
-              const SizedBox(height: 6),
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _pickDate,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(
+              _section(
+                colors,
+                'Поступление',
+                [
+                  Text('Дата поступления *', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, fontSize: 13, color: colors.textPrimary)),
+                  const SizedBox(height: 6),
+                  InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: colors.borderSubtle),
-                  ),
-                  child: Text(DateFormat('dd.MM.yyyy').format(_paidAt), style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textPrimary)),
-                ),
-              ),
-              const SizedBox(height: 10),
-              _choice<String>(
-                label: 'Способ оплаты',
-                value: _method,
-                items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Наличные')),
-                  DropdownMenuItem(value: 'transfer', child: Text('Перевод')),
-                  DropdownMenuItem(value: 'terminal', child: Text('Терминал')),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _method = value);
-                },
-              ),
-              const SizedBox(height: 10),
-              CustomTextField(controller: _document, label: 'Номер документа', hintText: 'КВ-1'),
-              const SizedBox(height: 10),
-              _choice<String>(
-                label: 'Это платёж за',
-                value: _type,
-                items: const [
-                  DropdownMenuItem(value: 'down_payment', child: Text('Первый взнос')),
-                  DropdownMenuItem(value: 'schedule_line', child: Text('Месяц из графика')),
-                  DropdownMenuItem(value: 'early_repayment', child: Text('Досрочное погашение')),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _type = value);
-                },
-              ),
-              if (_type == 'schedule_line' && lines.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _choice<int>(
-                  label: 'Какой месяц',
-                  value: _lineId ?? (int.tryParse(lines.first['id']?.toString() ?? '') ?? 0),
-                  items: lines.map((line) {
-                    final id = int.tryParse(line['id']?.toString() ?? '') ?? 0;
-                    return DropdownMenuItem(
-                      value: id,
-                      child: Text(
-                        'Месяц ${line['position']} · ${_date(line['due_date'])} · осталось ${_money(line['remainder'])}',
-                        overflow: TextOverflow.ellipsis,
+                    onTap: _pickDate,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: colors.fieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.borderSubtle),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _lineId = value),
-                ),
-              ],
-              const SizedBox(height: 10),
-              CustomTextField(controller: _comment, label: 'Комментарий', hintText: 'Необязательно'),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _busy ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.buttonPrimaryBg,
-                    foregroundColor: colors.buttonPrimaryFg,
-                    disabledBackgroundColor: colors.buttonPrimaryBg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      child: Text(DateFormat('dd.MM.yyyy').format(_paidAt), style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w600, color: colors.textPrimary)),
+                    ),
                   ),
-                  child: _busy
-                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.buttonPrimaryFg))
-                      : const Text('Сохранить', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700)),
-                ),
+                  const SizedBox(height: 10),
+                  CustomTextField(controller: _amount, label: 'Сумма *', hintText: 'Введите сумму', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+                  const SizedBox(height: 10),
+                  _choice<String>(
+                    label: 'Способ оплаты *',
+                    value: _method,
+                    items: const [
+                      DropdownMenuItem(value: 'cash', child: Text('Наличные')),
+                      DropdownMenuItem(value: 'transfer', child: Text('Банковский перевод')),
+                      DropdownMenuItem(value: 'terminal', child: Text('Терминал')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _method = value);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  CustomTextField(controller: _document, label: 'Номер квитанции или поручения', hintText: 'Введите номер документа'),
+                  const SizedBox(height: 10),
+                  _paymentFiles(colors),
+                  const SizedBox(height: 10),
+                  CustomTextField(controller: _comment, label: 'Комментарий', hintText: 'Комментарий'),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _section(
+                colors,
+                'Распределение платежа',
+                [
+                  _choice<String>(
+                    label: 'К чему относится *',
+                    value: _type,
+                    items: const [
+                      DropdownMenuItem(value: 'down_payment', child: Text('Первоначальный взнос')),
+                      DropdownMenuItem(value: 'schedule_line', child: Text('Платёж по графику')),
+                      DropdownMenuItem(value: 'early_repayment', child: Text('Досрочное погашение')),
+                      DropdownMenuItem(value: 'unallocated', child: Text('Другой')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _type = value;
+                        if (value == 'schedule_line' && openLines.isNotEmpty) {
+                          final ids = openLines.map((line) => int.tryParse(line['id']?.toString() ?? '')).toSet();
+                          if (!ids.contains(_lineId)) {
+                            _lineId = int.tryParse(openLines.first['id']?.toString() ?? '');
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  if (_type == 'schedule_line') ...[
+                    const SizedBox(height: 10),
+                    if (openLines.isEmpty)
+                      _readonly(colors, 'Месяц', 'Нет месяцев с остатком')
+                    else
+                      _choice<int>(
+                        label: 'Месяц',
+                        value: () {
+                          final ids = openLines.map((line) => int.tryParse(line['id']?.toString() ?? '')).whereType<int>().toList();
+                          if (_lineId != null && ids.contains(_lineId)) return _lineId;
+                          return ids.isEmpty ? null : ids.first;
+                        }(),
+                        items: openLines.map((line) {
+                          final id = int.tryParse(line['id']?.toString() ?? '') ?? 0;
+                          return DropdownMenuItem(
+                            value: id,
+                            child: Text(
+                              '№${line['position']} · ${_date(line['due_date'])} · остаток ${_money(_lineRemainder(line))}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) => setState(() => _lineId = value),
+                      ),
+                  ],
+                ],
               ),
             ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _busy ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.buttonPrimaryBg,
+                foregroundColor: colors.buttonPrimaryFg,
+                disabledBackgroundColor: colors.buttonPrimaryBg,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _busy
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.buttonPrimaryFg))
+                  : const Text('Сохранить платёж', style: TextStyle(fontFamily: 'Gilroy', fontWeight: FontWeight.w700)),
+            ),
           ),
         ),
       ),
@@ -1752,6 +2049,7 @@ class _StatusChip extends StatelessWidget {
 
 String _buyerName(Map item) => _label(item['buyer'], '—');
 
+// ignore: unused_element
 String _dealCaption(Map item) {
   final number = '№${item['order_number'] ?? item['order_id'] ?? '—'}';
   final object = _label(item['object'], '');
@@ -1849,7 +2147,7 @@ String _lineStatus(String? value) {
 String _payStatus(String? value) {
   switch (value) {
     case 'draft':
-      return 'Черновик';
+      return 'Ждёт подтверждения';
     case 'confirmed':
       return 'Подтверждён';
     case 'reversed':
@@ -1864,7 +2162,7 @@ String _method(String? value) {
     case 'cash':
       return 'Наличные';
     case 'transfer':
-      return 'Перевод';
+      return 'Банковский перевод';
     case 'terminal':
       return 'Терминал';
     default:
@@ -1884,4 +2182,18 @@ Color _statusColor(String? status, dynamic colors) {
     default:
       return colors.textSecondary;
   }
+}
+
+class _PaymentNotice {
+  final String date;
+  final String channel;
+  final String text;
+  final bool isOverdue;
+
+  const _PaymentNotice({
+    required this.date,
+    required this.channel,
+    required this.text,
+    this.isOverdue = false,
+  });
 }

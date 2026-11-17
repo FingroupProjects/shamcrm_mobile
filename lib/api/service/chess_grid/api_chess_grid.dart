@@ -742,6 +742,13 @@ extension ApiChessGridX on ApiService {
     List<String>? filePaths,
   }) async {
     final organizationId = await resolveSelectedOrganizationId();
+    final resolvedVariantId = await _resolveOrderVariantId(goodId: goodId, variantId: variantId);
+    if (resolvedVariantId == null) {
+      return {
+        'success': false,
+        'error': 'У квартиры нет варианта. Id товара в variant_id отправлять нельзя.',
+      };
+    }
     final body = <String, dynamic>{
       'lead_id': leadId,
       'manager_id': managerId,
@@ -756,7 +763,7 @@ extension ApiChessGridX on ApiService {
       'passport': passport,
       'goods': [
         {
-          'variant_id': (variantId != null && variantId > 0) ? variantId : goodId,
+          'variant_id': resolvedVariantId,
           'quantity': 1,
           'price': sum,
         },
@@ -839,11 +846,40 @@ extension ApiChessGridX on ApiService {
     };
   }
 
+  Future<int?> _resolveOrderVariantId({required int goodId, int? variantId}) async {
+    if (variantId != null && variantId > 0 && variantId != goodId) return variantId;
+
+    int? fromVariants(dynamic raw) {
+      if (raw is! List) return null;
+      for (final item in raw) {
+        if (item is! Map) continue;
+        final id = int.tryParse('${item['id']}') ?? 0;
+        if (id > 0 && id != goodId) return id;
+      }
+      return null;
+    }
+
+    try {
+      final raw = await getGoodById(goodId);
+      final nested = raw['good'] is Map ? raw['good'] as Map : raw;
+      final id = fromVariants(nested['variants']) ?? int.tryParse('${nested['variant_id']}') ?? 0;
+      if (id > 0 && id != goodId) return id;
+    } catch (_) {}
+
+    return null;
+  }
+
   Future<http.Response> _postResidentialOrderWithFiles(
     String path,
     Map<String, dynamic> body,
     List<String> filePaths,
   ) async {
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      await _initializeIfDomainExists();
+    }
+    if (baseUrl == null || baseUrl!.isEmpty) {
+      throw Exception('Адрес сервера не задан');
+    }
     final token = await getToken();
     final updatedPath = await _appendQueryParams(path);
     final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$updatedPath'));
@@ -903,7 +939,7 @@ extension ApiChessGridX on ApiService {
     int? inn,
     String? residenceAddress,
     required int goodId,
-    required int variantId,
+    int? variantId,
     required double pricePerM2,
     double? totalArea,
     required String dealType,
@@ -914,6 +950,13 @@ extension ApiChessGridX on ApiService {
     String? barterNote,
   }) async {
     final organizationId = await resolveSelectedOrganizationId();
+    final resolvedVariantId = await _resolveOrderVariantId(goodId: goodId, variantId: variantId);
+    if (resolvedVariantId == null) {
+      return {
+        'success': false,
+        'error': 'У квартиры нет варианта. Id товара в variant_id отправлять нельзя.',
+      };
+    }
     final body = <String, dynamic>{
       'lead_id': leadId,
       'manager_id': managerId,
@@ -929,7 +972,7 @@ extension ApiChessGridX on ApiService {
       'goods': [
         {
           'good_id': goodId,
-          'variant_id': variantId,
+          'variant_id': resolvedVariantId,
           'quantity': 1,
           'price': sum,
         },
@@ -1265,7 +1308,26 @@ extension ApiChessGridX on ApiService {
   Future<Map<String, dynamic>> createInstallmentPayment({
     required int orderId,
     required Map<String, dynamic> body,
+    List<String> filePaths = const [],
   }) async {
+    final localFiles = filePaths.where((path) => path.isNotEmpty && !path.startsWith('http')).toList();
+    if (localFiles.isNotEmpty) {
+      if (baseUrl == null) await _initializeIfDomainExists();
+      final path = await _appendQueryParams('/order/$orderId/installment/payments');
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+      body.forEach((key, value) {
+        if (value != null) request.fields[key] = value.toString();
+      });
+      for (final filePath in localFiles) {
+        request.files.add(await http.MultipartFile.fromPath('files[]', filePath));
+      }
+      final response = await _multipartPostRequest('', request);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        _throwApi(response, 'Не удалось записать поступление');
+      }
+      final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+      return _apiMap(_apiResult(decoded));
+    }
     final response = await _postRequest('/order/$orderId/installment/payments', body);
     if (response.statusCode != 200 && response.statusCode != 201) {
       _throwApi(response, 'Не удалось записать поступление');

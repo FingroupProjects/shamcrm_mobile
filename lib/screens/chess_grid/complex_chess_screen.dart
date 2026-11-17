@@ -13,6 +13,9 @@ import 'package:crm_task_manager/screens/chess_grid/widgets/apartment_preview_to
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_catalog_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_cell.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_filter_dialog.dart';
+import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart' as deal;
+import 'package:crm_task_manager/page_2/order/order_details/chess_deal_details_screen.dart';
 import 'package:crm_task_manager/page_2/order/order_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_parking_view.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/chess_payments_view.dart';
@@ -37,6 +40,7 @@ enum ChessViewMode {
 
 class ComplexChessScreen extends StatefulWidget {
   final ResidentialComplex complex;
+  final ChessViewMode initialView;
 
   /// Флаг включения/скрытия 3D режима в Шахматка 1 (можно скрыть в любой момент, выставив false)
   static const bool is3DEnabled = true;
@@ -44,6 +48,7 @@ class ComplexChessScreen extends StatefulWidget {
   const ComplexChessScreen({
     super.key,
     required this.complex,
+    this.initialView = ChessViewMode.sections,
   });
 
   @override
@@ -54,13 +59,14 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
   late final ChessGridController _controller;
   late final TransformationController _transformationController;
   double _currentScale = 1.0;
-  ChessViewMode _currentView = ChessViewMode.sections;
+  late ChessViewMode _currentView;
   ApartmentStatus? _quickStatusFilter;
   final ChessZoomLevel _zoomLevel = ChessZoomLevel.standard100;
 
   @override
   void initState() {
     super.initState();
+    _currentView = widget.initialView;
     _transformationController = TransformationController();
     _transformationController.addListener(_onScaleChanged);
     _controller = ChessGridController.instance;
@@ -408,6 +414,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
             : ChessGridCatalogView(
                 controller: _controller,
                 onSelectApartment: _openApartmentDetail,
+                onOpenDeal: _openApartmentDeal,
               );
 
       case ChessViewMode.orders:
@@ -1095,12 +1102,18 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       context: context,
       apartment: fresh,
       onCreateOrder: () {
-        OrderCreateSheet.show(
-          context: context,
-          apartment: fresh,
-        ).then((_) {
-          if (mounted) setState(() {});
-        });
+        if (fresh.status == ApartmentStatus.available) {
+          OrderCreateSheet.show(
+            context: context,
+            apartment: fresh,
+          ).then((_) {
+            if (mounted) setState(() {});
+          });
+          return;
+        }
+        if (fresh.status == ApartmentStatus.booked || fresh.status == ApartmentStatus.reserved) {
+          _openApartmentDeal(fresh);
+        }
       },
       onToggleReserve: () {
         _controller.toggleApartmentReserve(fresh);
@@ -1112,8 +1125,85 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           isSuccess: true,
         );
       },
-      onEdit: () {},
     );
+  }
+
+  Future<void> _openApartmentDeal(Apartment apartment) async {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    var loaderOpen = true;
+    void closeLoader() {
+      if (!loaderOpen || !mounted) return;
+      loaderOpen = false;
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    try {
+      final api = ApiService();
+      final order = await _findApartmentOrder(api, apartment);
+      closeLoader();
+      if (!mounted) return;
+      if (order == null) {
+        showCustomSnackBar(
+          context: context,
+          message: 'Сделка по этой квартире не найдена',
+          isSuccess: false,
+        );
+        return;
+      }
+      final organizationId = await api.resolveSelectedOrganizationId();
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChessDealDetailsScreen(
+            orderId: order.id,
+            order: order,
+            organizationId: organizationId,
+          ),
+        ),
+      );
+    } catch (e) {
+      closeLoader();
+      if (!mounted) return;
+      showCustomSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isSuccess: false,
+      );
+    }
+  }
+
+  Future<deal.Order?> _findApartmentOrder(ApiService api, Apartment apartment) async {
+    var orderId = apartment.orderId;
+    if (orderId == null || orderId <= 0) {
+      final good = await api.getGoodById(apartment.id);
+      orderId = _orderIdFromGood(good);
+    }
+    if (orderId == null || orderId <= 0) return null;
+    return api.getOrderDetails(orderId);
+  }
+
+  int? _orderIdFromGood(Map<String, dynamic> good) {
+    final nested = good['good'] is Map ? good['good'] as Map : good;
+    final direct = int.tryParse('${nested['order_id'] ?? good['order_id']}') ?? 0;
+    if (direct > 0) return direct;
+    for (final key in ['order', 'deal']) {
+      final value = nested[key] ?? good[key];
+      if (value is Map) {
+        final id = int.tryParse('${value['id']}') ?? 0;
+        if (id > 0) return id;
+      }
+    }
+    final orders = nested['orders'] ?? good['orders'];
+    if (orders is List && orders.isNotEmpty && orders.first is Map) {
+      final id = int.tryParse('${(orders.first as Map)['id']}') ?? 0;
+      if (id > 0) return id;
+    }
+    return null;
   }
 
   AppBar _buildAppBar(

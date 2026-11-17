@@ -227,6 +227,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
     setState(() {
       _isTojsokhtmontjTenant = isTojsokhtmontjTenant;
       _isBiovecoTenant = isBiovecoTenant;
+      if (isBiovecoTenant) _isTotalEdited = false;
     });
   }
 
@@ -548,6 +549,15 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   double _calculateAutoTotal() {
+    if (_isBiovecoTenant) {
+      return _items.fold<double>(0, (sum, item) {
+        final rawPrice = item['price'];
+        final price = rawPrice is num
+            ? rawPrice.toDouble()
+            : double.tryParse('$rawPrice'.replaceAll(',', '.')) ?? 0;
+        return sum + price * OrderQuantity.read(item['quantity']);
+      });
+    }
     return _items.fold<double>(
       0,
       (sum, item) => sum + (item['price'] * (item['quantity'] ?? 1)),
@@ -631,6 +641,7 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
   }
 
   double _getCurrentTotal() {
+    if (_isBiovecoTenant) return _calculateAutoTotal();
     if (_isTotalEdited && _totalController.text.trim().isNotEmpty) {
       final parsed = double.tryParse(_totalController.text
           .trim()
@@ -3182,8 +3193,11 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
 
   Widget _buildItemsSection() {
     final autoTotal = _calculateAutoTotal();
-    if (!_isTotalEdited) {
-      _totalController.text = autoTotal.toStringAsFixed(0);
+    if (_isBiovecoTenant || !_isTotalEdited) {
+      final nextTotal = autoTotal.toStringAsFixed(0);
+      if (_totalController.text != nextTotal) {
+        _totalController.text = nextTotal;
+      }
     }
     final String currencySymbol = _isTojsokhtmontjTenant
         ? ''
@@ -3266,36 +3280,46 @@ class _OrderEditScreenState extends State<OrderEditScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IntrinsicWidth(
-                      child: TextField(
-                        controller: _totalController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
+                    IgnorePointer(
+                      ignoring: _isBiovecoTenant,
+                      child: IntrinsicWidth(
+                        child: TextField(
+                          controller: _totalController,
+                          readOnly: _isBiovecoTenant,
+                          enableInteractiveSelection: !_isBiovecoTenant,
+                          showCursor: !_isBiovecoTenant,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onTap: _isBiovecoTenant
+                              ? null
+                              : () {
+                                  if (_totalController.text.trim().isEmpty) {
+                                    _totalController.text =
+                                        autoTotal.toStringAsFixed(0);
+                                  }
+                                },
+                          onChanged: _isBiovecoTenant
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _isTotalEdited = true;
+                                  });
+                                },
                         ),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        onTap: () {
-                          if (_totalController.text.trim().isEmpty) {
-                            _totalController.text =
-                                autoTotal.toStringAsFixed(0);
-                          }
-                        },
-                        onChanged: (value) {
-                          setState(() {
-                            _isTotalEdited = true;
-                          });
-                        },
                       ),
                     ),
                     const SizedBox(width: 6),

@@ -2,7 +2,7 @@ name: crm_task_manager
 description: "A new Flutter project."
 publish_to: none
 
-version: 3.2.310+410
+version: 3.2.311+411
 
 
 # The following defines the version and build number for your application.

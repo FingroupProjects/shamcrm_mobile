@@ -342,17 +342,9 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
       });
     }
 
-    final int effectiveVariantId = (_variantId != null && _variantId! > 0)
-        ? _variantId!
-        : (_goodId != null && _goodId! > 0 ? _goodId! : 0);
-    if (effectiveVariantId <= 0) {
-      showCustomSnackBar(
-        context: context,
-        message: 'У квартиры нет варианта товара. Сервер без него сделку не примет.',
-        isSuccess: false,
-      );
-      return;
-    }
+    final int? effectiveVariantId = (_variantId != null && _variantId! > 0 && _variantId != _goodId)
+        ? _variantId
+        : null;
 
     final payload = _residentialKey.currentState?.buildPayload();
     if (payload == null) return;

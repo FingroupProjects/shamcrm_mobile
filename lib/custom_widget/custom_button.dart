@@ -1,3 +1,4 @@
+import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:flutter/material.dart';
 
 class CustomButton extends StatefulWidget {
@@ -55,19 +56,51 @@ class _CustomButtonState extends State<CustomButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.isLoading || _tapLocked;
+    final colors = context.appColors;
+
+    Color? effectiveBorderColor;
+    double effectiveBorderWidth = 1.0;
+
+    if (widget.borderColor != null) {
+      effectiveBorderColor = widget.borderColor;
+      effectiveBorderWidth = widget.borderWidth > 0 ? widget.borderWidth : 1.0;
+    } else {
+      final isPrimary = widget.buttonColor == colors.buttonPrimaryBg;
+      final isDanger = widget.buttonColor == colors.buttonDangerBg ||
+          widget.buttonColor == colors.error;
+
+      final lowerText = widget.buttonText.toLowerCase().trim();
+      final isCancelOrSecondaryText = lowerText == 'отмена' ||
+          lowerText == 'cancel' ||
+          lowerText == 'bekor qilish' ||
+          lowerText == 'bekor' ||
+          lowerText == 'назад' ||
+          lowerText == 'back' ||
+          lowerText == 'сбросить' ||
+          lowerText == 'reset';
+
+      if (!isPrimary && !isDanger) {
+        effectiveBorderColor = colors.borderSubtle;
+        effectiveBorderWidth = 1.0;
+      } else if (isCancelOrSecondaryText) {
+        effectiveBorderColor = colors.borderSubtle;
+        effectiveBorderWidth = 1.0;
+      }
+    }
 
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: widget.buttonColor,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.0),
-            side: widget.borderColor == null
+            side: effectiveBorderColor == null
                 ? BorderSide.none
                 : BorderSide(
-                    color: widget.borderColor!,
-                    width: widget.borderWidth,
+                    color: effectiveBorderColor,
+                    width: effectiveBorderWidth,
                   ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12),

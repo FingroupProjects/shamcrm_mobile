@@ -1961,6 +1961,8 @@ class _DealAddScreenState extends State<DealAddScreen> {
                                     buttonColor:
                                         _screenFieldBackground(context),
                                     textColor: primaryText,
+                                    borderColor: subtleBorder,
+                                    borderWidth: 1,
                                     onPressed: () async {
                                       final leave =
                                           await ConfirmExitDialog.show(context);

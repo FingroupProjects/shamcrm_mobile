@@ -339,6 +339,8 @@ class _CreateTaskFromCalendareState extends State<CreateTaskFromCalendare> {
               buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: colors.surfacePrimary.withValues(alpha: 0.72),
               textColor: colors.textPrimary,
+              borderColor: colors.borderSubtle,
+              borderWidth: 1,
               onPressed: () => Navigator.pop(context),
             ),
           ),

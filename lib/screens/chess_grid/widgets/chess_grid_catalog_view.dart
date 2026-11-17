@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 class ChessGridCatalogView extends StatelessWidget {
   final ChessGridController controller;
   final ValueChanged<Apartment> onSelectApartment;
+  final ValueChanged<Apartment>? onOpenDeal;
 
   const ChessGridCatalogView({
     super.key,
     required this.controller,
     required this.onSelectApartment,
+    this.onOpenDeal,
   });
 
   @override
@@ -76,6 +78,9 @@ class ChessGridCatalogView extends StatelessWidget {
       itemBuilder: (context, index) {
         final apt = apartments[index];
         final isAvailable = apt.status == ApartmentStatus.available;
+        final canEditDeal = apt.status == ApartmentStatus.booked ||
+            apt.status == ApartmentStatus.reserved;
+        final canOpenDeal = isAvailable || canEditDeal;
         final statusColor = apt.status.color;
 
         return GestureDetector(
@@ -212,18 +217,22 @@ class ChessGridCatalogView extends StatelessWidget {
                       Text(
                         isAvailable
                             ? 'Свободно для сделки'
-                            : 'Бронь/Продано: сделка недоступна',
+                            : canEditDeal
+                                ? 'Можно изменить сделку'
+                                : 'Проданную квартиру нельзя изменить',
                         style: TextStyle(
                           fontFamily: 'Golos',
                           fontSize: 11,
-                          color: isAvailable ? colors.success : colors.textMuted,
+                          color: canOpenDeal ? colors.success : colors.textMuted,
                           fontStyle: isAvailable ? FontStyle.normal : FontStyle.italic,
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: isAvailable
-                            ? () => OrderCreateDialog.show(context: context, apartment: apt)
-                            : null,
+                        onPressed: !canOpenDeal
+                            ? null
+                            : isAvailable
+                                ? () => OrderCreateDialog.show(context: context, apartment: apt)
+                                : () => onOpenDeal?.call(apt),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,
                           foregroundColor: colors.buttonPrimaryFg,
@@ -231,10 +240,10 @@ class ChessGridCatalogView extends StatelessWidget {
                           disabledForegroundColor: colors.textMuted,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          elevation: isAvailable ? 1 : 0,
+                          elevation: canOpenDeal ? 1 : 0,
                         ),
-                        child: const Text(
-                          'Создать сделку',
+                        child: Text(
+                          isAvailable ? 'Создать сделку' : 'Редактировать сделку',
                           style: TextStyle(
                             fontFamily: 'Gilroy',
                             fontWeight: FontWeight.w700,

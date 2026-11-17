@@ -1634,6 +1634,8 @@ class _TaskAddScreenState extends State<TaskAddScreen> {
                                     buttonColor:
                                         _screenFieldBackground(context),
                                     textColor: primaryText,
+                                    borderColor: subtleBorder,
+                                    borderWidth: 1,
                                     onPressed: _handleLeaveCreateTask,
                                   ),
                                 ),

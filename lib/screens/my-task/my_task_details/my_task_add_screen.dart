@@ -458,6 +458,8 @@ class _MyTaskAddScreenState extends State<MyTaskAddScreen> {
               buttonText: AppLocalizations.of(context)!.translate('cancel'),
               buttonColor: colors.buttonSecondaryBg,
               textColor: colors.buttonSecondaryFg,
+              borderColor: colors.borderSubtle,
+              borderWidth: 1,
               onPressed: () => Navigator.pop(context),
             ),
           ),

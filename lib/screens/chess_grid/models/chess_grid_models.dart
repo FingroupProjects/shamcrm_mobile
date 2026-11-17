@@ -314,6 +314,7 @@ class Apartment {
   final int entrance;
   final int? entranceId;
   final int? variantId;
+  final int? orderId;
   final int position;
   final String buildingKey;
   final String buildingName;
@@ -343,6 +344,7 @@ class Apartment {
     required this.entrance,
     this.entranceId,
     this.variantId,
+    this.orderId,
     this.position = 0,
     required this.buildingKey,
     required this.buildingName,
@@ -555,6 +557,7 @@ class Apartment {
       }
     }
     if (variantId != null && variantId <= 0) variantId = null;
+    final orderId = SafeConverters.toIntOrNull(data['order_id'] ?? json['order_id']);
 
     final layoutTypeVal = SafeConverters.toStringOrNull(
       data['layout_type'] ?? json['layout_type'] ?? findAttr(['тип планировки', 'планировка']),
@@ -591,6 +594,7 @@ class Apartment {
       entrance: entranceVal > 0 ? entranceVal : 1,
       entranceId: entranceIdVal,
       variantId: variantId,
+      orderId: orderId != null && orderId > 0 ? orderId : null,
       position: posVal >= 0 ? posVal : 0,
       buildingKey: effectiveBKey,
       buildingName: effectiveBName,
@@ -679,6 +683,7 @@ class Apartment {
       'entrance': entrance,
       if (entranceId != null) 'entrance_id': entranceId,
       if (variantId != null) 'variant_id': variantId,
+      if (orderId != null) 'order_id': orderId,
       'position': position,
       'building_key': buildingKey,
       'building_name': buildingName,
@@ -708,6 +713,7 @@ class Apartment {
     int? entrance,
     int? entranceId,
     int? variantId,
+    int? orderId,
     int? position,
     String? buildingKey,
     String? buildingName,
@@ -737,6 +743,7 @@ class Apartment {
       entrance: entrance ?? this.entrance,
       entranceId: entranceId ?? this.entranceId,
       variantId: variantId ?? this.variantId,
+      orderId: orderId ?? this.orderId,
       position: position ?? this.position,
       buildingKey: buildingKey ?? this.buildingKey,
       buildingName: buildingName ?? this.buildingName,

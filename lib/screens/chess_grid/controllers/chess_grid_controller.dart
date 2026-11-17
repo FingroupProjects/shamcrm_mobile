@@ -576,6 +576,7 @@ class ChessGridController extends ChangeNotifier {
       entranceId: fresh.entranceId ?? current.entranceId,
       position: sent(['position', 'позиция', 'apartment_position']) ? fresh.position : current.position,
       variantId: fresh.variantId ?? current.variantId,
+      orderId: fresh.orderId ?? current.orderId,
     );
 
     updateApartment(merged);
