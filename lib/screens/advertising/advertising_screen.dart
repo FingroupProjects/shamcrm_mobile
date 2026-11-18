@@ -352,44 +352,43 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     return NumberFormat('#,###', 'ru_RU').format(value);
   }
 
+  String _t(
+    AppLocalizations t,
+    String key, {
+    required String ru,
+    required String uz,
+    required String en,
+  }) {
+    final tr = t.translate(key);
+    final normalizedKey = key.replaceAll('_', ' ').toLowerCase();
+    if (tr == key ||
+        tr.toLowerCase() == normalizedKey ||
+        tr.toLowerCase() == key.toLowerCase()) {
+      switch (t.locale.languageCode) {
+        case 'uz':
+          return uz;
+        case 'en':
+          return en;
+        default:
+          return ru;
+      }
+    }
+    return tr;
+  }
+
   String _budgetText(AppLocalizations t, double? amount, String? type) {
     if (amount == null) return '—';
     final money = _money(amount);
-    if (type == 'daily') return '$money ${t.translate('per_day')}';
+    if (type == 'daily') {
+      final perDay = _t(t, 'per_day', ru: 'в день', uz: 'kuniga', en: 'per day');
+      return '$money $perDay';
+    }
     return money;
   }
 
   String _revenueText(double? revenue) {
     if (revenue == null || revenue == 0) return '—';
     return _money(revenue, _summary?.revenueCurrency ?? 'TJS');
-  }
-
-  String _budgetLabel(AppLocalizations t) {
-    final tr = t.translate('sp_field_budget');
-    if (tr != 'sp_field_budget') return tr;
-    final tr2 = t.translate('budget');
-    if (tr2 != 'budget') return tr2;
-    switch (t.locale.languageCode) {
-      case 'uz':
-        return 'Byudjet';
-      case 'en':
-        return 'Budget';
-      default:
-        return 'Бюджет';
-    }
-  }
-
-  String _leadPriceLabel(AppLocalizations t) {
-    final tr = t.translate('lead_price');
-    if (tr != 'Lead price' && tr != 'lead_price') return tr;
-    switch (t.locale.languageCode) {
-      case 'uz':
-        return 'Lid narxi';
-      case 'en':
-        return 'Lead price';
-      default:
-        return 'Цена лида';
-    }
   }
 
   List<_Metric> _webMetrics(
@@ -404,25 +403,60 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     String? clients,
   }) {
     return [
-      _Metric(_budgetLabel(t), budget),
-      _Metric(t.translate('stat_spend'), spend),
-      _Metric(t.translate('stat_impressions'), impressions),
-      _Metric(t.translate('stat_reach'), reach),
-      _Metric(t.translate('stat_results'), results),
-      _Metric(_leadPriceLabel(t), leadPrice),
-      _Metric(t.translate('stat_revenue'), revenue),
-      if (clients != null) _Metric(t.translate('clients'), clients),
+      _Metric(
+        _t(t, 'budget', ru: 'Бюджет', uz: 'Byudjet', en: 'Budget'),
+        budget,
+      ),
+      _Metric(
+        _t(t, 'stat_spend', ru: 'Потрачено', uz: 'Sarflangan', en: 'Spent'),
+        spend,
+      ),
+      _Metric(
+        _t(t, 'stat_impressions', ru: 'Показы', uz: "Ko'rishlar", en: 'Impressions'),
+        impressions,
+      ),
+      _Metric(
+        _t(t, 'stat_reach', ru: 'Охват', uz: 'Qamrov', en: 'Reach'),
+        reach,
+      ),
+      _Metric(
+        _t(t, 'stat_results', ru: 'Результат', uz: 'Natija', en: 'Result'),
+        results,
+      ),
+      _Metric(
+        _t(t, 'lead_price', ru: 'Цена лида', uz: 'Lid narxi', en: 'Lead price'),
+        leadPrice,
+      ),
+      _Metric(
+        _t(t, 'stat_revenue', ru: 'Выручка', uz: 'Daromad', en: 'Revenue'),
+        revenue,
+      ),
+      if (clients != null)
+        _Metric(
+          _t(t, 'clients', ru: 'Клиенты', uz: 'Mijozlar', en: 'Clients'),
+          clients,
+        ),
     ];
   }
 
   String _statusLabel(BuildContext context, String status, bool isActive) {
     final t = AppLocalizations.of(context)!;
-    if (isActive) return t.translate('ad_status_active');
-    final normalized = status.toUpperCase();
-    if (normalized.contains('PAUSE') || normalized == 'PAUSED') {
-      return t.translate('ad_status_paused');
+    if (isActive) {
+      return _t(t, 'ad_status_active', ru: 'Активна', uz: 'Faol', en: 'Active');
     }
-    if (status.trim().isEmpty) return t.translate('ad_status_paused');
+    final normalized = status.toUpperCase();
+    if (normalized.contains('PAUSE')) {
+      return _t(t, 'ad_status_paused', ru: 'Остановлена', uz: "To'xtatilgan", en: 'Paused');
+    }
+    if (normalized.contains('ARCHIV')) {
+      return _t(t, 'archive', ru: 'В архиве', uz: 'Arxivlangan', en: 'Archived');
+    }
+    if (normalized.contains('DELETE')) {
+      return _t(t, 'deleted', ru: 'Удалена', uz: "O'chirilgan", en: 'Deleted');
+    }
+    if (status.trim().isEmpty) {
+      return _t(t, 'ad_status_paused', ru: 'Остановлена', uz: "To'xtatilgan", en: 'Paused');
+    }
     return status;
   }
 
@@ -617,7 +651,13 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                       10,
                 ),
                 _buildMainTabs(context),
-                const SizedBox(height: 6),
+                if (_mainTab == AdvertisingMainTab.metaAds) ...[
+                  const SizedBox(height: 8),
+                  _buildSummary(context),
+                  const SizedBox(height: 8),
+                  _buildLevelTabs(context),
+                ],
+                const SizedBox(height: 8),
                 Expanded(
                   child: RefreshIndicator(
                     color: colors.buttonPrimaryBg,
@@ -628,19 +668,6 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
-                        if (_mainTab == AdvertisingMainTab.metaAds) ...[
-                          SliverToBoxAdapter(child: _buildSummary(context)),
-                          const SliverToBoxAdapter(child: SizedBox(height: 6)),
-                          SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _SliverHeaderDelegate(
-                              height: 52,
-                              backgroundColor: colors.backgroundPrimary,
-                              child: _buildLevelTabs(context),
-                            ),
-                          ),
-                          const SliverToBoxAdapter(child: SizedBox(height: 6)),
-                        ],
                         if (_isLoadingList)
                           const SliverFillRemaining(
                             hasScrollBody: false,
@@ -652,7 +679,13 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                             child: _buildMessage(
                               context,
                               _errorMessage!,
-                              action: t.translate('retry'),
+                              action: _t(
+                                t,
+                                'retry',
+                                ru: 'Повторить',
+                                uz: 'Qayta urinish',
+                                en: 'Retry',
+                              ),
                               onAction: _loadData,
                             ),
                           )
@@ -678,7 +711,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
         Expanded(
           child: _tabButton(
             context,
-            title: t.translate('meta_ads'),
+            title: _t(t, 'meta_ads', ru: 'Meta Ads', uz: 'Meta Ads', en: 'Meta Ads'),
             active: _mainTab == AdvertisingMainTab.metaAds,
             expand: true,
             onTap: () {
@@ -692,7 +725,13 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
         Expanded(
           child: _tabButton(
             context,
-            title: t.translate('other_campaigns'),
+            title: _t(
+              t,
+              'other_campaigns',
+              ru: 'Прочие кампании',
+              uz: 'Boshqa kampaniyalar',
+              en: 'Other campaigns',
+            ),
             active: _mainTab == AdvertisingMainTab.otherCampaigns,
             expand: true,
             onTap: () {
@@ -714,21 +753,21 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
       children: [
         _tabButton(
           context,
-          title: t.translate('campaigns'),
+          title: _t(t, 'campaigns', ru: 'Кампании', uz: 'Kampaniyalar', en: 'Campaigns'),
           active: _metaLevel == MetaAdsLevel.campaigns,
           onTap: () => _switchLevel(MetaAdsLevel.campaigns),
         ),
         const SizedBox(width: 8),
         _tabButton(
           context,
-          title: t.translate('adsets'),
+          title: _t(t, 'adsets', ru: 'Группы объявлений', uz: 'Eʼlonlar guruhlari', en: 'Ad sets'),
           active: _metaLevel == MetaAdsLevel.adsets,
           onTap: () => _switchLevel(MetaAdsLevel.adsets),
         ),
         const SizedBox(width: 8),
         _tabButton(
           context,
-          title: t.translate('ads'),
+          title: _t(t, 'ads', ru: 'Объявления', uz: 'Eʼlonlar', en: 'Ads'),
           active: _metaLevel == MetaAdsLevel.ads,
           onTap: () => _switchLevel(MetaAdsLevel.ads),
         ),
@@ -912,29 +951,29 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     final revenueCurrency = summary?.revenueCurrency ?? 'TJS';
     final items = [
       _SummaryItem(
-        title: t.translate('stat_spend'),
+        title: _t(t, 'stat_spend', ru: 'Потрачено', uz: 'Sarflangan', en: 'Spent'),
         value: summary == null ? '—' : _money(summary.spend, currency),
         color: const Color(0xFFF59E0B),
       ),
       _SummaryItem(
-        title: t.translate('stat_new_leads'),
+        title: _t(t, 'stat_new_leads', ru: 'Новые лиды', uz: 'Yangi lidlar', en: 'New leads'),
         value: summary == null ? '—' : _count(summary.newLeads),
         color: const Color(0xFF3B82F6),
       ),
       _SummaryItem(
-        title: t.translate('stat_cpl'),
+        title: _t(t, 'stat_cpl', ru: 'Цена нового лида', uz: 'Yangi lid narxi', en: 'Cost per new lead'),
         value: summary?.cpl == null ? '—' : _money(summary!.cpl!, currency),
         color: const Color(0xFF8B5CF6),
       ),
       _SummaryItem(
-        title: t.translate('stat_revenue'),
+        title: _t(t, 'stat_revenue', ru: 'Выручка', uz: 'Daromad', en: 'Revenue'),
         value: summary == null
             ? '—'
             : _money(summary.revenue, revenueCurrency),
         color: const Color(0xFF22C55E),
       ),
       _SummaryItem(
-        title: t.translate('stat_roi'),
+        title: 'ROI',
         value: summary?.roi == null
             ? '—'
             : '${summary!.roi!.toStringAsFixed(0)}%',
@@ -948,7 +987,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
       height: 86,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
@@ -1433,46 +1472,5 @@ class _SummaryTile extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _SliverHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  final double height;
-  final Color backgroundColor;
-
-  _SliverHeaderDelegate({
-    required this.child,
-    required this.height,
-    required this.backgroundColor,
-  });
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      height: height,
-      color: overlapsContent
-          ? backgroundColor.withValues(alpha: 0.94)
-          : Colors.transparent,
-      alignment: Alignment.center,
-      child: child,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _SliverHeaderDelegate oldDelegate) {
-    return oldDelegate.child != child ||
-        oldDelegate.height != height ||
-        oldDelegate.backgroundColor != backgroundColor;
   }
 }
