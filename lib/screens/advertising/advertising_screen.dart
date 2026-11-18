@@ -576,58 +576,61 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           ),
         ),
         body: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const AppBackgroundOverlay(
-                    preset: AppBackgroundPreset.aurora,
-                  ),
-                  Column(
-                    children: [
-                      SizedBox(
-                        height: MediaQuery.of(context).padding.top +
-                            kToolbarHeight +
-                            15,
-                      ),
-                      Expanded(
-                        child: RefreshIndicator(
-          color: colors.buttonPrimaryBg,
-          onRefresh: () async {
-            await _loadData();
-            await _loadCrmCampaignsLookup();
-          },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildMainTabs(context)),
-              if (_mainTab == AdvertisingMainTab.metaAds) ...[
-                SliverToBoxAdapter(child: _buildSummary(context)),
-                SliverToBoxAdapter(child: _buildLevelTabs(context)),
-              ],
-              if (_isLoadingList)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_errorMessage != null)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildMessage(
-                    context,
-                    _errorMessage!,
-                    action: t.translate('retry'),
-                    onAction: _loadData,
-                  ),
-                )
-              else
-                _buildList(context),
-            ],
-          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          fit: StackFit.expand,
+          children: [
+            const AppBackgroundOverlay(
+              preset: AppBackgroundPreset.aurora,
+            ),
+            Column(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).padding.top +
+                      kToolbarHeight +
+                      10,
+                ),
+                _buildMainTabs(context),
+                if (_mainTab == AdvertisingMainTab.metaAds) ...[
+                  const SizedBox(height: 8),
+                  _buildLevelTabs(context),
                 ],
-              ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: colors.buttonPrimaryBg,
+                    onRefresh: () async {
+                      await _loadData();
+                      await _loadCrmCampaignsLookup();
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        if (_mainTab == AdvertisingMainTab.metaAds)
+                          SliverToBoxAdapter(child: _buildSummary(context)),
+                        if (_isLoadingList)
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_errorMessage != null)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _buildMessage(
+                              context,
+                              _errorMessage!,
+                              action: t.translate('retry'),
+                              onAction: _loadData,
+                            ),
+                          )
+                        else
+                          _buildList(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -694,7 +697,83 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           active: _metaLevel == MetaAdsLevel.ads,
           onTap: () => _switchLevel(MetaAdsLevel.ads),
         ),
+        if (_filteredCampaign != null) ...[
+          const SizedBox(width: 8),
+          _filterChip(
+            context,
+            label: _filteredCampaign!.name,
+            onRemove: () {
+              setState(() {
+                _filteredCampaign = null;
+                _filteredAdSet = null;
+                _metaLevel = MetaAdsLevel.campaigns;
+              });
+              _fetchMetaList();
+            },
+          ),
+        ],
+        if (_filteredAdSet != null) ...[
+          const SizedBox(width: 6),
+          _filterChip(
+            context,
+            label: _filteredAdSet!.name,
+            onRemove: () {
+              setState(() {
+                _filteredAdSet = null;
+                _metaLevel = MetaAdsLevel.adsets;
+              });
+              _fetchMetaList();
+            },
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _filterChip(
+    BuildContext context, {
+    required String label,
+    required VoidCallback onRemove,
+  }) {
+    final colors = context.appColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.buttonPrimaryBg.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colors.buttonPrimaryBg.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.buttonPrimaryBg,
+                fontFamily: 'Gilroy',
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            behavior: HitTestBehavior.opaque,
+            child: Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: colors.buttonPrimaryBg,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -704,13 +783,16 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     bool scroll = false,
   }) {
     final colors = context.appColors;
-    final row = Row(children: children);
+    final row = Row(
+      mainAxisSize: scroll ? MainAxisSize.min : MainAxisSize.max,
+      children: children,
+    );
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.48)),
         boxShadow: [
           BoxShadow(
@@ -723,6 +805,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
       child: scroll
           ? SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: row,
             )
           : row,
@@ -739,20 +822,30 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     final colors = context.appColors;
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         width: expand ? double.infinity : null,
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
         decoration: BoxDecoration(
           color: active ? colors.buttonPrimaryBg : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: active
                 ? colors.buttonPrimaryBg
                 : colors.borderSubtle.withValues(alpha: 0.58),
           ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: colors.buttonPrimaryBg.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -765,7 +858,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: active ? colors.buttonPrimaryFg : colors.textPrimary,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontFamily: 'Gilroy',
                   fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                 ),
@@ -820,7 +913,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
       height: 86,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
