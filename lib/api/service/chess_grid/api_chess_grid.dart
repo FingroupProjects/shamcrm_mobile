@@ -1378,5 +1378,83 @@ extension ApiChessGridX on ApiService {
       _throwApi(response, 'Не удалось оформить возврат');
     }
   }
+
+  Future<OrderPaymentsResponse> getOrderPayments({
+    int page = 1,
+    int perPage = 50,
+    String? search,
+    String? dateFrom,
+    String? dateTo,
+    String? status,
+  }) async {
+    var path = '/order/payments?page=$page&per_page=$perPage';
+    if (search != null && search.trim().isNotEmpty) {
+      path += '&search=${Uri.encodeComponent(search.trim())}';
+    }
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      path += '&date_from=${Uri.encodeComponent(dateFrom)}';
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      path += '&date_to=${Uri.encodeComponent(dateTo)}';
+    }
+    if (status != null && status.isNotEmpty) {
+      path += '&status=${Uri.encodeComponent(status)}';
+    }
+    final response = await _getRequest(path);
+    if (response.statusCode != 200) {
+      _throwApi(response, 'Не удалось загрузить платежи');
+    }
+    final decoded = json.decode(response.body);
+    return OrderPaymentsResponse.fromJson(decoded is Map<String, dynamic> ? decoded : {});
+  }
+
+  Future<void> deleteOrderPayment({
+    required int orderId,
+    required int paymentId,
+  }) async {
+    http.Response response;
+    try {
+      response = await _deleteRequest('/order/$orderId/installment/payments/$paymentId');
+    } catch (_) {
+      response = await _deleteRequest('/order/payments/$paymentId');
+    }
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      response = await _deleteRequest('/order/payments/$paymentId');
+    }
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      _throwApi(response, 'Не удалось удалить платёж');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateOrderPayment({
+    required int orderId,
+    required int paymentId,
+    required Map<String, dynamic> body,
+    List<String> filePaths = const [],
+  }) async {
+    final localFiles = filePaths.where((path) => path.isNotEmpty && !path.startsWith('http')).toList();
+    if (localFiles.isNotEmpty) {
+      if (baseUrl == null) await _initializeIfDomainExists();
+      final path = await _appendQueryParams('/order/$orderId/installment/payments/$paymentId');
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+      body.forEach((key, value) {
+        if (value != null) request.fields[key] = value.toString();
+      });
+      for (final filePath in localFiles) {
+        request.files.add(await http.MultipartFile.fromPath('files[]', filePath));
+      }
+      final response = await _multipartPostRequest('', request);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        _throwApi(response, 'Не удалось обновить платёж');
+      }
+      final decoded = response.body.isNotEmpty ? json.decode(response.body) : <String, dynamic>{};
+      return _apiMap(_apiResult(decoded));
+    }
+    final response = await _postRequest('/order/$orderId/installment/payments/$paymentId', body);
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      _throwApi(response, 'Не удалось обновить платёж');
+    }
+    return _apiMap(_apiResult(json.decode(response.body)));
+  }
 }
 

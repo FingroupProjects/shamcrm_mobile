@@ -24,6 +24,7 @@ import 'package:crm_task_manager/page_2/warehouse/ware_house/ware_house_screen.d
 import 'package:crm_task_manager/screens/lead/lead_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_return/client_return_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/client_sale/client_sales_screen.dart';
+import 'package:crm_task_manager/page_2/warehouse/order_payments/order_payments_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/fast_incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/incoming/incoming_screen.dart';
 import 'package:crm_task_manager/page_2/warehouse/manufacture/manufacture_screen.dart';
@@ -65,6 +66,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
   bool _hasManufactureEnabled = false;
   bool _hasWriteOffDocument = false;
   bool _hasExpenseDocument = false;
+  bool _hasOrderPayments = false;
   bool _hasClientReturnDocument = false;
   bool _hasSupplierReturnDocument = false;
   bool _hasMoneyIncome = false;
@@ -290,6 +292,11 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           await _apiService.hasPermission('write_off_document.read');
       _hasExpenseDocument =
           await _apiService.hasPermission('expense_document.read');
+      _hasOrderPayments = await _apiService.hasPermission('order_payment.read') ||
+          await _apiService.hasPermission('order.read') ||
+          await _apiService.hasPermission('expense_document.read') ||
+          await _apiService.hasPermission('checking_account_pko.read') ||
+          await _apiService.isAdminRole();
       _hasClientReturnDocument =
           await _apiService.hasPermission('client_return_document.read');
       _hasSupplierReturnDocument =
@@ -348,6 +355,7 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
       _hasManufactureEnabled = false;
       _hasWriteOffDocument = false;
       _hasExpenseDocument = false;
+      _hasOrderPayments = false;
       _hasClientReturnDocument = false;
       _hasSupplierReturnDocument = false;
       _hasMoneyIncome = false;
@@ -410,6 +418,17 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
           title: AppLocalizations.of(context)!.translate('client_sale') ??
               'Продажа',
           icon: Icons.shopping_cart_outlined,
+          color: docColor,
+        ),
+      );
+    }
+
+    if (_hasOrderPayments) {
+      allDocuments.add(
+        WarehouseDocument(
+          keyName: 'order_payments',
+          title: 'Платежи',
+          icon: Icons.payments_outlined,
           color: docColor,
         ),
       );
@@ -594,6 +613,13 @@ class _WarehouseAccountingScreenState extends State<WarehouseAccountingScreen> {
         MaterialPageRoute(
             builder: (context) =>
                 ClientSaleScreen(organizationId: organizationId)),
+      );
+    } else if (document.keyName == 'order_payments') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                OrderPaymentsScreen(organizationId: organizationId)),
       );
     } else if (document.keyName == 'rmk') {
       Navigator.push(
