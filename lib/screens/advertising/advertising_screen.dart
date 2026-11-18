@@ -589,11 +589,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                       10,
                 ),
                 _buildMainTabs(context),
-                if (_mainTab == AdvertisingMainTab.metaAds) ...[
-                  const SizedBox(height: 8),
-                  _buildLevelTabs(context),
-                ],
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Expanded(
                   child: RefreshIndicator(
                     color: colors.buttonPrimaryBg,
@@ -604,8 +600,19 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
-                        if (_mainTab == AdvertisingMainTab.metaAds)
+                        if (_mainTab == AdvertisingMainTab.metaAds) ...[
                           SliverToBoxAdapter(child: _buildSummary(context)),
+                          const SliverToBoxAdapter(child: SizedBox(height: 6)),
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _SliverHeaderDelegate(
+                              height: 52,
+                              backgroundColor: colors.backgroundPrimary,
+                              child: _buildLevelTabs(context),
+                            ),
+                          ),
+                          const SliverToBoxAdapter(child: SizedBox(height: 6)),
+                        ],
                         if (_isLoadingList)
                           const SliverFillRemaining(
                             hasScrollBody: false,
@@ -1398,5 +1405,46 @@ class _SummaryTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SliverHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+  final Color backgroundColor;
+
+  _SliverHeaderDelegate({
+    required this.child,
+    required this.height,
+    required this.backgroundColor,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      height: height,
+      color: overlapsContent
+          ? backgroundColor.withValues(alpha: 0.94)
+          : Colors.transparent,
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SliverHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child ||
+        oldDelegate.height != height ||
+        oldDelegate.backgroundColor != backgroundColor;
   }
 }
