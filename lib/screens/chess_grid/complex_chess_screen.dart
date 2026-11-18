@@ -23,6 +23,7 @@ import 'package:crm_task_manager/screens/chess_grid/widgets/chess_grid_settings_
 import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid/widgets/parking_detail_sheet.dart';
 import 'package:crm_task_manager/screens/chess_grid_v2/model3d/chess_grid_3d_view.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -1156,7 +1157,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       }
       final organizationId = await api.resolveSelectedOrganizationId();
       if (!mounted) return;
-      await Navigator.push(
+      final navResult = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ChessDealDetailsScreen(
@@ -1166,6 +1167,11 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           ),
         ),
       );
+      if (navResult is Map && navResult['success'] == true) {
+        if (mounted) {
+          _controller.loadComplexDetails(widget.complex.id, showLoading: false);
+        }
+      }
     } catch (e) {
       closeLoader();
       if (!mounted) return;
@@ -1180,29 +1186,108 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
   Future<deal.Order?> _findApartmentOrder(ApiService api, Apartment apartment) async {
     var orderId = apartment.orderId;
     if (orderId == null || orderId <= 0) {
-      final good = await api.getGoodById(apartment.id);
-      orderId = _orderIdFromGood(good);
+      final localOrder = _controller.orders.firstWhereOrNull(
+        (o) => o.apartmentId == apartment.id,
+      );
+      if (localOrder != null) {
+        orderId = int.tryParse(localOrder.id);
+      }
+    }
+    if (orderId == null || orderId <= 0) {
+      try {
+        final good = await api.getGoodById(apartment.id);
+        orderId = _orderIdFromGood(good);
+      } catch (e) {
+        debugPrint('ApiService: error getting good by id #${apartment.id}: $e');
+      }
+    }
+    if (orderId == null || orderId <= 0) {
+      try {
+        final orderResp = await api.getOrders(query: apartment.number, perPage: 15);
+        for (final o in orderResp.data) {
+          final hasGood = o.goods.any(
+            (g) => g.goodId == apartment.id ||
+                g.goodName.contains(apartment.number) ||
+                g.good.id == apartment.id ||
+                g.good.name.contains(apartment.number),
+          );
+          if (hasGood) {
+            orderId = o.id;
+            break;
+          }
+        }
+      } catch (e) {
+        debugPrint('ApiService: error searching order fallback: $e');
+      }
     }
     if (orderId == null || orderId <= 0) return null;
     return api.getOrderDetails(orderId);
   }
 
   int? _orderIdFromGood(Map<String, dynamic> good) {
-    final nested = good['good'] is Map ? good['good'] as Map : good;
-    final direct = int.tryParse('${nested['order_id'] ?? good['order_id']}') ?? 0;
-    if (direct > 0) return direct;
-    for (final key in ['order', 'deal']) {
+    final nested = good['good'] is Map ? Map<String, dynamic>.from(good['good'] as Map) : good;
+    final direct = SafeConverters.toIntOrNull(
+      nested['deal_id'] ??
+      good['deal_id'] ??
+      nested['order_id'] ??
+      good['order_id'] ??
+      nested['dealId'] ??
+      good['dealId'] ??
+      nested['orderId'] ??
+      good['orderId'] ??
+      nested['active_deal_id'] ??
+      good['active_deal_id'] ??
+      nested['active_order_id'] ??
+      good['active_order_id'] ??
+      nested['last_deal_id'] ??
+      good['last_deal_id'] ??
+      nested['last_order_id'] ??
+      good['last_order_id'],
+    );
+    if (direct != null && direct > 0) return direct;
+
+    for (final key in ['deal', 'order', 'active_deal', 'active_order', 'latest_deal', 'latest_order']) {
       final value = nested[key] ?? good[key];
       if (value is Map) {
-        final id = int.tryParse('${value['id']}') ?? 0;
-        if (id > 0) return id;
+        final id = SafeConverters.toIntOrNull(
+          value['id'] ?? value['deal_id'] ?? value['order_id'] ?? value['dealId'] ?? value['orderId'],
+        );
+        if (id != null && id > 0) return id;
+      } else if (value is num || (value is String && int.tryParse(value) != null)) {
+        final id = SafeConverters.toIntOrNull(value);
+        if (id != null && id > 0) return id;
       }
     }
-    final orders = nested['orders'] ?? good['orders'];
-    if (orders is List && orders.isNotEmpty && orders.first is Map) {
-      final id = int.tryParse('${(orders.first as Map)['id']}') ?? 0;
-      if (id > 0) return id;
+
+    for (final listKey in ['deals', 'orders', 'good_orders', 'order_goods']) {
+      final list = nested[listKey] ?? good[listKey];
+      if (list is List && list.isNotEmpty) {
+        final first = list.first;
+        if (first is Map) {
+          final id = SafeConverters.toIntOrNull(
+            first['id'] ?? first['deal_id'] ?? first['order_id'] ?? first['dealId'] ?? first['orderId'],
+          );
+          if (id != null && id > 0) return id;
+        } else if (first is num || (first is String && int.tryParse(first) != null)) {
+          final id = SafeConverters.toIntOrNull(first);
+          if (id != null && id > 0) return id;
+        }
+      }
     }
+
+    final attrs = nested['attributes'] ?? good['attributes'] ?? nested['attribute_values'] ?? good['attribute_values'];
+    if (attrs is List) {
+      for (final a in attrs) {
+        if (a is Map) {
+          final name = (a['attribute'] is Map ? a['attribute']['name'] : a['name'])?.toString().toLowerCase() ?? '';
+          if (name.contains('deal') || name.contains('order') || name.contains('сделк') || name.contains('заказ')) {
+            final val = SafeConverters.toIntOrNull(a['value'] ?? a['val']);
+            if (val != null && val > 0) return val;
+          }
+        }
+      }
+    }
+
     return null;
   }
 

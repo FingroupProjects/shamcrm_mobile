@@ -380,30 +380,34 @@ extension ApiWarehouseOrdersX on ApiService {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/order/$orderId');
     if (kDebugMode) {
-      //debugPrint('ApiService: getOrderDetails - Generated path: $path');
+      debugPrint('ApiService: getOrderDetails - GET path: $path');
     }
 
     try {
       final response = await _getRequest(path);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body)['result'];
+        final decoded = json.decode(response.body);
+        final dynamic rawResult = decoded is Map
+            ? (decoded['result'] ?? decoded['data'] ?? decoded)
+            : decoded;
+        final data = rawResult is Map<String, dynamic>
+            ? rawResult
+            : Map<String, dynamic>.from(rawResult as Map);
         final order = Order.fromJson(data);
         await prefs.setString('cachedOrder_$orderId', json.encode(data));
         return order;
       } else {
-        throw Exception('Ошибка сервера!');
+        throw Exception('Ошибка сервера (${response.statusCode})');
       }
     } catch (e) {
-      ////debugPrint(
-      // 'Ошибка загрузки деталей заказа: . Используем кэшированные данные.');
       final cachedOrder = prefs.getString('cachedOrder_$orderId');
       if (cachedOrder != null) {
         final decodedData = json.decode(cachedOrder);
         return Order.fromJson(decodedData);
       } else {
         throw Exception(
-            'Ошибка загрузки деталей заказа и нет кэширвованных данных!');
+            'Ошибка загрузки деталей заказа #$orderId: $e');
       }
     }
   }

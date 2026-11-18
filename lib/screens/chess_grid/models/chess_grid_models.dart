@@ -557,7 +557,62 @@ class Apartment {
       }
     }
     if (variantId != null && variantId <= 0) variantId = null;
-    final orderId = SafeConverters.toIntOrNull(data['order_id'] ?? json['order_id']);
+
+    int? orderId = SafeConverters.toIntOrNull(
+      data['deal_id'] ??
+      json['deal_id'] ??
+      data['order_id'] ??
+      json['order_id'] ??
+      data['dealId'] ??
+      json['dealId'] ??
+      data['orderId'] ??
+      json['orderId'] ??
+      data['active_deal_id'] ??
+      json['active_deal_id'] ??
+      data['active_order_id'] ??
+      json['active_order_id'] ??
+      data['last_deal_id'] ??
+      json['last_deal_id'] ??
+      data['last_order_id'] ??
+      json['last_order_id'],
+    );
+    if (orderId == null || orderId <= 0) {
+      for (final key in ['deal', 'order', 'active_deal', 'active_order', 'latest_deal', 'latest_order']) {
+        final val = data[key] ?? json[key];
+        if (val is Map) {
+          orderId = SafeConverters.toIntOrNull(
+            val['id'] ?? val['deal_id'] ?? val['order_id'] ?? val['dealId'] ?? val['orderId'],
+          );
+          if (orderId != null && orderId > 0) break;
+        } else if (val is num || (val is String && int.tryParse(val) != null)) {
+          orderId = SafeConverters.toIntOrNull(val);
+          if (orderId != null && orderId > 0) break;
+        }
+      }
+    }
+    if (orderId == null || orderId <= 0) {
+      for (final listKey in ['deals', 'orders', 'good_orders', 'order_goods']) {
+        final list = data[listKey] ?? json[listKey];
+        if (list is List && list.isNotEmpty) {
+          final first = list.first;
+          if (first is Map) {
+            orderId = SafeConverters.toIntOrNull(
+              first['id'] ?? first['deal_id'] ?? first['order_id'] ?? first['dealId'] ?? first['orderId'],
+            );
+            if (orderId != null && orderId > 0) break;
+          } else if (first is num || (first is String && int.tryParse(first) != null)) {
+            orderId = SafeConverters.toIntOrNull(first);
+            if (orderId != null && orderId > 0) break;
+          }
+        }
+      }
+    }
+    if (orderId == null || orderId <= 0) {
+      final attrDeal = findAttr(['deal_id', 'order_id', 'сделка', 'заказ', 'deal', 'order']);
+      if (attrDeal != null) {
+        orderId = SafeConverters.toIntOrNull(attrDeal);
+      }
+    }
 
     final layoutTypeVal = SafeConverters.toStringOrNull(
       data['layout_type'] ?? json['layout_type'] ?? findAttr(['тип планировки', 'планировка']),
@@ -683,7 +738,10 @@ class Apartment {
       'entrance': entrance,
       if (entranceId != null) 'entrance_id': entranceId,
       if (variantId != null) 'variant_id': variantId,
-      if (orderId != null) 'order_id': orderId,
+      if (orderId != null) ...{
+        'order_id': orderId,
+        'deal_id': orderId,
+      },
       'position': position,
       'building_key': buildingKey,
       'building_name': buildingName,

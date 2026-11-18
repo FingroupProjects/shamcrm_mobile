@@ -380,7 +380,9 @@ class Goods {
             SafeConverters.toIntOrNull(json['sort_order']) ??
             SafeConverters.toIntOrNull(data['order']) ??
             SafeConverters.toIntOrNull(json['order']),
-        orderId: SafeConverters.toIntOrNull(data['order_id']) ??
+        orderId: SafeConverters.toIntOrNull(data['deal_id']) ??
+            SafeConverters.toIntOrNull(json['deal_id']) ??
+            SafeConverters.toIntOrNull(data['order_id']) ??
             SafeConverters.toIntOrNull(json['order_id']),
         orderNumber: SafeConverters.toStringOrNull(data['order_number'],
                 emptyAsNull: true) ??
