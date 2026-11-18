@@ -1,10 +1,6 @@
-import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
-import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 enum AdvertisingDatePreset {
   last30Days,
@@ -20,13 +16,11 @@ class AdvertisingFilterResult {
   final AdvertisingDatePreset preset;
   final DateTime start;
   final DateTime end;
-  final SalesFunnel? funnel;
 
   const AdvertisingFilterResult({
     required this.preset,
     required this.start,
     required this.end,
-    this.funnel,
   });
 }
 
@@ -34,14 +28,12 @@ class AdvertisingPeriodFilter extends StatefulWidget {
   final AdvertisingDatePreset preset;
   final DateTime start;
   final DateTime end;
-  final SalesFunnel? selectedFunnel;
 
   const AdvertisingPeriodFilter({
     super.key,
     required this.preset,
     required this.start,
     required this.end,
-    this.selectedFunnel,
   });
 
   @override
@@ -53,7 +45,6 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
   late AdvertisingDatePreset _preset;
   late DateTime _start;
   late DateTime _end;
-  SalesFunnel? _selectedFunnel;
 
   @override
   void initState() {
@@ -61,7 +52,6 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
     _preset = widget.preset;
     _start = widget.start;
     _end = widget.end;
-    _selectedFunnel = widget.selectedFunnel;
   }
 
   (DateTime, DateTime) _rangeForPreset(AdvertisingDatePreset preset) {
@@ -203,7 +193,6 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
       _preset = AdvertisingDatePreset.last30Days;
       _start = now.subtract(const Duration(days: 30));
       _end = now;
-      _selectedFunnel = widget.selectedFunnel;
     });
   }
 
@@ -214,7 +203,6 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
         preset: _preset,
         start: _start,
         end: _end,
-        funnel: _selectedFunnel,
       ),
     );
   }
@@ -282,140 +270,11 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
             color: colors.textPrimary,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: _reset,
-            child: Text(
-              t.translate('reset'),
-              style: TextStyle(
-                fontFamily: 'Gilroy',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: colors.buttonPrimaryBg,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
-          // 1. Sales Funnel section
-          BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-            builder: (context, state) {
-              if (state is! SalesFunnelLoaded || state.funnels.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              final funnels = state.funnels;
-              final currentFunnel = _selectedFunnel ??
-                  funnels.firstWhere(
-                    (f) => f.id == widget.selectedFunnel?.id,
-                    orElse: () => funnels.first,
-                  );
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: colors.borderSubtle),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colors.buttonPrimaryBg
-                                  .withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.filter_alt_outlined,
-                              size: 20,
-                              color: colors.buttonPrimaryBg,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Воронка продаж',
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: colors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Фильтрация данных рекламы по воронке',
-                                  style: TextStyle(
-                                    fontFamily: 'Gilroy',
-                                    fontSize: 12,
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: funnels.map((funnel) {
-                          final isSelected = currentFunnel.id == funnel.id;
-                          return ChoiceChip(
-                            label: Text(
-                              funnel.name,
-                              style: TextStyle(
-                                fontFamily: 'Gilroy',
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? colors.buttonPrimaryFg
-                                    : colors.textPrimary,
-                              ),
-                            ),
-                            selected: isSelected,
-                            selectedColor: colors.buttonPrimaryBg,
-                            backgroundColor: colors.fieldBg,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? colors.buttonPrimaryBg
-                                    : colors.borderSubtle,
-                              ),
-                            ),
-                            showCheckmark: false,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => _selectedFunnel = funnel);
-                              }
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // 2. Custom Date Range card
+          // 1. Custom Date Range card
           Container(
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
@@ -584,7 +443,7 @@ class _AdvertisingPeriodFilterState extends State<AdvertisingPeriodFilter> {
 
           const SizedBox(height: 16),
 
-          // 3. Quick Presets Card
+          // 2. Quick Presets Card
           Container(
             decoration: BoxDecoration(
               color: colors.surfacePrimary,

@@ -499,31 +499,18 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           preset: _datePreset,
           start: _startDate,
           end: _endDate,
-          selectedFunnel: _selectedFunnel,
         ),
       ),
     );
     if (result == null || !mounted) return;
 
-    final funnelChanged =
-        result.funnel != null && result.funnel?.id != _selectedFunnel?.id;
-
     setState(() {
       _datePreset = result.preset;
       _startDate = result.start;
       _endDate = result.end;
-      if (result.funnel != null) {
-        _selectedFunnel = result.funnel;
-        _filteredCampaign = null;
-        _filteredAdSet = null;
-        _metaLevel = MetaAdsLevel.campaigns;
-      }
     });
 
-    if (funnelChanged && result.funnel != null) {
-      context.read<SalesFunnelBloc>().add(SelectSalesFunnel(result.funnel!));
-    }
-    await Future.wait([_loadData(), _loadCrmCampaignsLookup()]);
+    await _loadData();
   }
 
   Future<void> _changeFunnel(SalesFunnel selected) async {
