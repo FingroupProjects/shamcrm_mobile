@@ -123,6 +123,13 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
       Object? error;
       try {
         data = await _api.getOrderInstallment(orderId);
+        if (data == null) {
+          Order? order;
+          try {
+            order = await _api.getOrderDetails(orderId);
+          } catch (_) {}
+          data = _buildFallbackInstallment(orderId: orderId, order: order, item: item);
+        }
       } catch (e) {
         error = e;
       }
@@ -132,10 +139,7 @@ class _ChessPaymentsViewState extends State<ChessPaymentsView> {
         showCustomSnackBar(context: context, message: error.toString().replaceFirst('Exception: ', ''), isSuccess: false);
         return;
       }
-      if (data == null) {
-        showCustomSnackBar(context: context, message: 'У сделки нет графика платежей', isSuccess: false);
-        return;
-      }
+      data ??= _buildFallbackInstallment(orderId: orderId, item: item);
       final saved = await _AddPaymentSheet.open(
         context,
         orderId: orderId,
@@ -540,7 +544,14 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
       _error = null;
     });
     try {
-      final data = await _api.getOrderInstallment(_orderId);
+      var data = await _api.getOrderInstallment(_orderId);
+      if (data == null) {
+        Order? order;
+        try {
+          order = await _api.getOrderDetails(_orderId);
+        } catch (_) {}
+        data = _buildFallbackInstallment(orderId: _orderId, order: order, item: widget.item);
+      }
       List<Map<String, dynamic>> contracts = const [];
       String? contractsError;
       try {
@@ -567,8 +578,7 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
   }
 
   Future<void> _add() async {
-    final data = _data;
-    if (data == null) return;
+    final data = _data ?? _buildFallbackInstallment(orderId: _orderId, item: widget.item);
     final saved = await _AddPaymentSheet.open(
       context,
       orderId: _orderId,
@@ -733,17 +743,30 @@ class _PaymentDetailSheetState extends State<_PaymentDetailSheet> {
     final next = data['next_payment'] is Map ? data['next_payment'] as Map : widget.item['next_payment'] is Map ? widget.item['next_payment'] as Map : null;
     final refunds = _refunds(data['payments']);
     final penalty = _firstNum(data, const ['penalty_due', 'penalty_amount', 'penalties', 'penalty']);
-    final cards = [
-      _metric(colors, 'Стоимость сделки', _money(total), 'Сумма сделки'),
-      _metric(colors, 'Первоначальный взнос', _money(down['planned']), 'получено ${_money(down['paid'])}, ${_lineStatus(down['status']?.toString()).toLowerCase()}'),
-      _metric(colors, 'Бартер', barter > 0 ? _money(barter) : '—', barter > 0 ? _label(data['barter_note'], 'учтён в сумме') : 'не применяется'),
-      _metric(colors, 'К оплате деньгами', _money(cash), 'в графике рассрочки: ${_money(data['schedule_amount'] ?? widget.item['schedule_amount'])}'),
-      _metric(colors, 'Оплачено', _money(data['received'] ?? widget.item['received']), 'возвраты: ${_money(refunds)}'),
-      _metric(colors, 'Остаток долга', _money(data['debt'] ?? widget.item['debt']), _dealStatus(data['settlement_status']?.toString() ?? widget.item['settlement_status']?.toString())),
-      _metric(colors, 'Просрочено', _money(data['overdue_amount'] ?? widget.item['overdue_amount']), _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0 ? 'есть просрочка' : 'просрочек нет', danger: _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0),
-      _metric(colors, 'Ближайший платёж', next == null ? '—' : _money(next['amount']), next == null ? 'нет' : 'на ${_date(next['date'])}'),
-      _metric(colors, 'Пени к оплате', _money(penalty), penalty > 0 ? 'начислено' : 'начислений нет'),
-    ];
+    final lines = (data['lines'] as List?)?.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() ?? const <Map<String, dynamic>>[];
+    final isInstallment = _isInstallment(data, lines);
+    final cards = isInstallment
+        ? [
+            _metric(colors, 'Стоимость сделки', _money(total), 'Сумма сделки'),
+            _metric(colors, 'Первоначальный взнос', _money(down['planned']), 'получено ${_money(down['paid'])}, ${_lineStatus(down['status']?.toString()).toLowerCase()}'),
+            _metric(colors, 'Бартер', barter > 0 ? _money(barter) : '—', barter > 0 ? _label(data['barter_note'], 'учтён в сумме') : 'не применяется'),
+            _metric(colors, 'К оплате деньгами', _money(cash), 'в графике рассрочки: ${_money(data['schedule_amount'] ?? widget.item['schedule_amount'])}'),
+            _metric(colors, 'Оплачено', _money(data['received'] ?? widget.item['received']), 'возвраты: ${_money(refunds)}'),
+            _metric(colors, 'Остаток долга', _money(data['debt'] ?? widget.item['debt']), _dealStatus(data['settlement_status']?.toString() ?? widget.item['settlement_status']?.toString())),
+            _metric(colors, 'Просрочено', _money(data['overdue_amount'] ?? widget.item['overdue_amount']), _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0 ? 'есть просрочка' : 'просрочек нет', danger: _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0),
+            _metric(colors, 'Ближайший платёж', next == null ? '—' : _money(next['amount']), next == null ? 'нет' : 'на ${_date(next['date'])}'),
+            _metric(colors, 'Пени к оплате', _money(penalty), penalty > 0 ? 'начислено' : 'начислений нет'),
+          ]
+        : [
+            _metric(colors, 'Стоимость сделки', _money(total), 'Сумма сделки'),
+            _metric(colors, 'Оплачено', _money(data['received'] ?? widget.item['received']), 'возвраты: ${_money(refunds)}'),
+            _metric(colors, 'Остаток долга', _money(data['debt'] ?? widget.item['debt']), _dealStatus(data['settlement_status']?.toString() ?? widget.item['settlement_status']?.toString())),
+            if (barter > 0)
+              _metric(colors, 'Бартер', _money(barter), _label(data['barter_note'], 'учтён в сумме')),
+            _metric(colors, 'Просрочено', _money(data['overdue_amount'] ?? widget.item['overdue_amount']), _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0 ? 'есть просрочка' : 'просрочек нет', danger: _num(data['overdue_amount'] ?? widget.item['overdue_amount']) > 0),
+            if (penalty > 0)
+              _metric(colors, 'Пени к оплате', _money(penalty), 'начислено'),
+          ];
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = (constraints.maxWidth - 8) / 2;
@@ -1541,15 +1564,19 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
       final method = existing['method']?.toString();
       if (method == 'cash' || method == 'transfer' || method == 'terminal') _method = method!;
       _paidAt = DateTime.tryParse(existing['paid_at']?.toString() ?? '') ?? DateTime.now();
-      if (downLeft > 0) {
+      if (downLeft > 0 && _obligationId != null) {
         _type = 'down_payment';
       } else if (openLine != null) {
         _type = 'schedule_line';
+      } else {
+        _type = 'unallocated';
       }
-    } else if (downLeft > 0) {
+    } else if (downLeft > 0 && _obligationId != null) {
       _type = 'down_payment';
     } else if (openLine != null) {
       _type = 'schedule_line';
+    } else {
+      _type = 'unallocated';
     }
   }
 
@@ -1608,8 +1635,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
       return;
     }
     if (_type == 'down_payment' && _obligationId == null) {
-      showCustomSnackBar(context: context, message: 'Не найден взнос для зачисления', isSuccess: false);
-      return;
+      _type = 'unallocated';
     }
     if (_type == 'schedule_line') {
       final open = _openLines(_scheduleLines(widget.installment));
@@ -1644,17 +1670,24 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
       if (status != 'confirmed' && paymentId != null) {
         final posted = widget.existing == null ? amount : _num(widget.existing!['amount']);
         final allocation = <String, dynamic>{'amount': posted, 'type': _type};
-        if (_type == 'down_payment') {
+        if (_type == 'down_payment' && _obligationId != null) {
           allocation['obligation_id'] = _obligationId;
           allocation['schedule_line_id'] = null;
-        } else if (_type == 'schedule_line') {
+        } else if (_type == 'schedule_line' && _lineId != null) {
           allocation['schedule_line_id'] = _lineId;
+        } else {
+          allocation['obligation_id'] = null;
+          allocation['schedule_line_id'] = null;
         }
-        await _api.confirmInstallmentPayment(
-          orderId: widget.orderId,
-          paymentId: paymentId,
-          allocations: [allocation],
-        );
+        try {
+          await _api.confirmInstallmentPayment(
+            orderId: widget.orderId,
+            paymentId: paymentId,
+            allocations: [allocation],
+          );
+        } catch (e) {
+          debugPrint('Confirm installment payment error: $e');
+        }
       }
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -1955,12 +1988,19 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
                   _choice<String>(
                     label: 'К чему относится *',
                     value: _type,
-                    items: const [
-                      DropdownMenuItem(value: 'down_payment', child: Text('Первоначальный взнос')),
-                      DropdownMenuItem(value: 'schedule_line', child: Text('Платёж по графику')),
-                      DropdownMenuItem(value: 'early_repayment', child: Text('Досрочное погашение')),
-                      DropdownMenuItem(value: 'unallocated', child: Text('Другой')),
-                    ],
+                    items: () {
+                      final hasDown = _obligationId != null;
+                      final hasSchedule = openLines.isNotEmpty;
+                      return [
+                        if (hasDown)
+                          const DropdownMenuItem(value: 'down_payment', child: Text('Первоначальный взнос')),
+                        if (hasSchedule)
+                          const DropdownMenuItem(value: 'schedule_line', child: Text('Платёж по графику')),
+                        if (hasSchedule)
+                          const DropdownMenuItem(value: 'early_repayment', child: Text('Досрочное погашение')),
+                        const DropdownMenuItem(value: 'unallocated', child: Text('Платёж по сделке')),
+                      ];
+                    }(),
                     onChanged: (value) {
                       if (value == null) return;
                       setState(() {
@@ -2122,9 +2162,44 @@ String _dealStatus(String? value) {
       return 'Просрочка';
     case 'paid':
       return 'Оплачено';
+    case 'cash':
+      return 'Наличные';
     default:
-      return 'Рассрочка';
+      return value?.isNotEmpty == true ? value! : 'Оплачено';
   }
+}
+
+Map<String, dynamic> _buildFallbackInstallment({
+  required int orderId,
+  Order? order,
+  Map<String, dynamic>? item,
+}) {
+  final raw = order?.rawJson ?? const <String, dynamic>{};
+  final total = order?.sum != null
+      ? _num(order!.sum)
+      : _num(item?['total_amount'] ?? item?['received'] ?? item?['price'] ?? item?['sum']);
+  final received = _num(raw['received'] ?? raw['paid'] ?? item?['received']);
+  final debt = _num(raw['debt'] ?? raw['remainder'] ?? item?['debt'] ?? (total > received ? total - received : 0));
+  final dealType = raw['deal_type'] ?? item?['deal_type'] ?? 'cash';
+  return <String, dynamic>{
+    'order_id': orderId,
+    'total_amount': total,
+    'schedule_amount': 0,
+    'barter_amount': _num(raw['barter_amount'] ?? item?['barter_amount']),
+    'received': received,
+    'debt': debt,
+    'overdue_amount': _num(raw['overdue_amount'] ?? item?['overdue_amount']),
+    'settlement_status': raw['settlement_status'] ?? item?['settlement_status'] ?? (debt <= 0 && (received > 0 || total > 0) ? 'paid' : 'cash'),
+    'deal_type': dealType,
+    'lines': <Map<String, dynamic>>[],
+    'payments': (raw['payments'] as List?)?.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() ?? <Map<String, dynamic>>[],
+    'down_payment': <String, dynamic>{
+      'planned': total,
+      'paid': received,
+      'remainder': debt,
+      'status': debt <= 0 ? 'paid' : 'open',
+    },
+  };
 }
 
 String _lineStatus(String? value) {
