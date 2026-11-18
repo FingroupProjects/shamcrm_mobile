@@ -1466,6 +1466,7 @@ class _DealScreenState extends State<DealScreen> with TickerProviderStateMixin {
             showEvent: true,
             showMyTaskIcon: true,
             showCallCenter: true,
+            showAdvertising: true,
             clearButtonClick: (value) {
               if (value == false) {
                 _recentSearchTimer?.cancel();

@@ -27,6 +27,7 @@ import 'package:crm_task_manager/screens/profile/languages/app_localizations.dar
 import 'package:crm_task_manager/screens/sales_planning/sales_planning_screen.dart';
 import 'package:crm_task_manager/screens/sip/sip_screen.dart';
 import 'package:crm_task_manager/screens/timesheet/timesheet_screen.dart';
+import 'package:crm_task_manager/screens/advertising/advertising_screen.dart';
 import 'package:crm_task_manager/services/user_realtime_socket.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -65,6 +66,7 @@ class CustomAppBar extends StatefulWidget {
   final bool showCalendarDashboard;
   final bool showCallCenter; // Новый параметр
   final bool showMasterclassQrScanner;
+  final bool showAdvertising;
   final bool showGps; // Новый параметр
   final bool showFilterIconCallCenter; // Новый параметр для фильтра CallCenter
 
@@ -316,6 +318,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIconCorporateChat = false,
     this.showCallCenter = true, // Значение по умолчанию
     this.showMasterclassQrScanner = false,
+    this.showAdvertising = false,
     this.onManagersLeadSelected,
     this.onManagersDealSelected,
     this.onStatusDealSelected,
@@ -405,6 +408,7 @@ class _CustomAppBarState extends State<CustomAppBar>
   bool _canOpenTimesheet = false;
   bool _canReadSalesPlanning = false;
   bool _canOpenAbsence = false;
+  bool _canReadAdvertising = false;
   bool _canShowMasterclassQrScanner = false;
   // DEAL custom fields were moved to filter screen
 
@@ -682,6 +686,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     final canReadSalesPlanning =
         await _apiService.hasPermission('planning.read');
     final canOpenAbsence = await _apiService.canOpenAbsenceRequests();
+    final canReadAdvertising =
+        await _apiService.hasPermission('advertisingCampaigns.read');
     var canShowMasterclassQr = false;
     if (widget.showMasterclassQrScanner) {
       final isFingroupcrm = await _apiService.isFingroupcrmTenant();
@@ -699,6 +705,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       _canOpenTimesheet = canReadTimesheet;
       _canReadSalesPlanning = canReadSalesPlanning;
       _canOpenAbsence = canOpenAbsence;
+      _canReadAdvertising = canReadAdvertising;
       _canShowMasterclassQrScanner = canShowMasterclassQr;
     });
   }
@@ -1683,6 +1690,15 @@ class _CustomAppBarState extends State<CustomAppBar>
                                     ),
                                   );
                                   break;
+                                case 'advertising':
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdvertisingScreen(),
+                                    ),
+                                  );
+                                  break;
                                 case 'projects':
                                   widget.onProjectsPressed?.call();
                                   break;
@@ -1997,6 +2013,19 @@ class _CustomAppBarState extends State<CustomAppBar>
                                           const SizedBox(width: 8),
                                           Text(AppLocalizations.of(context)!
                                               .translate('absence_menu')),
+                                        ],
+                                      ),
+                                    ),
+                                  if (widget.showAdvertising && _canReadAdvertising)
+                                    PopupMenuItem<String>(
+                                      value: 'advertising',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.campaign_outlined,
+                                              color: inactiveIconColor),
+                                          const SizedBox(width: 8),
+                                          Text(AppLocalizations.of(context)!
+                                              .translate('advertising')),
                                         ],
                                       ),
                                     ),

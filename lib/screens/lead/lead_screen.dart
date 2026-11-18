@@ -1235,6 +1235,7 @@ class _LeadScreenState extends State<LeadScreen> with TickerProviderStateMixin {
             showNotificationInMenu: true,
             showFilterIconDeal: false,
             showEvent: true,
+            showAdvertising: true,
             clearButtonClick: (value) {
               if (value == false) {
                 _recentSearchTimer?.cancel();

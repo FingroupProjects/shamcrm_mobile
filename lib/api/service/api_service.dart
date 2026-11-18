@@ -163,6 +163,7 @@ import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/models/lead/source_list_model.dart';
 import 'package:crm_task_manager/models/lead/advertising_campaign_model.dart';
+import 'package:crm_task_manager/models/advertising/advertising_models.dart';
 import 'package:crm_task_manager/models/lead/source_model.dart';
 import 'package:crm_task_manager/models/common/supplier_list_model.dart';
 import 'package:crm_task_manager/models/task/task_Status_Name_model.dart';
@@ -265,6 +266,7 @@ part 'sales_plan/api_sales_plan.dart';
 part 'localization/api_localization.dart';
 part 'absence/api_absence.dart';
 part 'chess_grid/api_chess_grid.dart';
+part 'advertising/api_advertising.dart';
 
 class ApiService extends ApiServiceBase {
   static const Duration _defaultRequestTimeout = Duration(seconds: 20);
