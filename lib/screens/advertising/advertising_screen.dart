@@ -364,6 +364,34 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     return _money(revenue, _summary?.revenueCurrency ?? 'TJS');
   }
 
+  String _budgetLabel(AppLocalizations t) {
+    final tr = t.translate('sp_field_budget');
+    if (tr != 'sp_field_budget') return tr;
+    final tr2 = t.translate('budget');
+    if (tr2 != 'budget') return tr2;
+    switch (t.locale.languageCode) {
+      case 'uz':
+        return 'Byudjet';
+      case 'en':
+        return 'Budget';
+      default:
+        return 'Бюджет';
+    }
+  }
+
+  String _leadPriceLabel(AppLocalizations t) {
+    final tr = t.translate('lead_price');
+    if (tr != 'Lead price' && tr != 'lead_price') return tr;
+    switch (t.locale.languageCode) {
+      case 'uz':
+        return 'Lid narxi';
+      case 'en':
+        return 'Lead price';
+      default:
+        return 'Цена лида';
+    }
+  }
+
   List<_Metric> _webMetrics(
     AppLocalizations t, {
     required String budget,
@@ -376,12 +404,12 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     String? clients,
   }) {
     return [
-      _Metric(t.translate('budget'), budget),
+      _Metric(_budgetLabel(t), budget),
       _Metric(t.translate('stat_spend'), spend),
       _Metric(t.translate('stat_impressions'), impressions),
       _Metric(t.translate('stat_reach'), reach),
       _Metric(t.translate('stat_results'), results),
-      _Metric(t.translate('lead_price'), leadPrice),
+      _Metric(_leadPriceLabel(t), leadPrice),
       _Metric(t.translate('stat_revenue'), revenue),
       if (clients != null) _Metric(t.translate('clients'), clients),
     ];
