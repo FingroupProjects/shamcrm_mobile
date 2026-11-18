@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/lead/lead_model.dart';
+import 'package:crm_task_manager/screens/advertising/widgets/advertising_image_viewer.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details_screen.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -266,23 +267,57 @@ class _AdvertisingDetailsSheetState extends State<AdvertisingDetailsSheet> {
                         children: [
                           if (widget.thumbnailUrl != null &&
                               widget.thumbnailUrl!.isNotEmpty)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                widget.thumbnailUrl!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: colors.surfaceElevated,
+                            GestureDetector(
+                              onTap: () {
+                                final fullUrl = (widget.previewUrl != null &&
+                                        widget.previewUrl!.isNotEmpty)
+                                    ? widget.previewUrl!
+                                    : widget.thumbnailUrl!;
+                                showAdvertisingImageViewer(
+                                  context,
+                                  imageUrl: fullUrl,
+                                  title: widget.hierarchy ?? widget.title,
+                                );
+                              },
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
                                     borderRadius: BorderRadius.circular(10),
+                                    child: Image.network(
+                                      widget.thumbnailUrl!,
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: colors.surfaceElevated,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(Icons.campaign_rounded,
+                                            color: colors.iconSecondary),
+                                      ),
+                                    ),
                                   ),
-                                  child: Icon(Icons.campaign_rounded,
-                                      color: colors.iconSecondary),
-                                ),
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Icon(
+                                        Icons.zoom_in,
+                                        color: Colors.white,
+                                        size: 11,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           else

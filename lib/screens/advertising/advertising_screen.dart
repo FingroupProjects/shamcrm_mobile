@@ -10,6 +10,7 @@ import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/advertising/advertising_models.dart';
 import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/advertising/widgets/advertising_details_sheet.dart';
+import 'package:crm_task_manager/screens/advertising/widgets/advertising_image_viewer.dart';
 import 'package:crm_task_manager/screens/advertising/widgets/advertising_period_filter.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
@@ -1463,14 +1464,23 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (leading != null && leading.isNotEmpty) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      leading,
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  GestureDetector(
+                    onTap: () {
+                      showAdvertisingImageViewer(
+                        context,
+                        imageUrl: leading,
+                        title: title,
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        leading,
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
