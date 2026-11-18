@@ -194,7 +194,7 @@ class _AdvertisingDetailsSheetState extends State<AdvertisingDetailsSheet> {
               Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 10),
-                  width: 40,
+                  width: 44,
                   height: 4,
                   decoration: BoxDecoration(
                     color: colors.borderSubtle,
@@ -203,60 +203,18 @@ class _AdvertisingDetailsSheetState extends State<AdvertisingDetailsSheet> {
                 ),
               ),
 
-              // Sheet Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      color: colors.iconPrimary,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.translate('advertising'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                          Text(
-                            widget.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: colors.textPrimary,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (widget.crmCampaignId != null)
-                      IconButton(
-                        icon: const Icon(Icons.refresh, size: 20),
-                        color: colors.iconSecondary,
-                        onPressed: _loadLeads,
-                      ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1),
-
               // Content Body
               Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    if (widget.crmCampaignId != null) {
+                      _loadLeads();
+                    }
+                  },
+                  color: colors.buttonPrimaryBg,
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
                   children: [
                     // Top banner card with Hierarchy, status, and period
                     Container(
@@ -553,7 +511,8 @@ class _AdvertisingDetailsSheetState extends State<AdvertisingDetailsSheet> {
                   ],
                 ),
               ),
-            ],
+            ),
+          ],
           ),
         );
       },
