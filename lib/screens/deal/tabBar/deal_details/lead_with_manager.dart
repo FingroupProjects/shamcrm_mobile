@@ -21,7 +21,7 @@ class LeadWithManager extends StatefulWidget {
     super.key,
     required this.onSelectLead,
     this.selectedLead,
-    this.alwaysRefreshFromServer = false,
+    this.alwaysRefreshFromServer = true,
     this.hasError = false,
   });
 
@@ -107,11 +107,29 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
   void initState() {
     super.initState();
     //print('LeadWithManager: initState started');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadLeads(forceRefresh: widget.alwaysRefreshFromServer);
+    if (widget.alwaysRefreshFromServer) {
+      _ignoreStaleSuccess = true;
+      final pinned = _pinnedLead();
+      if (pinned != null) {
+        selectedLeadData = pinned;
       }
-    });
+      leadsList = pinned == null ? <LeadData>[] : <LeadData>[pinned];
+      _listVersion++;
+      ApiService.clearAnalyticsCacheForPrefix('/lead');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<GetAllLeadBloc>().add(
+                RefreshAllLeadEv(clearOfflineCache: true),
+              );
+        }
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadLeads(forceRefresh: false);
+        }
+      });
+    }
   }
 
   @override
@@ -146,6 +164,7 @@ class _LeadWithManagerState extends State<LeadWithManager> with RouteAware {
 
   void _loadLeads({required bool forceRefresh}) {
     if (forceRefresh) {
+      ApiService.clearAnalyticsCacheForPrefix('/lead');
       setState(() {
         // Оставляем выбранного клиента в списке, пока грузится новая страница.
         // Пустой список пересоздавал дропдаун без значения, и поле «Клиент» очищалось.

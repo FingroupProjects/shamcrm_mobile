@@ -389,6 +389,11 @@ class ApiService extends ApiServiceBase {
     _analyticsInFlight.clear();
   }
 
+  static void clearAnalyticsCacheForPrefix(String prefix) {
+    _analyticsResponseCache.removeWhere((k, v) => k.contains(prefix));
+    _analyticsInFlight.removeWhere((k, v) => k.contains(prefix));
+  }
+
   Future<CashRegistersDataResponse> getCashRegisterAll() async {
     final path = await _appendQueryParams('/cashRegister-all');
     if (kDebugMode) {

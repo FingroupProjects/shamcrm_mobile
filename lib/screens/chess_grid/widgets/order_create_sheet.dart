@@ -781,6 +781,8 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       case 'client':
         return LeadWithManager(
           selectedLead: _selectedLeadId,
+          alwaysRefreshFromServer: true,
+          hasError: _missingFields.contains('lead') || _missingFields.contains('client'),
           onSelectLead: _onLeadSelected,
         );
       case 'manager':

@@ -1,7 +1,7 @@
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
-import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_dialog.dart';
+import 'package:crm_task_manager/screens/chess_grid/widgets/order_create_sheet.dart';
 import 'package:flutter/material.dart';
 
 class ChessGridCatalogView extends StatelessWidget {
@@ -231,7 +231,7 @@ class ChessGridCatalogView extends StatelessWidget {
                         onPressed: !canOpenDeal
                             ? null
                             : isAvailable
-                                ? () => OrderCreateDialog.show(context: context, apartment: apt)
+                                ? () => OrderCreateSheet.show(context: context, apartment: apt)
                                 : () => onOpenDeal?.call(apt),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonPrimaryBg,

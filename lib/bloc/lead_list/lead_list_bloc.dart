@@ -72,6 +72,7 @@ class GetAllLeadBloc extends Bloc<GetAllLeadEvent, GetAllLeadState> {
 
     if (event.clearOfflineCache) {
       await _offlineRepository.clearCache();
+      ApiService.clearAnalyticsCacheForPrefix('/lead');
     }
     await _loadLeadsProgressive(
       emit,
