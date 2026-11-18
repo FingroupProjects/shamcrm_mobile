@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 void showAdvertisingImageViewer(
   BuildContext context, {
   required String imageUrl,
+  String? fallbackUrl,
   String? title,
 }) {
   Navigator.of(context).push(
@@ -15,6 +16,7 @@ void showAdvertisingImageViewer(
           opacity: animation,
           child: _AdvertisingPhotoViewerScreen(
             imageUrl: imageUrl,
+            fallbackUrl: fallbackUrl,
             title: title ?? '',
           ),
         );
@@ -23,14 +25,44 @@ void showAdvertisingImageViewer(
   );
 }
 
-class _AdvertisingPhotoViewerScreen extends StatelessWidget {
+class _AdvertisingPhotoViewerScreen extends StatefulWidget {
   final String imageUrl;
+  final String? fallbackUrl;
   final String title;
 
   const _AdvertisingPhotoViewerScreen({
     required this.imageUrl,
+    this.fallbackUrl,
     required this.title,
   });
+
+  @override
+  State<_AdvertisingPhotoViewerScreen> createState() =>
+      _AdvertisingPhotoViewerScreenState();
+}
+
+class _AdvertisingPhotoViewerScreenState
+    extends State<_AdvertisingPhotoViewerScreen> {
+  late String _activeUrl;
+  bool _triedFallback = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeUrl = widget.imageUrl;
+  }
+
+  void _handleError() {
+    if (!_triedFallback &&
+        widget.fallbackUrl != null &&
+        widget.fallbackUrl!.isNotEmpty &&
+        widget.fallbackUrl != _activeUrl) {
+      setState(() {
+        _triedFallback = true;
+        _activeUrl = widget.fallbackUrl!;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +85,7 @@ class _AdvertisingPhotoViewerScreen extends StatelessWidget {
               minScale: 0.8,
               maxScale: 4.0,
               child: Image.network(
-                imageUrl,
+                _activeUrl,
                 fit: BoxFit.contain,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -61,13 +93,29 @@ class _AdvertisingPhotoViewerScreen extends StatelessWidget {
                     child: CircularProgressIndicator(color: Colors.white),
                   );
                 },
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.white70,
-                    size: 64,
-                  ),
-                ),
+                errorBuilder: (context, error, stackTrace) {
+                  if (!_triedFallback &&
+                      widget.fallbackUrl != null &&
+                      widget.fallbackUrl!.isNotEmpty &&
+                      widget.fallbackUrl != _activeUrl) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _handleError();
+                    });
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+                  return const Center(
+                    child: Text(
+                      'Не удалось загрузить изображение',
+                      style: TextStyle(
+                        fontFamily: 'Gilroy',
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -81,7 +129,7 @@ class _AdvertisingPhotoViewerScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    title,
+                    widget.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

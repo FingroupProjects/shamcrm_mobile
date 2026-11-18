@@ -269,55 +269,31 @@ class _AdvertisingDetailsSheetState extends State<AdvertisingDetailsSheet> {
                               widget.thumbnailUrl!.isNotEmpty)
                             GestureDetector(
                               onTap: () {
-                                final fullUrl = (widget.previewUrl != null &&
-                                        widget.previewUrl!.isNotEmpty)
-                                    ? widget.previewUrl!
-                                    : widget.thumbnailUrl!;
                                 showAdvertisingImageViewer(
                                   context,
-                                  imageUrl: fullUrl,
+                                  imageUrl: widget.thumbnailUrl!,
+                                  fallbackUrl: widget.previewUrl,
                                   title: widget.hierarchy ?? widget.title,
                                 );
                               },
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.network(
-                                      widget.thumbnailUrl!,
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: colors.surfaceElevated,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: Icon(Icons.campaign_rounded,
-                                            color: colors.iconSecondary),
-                                      ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  widget.thumbnailUrl!,
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceElevated,
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
+                                    child: Icon(Icons.campaign_rounded,
+                                        color: colors.iconSecondary),
                                   ),
-                                  Positioned(
-                                    bottom: 2,
-                                    right: 2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black54,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.zoom_in,
-                                        color: Colors.white,
-                                        size: 11,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             )
                           else
