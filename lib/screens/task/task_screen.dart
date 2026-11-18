@@ -1373,6 +1373,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             showMyTaskIcon: true,
             showFilterIconDeal: false,
             showEvent: false,
+            showAdvertising: true,
             showFilterTaskIcon: showFilter,
             clearButtonClick: (value) {
               if (value == false) {

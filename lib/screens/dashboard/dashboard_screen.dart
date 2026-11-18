@@ -689,6 +689,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           showEvent: false,
           showSeparateMyTasks: false,
           showMenuIcon: true,
+          showAdvertising: true,
           showCalendarDashboard: false,
           showCalendar: true,
           showDashboardFilterMenuItem:

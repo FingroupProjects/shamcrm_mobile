@@ -320,7 +320,7 @@ class CustomAppBar extends StatefulWidget {
     this.showFilterIconCorporateChat = false,
     this.showCallCenter = true, // Значение по умолчанию
     this.showMasterclassQrScanner = false,
-    this.showAdvertising = false,
+    this.showAdvertising = true,
     this.onManagersLeadSelected,
     this.onManagersDealSelected,
     this.onStatusDealSelected,
