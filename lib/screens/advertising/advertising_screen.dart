@@ -32,6 +32,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   AdvertisingMainTab _mainTab = AdvertisingMainTab.metaAds;
   MetaAdsLevel _metaLevel = MetaAdsLevel.campaigns;
@@ -52,6 +53,12 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
   MetaAdsSummary? _summary;
 
   bool _isLoadingList = false;
+  bool _isLoadingMore = false;
+  int _metaPage = 1;
+  bool _metaHasMore = true;
+  int _otherPage = 1;
+  bool _otherHasMore = true;
+
   List<MetaAdsCampaign> _campaigns = [];
   List<MetaAdsAdSet> _adsets = [];
   List<MetaAdsAd> _ads = [];
@@ -66,6 +73,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     final now = DateTime.now();
     _startDate = now.subtract(const Duration(days: 30));
     _endDate = now;
+    _scrollController.addListener(_onScroll);
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
     });
@@ -74,9 +82,21 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_isLoadingList || _isLoadingMore) return;
+    final max = _scrollController.position.maxScrollExtent;
+    final current = _scrollController.position.pixels;
+    if (max - current <= 250) {
+      _loadMore();
+    }
   }
 
   Future<void> _initAndLoad() async {
@@ -161,7 +181,11 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
 
   Future<void> _fetchMetaList() async {
     if (!mounted) return;
-    setState(() => _isLoadingList = true);
+    setState(() {
+      _isLoadingList = true;
+      _metaPage = 1;
+      _metaHasMore = true;
+    });
     try {
       switch (_metaLevel) {
         case MetaAdsLevel.campaigns:
@@ -170,11 +194,20 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
             dateTo: _formattedEndDate,
             salesFunnelId: _selectedFunnel?.id,
             organizationId: _selectedOrganizationId,
+            page: 1,
+            perPage: 20,
           );
           if (mounted) {
+            final list =
+                (res['data'] as List<dynamic>? ?? []).cast<MetaAdsCampaign>();
+            final pagination = res['pagination'] as AdvertisingPagination?;
+            final hasMore = pagination != null
+                ? 1 < pagination.totalPages
+                : list.length >= 20;
             setState(() {
-              _campaigns =
-                  (res['data'] as List<dynamic>? ?? []).cast<MetaAdsCampaign>();
+              _campaigns = list;
+              _metaPage = 1;
+              _metaHasMore = hasMore;
               _isLoadingList = false;
             });
           }
@@ -185,11 +218,20 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
             campaignId: _filteredCampaign?.id,
             salesFunnelId: _selectedFunnel?.id,
             organizationId: _selectedOrganizationId,
+            page: 1,
+            perPage: 20,
           );
           if (mounted) {
+            final list =
+                (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAdSet>();
+            final pagination = res['pagination'] as AdvertisingPagination?;
+            final hasMore = pagination != null
+                ? 1 < pagination.totalPages
+                : list.length >= 20;
             setState(() {
-              _adsets =
-                  (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAdSet>();
+              _adsets = list;
+              _metaPage = 1;
+              _metaHasMore = hasMore;
               _isLoadingList = false;
             });
           }
@@ -201,10 +243,20 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
             adsetId: _filteredAdSet?.id,
             salesFunnelId: _selectedFunnel?.id,
             organizationId: _selectedOrganizationId,
+            page: 1,
+            perPage: 20,
           );
           if (mounted) {
+            final list =
+                (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAd>();
+            final pagination = res['pagination'] as AdvertisingPagination?;
+            final hasMore = pagination != null
+                ? 1 < pagination.totalPages
+                : list.length >= 20;
             setState(() {
-              _ads = (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAd>();
+              _ads = list;
+              _metaPage = 1;
+              _metaHasMore = hasMore;
               _isLoadingList = false;
             });
           }
@@ -221,16 +273,29 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
 
   Future<void> _fetchOtherCampaigns() async {
     if (!mounted) return;
-    setState(() => _isLoadingList = true);
+    setState(() {
+      _isLoadingList = true;
+      _otherPage = 1;
+      _otherHasMore = true;
+    });
     try {
       final res = await _apiService.getOtherAdvertisingCampaigns(
         salesFunnelId: _selectedFunnel?.id,
         organizationId: _selectedOrganizationId,
+        page: 1,
+        perPage: 20,
       );
       if (mounted) {
+        final list = (res['data'] as List<dynamic>? ?? [])
+            .cast<OtherAdvertisingCampaign>();
+        final pagination = res['pagination'] as AdvertisingPagination?;
+        final hasMore = pagination != null
+            ? 1 < pagination.totalPages
+            : list.length >= 20;
         setState(() {
-          _otherCampaigns = (res['data'] as List<dynamic>? ?? [])
-              .cast<OtherAdvertisingCampaign>();
+          _otherCampaigns = list;
+          _otherPage = 1;
+          _otherHasMore = hasMore;
           _isLoadingList = false;
         });
       }
@@ -240,6 +305,121 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           _errorMessage = e.toString();
           _isLoadingList = false;
         });
+      }
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingList || _isLoadingMore) return;
+    if (_mainTab == AdvertisingMainTab.metaAds) {
+      if (!_metaHasMore) return;
+      setState(() => _isLoadingMore = true);
+      final nextPage = _metaPage + 1;
+      try {
+        switch (_metaLevel) {
+          case MetaAdsLevel.campaigns:
+            final res = await _apiService.getMetaAdsCampaigns(
+              dateFrom: _formattedStartDate,
+              dateTo: _formattedEndDate,
+              salesFunnelId: _selectedFunnel?.id,
+              organizationId: _selectedOrganizationId,
+              page: nextPage,
+              perPage: 20,
+            );
+            if (mounted) {
+              final newItems = (res['data'] as List<dynamic>? ?? [])
+                  .cast<MetaAdsCampaign>();
+              final pagination = res['pagination'] as AdvertisingPagination?;
+              final hasMore = pagination != null
+                  ? nextPage < pagination.totalPages
+                  : newItems.isNotEmpty;
+              setState(() {
+                _campaigns.addAll(newItems);
+                _metaPage = nextPage;
+                _metaHasMore = hasMore;
+                _isLoadingMore = false;
+              });
+            }
+          case MetaAdsLevel.adsets:
+            final res = await _apiService.getMetaAdsAdsets(
+              dateFrom: _formattedStartDate,
+              dateTo: _formattedEndDate,
+              campaignId: _filteredCampaign?.id,
+              salesFunnelId: _selectedFunnel?.id,
+              organizationId: _selectedOrganizationId,
+              page: nextPage,
+              perPage: 20,
+            );
+            if (mounted) {
+              final newItems =
+                  (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAdSet>();
+              final pagination = res['pagination'] as AdvertisingPagination?;
+              final hasMore = pagination != null
+                  ? nextPage < pagination.totalPages
+                  : newItems.isNotEmpty;
+              setState(() {
+                _adsets.addAll(newItems);
+                _metaPage = nextPage;
+                _metaHasMore = hasMore;
+                _isLoadingMore = false;
+              });
+            }
+          case MetaAdsLevel.ads:
+            final res = await _apiService.getMetaAdsAds(
+              dateFrom: _formattedStartDate,
+              dateTo: _formattedEndDate,
+              campaignId: _filteredCampaign?.id,
+              adsetId: _filteredAdSet?.id,
+              salesFunnelId: _selectedFunnel?.id,
+              organizationId: _selectedOrganizationId,
+              page: nextPage,
+              perPage: 20,
+            );
+            if (mounted) {
+              final newItems =
+                  (res['data'] as List<dynamic>? ?? []).cast<MetaAdsAd>();
+              final pagination = res['pagination'] as AdvertisingPagination?;
+              final hasMore = pagination != null
+                  ? nextPage < pagination.totalPages
+                  : newItems.isNotEmpty;
+              setState(() {
+                _ads.addAll(newItems);
+                _metaPage = nextPage;
+                _metaHasMore = hasMore;
+                _isLoadingMore = false;
+              });
+            }
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isLoadingMore = false);
+      }
+    } else {
+      if (!_otherHasMore) return;
+      setState(() => _isLoadingMore = true);
+      final nextPage = _otherPage + 1;
+      try {
+        final res = await _apiService.getOtherAdvertisingCampaigns(
+          salesFunnelId: _selectedFunnel?.id,
+          organizationId: _selectedOrganizationId,
+          page: nextPage,
+          perPage: 20,
+        );
+        if (mounted) {
+          final newItems = (res['data'] as List<dynamic>? ?? [])
+              .cast<OtherAdvertisingCampaign>();
+          final pagination = res['pagination'] as AdvertisingPagination?;
+          final hasMore = pagination != null
+              ? nextPage < pagination.totalPages
+              : newItems.isNotEmpty;
+          setState(() {
+            _otherCampaigns.addAll(newItems);
+            _otherPage = nextPage;
+            _otherHasMore = hasMore;
+            _isLoadingMore = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _isLoadingMore = false);
       }
     }
   }
@@ -666,6 +846,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                       await _loadCrmCampaignsLookup();
                     },
                     child: CustomScrollView(
+                      controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
                         if (_isLoadingList)
@@ -689,8 +870,25 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
                               onAction: _loadData,
                             ),
                           )
-                        else
+                        else ...[
                           _buildList(context),
+                          if (_isLoadingMore)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: colors.buttonPrimaryBg,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                   ),

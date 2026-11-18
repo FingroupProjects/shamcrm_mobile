@@ -526,10 +526,10 @@ class AdvertisingPagination {
   factory AdvertisingPagination.fromJson(Map<String, dynamic> json) {
     return AdvertisingPagination(
       total: SafeConverters.toInt(json['total']),
-      count: SafeConverters.toInt(json['count']),
+      count: SafeConverters.toInt(json['count'] ?? json['to']),
       perPage: SafeConverters.toInt(json['per_page']),
       currentPage: SafeConverters.toInt(json['current_page']),
-      totalPages: SafeConverters.toInt(json['total_pages']),
+      totalPages: SafeConverters.toInt(json['total_pages'] ?? json['last_page']),
     );
   }
 }

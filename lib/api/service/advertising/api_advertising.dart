@@ -85,7 +85,9 @@ extension ApiAdvertisingX on ApiService {
             .toList();
         final pagination = result['pagination'] != null
             ? AdvertisingPagination.fromJson(result['pagination'] as Map<String, dynamic>)
-            : null;
+            : (result['current_page'] != null
+                ? AdvertisingPagination.fromJson(result)
+                : null);
         return {
           'data': list,
           'pagination': pagination,
@@ -148,7 +150,9 @@ extension ApiAdvertisingX on ApiService {
             .toList();
         final pagination = result['pagination'] != null
             ? AdvertisingPagination.fromJson(result['pagination'] as Map<String, dynamic>)
-            : null;
+            : (result['current_page'] != null
+                ? AdvertisingPagination.fromJson(result)
+                : null);
         return {
           'data': list,
           'pagination': pagination,
@@ -215,7 +219,9 @@ extension ApiAdvertisingX on ApiService {
             .toList();
         final pagination = result['pagination'] != null
             ? AdvertisingPagination.fromJson(result['pagination'] as Map<String, dynamic>)
-            : null;
+            : (result['current_page'] != null
+                ? AdvertisingPagination.fromJson(result)
+                : null);
         return {
           'data': list,
           'pagination': pagination,
@@ -270,7 +276,9 @@ extension ApiAdvertisingX on ApiService {
             .toList();
         final pagination = result['pagination'] != null
             ? AdvertisingPagination.fromJson(result['pagination'] as Map<String, dynamic>)
-            : null;
+            : (result['current_page'] != null
+                ? AdvertisingPagination.fromJson(result)
+                : null);
         return {
           'data': list,
           'pagination': pagination,
