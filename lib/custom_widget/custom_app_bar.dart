@@ -212,6 +212,8 @@ class CustomAppBar extends StatefulWidget {
   final VoidCallback? onDashboardChartSettingsPressed;
 
   final VoidCallback? onChatTaskFiltersReset; // Новый параметр для сброса
+  final VoidCallback? onLeadFilterPressed;
+  final Widget? leading;
 
   CustomAppBar({
     super.key,
@@ -373,6 +375,8 @@ class CustomAppBar extends StatefulWidget {
     this.showGps = true, // Добавляем по умолчанию true
     this.currentSalesFunnelId,
     this.initialDealNames, // Добавляем новый параметр
+    this.onLeadFilterPressed,
+    this.leading,
   });
 
   @override
@@ -950,11 +954,12 @@ class _CustomAppBarState extends State<CustomAppBar>
           context,
           width: AppBarShell.orbSize,
           padding: EdgeInsets.zero,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: _buildAvatarImage(_userImage),
-            onPressed: widget.onClickProfileAvatar,
-          ),
+          child: widget.leading ??
+              IconButton(
+                padding: EdgeInsets.zero,
+                icon: _buildAvatarImage(_userImage),
+                onPressed: widget.onClickProfileAvatar,
+              ),
         ),
         center: AppBarShell.capsule(
           context,
@@ -1463,6 +1468,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                         ),
                       ),
                       onPressed: () {
+                        if (widget.onLeadFilterPressed != null) {
+                          widget.onLeadFilterPressed!();
+                          return;
+                        }
                         navigateToLeadManagerFilterScreen(context);
                       },
                     ),

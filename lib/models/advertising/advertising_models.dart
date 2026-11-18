@@ -216,6 +216,7 @@ class MetaAdsAdSet {
   final int? newLeads;
   final int? returningLeads;
   final double? cpl;
+  final double? revenue;
   final int? reach;
   final int? adsCount;
   final int? salesFunnelId;
@@ -246,6 +247,7 @@ class MetaAdsAdSet {
     this.newLeads,
     this.returningLeads,
     this.cpl,
+    this.revenue,
     this.reach,
     this.adsCount,
     this.salesFunnelId,
@@ -280,6 +282,7 @@ class MetaAdsAdSet {
       newLeads: SafeConverters.toIntOrNull(json['new_leads']),
       returningLeads: SafeConverters.toIntOrNull(json['returning_leads']),
       cpl: SafeConverters.toDoubleOrNull(json['cpl']),
+      revenue: SafeConverters.toDoubleOrNull(json['revenue']),
       reach: SafeConverters.toIntOrNull(json['reach']),
       adsCount: SafeConverters.toIntOrNull(json['ads_count']),
       salesFunnelId: SafeConverters.toIntOrNull(json['sales_funnel_id']),
@@ -320,6 +323,7 @@ class MetaAdsAd {
   final int? newLeads;
   final int? returningLeads;
   final double? cpl;
+  final double? revenue;
   final int? reach;
 
   MetaAdsAd({
@@ -354,6 +358,7 @@ class MetaAdsAd {
     this.newLeads,
     this.returningLeads,
     this.cpl,
+    this.revenue,
     this.reach,
   });
 
@@ -392,6 +397,7 @@ class MetaAdsAd {
       newLeads: SafeConverters.toIntOrNull(json['new_leads']),
       returningLeads: SafeConverters.toIntOrNull(json['returning_leads']),
       cpl: SafeConverters.toDoubleOrNull(json['cpl']),
+      revenue: SafeConverters.toDoubleOrNull(json['revenue']),
       reach: SafeConverters.toIntOrNull(json['reach']),
     );
   }

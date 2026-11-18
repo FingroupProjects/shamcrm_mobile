@@ -2,15 +2,17 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_bloc.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_event.dart';
 import 'package:crm_task_manager/bloc/sales_funnel/sales_funnel_state.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_overlay.dart';
+import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/core/theme/widgets/channel_source_icon.dart';
+import 'package:crm_task_manager/custom_widget/custom_app_bar.dart';
 import 'package:crm_task_manager/custom_widget/custom_card_tasks_tabBar.dart';
 import 'package:crm_task_manager/models/advertising/advertising_models.dart';
 import 'package:crm_task_manager/models/sales_funnel/sales_funnel_model.dart';
 import 'package:crm_task_manager/screens/advertising/widgets/advertising_details_sheet.dart';
-import 'package:crm_task_manager/screens/advertising/widgets/advertising_lead_form_dialog.dart';
+import 'package:crm_task_manager/screens/advertising/widgets/advertising_period_filter.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
-import 'package:crm_task_manager/widgets/return_highlight.dart';
+import 'package:crm_task_manager/widgets/hold_to_read_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -18,16 +20,6 @@ import 'package:intl/intl.dart';
 enum AdvertisingMainTab { metaAds, otherCampaigns }
 
 enum MetaAdsLevel { campaigns, adsets, ads }
-
-enum DatePreset {
-  last30Days,
-  today,
-  last7Days,
-  currentMonth,
-  lastMonth,
-  last90Days,
-  custom,
-}
 
 class AdvertisingScreen extends StatefulWidget {
   const AdvertisingScreen({super.key});
@@ -38,10 +30,12 @@ class AdvertisingScreen extends StatefulWidget {
 
 class _AdvertisingScreenState extends State<AdvertisingScreen> {
   final ApiService _apiService = ApiService();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   AdvertisingMainTab _mainTab = AdvertisingMainTab.metaAds;
   MetaAdsLevel _metaLevel = MetaAdsLevel.campaigns;
-  DatePreset _datePreset = DatePreset.last30Days;
+  AdvertisingDatePreset _datePreset = AdvertisingDatePreset.last30Days;
 
   late DateTime _startDate;
   late DateTime _endDate;
@@ -49,15 +43,11 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
   SalesFunnel? _selectedFunnel;
   int? _selectedOrganizationId;
 
-  // Filter drill-down
   MetaAdsCampaign? _filteredCampaign;
   MetaAdsAdSet? _filteredAdSet;
 
-  // Search
-  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Data
   bool _isLoadingSummary = false;
   MetaAdsSummary? _summary;
 
@@ -67,45 +57,41 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
   List<MetaAdsAd> _ads = [];
   List<OtherAdvertisingCampaign> _otherCampaigns = [];
 
-  // CRM campaigns map (for lead linking external_id -> CRM id)
   Map<String, OtherAdvertisingCampaign> _crmCampaignsByExternalId = {};
-
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _applyPreset(DatePreset.last30Days, shouldRefresh: false);
-    _searchController.addListener(_onSearchChanged);
+    final now = DateTime.now();
+    _startDate = now.subtract(const Duration(days: 30));
+    _endDate = now;
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
     _initAndLoad();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _focusNode.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text.trim().toLowerCase();
-    });
   }
 
   Future<void> _initAndLoad() async {
     final funnelState = context.read<SalesFunnelBloc>().state;
-    if (funnelState is SalesFunnelLoaded) {
+    if (funnelState is SalesFunnelLoaded && funnelState.funnels.isNotEmpty) {
       _selectedFunnel =
-          funnelState.selectedFunnel ?? funnelState.funnels.firstOrNull;
+          funnelState.selectedFunnel ?? funnelState.funnels.first;
     }
 
     final orgIdStr = await _apiService.getSelectedOrganization();
-    if (orgIdStr != null) {
-      _selectedOrganizationId = int.tryParse(orgIdStr);
-    }
-
-    _loadData();
-    _loadCrmCampaignsLookup();
+    _selectedOrganizationId = int.tryParse(orgIdStr ?? '');
+    await Future.wait([
+      _loadData(),
+      _loadCrmCampaignsLookup(),
+    ]);
   }
 
   Future<void> _loadCrmCampaignsLookup() async {
@@ -116,113 +102,44 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
       );
       final map = <String, OtherAdvertisingCampaign>{};
       for (final item in list) {
-        if (item.externalAdId != null && item.externalAdId!.isNotEmpty) {
-          map[item.externalAdId!] = item;
+        final externalId = item.externalAdId;
+        if (externalId != null && externalId.isNotEmpty) {
+          map[externalId] = item;
         }
       }
-      if (mounted) {
-        setState(() {
-          _crmCampaignsByExternalId = map;
-        });
-      }
+      if (mounted) setState(() => _crmCampaignsByExternalId = map);
     } catch (_) {}
   }
 
-  void _applyPreset(DatePreset preset, {bool shouldRefresh = true}) {
-    final now = DateTime.now();
-    _datePreset = preset;
-
-    switch (preset) {
-      case DatePreset.today:
-        _startDate = DateTime(now.year, now.month, now.day);
-        _endDate = DateTime(now.year, now.month, now.day);
-        break;
-      case DatePreset.last7Days:
-        _startDate = now.subtract(const Duration(days: 7));
-        _endDate = now;
-        break;
-      case DatePreset.last30Days:
-        _startDate = now.subtract(const Duration(days: 30));
-        _endDate = now;
-        break;
-      case DatePreset.last90Days:
-        _startDate = now.subtract(const Duration(days: 90));
-        _endDate = now;
-        break;
-      case DatePreset.currentMonth:
-        _startDate = DateTime(now.year, now.month, 1);
-        _endDate = now;
-        break;
-      case DatePreset.lastMonth:
-        final firstDayOfCurrentMonth = DateTime(now.year, now.month, 1);
-        final lastDayOfPrevMonth =
-            firstDayOfCurrentMonth.subtract(const Duration(days: 1));
-        _startDate = DateTime(
-            lastDayOfPrevMonth.year, lastDayOfPrevMonth.month, 1);
-        _endDate = lastDayOfPrevMonth;
-        break;
-      case DatePreset.custom:
-        break;
-    }
-
-    if (shouldRefresh && mounted) {
-      setState(() {});
-      _loadData();
-    }
-  }
-
-  Future<void> _pickCustomDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      builder: (context, child) {
-        final colors = context.appColors;
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: colors.buttonPrimaryBg,
-              onPrimary: Colors.white,
-              surface: colors.surfacePrimary,
-              onSurface: colors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _datePreset = DatePreset.custom;
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-      _loadData();
-    }
-  }
-
-  String get _formattedStartDate =>
-      DateFormat('yyyy-MM-dd').format(_startDate);
+  String get _formattedStartDate => DateFormat('yyyy-MM-dd').format(_startDate);
   String get _formattedEndDate => DateFormat('yyyy-MM-dd').format(_endDate);
 
-  Future<void> _loadData() async {
-    setState(() {
-      _errorMessage = null;
-    });
+  bool get _hasActiveFilter =>
+      _datePreset != AdvertisingDatePreset.last30Days;
 
+  bool get _canLeaveScreen {
+    if (_metaLevel == MetaAdsLevel.ads &&
+        (_filteredAdSet != null || _filteredCampaign != null)) {
+      return false;
+    }
+    if (_metaLevel == MetaAdsLevel.adsets && _filteredCampaign != null) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _loadData() async {
+    if (!mounted) return;
+    setState(() => _errorMessage = null);
     if (_mainTab == AdvertisingMainTab.metaAds) {
-      await Future.wait([
-        _fetchMetaSummary(),
-        _fetchMetaList(),
-      ]);
+      await Future.wait([_fetchMetaSummary(), _fetchMetaList()]);
     } else {
       await _fetchOtherCampaigns();
     }
   }
 
   Future<void> _fetchMetaSummary() async {
+    if (!mounted) return;
     setState(() => _isLoadingSummary = true);
     try {
       final summary = await _apiService.getMetaAdsSummary(
@@ -237,16 +154,13 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           _isLoadingSummary = false;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingSummary = false;
-        });
-      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingSummary = false);
     }
   }
 
   Future<void> _fetchMetaList() async {
+    if (!mounted) return;
     setState(() => _isLoadingList = true);
     try {
       switch (_metaLevel) {
@@ -264,8 +178,6 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
               _isLoadingList = false;
             });
           }
-          break;
-
         case MetaAdsLevel.adsets:
           final res = await _apiService.getMetaAdsAdsets(
             dateFrom: _formattedStartDate,
@@ -281,8 +193,6 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
               _isLoadingList = false;
             });
           }
-          break;
-
         case MetaAdsLevel.ads:
           final res = await _apiService.getMetaAdsAds(
             dateFrom: _formattedStartDate,
@@ -298,7 +208,6 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
               _isLoadingList = false;
             });
           }
-          break;
       }
     } catch (e) {
       if (mounted) {
@@ -311,6 +220,7 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
   }
 
   Future<void> _fetchOtherCampaigns() async {
+    if (!mounted) return;
     setState(() => _isLoadingList = true);
     try {
       final res = await _apiService.getOtherAdvertisingCampaigns(
@@ -334,15 +244,266 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     }
   }
 
-  String _formatCurrency(double amount, [String currency = 'USD']) {
-    final f = NumberFormat('#,##0.00', 'ru_RU');
-    final formatted = f.format(amount).replaceAll(',', '.');
+  void _goBackLevel() {
+    if (_metaLevel == MetaAdsLevel.ads &&
+        (_filteredAdSet != null || _filteredCampaign != null)) {
+      setState(() {
+        _metaLevel = MetaAdsLevel.adsets;
+        _filteredAdSet = null;
+      });
+      _fetchMetaList();
+      return;
+    }
+    if (_metaLevel == MetaAdsLevel.adsets && _filteredCampaign != null) {
+      setState(() {
+        _metaLevel = MetaAdsLevel.campaigns;
+        _filteredCampaign = null;
+        _filteredAdSet = null;
+      });
+      _fetchMetaList();
+    }
+  }
+
+  void _openCampaign(MetaAdsCampaign item) {
+    setState(() {
+      _filteredCampaign = item;
+      _filteredAdSet = null;
+      _metaLevel = MetaAdsLevel.adsets;
+    });
+    _fetchMetaList();
+  }
+
+  void _openAdSet(MetaAdsAdSet item) {
+    setState(() {
+      _filteredAdSet = item;
+      final campaignId = item.campaignId;
+      if (campaignId != null &&
+          (_filteredCampaign == null || _filteredCampaign!.id != campaignId)) {
+        _filteredCampaign = MetaAdsCampaign(
+          id: campaignId,
+          level: 'campaign',
+          externalId: '',
+          name: item.campaignName ?? '',
+          effectiveStatus: '',
+          spend: 0,
+          impressions: 0,
+          clicks: 0,
+          linkClicks: 0,
+        );
+      }
+      _metaLevel = MetaAdsLevel.ads;
+    });
+    _fetchMetaList();
+  }
+
+  void _switchLevel(MetaAdsLevel level) {
+    if (_metaLevel == level) return;
+    setState(() {
+      _metaLevel = level;
+      if (level == MetaAdsLevel.campaigns) {
+        _filteredCampaign = null;
+        _filteredAdSet = null;
+      } else if (level == MetaAdsLevel.adsets) {
+        _filteredAdSet = null;
+      }
+    });
+    _fetchMetaList();
+  }
+
+  Future<void> _openFilter() async {
+    final result = await Navigator.push<AdvertisingFilterResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdvertisingPeriodFilter(
+          preset: _datePreset,
+          start: _startDate,
+          end: _endDate,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _datePreset = result.preset;
+      _startDate = result.start;
+      _endDate = result.end;
+    });
+    await _loadData();
+  }
+
+  Future<void> _changeFunnel(SalesFunnel selected) async {
+    setState(() {
+      _selectedFunnel = selected;
+      _filteredCampaign = null;
+      _filteredAdSet = null;
+      _metaLevel = MetaAdsLevel.campaigns;
+    });
+    context.read<SalesFunnelBloc>().add(SelectSalesFunnel(selected));
+    await Future.wait([_loadData(), _loadCrmCampaignsLookup()]);
+  }
+
+  String _money(double amount, [String currency = 'USD']) {
+    final formatted = NumberFormat('#,##0.00', 'ru_RU').format(amount);
     if (currency == 'USD') return '$formatted \$';
     return '$formatted $currency';
   }
 
-  String _formatInt(int count) {
-    return NumberFormat('#,###', 'ru_RU').format(count).replaceAll(',', ' ');
+  String _count(int value) {
+    return NumberFormat('#,###', 'ru_RU').format(value);
+  }
+
+  String _budgetText(AppLocalizations t, double? amount, String? type) {
+    if (amount == null) return '—';
+    final money = _money(amount);
+    if (type == 'daily') return '$money ${t.translate('per_day')}';
+    return money;
+  }
+
+  String _revenueText(double? revenue) {
+    if (revenue == null || revenue == 0) return '—';
+    return _money(revenue, _summary?.revenueCurrency ?? 'TJS');
+  }
+
+  List<_Metric> _webMetrics(
+    AppLocalizations t, {
+    required String budget,
+    required String spend,
+    required String impressions,
+    required String reach,
+    required String results,
+    required String leadPrice,
+    required String revenue,
+    String? clients,
+  }) {
+    return [
+      _Metric(t.translate('budget'), budget),
+      _Metric(t.translate('stat_spend'), spend),
+      _Metric(t.translate('stat_impressions'), impressions),
+      _Metric(t.translate('stat_reach'), reach),
+      _Metric(t.translate('stat_results'), results),
+      _Metric(t.translate('lead_price'), leadPrice),
+      _Metric(t.translate('stat_revenue'), revenue),
+      if (clients != null) _Metric(t.translate('clients'), clients),
+    ];
+  }
+
+  String _statusLabel(BuildContext context, String status, bool isActive) {
+    final t = AppLocalizations.of(context)!;
+    if (isActive) return t.translate('ad_status_active');
+    final normalized = status.toUpperCase();
+    if (normalized.contains('PAUSE') || normalized == 'PAUSED') {
+      return t.translate('ad_status_paused');
+    }
+    if (status.trim().isEmpty) return t.translate('ad_status_paused');
+    return status;
+  }
+
+  bool _matches(String? value) {
+    if (_searchQuery.isEmpty) return true;
+    return (value ?? '').toLowerCase().contains(_searchQuery);
+  }
+
+  Widget _buildFunnelTitle(BuildContext context) {
+    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
+      builder: (context, state) {
+        var title = AppLocalizations.of(context)!.translate('advertising');
+        var funnels = <SalesFunnel>[];
+        if (state is SalesFunnelLoaded && state.funnels.isNotEmpty) {
+          funnels = state.funnels;
+          final selected =
+              _selectedFunnel ?? state.selectedFunnel ?? state.funnels.first;
+          title = selected.name;
+        }
+
+        final titleStyle = TextStyle(
+          fontSize: 20,
+          fontFamily: 'Gilroy',
+          fontWeight: FontWeight.w600,
+          color: context.appColors.buttonPrimaryBg,
+        );
+
+        if (funnels.length <= 1) {
+          return HoldToReadText(text: title, style: titleStyle);
+        }
+
+        return InkWell(
+          onTap: () => _pickFunnel(context, funnels),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.expand_more,
+                  color: context.appColors.buttonPrimaryBg,
+                  size: 24,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: HoldToReadText(text: title, style: titleStyle),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickFunnel(
+    BuildContext context,
+    List<SalesFunnel> funnels,
+  ) async {
+    final button = context.findRenderObject() as RenderBox;
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<SalesFunnel>(
+      context: context,
+      position: position,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      color: context.appColors.surfacePrimary,
+      elevation: 10,
+      items: funnels
+          .map(
+            (funnel) => PopupMenuItem<SalesFunnel>(
+              value: funnel,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      funnel.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.appTextStyles.bodyLg.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.appColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (_selectedFunnel?.id == funnel.id)
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 18,
+                      color: context.appColors.buttonPrimaryBg,
+                    ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+    if (selected != null) await _changeFunnel(selected);
   }
 
   @override
@@ -350,146 +511,207 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
     final colors = context.appColors;
     final t = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: colors.surfacePrimary.withValues(alpha: 0.94),
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              size: 20, color: colors.iconPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          t.translate('advertising'),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'Gilroy',
-            color: colors.textPrimary,
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          _buildFunnelButton(context),
-          IconButton(
-            icon: Icon(Icons.refresh_rounded,
-                size: 22, color: colors.iconSecondary),
-            onPressed: () {
-              _loadData();
-              _loadCrmCampaignsLookup();
+    return PopScope(
+      canPop: _canLeaveScreen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBackLevel();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          titleSpacing: 16,
+          title: CustomAppBar(
+            title: '',
+            titleWidget: _buildFunnelTitle(context),
+            leading: IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                size: 18,
+                color: colors.iconPrimary,
+              ),
+              onPressed: () {
+                if (_canLeaveScreen) {
+                  Navigator.pop(context);
+                } else {
+                  _goBackLevel();
+                }
+              },
+            ),
+            onClickProfileAvatar: () {},
+            onChangedSearchInput: (value) {
+              setState(() => _searchQuery = value.trim().toLowerCase());
             },
+            textEditingController: _searchController,
+            focusNode: _focusNode,
+            showMenuIcon: false,
+            showFilterIconOnSelectLead: true,
+            showFilterTaskIcon: false,
+            showMyTaskIcon: false,
+            showCallCenter: false,
+            showMasterclassQrScanner: false,
+            showNotification: false,
+            showNotificationInMenu: false,
+            showFilterIconDeal: false,
+            showEvent: false,
+            showCalendar: false,
+            showAdvertising: false,
+            hasActiveLeadFilters: _hasActiveFilter,
+            activeFilterCount: 0,
+            onLeadFilterPressed: _openFilter,
+            clearButtonClick: (isSearching) {
+              if (!isSearching) {
+                setState(() => _searchQuery = '');
+              }
+            },
+            clearButtonClickFiltr: (_) {},
           ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: RefreshIndicator(
-        color: colors.buttonPrimaryBg,
-        onRefresh: () async {
-          await _loadData();
-          await _loadCrmCampaignsLookup();
-        },
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: 32),
-          children: [
-            const SizedBox(height: 10),
-
-            // Top floating Custom TabBar (Meta Ads vs Прочие кампании)
-            _buildCustomTabBar(context),
-
-            const SizedBox(height: 4),
-
-            // Date Preset Chips
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildDatePresets(context),
-            ),
-
-            const SizedBox(height: 14),
-
-            // KPI Summary Cards
-            if (_mainTab == AdvertisingMainTab.metaAds) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildSummarySection(context),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Meta Ads Sub-Tabs (Кампании, Группы объявлений, Объявления)
-            if (_mainTab == AdvertisingMainTab.metaAds) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildMetaLevelTabs(context),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Breadcrumbs / Filter tags
-            if (_filteredCampaign != null || _filteredAdSet != null) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildBreadcrumbs(context),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildSearchBar(context),
-            ),
-
-            const SizedBox(height: 14),
-
-            // Cards Content List
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _isLoadingList
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        child: CircularProgressIndicator(
-                            color: colors.buttonPrimaryBg),
-                      ),
-                    )
-                  : _errorMessage != null
-                      ? _buildErrorState(context)
-                      : _buildItemsList(context),
-            ),
-          ],
         ),
+        body: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const AppBackgroundOverlay(
+                    preset: AppBackgroundPreset.aurora,
+                  ),
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.top +
+                            kToolbarHeight +
+                            15,
+                      ),
+                      Expanded(
+                        child: RefreshIndicator(
+          color: colors.buttonPrimaryBg,
+          onRefresh: () async {
+            await _loadData();
+            await _loadCrmCampaignsLookup();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: _buildMainTabs(context)),
+              if (_mainTab == AdvertisingMainTab.metaAds) ...[
+                SliverToBoxAdapter(child: _buildSummary(context)),
+                SliverToBoxAdapter(child: _buildLevelTabs(context)),
+              ],
+              if (_isLoadingList)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_errorMessage != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildMessage(
+                    context,
+                    _errorMessage!,
+                    action: t.translate('retry'),
+                    onAction: _loadData,
+                  ),
+                )
+              else
+                _buildList(context),
+            ],
+          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
       ),
     );
   }
 
-  // ==========================================
-  // TOP CUSTOM TABBAR (Like lead_screen.dart)
-  // ==========================================
-
-  Widget _buildCustomTabBar(BuildContext context) {
-    final colors = context.appColors;
+  Widget _buildMainTabs(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    return _tabShell(
+      context,
+      children: [
+        Expanded(
+          child: _tabButton(
+            context,
+            title: t.translate('meta_ads'),
+            active: _mainTab == AdvertisingMainTab.metaAds,
+            expand: true,
+            onTap: () {
+              if (_mainTab == AdvertisingMainTab.metaAds) return;
+              setState(() => _mainTab = AdvertisingMainTab.metaAds);
+              _loadData();
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _tabButton(
+            context,
+            title: t.translate('other_campaigns'),
+            active: _mainTab == AdvertisingMainTab.otherCampaigns,
+            expand: true,
+            onTap: () {
+              if (_mainTab == AdvertisingMainTab.otherCampaigns) return;
+              setState(() => _mainTab = AdvertisingMainTab.otherCampaigns);
+              _loadData();
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-    final isMeta = _mainTab == AdvertisingMainTab.metaAds;
-    final isOther = _mainTab == AdvertisingMainTab.otherCampaigns;
+  Widget _buildLevelTabs(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    return _tabShell(
+      context,
+      scroll: true,
+      children: [
+        _tabButton(
+          context,
+          title: t.translate('campaigns'),
+          active: _metaLevel == MetaAdsLevel.campaigns,
+          onTap: () => _switchLevel(MetaAdsLevel.campaigns),
+        ),
+        const SizedBox(width: 8),
+        _tabButton(
+          context,
+          title: t.translate('adsets'),
+          active: _metaLevel == MetaAdsLevel.adsets,
+          onTap: () => _switchLevel(MetaAdsLevel.adsets),
+        ),
+        const SizedBox(width: 8),
+        _tabButton(
+          context,
+          title: t.translate('ads'),
+          active: _metaLevel == MetaAdsLevel.ads,
+          onTap: () => _switchLevel(MetaAdsLevel.ads),
+        ),
+      ],
+    );
+  }
 
-    final metaCount = _metaLevel == MetaAdsLevel.campaigns
-        ? _campaigns.length
-        : _metaLevel == MetaAdsLevel.adsets
-            ? _adsets.length
-            : _ads.length;
-    final otherCount = _otherCampaigns.length;
-
+  Widget _tabShell(
+    BuildContext context, {
+    required List<Widget> children,
+    bool scroll = false,
+  }) {
+    final colors = context.appColors;
+    final row = Row(children: children);
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.48),
-        ),
+        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.48)),
         boxShadow: [
           BoxShadow(
             color: colors.shadow.withValues(alpha: 0.08),
@@ -498,2138 +720,586 @@ class _AdvertisingScreenState extends State<AdvertisingScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildMainTabButtonUI(
-              title: t.translate('meta_ads'),
-              isActive: isMeta,
-              count: metaCount,
-              onTap: () {
-                if (_mainTab != AdvertisingMainTab.metaAds) {
-                  setState(() => _mainTab = AdvertisingMainTab.metaAds);
-                  _loadData();
-                }
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildMainTabButtonUI(
-              title: t.translate('other_campaigns'),
-              isActive: isOther,
-              count: otherCount,
-              onTap: () {
-                if (_mainTab != AdvertisingMainTab.otherCampaigns) {
-                  setState(() => _mainTab = AdvertisingMainTab.otherCampaigns);
-                  _loadData();
-                }
-              },
-            ),
-          ),
-        ],
-      ),
+      child: scroll
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: row,
+            )
+          : row,
     );
   }
 
-  Widget _buildMainTabButtonUI({
+  Widget _tabButton(
+    BuildContext context, {
     required String title,
-    required bool isActive,
-    required int count,
+    required bool active,
     required VoidCallback onTap,
+    bool expand = false,
   }) {
     final colors = context.appColors;
-
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        width: expand ? double.infinity : null,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: isActive ? colors.buttonPrimaryBg : colors.surfacePrimary,
+          color: active ? colors.buttonPrimaryBg : colors.surfacePrimary,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isActive
+            color: active
                 ? colors.buttonPrimaryBg
                 : colors.borderSubtle.withValues(alpha: 0.58),
           ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: colors.buttonPrimaryBg.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : const [],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 180),
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: isActive ? colors.buttonPrimaryFg : colors.textPrimary,
+                  color: active ? colors.buttonPrimaryFg : colors.textPrimary,
                   fontSize: 14,
                   fontFamily: 'Gilroy',
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ),
-            if (count > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? colors.buttonPrimaryFg.withValues(alpha: 0.22)
-                      : colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isActive
-                        ? colors.buttonPrimaryFg.withValues(alpha: 0.35)
-                        : colors.buttonPrimaryBg.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    color:
-                        isActive ? colors.buttonPrimaryFg : colors.buttonPrimaryBg,
-                    fontSize: 11,
-                    fontFamily: 'Gilroy',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  // ==========================================
-  // FUNNEL SELECTOR BUTTON
-  // ==========================================
-
-  Widget _buildFunnelButton(BuildContext context) {
-    final colors = context.appColors;
-
-    return BlocBuilder<SalesFunnelBloc, SalesFunnelState>(
-      builder: (context, state) {
-        if (state is SalesFunnelLoaded && state.funnels.isNotEmpty) {
-          final currentFunnel =
-              _selectedFunnel ?? state.selectedFunnel ?? state.funnels.first;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                backgroundColor: colors.surfaceElevated,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              icon: Icon(Icons.filter_alt_outlined,
-                  size: 16, color: colors.buttonPrimaryBg),
-              label: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 100),
-                child: Text(
-                  currentFunnel.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-              onPressed: () => _openFunnelPicker(context, state.funnels),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
-  }
-
-  void _openFunnelPicker(BuildContext context, List<SalesFunnel> funnels) {
-    final colors = context.appColors;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.borderSubtle,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Выберите воронку',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: colors.textPrimary,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: funnels.length,
-                  itemBuilder: (context, index) {
-                    final f = funnels[index];
-                    final isSel = _selectedFunnel?.id == f.id;
-                    return ListTile(
-                      title: Text(
-                        f.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight:
-                              isSel ? FontWeight.w700 : FontWeight.w500,
-                          color: isSel
-                              ? colors.buttonPrimaryBg
-                              : colors.textPrimary,
-                          fontFamily: 'Gilroy',
-                        ),
-                      ),
-                      trailing: isSel
-                          ? Icon(Icons.check, color: colors.buttonPrimaryBg)
-                          : null,
-                      onTap: () {
-                        setState(() {
-                          _selectedFunnel = f;
-                          _filteredCampaign = null;
-                          _filteredAdSet = null;
-                        });
-                        Navigator.pop(context);
-                        context.read<SalesFunnelBloc>().add(SelectSalesFunnel(f));
-                        _loadData();
-                        _loadCrmCampaignsLookup();
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ==========================================
-  // DATE PRESETS
-  // ==========================================
-
-  Widget _buildDatePresets(BuildContext context) {
-    final colors = context.appColors;
+  Widget _buildSummary(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-
-    final presets = [
-      {'label': t.translate('period_30_days'), 'preset': DatePreset.last30Days},
-      {'label': t.translate('today'), 'preset': DatePreset.today},
-      {'label': t.translate('period_7_days'), 'preset': DatePreset.last7Days},
-      {'label': 'Текущий месяц', 'preset': DatePreset.currentMonth},
-      {'label': 'Прошлый месяц', 'preset': DatePreset.lastMonth},
-      {'label': t.translate('period_90_days'), 'preset': DatePreset.last90Days},
+    final summary = _summary;
+    final currency = summary?.currency ?? 'USD';
+    final revenueCurrency = summary?.revenueCurrency ?? 'TJS';
+    final items = [
+      _SummaryItem(
+        title: t.translate('stat_spend'),
+        value: summary == null ? '—' : _money(summary.spend, currency),
+        color: const Color(0xFFF59E0B),
+      ),
+      _SummaryItem(
+        title: t.translate('stat_new_leads'),
+        value: summary == null ? '—' : _count(summary.newLeads),
+        color: const Color(0xFF3B82F6),
+      ),
+      _SummaryItem(
+        title: t.translate('stat_cpl'),
+        value: summary?.cpl == null ? '—' : _money(summary!.cpl!, currency),
+        color: const Color(0xFF8B5CF6),
+      ),
+      _SummaryItem(
+        title: t.translate('stat_revenue'),
+        value: summary == null
+            ? '—'
+            : _money(summary.revenue, revenueCurrency),
+        color: const Color(0xFF22C55E),
+      ),
+      _SummaryItem(
+        title: t.translate('stat_roi'),
+        value: summary?.roi == null
+            ? '—'
+            : '${summary!.roi!.toStringAsFixed(0)}%',
+        color: (summary?.roi ?? 0) < 0
+            ? const Color(0xFFEF4444)
+            : const Color(0xFF22C55E),
+      ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          ...presets.map((item) {
-            final preset = item['preset'] as DatePreset;
-            final isSelected = _datePreset == preset;
-
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: InkWell(
-                onTap: () => _applyPreset(preset),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.buttonPrimaryBg
-                        : colors.surfacePrimary.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? colors.buttonPrimaryBg
-                          : colors.borderSubtle.withValues(alpha: 0.5),
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: colors.buttonPrimaryBg.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Text(
-                    item['label'] as String,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : colors.textPrimary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-          // Custom Calendar Picker Chip
-          InkWell(
-            onTap: _pickCustomDateRange,
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: _datePreset == DatePreset.custom
-                    ? colors.buttonPrimaryBg
-                    : colors.surfacePrimary.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _datePreset == DatePreset.custom
-                      ? colors.buttonPrimaryBg
-                      : colors.borderSubtle.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 14,
-                    color: _datePreset == DatePreset.custom
-                        ? Colors.white
-                        : colors.iconSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _datePreset == DatePreset.custom
-                        ? '$_formattedStartDate – $_formattedEndDate'
-                        : 'Период',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _datePreset == DatePreset.custom
-                          ? Colors.white
-                          : colors.textPrimary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // SUMMARY SECTION (Styled with TaskCardStyles)
-  // ==========================================
-
-  Widget _buildSummarySection(BuildContext context) {
-    final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-    final s = _summary;
-
-    if (_isLoadingSummary && s == null) {
-      return Container(
-        height: 120,
-        alignment: Alignment.center,
-        child: CircularProgressIndicator(color: colors.buttonPrimaryBg),
-      );
-    }
-
-    if (s == null) return const SizedBox.shrink();
-
-    return Column(
-      children: [
-        // Top 2 cards: Spend & New Leads
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryCard(
-                context,
-                title: t.translate('stat_spend'),
-                value: _formatCurrency(s.spend, s.currency),
-                icon: Icons.payments_outlined,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildSummaryCard(
-                context,
-                title: t.translate('stat_new_leads'),
-                value: '${s.newLeads}',
-                subtext: s.returningLeads > 0
-                    ? '+${s.returningLeads} ${t.translate('recurring_leads_suffix')}'
-                    : null,
-                icon: Icons.group_add_outlined,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        // Bottom 3 cards: CPL, Revenue, ROI
-        Row(
-          children: [
-            Expanded(
-              child: _buildSummaryCard(
-                context,
-                title: t.translate('stat_cpl'),
-                value: s.cpl != null
-                    ? _formatCurrency(s.cpl!, s.currency)
-                    : '—',
-                icon: Icons.price_check_outlined,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildSummaryCard(
-                context,
-                title: t.translate('stat_revenue'),
-                value: _formatCurrency(s.revenue, s.revenueCurrency),
-                icon: Icons.trending_up_rounded,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildSummaryCard(
-                context,
-                title: t.translate('stat_roi'),
-                value: s.roi != null ? '${s.roi!.toInt()}%' : '—',
-                icon: Icons.analytics_outlined,
-                valueColor: s.roi != null && s.roi! >= 0
-                    ? colors.success
-                    : colors.error,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard(
-    BuildContext context, {
-    required String title,
-    required String value,
-    String? subtext,
-    required IconData icon,
-    Color? valueColor,
-  }) {
-    final colors = context.appColors;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: TaskCardStyles.taskCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 15, color: colors.textSecondary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? colors.textPrimary,
-              fontFamily: 'Gilroy',
-            ),
-          ),
-          if (subtext != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              subtext,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                color: colors.buttonPrimaryBg,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // META LEVEL SUB-TABS (Кампании, Группы, Объявления)
-  // ==========================================
-
-  Widget _buildMetaLevelTabs(BuildContext context) {
-    final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-
-    final levels = [
-      {
-        'level': MetaAdsLevel.campaigns,
-        'title': t.translate('meta_campaigns'),
-        'count': _campaigns.length,
-      },
-      {
-        'level': MetaAdsLevel.adsets,
-        'title': t.translate('meta_adsets'),
-        'count': _adsets.length,
-      },
-      {
-        'level': MetaAdsLevel.ads,
-        'title': t.translate('meta_ads_tab'),
-        'count': _ads.length,
-      },
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.borderSubtle.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: levels.map((item) {
-          final level = item['level'] as MetaAdsLevel;
-          final isSel = _metaLevel == level;
-          final count = item['count'] as int;
-
-          return Expanded(
-            child: InkWell(
-              onTap: () {
-                if (_metaLevel != level) {
-                  setState(() => _metaLevel = level);
-                  _fetchMetaList();
-                }
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSel ? colors.buttonPrimaryBg : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isSel
-                      ? [
-                          BoxShadow(
-                            color: colors.buttonPrimaryBg.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        item['title'] as String,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                          color: isSel ? Colors.white : colors.textPrimary,
-                          fontFamily: 'Gilroy',
-                        ),
-                      ),
-                    ),
-                    if (count > 0 && isSel) ...[
-                      const SizedBox(width: 5),
-                      Text(
-                        '($count)',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                          fontFamily: 'Gilroy',
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+    return SizedBox(
+      height: 86,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return _SummaryTile(
+            item: items[index],
+            loading: _isLoadingSummary && summary == null,
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  // ==========================================
-  // BREADCRUMBS
-  // ==========================================
-
-  Widget _buildBreadcrumbs(BuildContext context) {
-    final colors = context.appColors;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          if (_filteredCampaign != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Chip(
-                backgroundColor: colors.surfaceElevated,
-                deleteIconColor: colors.buttonPrimaryBg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: colors.borderSubtle),
-                ),
-                label: Text(
-                  'Кампания: ${_filteredCampaign!.name}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-                onDeleted: () {
-                  setState(() {
-                    _filteredCampaign = null;
-                    _filteredAdSet = null;
-                  });
-                  _fetchMetaList();
-                },
-              ),
-            ),
-          if (_filteredAdSet != null)
-            Chip(
-              backgroundColor: colors.surfaceElevated,
-              deleteIconColor: colors.buttonPrimaryBg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: colors.borderSubtle),
-              ),
-              label: Text(
-                'Группа: ${_filteredAdSet!.name}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
-                  fontFamily: 'Gilroy',
-                ),
-              ),
-              onDeleted: () {
-                setState(() => _filteredAdSet = null);
-                _fetchMetaList();
-              },
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // SEARCH BAR
-  // ==========================================
-
-  Widget _buildSearchBar(BuildContext context) {
-    final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.42),
-        ),
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(
-          fontSize: 14,
-          color: colors.textPrimary,
-          fontFamily: 'Gilroy',
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          hintText: t.translate('search'),
-          hintStyle: TextStyle(
-            fontSize: 14,
-            color: colors.textSecondary,
-            fontFamily: 'Gilroy',
-          ),
-          prefixIcon:
-              Icon(Icons.search_rounded, size: 20, color: colors.iconSecondary),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 16),
-                  color: colors.iconSecondary,
-                  onPressed: () => _searchController.clear(),
-                )
-              : null,
-          border: InputBorder.none,
-        ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // ITEMS LIST
-  // ==========================================
-
-  Widget _buildItemsList(BuildContext context) {
+  Widget _buildList(BuildContext context) {
     if (_mainTab == AdvertisingMainTab.otherCampaigns) {
-      final filtered = _otherCampaigns.where((c) {
-        if (_searchQuery.isEmpty) return true;
-        return c.name.toLowerCase().contains(_searchQuery);
-      }).toList();
-
-      if (filtered.isEmpty) return _buildEmptyState(context);
-
-      return ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: filtered.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (ctx, idx) =>
-            _buildOtherCampaignCard(ctx, filtered[idx]),
+      final items = _otherCampaigns
+          .where((item) =>
+              _matches(item.name) || _matches(item.description) || _matches(item.source))
+          .toList();
+      if (items.isEmpty) return _emptySliver(context);
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        sliver: SliverList.separated(
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) =>
+              _buildOtherCard(context, items[index]),
+        ),
       );
     }
 
     switch (_metaLevel) {
       case MetaAdsLevel.campaigns:
-        final filtered = _campaigns.where((c) {
-          if (_searchQuery.isEmpty) return true;
-          return c.name.toLowerCase().contains(_searchQuery);
-        }).toList();
-
-        if (filtered.isEmpty) return _buildEmptyState(context);
-
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: filtered.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (ctx, idx) => _buildCampaignCard(ctx, filtered[idx]),
+        final items = _campaigns.where((item) => _matches(item.name)).toList();
+        if (items.isEmpty) return _emptySliver(context);
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          sliver: SliverList.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) =>
+                _buildCampaignCard(context, items[index]),
+          ),
         );
-
       case MetaAdsLevel.adsets:
-        final filtered = _adsets.where((a) {
-          if (_searchQuery.isEmpty) return true;
-          return a.name.toLowerCase().contains(_searchQuery) ||
-              (a.campaignName?.toLowerCase().contains(_searchQuery) ?? false);
-        }).toList();
-
-        if (filtered.isEmpty) return _buildEmptyState(context);
-
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: filtered.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (ctx, idx) => _buildAdSetCard(ctx, filtered[idx]),
+        final items = _adsets
+            .where((item) =>
+                _matches(item.name) || _matches(item.campaignName))
+            .toList();
+        if (items.isEmpty) return _emptySliver(context);
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          sliver: SliverList.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) =>
+                _buildAdSetCard(context, items[index]),
+          ),
         );
-
       case MetaAdsLevel.ads:
-        final filtered = _ads.where((a) {
-          if (_searchQuery.isEmpty) return true;
-          return a.name.toLowerCase().contains(_searchQuery) ||
-              (a.campaignName?.toLowerCase().contains(_searchQuery) ?? false) ||
-              (a.adsetName?.toLowerCase().contains(_searchQuery) ?? false);
-        }).toList();
-
-        if (filtered.isEmpty) return _buildEmptyState(context);
-
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: filtered.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (ctx, idx) => _buildAdCard(ctx, filtered[idx]),
+        final items = _ads
+            .where((item) =>
+                _matches(item.name) ||
+                _matches(item.campaignName) ||
+                _matches(item.adsetName))
+            .toList();
+        if (items.isEmpty) return _emptySliver(context);
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          sliver: SliverList.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) => _buildAdCard(context, items[index]),
+          ),
         );
     }
   }
 
-  // ==========================================
-  // CARDS IMPLEMENTATION (Strictly matching LeadCard / TaskCard)
-  // ==========================================
+  Widget _emptySliver(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: _buildMessage(
+        context,
+        AppLocalizations.of(context)!.translate('no_data_for_period'),
+      ),
+    );
+  }
 
-  Widget _buildCampaignCard(BuildContext context, MetaAdsCampaign item) {
+  Widget _buildMessage(
+    BuildContext context,
+    String text, {
+    String? action,
+    VoidCallback? onAction,
+  }) {
     final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-    final crmMatch = _crmCampaignsByExternalId[item.externalId];
-
-    final spendStr = _formatCurrency(item.spend);
-    final resultsStr = item.results != null ? '${item.results}' : '—';
-    final costPerResultStr = item.costPerResult != null
-        ? '${_formatCurrency(item.costPerResult!)} за рез.'
-        : null;
-    final leadsStr = '${item.newLeads ?? 0}';
-    final recurringLeadsStr = (item.returningLeads ?? 0) > 0
-        ? '+${item.returningLeads} повторн.'
-        : null;
-    final cplStr = item.cpl != null ? _formatCurrency(item.cpl!) : '—';
-    final impressionsStr = _formatInt(item.impressions);
-    final reachStr = item.reach != null ? _formatInt(item.reach!) : null;
-
-    return ReturnHighlightBox(
-      section: 'advertising',
-      itemId: 'campaign_${item.id}',
-      child: GestureDetector(
-        onTap: () {
-          AdvertisingDetailsSheet.show(
-            context,
-            title: item.name,
-            hierarchy: item.name,
-            status: item.effectiveStatus,
-            isActive: item.isActive,
-            dateFrom: _formattedStartDate,
-            dateTo: _formattedEndDate,
-            spend: item.spend,
-            results: item.results,
-            resultType: item.resultType,
-            costPerResult: item.costPerResult,
-            newLeads: item.newLeads ?? 0,
-            returningLeads: item.returningLeads ?? 0,
-            cpl: item.cpl,
-            impressions: item.impressions,
-            reach: item.reach,
-            revenue: item.revenue ?? 0,
-            currency: 'USD',
-            crmCampaignId: crmMatch?.id,
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.all(16),
-          decoration: TaskCardStyles.taskCardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 1: Title + Status Pill
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.appTextStyles.bodyLg.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        if (item.budgetAmount != null) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            '${_formatCurrency(item.budgetAmount!)} ${t.translate('per_day')}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: colors.textSecondary,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatusPill(context, item.isActive, item.effectiveStatus),
-                ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                fontFamily: 'Gilroy',
+                fontWeight: FontWeight.w500,
+                color: colors.textSecondary,
               ),
-
+            ),
+            if (action != null && onAction != null) ...[
               const SizedBox(height: 12),
-
-              // Row 2: Level indicator ("Уровень: Кампания")
-              Row(
-                children: [
-                  Text(
-                    'Уровень:',
-                    style: context.appTextStyles.bodySm.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: TaskCardStyles.dropdownDecoration(context),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Кампания',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 3: Metrics Grid (styled with Gilroy and clean card)
-              _buildMetricsContainer(
-                context,
-                spend: spendStr,
-                results: resultsStr,
-                costPerResult: costPerResultStr,
-                leads: leadsStr,
-                recurringLeads: recurringLeadsStr,
-                impressions: impressionsStr,
-                reach: reachStr,
-                cpl: cplStr,
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 4: Bottom Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Drill-down button to adsets
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      setState(() {
-                        _filteredCampaign = item;
-                        _metaLevel = MetaAdsLevel.adsets;
-                      });
-                      _fetchMetaList();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Группы объявлений (${item.adsCount ?? 0})',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colors.buttonPrimaryBg,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 16,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Details sheet button
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      AdvertisingDetailsSheet.show(
-                        context,
-                        title: item.name,
-                        hierarchy: item.name,
-                        status: item.effectiveStatus,
-                        isActive: item.isActive,
-                        dateFrom: _formattedStartDate,
-                        dateTo: _formattedEndDate,
-                        spend: item.spend,
-                        results: item.results,
-                        resultType: item.resultType,
-                        costPerResult: item.costPerResult,
-                        newLeads: item.newLeads ?? 0,
-                        returningLeads: item.returningLeads ?? 0,
-                        cpl: item.cpl,
-                        impressions: item.impressions,
-                        reach: item.reach,
-                        revenue: item.revenue ?? 0,
-                        currency: 'USD',
-                        crmCampaignId: crmMatch?.id,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Детали и лиды',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colors.buttonPrimaryBg,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              TextButton(onPressed: onAction, child: Text(action)),
             ],
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCampaignCard(BuildContext context, MetaAdsCampaign item) {
+    final t = AppLocalizations.of(context)!;
+    return _entityCard(
+      context,
+      title: item.name,
+      status: _statusLabel(context, item.effectiveStatus, item.isActive),
+      isActive: item.isActive,
+      rows: _webMetrics(
+        t,
+        budget: _budgetText(t, item.budgetAmount, item.budgetType),
+        spend: _money(item.spend),
+        impressions: _count(item.impressions),
+        reach: item.reach != null ? _count(item.reach!) : '—',
+        results: item.results == null ? '—' : _count(item.results!),
+        leadPrice: item.cpl == null ? '—' : _money(item.cpl!),
+        revenue: _revenueText(item.revenue),
+      ),
+      onTap: () => _openCampaign(item),
     );
   }
 
   Widget _buildAdSetCard(BuildContext context, MetaAdsAdSet item) {
-    final colors = context.appColors;
-    final crmMatch = _crmCampaignsByExternalId[item.externalId];
-
-    final spendStr = _formatCurrency(item.spend);
-    final resultsStr = item.results != null ? '${item.results}' : '—';
-    final costPerResultStr = item.costPerResult != null
-        ? '${_formatCurrency(item.costPerResult!)} за рез.'
-        : null;
-    final leadsStr = '${item.newLeads ?? 0}';
-    final recurringLeadsStr = (item.returningLeads ?? 0) > 0
-        ? '+${item.returningLeads} повторн.'
-        : null;
-    final cplStr = item.cpl != null ? _formatCurrency(item.cpl!) : '—';
-    final impressionsStr = _formatInt(item.impressions);
-    final reachStr = item.reach != null ? _formatInt(item.reach!) : null;
-
-    return ReturnHighlightBox(
-      section: 'advertising',
-      itemId: 'adset_${item.id}',
-      child: GestureDetector(
-        onTap: () {
-          AdvertisingDetailsSheet.show(
-            context,
-            title: item.name,
-            hierarchy: '${item.campaignName ?? ''} → ${item.name}',
-            status: item.effectiveStatus,
-            isActive: item.isActive,
-            dateFrom: _formattedStartDate,
-            dateTo: _formattedEndDate,
-            spend: item.spend,
-            results: item.results,
-            resultType: item.resultType,
-            costPerResult: item.costPerResult,
-            newLeads: item.newLeads ?? 0,
-            returningLeads: item.returningLeads ?? 0,
-            cpl: item.cpl,
-            impressions: item.impressions,
-            reach: item.reach,
-            revenue: 0,
-            currency: 'USD',
-            crmCampaignId: crmMatch?.id,
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.all(16),
-          decoration: TaskCardStyles.taskCardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 1: Title + Status Pill
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.appTextStyles.bodyLg.copyWith(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                        fontFamily: 'Gilroy',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatusPill(context, item.isActive, item.effectiveStatus),
-                ],
-              ),
-
-              // Hierarchy line (like TaskCard's taskProject)
-              if (item.campaignName != null &&
-                  item.campaignName!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  item.campaignName!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.appTextStyles.bodySm.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                    fontFamily: 'Gilroy',
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
-              // Row 2: Level indicator
-              Row(
-                children: [
-                  Text(
-                    'Уровень:',
-                    style: context.appTextStyles.bodySm.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: TaskCardStyles.dropdownDecoration(context),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Группа объявлений',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 3: Metrics Grid
-              _buildMetricsContainer(
-                context,
-                spend: spendStr,
-                results: resultsStr,
-                costPerResult: costPerResultStr,
-                leads: leadsStr,
-                recurringLeads: recurringLeadsStr,
-                impressions: impressionsStr,
-                reach: reachStr,
-                cpl: cplStr,
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 4: Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Drill-down button to ads
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      setState(() {
-                        _filteredAdSet = item;
-                        _metaLevel = MetaAdsLevel.ads;
-                      });
-                      _fetchMetaList();
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Объявления (${item.adsCount ?? 0})',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: colors.buttonPrimaryBg,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 16,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Details sheet button
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      AdvertisingDetailsSheet.show(
-                        context,
-                        title: item.name,
-                        hierarchy:
-                            '${item.campaignName ?? ''} → ${item.name}',
-                        status: item.effectiveStatus,
-                        isActive: item.isActive,
-                        dateFrom: _formattedStartDate,
-                        dateTo: _formattedEndDate,
-                        spend: item.spend,
-                        results: item.results,
-                        resultType: item.resultType,
-                        costPerResult: item.costPerResult,
-                        newLeads: item.newLeads ?? 0,
-                        returningLeads: item.returningLeads ?? 0,
-                        cpl: item.cpl,
-                        impressions: item.impressions,
-                        reach: item.reach,
-                        revenue: 0,
-                        currency: 'USD',
-                        crmCampaignId: crmMatch?.id,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Детали и лиды',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colors.buttonPrimaryBg,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: colors.buttonPrimaryBg,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+    final t = AppLocalizations.of(context)!;
+    return _entityCard(
+      context,
+      title: item.name,
+      subtitle: item.campaignName,
+      status: _statusLabel(context, item.effectiveStatus, item.isActive),
+      isActive: item.isActive,
+      rows: _webMetrics(
+        t,
+        budget: '—',
+        spend: _money(item.spend),
+        impressions: _count(item.impressions),
+        reach: item.reach != null ? _count(item.reach!) : '—',
+        results: item.results == null ? '—' : _count(item.results!),
+        leadPrice: item.cpl == null ? '—' : _money(item.cpl!),
+        revenue: _revenueText(item.revenue),
       ),
+      onTap: () => _openAdSet(item),
     );
   }
 
   Widget _buildAdCard(BuildContext context, MetaAdsAd item) {
+    final t = AppLocalizations.of(context)!;
+    final crm = _crmCampaignsByExternalId[item.externalId];
+    return _entityCard(
+      context,
+      title: item.name,
+      subtitle: item.adsetName ?? item.campaignName,
+      status: _statusLabel(context, item.effectiveStatus, item.isActive),
+      isActive: item.isActive,
+      leading: item.thumbnailUrl,
+      rows: _webMetrics(
+        t,
+        budget: '—',
+        spend: _money(item.spend),
+        impressions: _count(item.impressions),
+        reach: item.reach != null ? _count(item.reach!) : '—',
+        results: item.results == null ? '—' : _count(item.results!),
+        leadPrice: item.cpl == null ? '—' : _money(item.cpl!),
+        revenue: _revenueText(item.revenue),
+      ),
+      onTap: () {
+        AdvertisingDetailsSheet.show(
+          context,
+          title: item.name,
+          hierarchy: [
+            item.campaignName,
+            item.adsetName,
+          ].whereType<String>().where((part) => part.isNotEmpty).join(' → '),
+          status: item.effectiveStatus,
+          isActive: item.isActive,
+          thumbnailUrl: item.thumbnailUrl,
+          previewUrl: item.previewUrl,
+          dateFrom: _formattedStartDate,
+          dateTo: _formattedEndDate,
+          spend: item.spend,
+          results: item.results,
+          resultType: item.resultType,
+          costPerResult: item.costPerResult,
+          newLeads: item.newLeads ?? 0,
+          returningLeads: item.returningLeads ?? 0,
+          cpl: item.cpl,
+          impressions: item.impressions,
+          reach: item.reach,
+          revenue: 0,
+          crmCampaignId: crm?.id,
+        );
+      },
+    );
+  }
+
+  Widget _buildOtherCard(BuildContext context, OtherAdvertisingCampaign item) {
+    final t = AppLocalizations.of(context)!;
+    final active = item.isActive;
+    return _entityCard(
+      context,
+      title: item.name,
+      subtitle: item.description,
+      status: _statusLabel(context, item.status ?? '', active),
+      isActive: active,
+      rows: _webMetrics(
+        t,
+        budget: item.cost > 0 ? _money(item.cost) : '—',
+        spend: _money(item.cost),
+        impressions: '—',
+        reach: '—',
+        results: item.leadsCount > 0 ? _count(item.leadsCount) : '—',
+        leadPrice: (item.leadsCount > 0 && item.cost > 0)
+            ? _money(item.cost / item.leadsCount)
+            : '—',
+        revenue: '—',
+        clients: item.clientsCount > 0 ? _count(item.clientsCount) : null,
+      ),
+      onTap: () {
+        AdvertisingDetailsSheet.show(
+          context,
+          title: item.name,
+          subtitle: item.description,
+          status: item.status ?? '',
+          isActive: active,
+          spend: item.cost,
+          newLeads: item.leadsCount,
+          returningLeads: 0,
+          impressions: 0,
+          revenue: 0,
+          crmCampaignId: item.id,
+        );
+      },
+    );
+  }
+
+  Widget _entityCard(
+    BuildContext context, {
+    required String title,
+    String? subtitle,
+    required String status,
+    required bool isActive,
+    required List<_Metric> rows,
+    required VoidCallback onTap,
+    String? leading,
+  }) {
     final colors = context.appColors;
-    final crmMatch = _crmCampaignsByExternalId[item.externalId];
-
-    final hierarchy =
-        '${item.campaignName ?? ''}${item.campaignName != null && item.adsetName != null ? ' → ' : ''}${item.adsetName ?? ''}';
-
-    final spendStr = _formatCurrency(item.spend);
-    final resultsStr = item.results != null ? '${item.results}' : '—';
-    final costPerResultStr = item.costPerResult != null
-        ? '${_formatCurrency(item.costPerResult!)} за рез.'
-        : null;
-    final leadsStr = '${item.newLeads ?? 0}';
-    final recurringLeadsStr = (item.returningLeads ?? 0) > 0
-        ? '+${item.returningLeads} повторн.'
-        : null;
-    final cplStr = item.cpl != null ? _formatCurrency(item.cpl!) : '—';
-    final impressionsStr = _formatInt(item.impressions);
-    final reachStr = item.reach != null ? _formatInt(item.reach!) : null;
-
-    final hasLeadForm =
-        item.leadFormId != null || item.leadFormConfigured;
-
-    return ReturnHighlightBox(
-      section: 'advertising',
-      itemId: 'ad_${item.id}',
-      child: GestureDetector(
-        onTap: () {
-          AdvertisingDetailsSheet.show(
-            context,
-            title: item.name,
-            hierarchy: hierarchy,
-            status: item.effectiveStatus,
-            isActive: item.isActive,
-            thumbnailUrl: item.thumbnailUrl,
-            previewUrl: item.previewUrl,
-            dateFrom: _formattedStartDate,
-            dateTo: _formattedEndDate,
-            spend: item.spend,
-            results: item.results,
-            resultType: item.resultType,
-            costPerResult: item.costPerResult,
-            newLeads: item.newLeads ?? 0,
-            returningLeads: item.returningLeads ?? 0,
-            cpl: item.cpl,
-            impressions: item.impressions,
-            reach: item.reach,
-            revenue: 0,
-            currency: 'USD',
-            crmCampaignId: crmMatch?.id,
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.all(16),
-          decoration: TaskCardStyles.taskCardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 1: Creative image + Title + Status Pill
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Creative Thumbnail (Clean 44x44 rounded)
-                  if (item.thumbnailUrl != null &&
-                      item.thumbnailUrl!.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        item.thumbnailUrl!,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.campaign_rounded,
-                              color: colors.iconSecondary, size: 22),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.campaign_rounded,
-                          color: colors.iconSecondary, size: 22),
-                    ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.appTextStyles.bodyLg.copyWith(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                        fontFamily: 'Gilroy',
-                      ),
+    final statusColor = isActive ? colors.success : colors.textSecondary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+        decoration: TaskCardStyles.taskCardDecoration(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (leading != null && leading.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      leading,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
                   ),
-
-                  const SizedBox(width: 10),
-                  _buildStatusPill(context, item.isActive, item.effectiveStatus),
+                  const SizedBox(width: 8),
                 ],
-              ),
-
-              // Hierarchy line (campaign -> adset)
-              if (hierarchy.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  hierarchy,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.appTextStyles.bodySm.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textSecondary,
-                    fontFamily: 'Gilroy',
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      height: 1.2,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
                   ),
                 ),
               ],
-
-              const SizedBox(height: 12),
-
-              // Row 2: Level indicator + Lead form button
-              Row(
-                children: [
-                  Text(
-                    'Уровень:',
-                    style: context.appTextStyles.bodySm.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: TaskCardStyles.dropdownDecoration(context),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Объявление',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  if (hasLeadForm)
-                    InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () {
-                        AdvertisingLeadFormDialog.show(
-                          context,
-                          formId: item.leadFormId ?? item.id.toString(),
-                          formTitle: item.name,
-                          adsCount: 1,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: colors.borderSubtle.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.tune_rounded,
-                                size: 14, color: colors.buttonPrimaryBg),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Лид-форма',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: colors.buttonPrimaryBg,
-                                fontFamily: 'Gilroy',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 3: Metrics Grid
-              _buildMetricsContainer(
-                context,
-                spend: spendStr,
-                results: resultsStr,
-                costPerResult: costPerResultStr,
-                leads: leadsStr,
-                recurringLeads: recurringLeadsStr,
-                impressions: impressionsStr,
-                reach: reachStr,
-                cpl: cplStr,
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 4: Details button
-              Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    AdvertisingDetailsSheet.show(
-                      context,
-                      title: item.name,
-                      hierarchy: hierarchy,
-                      status: item.effectiveStatus,
-                      isActive: item.isActive,
-                      thumbnailUrl: item.thumbnailUrl,
-                      previewUrl: item.previewUrl,
-                      dateFrom: _formattedStartDate,
-                      dateTo: _formattedEndDate,
-                      spend: item.spend,
-                      results: item.results,
-                      resultType: item.resultType,
-                      costPerResult: item.costPerResult,
-                      newLeads: item.newLeads ?? 0,
-                      returningLeads: item.returningLeads ?? 0,
-                      cpl: item.cpl,
-                      impressions: item.impressions,
-                      reach: item.reach,
-                      revenue: 0,
-                      currency: 'USD',
-                      crmCampaignId: crmMatch?.id,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Детали и лиды',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.buttonPrimaryBg,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: colors.buttonPrimaryBg,
-                        ),
-                      ],
-                    ),
-                  ),
+            ),
+            if (subtitle != null && subtitle.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Gilroy',
+                  fontWeight: FontWeight.w500,
+                  color: colors.textSecondary,
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOtherCampaignCard(
-      BuildContext context, OtherAdvertisingCampaign item) {
-    final colors = context.appColors;
-
-    final dateStr = item.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(item.createdAt!)
-        : '—';
-
-    return ReturnHighlightBox(
-      section: 'advertising',
-      itemId: 'other_${item.id}',
-      child: GestureDetector(
-        onTap: () {
-          AdvertisingDetailsSheet.show(
-            context,
-            title: item.name,
-            status: item.status ?? 'active',
-            isActive: item.isActive,
-            spend: item.cost,
-            results: item.leadsCount,
-            newLeads: item.leadsCount,
-            returningLeads: 0,
-            impressions: 0,
-            revenue: 0,
-            crmCampaignId: item.id,
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.all(16),
-          decoration: TaskCardStyles.taskCardDecoration(context),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 1: Source Icon + Title + Status Pill
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ChannelSourceIcon(
-                    sourceName: item.source ?? 'other',
-                    size: 32,
-                    background: colors.surfacePrimary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.appTextStyles.bodyLg.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        if (item.source != null &&
-                            item.source!.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            item.source!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: colors.textSecondary,
-                              fontFamily: 'Gilroy',
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatusPill(
-                      context, item.isActive, item.status ?? 'active'),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Row 2: Level indicator
-              Row(
-                children: [
-                  Text(
-                    'Уровень:',
-                    style: context.appTextStyles.bodySm.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colors.textSecondary,
-                      fontFamily: 'Gilroy',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: TaskCardStyles.dropdownDecoration(context),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Кампания',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textPrimary,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 3: Metrics Grid
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: colors.borderSubtle.withValues(alpha: 0.35)),
-                ),
-                child: Row(
+            if (rows.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              for (var start = 0; start < rows.length; start += 3) ...[
+                if (start > 0) const SizedBox(height: 8),
+                Row(
                   children: [
-                    Expanded(
-                      child: _buildMetricItem(
-                        context,
-                        label: 'Лиды',
-                        value: '${item.leadsCount}',
-                        icon: Icons.group_outlined,
-                      ),
-                    ),
-                    Container(
-                        width: 1,
-                        height: 30,
-                        color: colors.borderSubtle.withValues(alpha: 0.4)),
-                    Expanded(
-                      child: _buildMetricItem(
-                        context,
-                        label: 'Клиенты',
-                        value: '${item.clientsCount}',
-                        icon: Icons.person_outline,
-                      ),
-                    ),
-                    Container(
-                        width: 1,
-                        height: 30,
-                        color: colors.borderSubtle.withValues(alpha: 0.4)),
-                    Expanded(
-                      child: _buildMetricItem(
-                        context,
-                        label: 'Расход',
-                        value: _formatCurrency(item.cost),
-                        icon: Icons.payments_outlined,
-                      ),
-                    ),
-                    Container(
-                        width: 1,
-                        height: 30,
-                        color: colors.borderSubtle.withValues(alpha: 0.4)),
-                    Expanded(
-                      child: _buildMetricItem(
-                        context,
-                        label: 'Дата',
-                        value: dateStr,
-                        icon: Icons.calendar_today_outlined,
-                      ),
-                    ),
+                    for (var i = start; i < start + 3 && i < rows.length; i++) ...[
+                      if (i > start) const SizedBox(width: 8),
+                      Expanded(child: _metricCell(context, rows[i])),
+                    ],
+                    for (var i = rows.length; i < start + 3; i++) ...[
+                      const SizedBox(width: 8),
+                      const Expanded(child: SizedBox()),
+                    ],
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Row 4: Details button
-              Align(
-                alignment: Alignment.centerRight,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    AdvertisingDetailsSheet.show(
-                      context,
-                      title: item.name,
-                      status: item.status ?? 'active',
-                      isActive: item.isActive,
-                      spend: item.cost,
-                      results: item.leadsCount,
-                      newLeads: item.leadsCount,
-                      returningLeads: 0,
-                      impressions: 0,
-                      revenue: 0,
-                      crmCampaignId: item.id,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: colors.buttonPrimaryBg.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Детали и лиды',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colors.buttonPrimaryBg,
-                            fontFamily: 'Gilroy',
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: colors.buttonPrimaryBg,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // SHARED METRICS CONTAINER
-  // ==========================================
-
-  Widget _buildMetricsContainer(
-    BuildContext context, {
-    required String spend,
-    required String results,
-    String? costPerResult,
-    required String leads,
-    String? recurringLeads,
-    required String impressions,
-    String? reach,
-    required String cpl,
-  }) {
-    final colors = context.appColors;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colors.borderSubtle.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Потрачено',
-                  value: spend,
-                  icon: Icons.payments_outlined,
-                ),
-              ),
-              Container(
-                  width: 1,
-                  height: 32,
-                  color: colors.borderSubtle.withValues(alpha: 0.4)),
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Результат',
-                  value: results,
-                  subtext: costPerResult,
-                  icon: Icons.flag_outlined,
-                ),
-              ),
-              Container(
-                  width: 1,
-                  height: 32,
-                  color: colors.borderSubtle.withValues(alpha: 0.4)),
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Лиды',
-                  value: leads,
-                  subtext: recurringLeads,
-                  icon: Icons.person_outline,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Divider(
-              height: 1, color: colors.borderSubtle.withValues(alpha: 0.35)),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Показы',
-                  value: impressions,
-                  icon: Icons.visibility_outlined,
-                ),
-              ),
-              Container(
-                  width: 1,
-                  height: 32,
-                  color: colors.borderSubtle.withValues(alpha: 0.4)),
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Охват',
-                  value: reach ?? '—',
-                  icon: Icons.people_outline,
-                ),
-              ),
-              Container(
-                  width: 1,
-                  height: 32,
-                  color: colors.borderSubtle.withValues(alpha: 0.4)),
-              Expanded(
-                child: _buildMetricItem(
-                  context,
-                  label: 'Цена лида',
-                  value: cpl,
-                  icon: Icons.price_check_outlined,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricItem(
-    BuildContext context, {
-    required String label,
-    required String value,
-    String? subtext,
-    required IconData icon,
-  }) {
-    final colors = context.appColors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 13, color: colors.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: colors.textSecondary,
-                fontFamily: 'Gilroy',
-              ),
-            ),
           ],
         ),
-        const SizedBox(height: 3),
+      ),
+    );
+  }
+
+  Widget _metricCell(BuildContext context, _Metric metric) {
+    final colors = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
-          value,
+          metric.value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 13,
+            fontFamily: 'Gilroy',
             fontWeight: FontWeight.w700,
             color: colors.textPrimary,
-            fontFamily: 'Gilroy',
           ),
         ),
-        if (subtext != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            subtext,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: colors.textSecondary,
-              fontFamily: 'Gilroy',
-            ),
+        const SizedBox(height: 2),
+        Text(
+          metric.label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontFamily: 'Gilroy',
+            fontWeight: FontWeight.w500,
+            color: colors.textSecondary,
           ),
-        ],
+        ),
       ],
     );
   }
+}
 
-  // ==========================================
-  // STATUS PILL (Matching TaskCard Priority & ShamCRM Web)
-  // ==========================================
+class _Metric {
+  final String label;
+  final String value;
+  const _Metric(this.label, this.value);
+}
 
-  Widget _buildStatusPill(
-      BuildContext context, bool isActive, String statusText) {
+class _SummaryItem {
+  final String title;
+  final String value;
+  final Color color;
+  const _SummaryItem({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+}
+
+class _SummaryTile extends StatelessWidget {
+  final _SummaryItem item;
+  final bool loading;
+
+  const _SummaryTile({required this.item, required this.loading});
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-
-    final isAct = isActive ||
-        statusText.toUpperCase() == 'ACTIVE' ||
-        statusText.toLowerCase() == 'active';
-
-    String label;
-    if (isAct) {
-      label = t.translate('ad_status_active');
-    } else if (statusText.toUpperCase() == 'CAMPAIGN_PAUSED') {
-      label = 'Кампания остановлена';
-    } else {
-      label = t.translate('ad_status_paused');
-    }
-
-    final activeColor = const Color(0xFF16A34A);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: 132,
       decoration: BoxDecoration(
-        color: isAct
-            ? activeColor.withValues(alpha: 0.16)
-            : colors.textSecondary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: isAct
-              ? activeColor.withValues(alpha: 0.45)
-              : colors.borderSubtle.withValues(alpha: 0.5),
-        ),
+        color: colors.surfacePrimary.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.borderSubtle),
+        boxShadow: context.appShadows.card,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isAct ? activeColor : colors.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isAct ? activeColor : colors.textSecondary,
-              fontFamily: 'Gilroy',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    final colors = context.appColors;
-    final t = AppLocalizations.of(context)!;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
           children: [
-            Icon(Icons.campaign_outlined,
-                size: 48, color: colors.iconSecondary),
-            const SizedBox(height: 12),
-            Text(
-              t.translate('no_data_for_period'),
-              style: TextStyle(
-                fontSize: 14,
-                color: colors.textSecondary,
-                fontFamily: 'Gilroy',
+            Container(width: 4, color: item.color),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                child: loading
+                    ? Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.buttonPrimaryBg,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              height: 1.15,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w500,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            item.value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Gilroy',
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context) {
-    final colors = context.appColors;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30),
-        child: Column(
-          children: [
-            Icon(Icons.error_outline, size: 40, color: colors.error),
-            const SizedBox(height: 10),
-            Text(
-              _errorMessage ?? 'Ошибка загрузки данных',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: colors.textSecondary,
-                fontFamily: 'Gilroy',
-              ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.buttonPrimaryBg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: _loadData,
-              child: const Text('Повторить',
-                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
