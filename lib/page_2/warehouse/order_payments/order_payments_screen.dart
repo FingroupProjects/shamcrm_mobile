@@ -16,10 +16,12 @@ import 'package:intl/intl.dart';
 
 class OrderPaymentsScreen extends StatefulWidget {
   final int? organizationId;
+  final bool hideAppBar;
 
   const OrderPaymentsScreen({
     super.key,
     this.organizationId,
+    this.hideAppBar = false,
   });
 
   @override
@@ -472,76 +474,78 @@ class _OrderPaymentsScreenState extends State<OrderPaymentsScreen> {
 
     return Scaffold(
       backgroundColor: colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.surfacePrimary,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: colors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: _onSearchChanged,
-                style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Поиск по номеру, клиенту...',
-                  hintStyle: textStyles.bodyMd.copyWith(color: colors.textSecondary),
-                  border: InputBorder.none,
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.close, color: colors.textSecondary),
-                    onPressed: _clearSearch,
-                  ),
-                ),
-              )
-            : Text(
-                'Платежи',
-                style: textStyles.titleLg.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colors.textPrimary,
-                ),
+      appBar: widget.hideAppBar
+          ? null
+          : AppBar(
+              backgroundColor: colors.surfacePrimary,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, color: colors.textPrimary, size: 20),
+                onPressed: () => Navigator.pop(context),
               ),
-        actions: [
-          if (!_isSearching)
-            IconButton(
-              icon: Icon(Icons.search, color: colors.textPrimary),
-              onPressed: () {
-                setState(() {
-                  _isSearching = true;
-                });
-              },
-            ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.filter_list_rounded,
-                  color: _hasActiveFilters ? colors.buttonPrimaryBg : colors.textPrimary,
-                ),
-                onPressed: _openFilterBottomSheet,
-              ),
-              if (_hasActiveFilters)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: colors.buttonPrimaryBg,
-                      shape: BoxShape.circle,
+              title: _isSearching
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      onChanged: _onSearchChanged,
+                      style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: 'Поиск по номеру, клиенту...',
+                        hintStyle: textStyles.bodyMd.copyWith(color: colors.textSecondary),
+                        border: InputBorder.none,
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.close, color: colors.textSecondary),
+                          onPressed: _clearSearch,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      'Платежи',
+                      style: textStyles.titleLg.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
                     ),
+              actions: [
+                if (!_isSearching)
+                  IconButton(
+                    icon: Icon(Icons.search, color: colors.textPrimary),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = true;
+                      });
+                    },
                   ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.filter_list_rounded,
+                        color: _hasActiveFilters ? colors.buttonPrimaryBg : colors.textPrimary,
+                      ),
+                      onPressed: _openFilterBottomSheet,
+                    ),
+                    if (_hasActiveFilters)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: colors.buttonPrimaryBg,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+                const SizedBox(width: 8),
+              ],
+            ),
       floatingActionButton: _hasCreatePermission
           ? FloatingActionButton(
               key: const Key('create_order_payment_button'),
@@ -562,6 +566,71 @@ class _OrderPaymentsScreenState extends State<OrderPaymentsScreen> {
           : null,
       body: Column(
         children: [
+          if (widget.hideAppBar) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.borderSubtle),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 20, color: colors.textSecondary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: _onSearchChanged,
+                              style: textStyles.bodyMd.copyWith(color: colors.textPrimary),
+                              decoration: InputDecoration(
+                                hintText: 'Поиск по номеру, клиенту...',
+                                hintStyle: textStyles.bodyMd.copyWith(color: colors.textSecondary),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                          if (_searchQuery != null && _searchQuery!.isNotEmpty)
+                            GestureDetector(
+                              onTap: _clearSearch,
+                              child: Icon(Icons.close, size: 18, color: colors.textSecondary),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _openFilterBottomSheet,
+                    child: Container(
+                      height: 42,
+                      width: 42,
+                      decoration: BoxDecoration(
+                        color: _hasActiveFilters ? colors.buttonPrimaryBg : colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _hasActiveFilters ? colors.buttonPrimaryBg : colors.borderSubtle,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.filter_list_rounded,
+                        size: 20,
+                        color: _hasActiveFilters ? colors.buttonPrimaryFg : colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           PinnedOrderPaymentTotal(
             periodLabel: _periodLabel,
             total: _totalSum,

@@ -2,6 +2,7 @@ import 'package:crm_task_manager/core/theme/background/app_background_overlay.da
 import 'package:crm_task_manager/core/theme/background/app_background_preset.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/custom_widget/app_bar_shell.dart';
+import 'package:crm_task_manager/page_2/warehouse/order_payments/order_payments_screen.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
 import 'package:crm_task_manager/screens/chess_grid/models/chess_grid_models.dart';
 import 'package:crm_task_manager/screens/chess_grid/utils/chess_grid_localizations.dart';
@@ -34,6 +35,7 @@ enum ChessViewMode {
   list,
   orders,
   payments,
+  orderPayments,
   parking,
   admin,
   settings,
@@ -278,6 +280,11 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       ),
       (mode: ChessViewMode.payments, label: 'Платежи', icon: Icons.payments_outlined),
       (
+        mode: ChessViewMode.orderPayments,
+        label: 'Список платежей',
+        icon: Icons.receipt_long_rounded,
+      ),
+      (
         mode: ChessViewMode.parking,
         label: context.tr('chess_grid_tab_parking', fallback: 'Парковка'),
         icon: Icons.local_parking_rounded,
@@ -427,6 +434,9 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
 
       case ChessViewMode.payments:
         return const ChessPaymentsView();
+
+      case ChessViewMode.orderPayments:
+        return const OrderPaymentsScreen(hideAppBar: true);
 
       case ChessViewMode.parking:
         return ChessGridParkingView(

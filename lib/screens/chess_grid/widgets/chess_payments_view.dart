@@ -6,6 +6,7 @@ import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart
 import 'package:crm_task_manager/custom_widget/app_field_style.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
 import 'package:crm_task_manager/models/page_2/order_card.dart';
+import 'package:crm_task_manager/page_2/warehouse/order_payments/order_payments_screen.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/lead_with_manager.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/custom_widget/file_picker_dialog.dart';
@@ -265,6 +266,32 @@ class _PaymentsOverview extends StatelessWidget {
             children: [
               Expanded(child: _sectionTitle(colors, 'Сделки')),
               const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const OrderPaymentsScreen(),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.receipt_long_rounded, size: 16, color: colors.buttonPrimaryBg),
+                label: Text(
+                  'Список платежей',
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: colors.buttonPrimaryBg,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: colors.buttonPrimaryBg),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+              ),
+              const SizedBox(width: 6),
               Material(
                 color: colors.buttonPrimaryBg,
                 borderRadius: BorderRadius.circular(20),
