@@ -1393,6 +1393,245 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         ? context.tr('chess_grid_all_entrances', fallback: 'Все подъезды')
         : '${context.tr('chess_grid_entrance_label', fallback: 'Подъезд')} $entranceNum';
 
+    final isSettings = _currentView == ChessViewMode.settings;
+    final isAdmin = _currentView == ChessViewMode.admin;
+    final isPayments = _currentView == ChessViewMode.payments;
+    final isOrders = _currentView == ChessViewMode.orders;
+    final isSections = _currentView == ChessViewMode.sections;
+
+    Widget centerWidget;
+    Widget? trailingWidget;
+
+    if (isSettings) {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: Center(
+          child: Text(
+            context.tr('chess_grid_tab_settings', fallback: 'Настройки'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: primaryText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    } else if (isAdmin) {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: Center(
+          child: Text(
+            context.tr('chess_grid_tab_management', fallback: 'Управление'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: primaryText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    } else if (isPayments) {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: Center(
+          child: Text(
+            'Платежи',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: primaryText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    } else if (isOrders) {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: Center(
+          child: Text(
+            context.tr('chess_grid_tab_orders', fallback: 'Сделка'),
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: primaryText,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    } else if (isSections) {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: InkWell(
+          key: _complexTitleKey,
+          onTap: () => _showComplexPicker(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    complex.name,
+                    style: TextStyle(
+                      fontFamily: 'Gilroy',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: primaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: colors.buttonPrimaryBg,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      centerWidget = AppBarShell.capsule(
+        context,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                key: _complexTitleKey,
+                onTap: () => _showComplexPicker(context),
+                borderRadius: BorderRadius.circular(6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        complex.name,
+                        style: TextStyle(
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15.5,
+                          color: primaryText,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: colors.buttonPrimaryBg,
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () => ChessGridFilterDialog.show(
+                  context: context,
+                  controller: _controller,
+                ),
+                borderRadius: BorderRadius.circular(6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '$buildingName · $entranceText',
+                        style: TextStyle(
+                          fontFamily: 'Golos',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.tune_rounded,
+                      size: 11,
+                      color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      trailingWidget = AppBarShell.capsule(
+        context,
+        width: AppBarShell.orbSize,
+        padding: EdgeInsets.zero,
+        gradientColors: appBarGradient,
+        borderColor: subtleBorder,
+        child: IconButton(
+          onPressed: () => ChessGridFilterDialog.show(
+            context: context,
+            controller: _controller,
+          ),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Image.asset(
+                'assets/icons/AppBar/filter.png',
+                width: 20,
+                height: 20,
+                color: hasActiveFilter ? colors.buttonPrimaryBg : primaryText,
+              ),
+              if (hasActiveFilter)
+                Positioned(
+                  top: -1,
+                  right: -1,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: colors.buttonPrimaryBg,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: colors.overlay.withValues(alpha: 0),
@@ -1426,119 +1665,8 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
             ),
           ),
         ),
-        center: AppBarShell.capsule(
-          context,
-          gradientColors: appBarGradient,
-          borderColor: subtleBorder,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  key: _complexTitleKey,
-                  onTap: () => _showComplexPicker(context),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          complex.name,
-                          style: TextStyle(
-                            fontFamily: 'Gilroy',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15.5,
-                            color: primaryText,
-                            letterSpacing: 0.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 16,
-                        color: colors.buttonPrimaryBg,
-                      ),
-                    ],
-                  ),
-                ),
-                InkWell(
-                  onTap: () => ChessGridFilterDialog.show(
-                    context: context,
-                    controller: _controller,
-                  ),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '$buildingName · $entranceText',
-                          style: TextStyle(
-                            fontFamily: 'Golos',
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 11,
-                        color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        trailing: AppBarShell.capsule(
-          context,
-          width: AppBarShell.orbSize,
-          padding: EdgeInsets.zero,
-          gradientColors: appBarGradient,
-          borderColor: subtleBorder,
-          child: IconButton(
-            onPressed: () => ChessGridFilterDialog.show(
-              context: context,
-              controller: _controller,
-            ),
-            icon: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Image.asset(
-                  'assets/icons/AppBar/filter.png',
-                  width: 20,
-                  height: 20,
-                  color: hasActiveFilter ? colors.buttonPrimaryBg : primaryText,
-                ),
-                if (hasActiveFilter)
-                  Positioned(
-                    top: -1,
-                    right: -1,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: colors.buttonPrimaryBg,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        center: centerWidget,
+        trailing: trailingWidget,
       ),
     );
   }
