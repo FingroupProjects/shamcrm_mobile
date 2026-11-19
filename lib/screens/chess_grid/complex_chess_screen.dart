@@ -270,11 +270,6 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         icon: Icons.grid_view_rounded,
       ),
       (
-        mode: ChessViewMode.list,
-        label: context.tr('chess_grid_tab_list', fallback: 'Список'),
-        icon: Icons.view_agenda_rounded,
-      ),
-      (
         mode: ChessViewMode.orders,
         label: context.tr('chess_grid_tab_orders', fallback: 'Сделка'),
         icon: Icons.receipt_long_rounded,
@@ -282,13 +277,8 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       (mode: ChessViewMode.payments, label: 'Платежи', icon: Icons.payments_outlined),
       (
         mode: ChessViewMode.orderPayments,
-        label: 'Список платежей',
+        label: 'История платежей',
         icon: Icons.receipt_long_rounded,
-      ),
-      (
-        mode: ChessViewMode.parking,
-        label: context.tr('chess_grid_tab_parking', fallback: 'Парковка'),
-        icon: Icons.local_parking_rounded,
       ),
       (
         mode: ChessViewMode.admin,

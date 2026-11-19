@@ -277,7 +277,7 @@ class _PaymentsOverview extends StatelessWidget {
                 },
                 icon: Icon(Icons.receipt_long_rounded, size: 16, color: colors.buttonPrimaryBg),
                 label: Text(
-                  'Список платежей',
+                  'История платежей',
                   style: TextStyle(
                     fontFamily: 'Gilroy',
                     fontWeight: FontWeight.w700,
