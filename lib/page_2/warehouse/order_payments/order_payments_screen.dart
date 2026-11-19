@@ -212,7 +212,7 @@ class _OrderPaymentsScreenState extends State<OrderPaymentsScreen> {
         shadowColor: Colors.transparent,
         automaticallyImplyLeading: false,
         title: CustomAppBar(
-          title: _isClickAvatarIcon ? 'Настройки' : 'Список платежей',
+          title: _isClickAvatarIcon ? 'Настройки' : 'Отчет платежей',
           onClickProfileAvatar: () {
             if (mounted) {
               setState(() {

@@ -277,7 +277,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       (mode: ChessViewMode.payments, label: 'Платежи', icon: Icons.payments_outlined),
       (
         mode: ChessViewMode.orderPayments,
-        label: 'История платежей',
+        label: 'Отчет платежей',
         icon: Icons.receipt_long_rounded,
       ),
       (
