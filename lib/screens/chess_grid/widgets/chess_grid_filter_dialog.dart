@@ -30,6 +30,8 @@ class ChessGridFilterDialog extends StatefulWidget {
 }
 
 class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
+  late int _complexId;
+  bool _isLoadingComplex = false;
   late String _buildingKey;
   late int _entrance;
   late Set<int> _rooms;
@@ -45,6 +47,7 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   void initState() {
     super.initState();
     final f = widget.controller.filter;
+    _complexId = widget.controller.complex.id;
     final List<Building> buildings = (widget.controller.complex.buildings as Iterable).cast<Building>().toList();
     _buildingKey = f.buildingKey.isNotEmpty
         ? f.buildingKey
@@ -58,6 +61,41 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
     _maxAreaController = TextEditingController(text: f.maxArea != null ? '${f.maxArea}' : '');
     _statuses = Set<ApartmentStatus>.from(f.statuses);
     _selectedStatus = _statuses.length == 1 ? _statuses.first : null;
+
+    if (widget.controller.complexes.isEmpty) {
+      widget.controller.loadDataFromApi().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  Future<void> _onComplexChanged(int newComplexId) async {
+    if (newComplexId == _complexId) return;
+
+    setState(() {
+      _complexId = newComplexId;
+      _isLoadingComplex = true;
+    });
+
+    try {
+      await widget.controller.loadComplexDetails(newComplexId);
+      final List<Building> buildings =
+          (widget.controller.complex.buildings as Iterable).cast<Building>().toList();
+      if (mounted) {
+        setState(() {
+          _buildingKey = buildings.isNotEmpty ? buildings.first.key : '';
+          _entrance = 0;
+          _rooms.clear();
+          _selectedRoom = 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading complex $newComplexId: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingComplex = false);
+      }
+    }
   }
 
   @override
@@ -119,6 +157,12 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final controller = widget.controller;
+    final List<ResidentialComplex> complexes =
+        (controller.complexes as Iterable).cast<ResidentialComplex>().toList();
+    final List<ResidentialComplex> allComplexes = complexes.isNotEmpty
+        ? complexes
+        : (controller.complex.id != 0 ? [controller.complex] : <ResidentialComplex>[]);
+
     final List<Building> buildings = (controller.complex.buildings as Iterable).cast<Building>().toList();
 
     final Building? building = buildings.firstWhereOrNull((b) => b.key == _buildingKey) ??
@@ -197,7 +241,44 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 0. Complex (ЖК) Dropdown
+                  _buildDropdown<int>(
+                    key: ValueKey('complex_$_complexId'),
+                    label: context.tr('chess_grid_complex_label', fallback: 'ЖК'),
+                    value: _complexId,
+                    items: allComplexes.map((c) {
+                      return DropdownMenuItem<int>(
+                        value: c.id,
+                        child: Text(
+                          c.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: _isLoadingComplex
+                        ? (_) {}
+                        : (val) {
+                            if (val != null && val != _complexId) {
+                              _onComplexChanged(val);
+                            }
+                          },
+                  ),
+                  if (_isLoadingComplex) ...[
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        minHeight: 2.5,
+                        backgroundColor: colors.fieldBg,
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.buttonPrimaryBg),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+
+                  // 1. Building Dropdown
                   _buildDropdown<String>(
+                    key: ValueKey('bld_${_complexId}_$_buildingKey'),
                     label: context.tr('chess_grid_building', fallback: 'Корпус'),
                     value: _buildingKey,
                     items: buildings.map((b) {
@@ -358,13 +439,19 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
   }
 
   Widget _buildDropdown<T>({
+    Key? key,
     required String label,
     required T value,
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
   }) {
     final colors = context.appColors;
+    final T? selectedValue = items.any((i) => i.value == value)
+        ? value
+        : (items.isNotEmpty ? items.first.value : null);
+
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label.isNotEmpty) ...[
@@ -380,9 +467,10 @@ class _ChessGridFilterDialogState extends State<ChessGridFilterDialog> {
           const SizedBox(height: 6),
         ],
         DropdownButtonFormField<T>(
-          initialValue: value,
+          initialValue: selectedValue,
           items: items,
           onChanged: onChanged,
+          isExpanded: true,
           decoration: InputDecoration(
             isDense: true,
             filled: true,

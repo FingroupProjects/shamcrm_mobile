@@ -61,6 +61,7 @@ class ComplexChessScreen extends StatefulWidget {
 class _ComplexChessScreenState extends State<ComplexChessScreen> {
   late final ChessGridController _controller;
   late final TransformationController _transformationController;
+  final GlobalKey _complexTitleKey = GlobalKey();
   double _currentScale = 1.0;
   late ChessViewMode _currentView;
   ApartmentStatus? _quickStatusFilter;
@@ -399,13 +400,12 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       case ChessViewMode.sections:
         return const SizedBox.shrink();
       case ChessViewMode.model3D:
-        final currentComplex = _controller.complex.id == widget.complex.id &&
-                _controller.complex.buildings.isNotEmpty
+        final currentComplex = _controller.complex.buildings.isNotEmpty
             ? _controller.complex
             : widget.complex;
         return ChessGrid3DView(
           complex: currentComplex,
-          apartments: _controller.getApartmentsForComplex(widget.complex.id),
+          apartments: _controller.getApartmentsForComplex(_controller.complex.id),
           parkingSpots: _controller.parkingSpots.where((spot) {
             final buildingIds = currentComplex.buildings.map((item) => item.id).whereType<int>().toSet();
             final keys = currentComplex.buildings.map((item) => item.key).toSet();
@@ -594,7 +594,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
 
   Widget _buildMatrix(BuildContext context, Building building) {
     final colors = context.appColors;
-    final complexApts = _controller.getApartmentsForComplex(widget.complex.id);
+    final complexApts = _controller.getApartmentsForComplex(_controller.complex.id);
 
     // Filter by building
     var filtered = complexApts
@@ -1037,7 +1037,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       // Check if apartment exists without filters to display ghost/empty slot
       final rawApt = _controller.apartments.firstWhereOrNull(
         (a) =>
-            (a.complexId == widget.complex.id || widget.complex.id == 0) &&
+            (a.complexId == _controller.complex.id || _controller.complex.id == 0) &&
             (a.buildingKey == buildingKey || (building.id != null && a.buildingId == building.id)) &&
             a.entrance == entrance &&
             a.floor == floor &&
@@ -1190,7 +1190,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       );
       if (navResult is Map && navResult['success'] == true) {
         if (mounted) {
-          _controller.loadComplexDetails(widget.complex.id, showLoading: false);
+          _controller.loadComplexDetails(_controller.complex.id, showLoading: false);
         }
       }
     } catch (e) {
@@ -1312,6 +1312,74 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
     return null;
   }
 
+  void _showComplexPicker(BuildContext context) async {
+    final complexes = _controller.complexes;
+    if (complexes.isEmpty) {
+      await _controller.loadDataFromApi();
+    }
+    if (!mounted || _controller.complexes.isEmpty) return;
+
+    final RenderBox? button = _complexTitleKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (button == null || overlay == null) return;
+
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final colors = context.appColors;
+
+    final selectedId = await showMenu<int>(
+      context: context,
+      position: position,
+      color: colors.surfaceElevated,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.borderSubtle.withValues(alpha: 0.5)),
+      ),
+      items: _controller.complexes.map((c) {
+        final isSelected = c.id == _controller.complex.id;
+        return PopupMenuItem<int>(
+          value: c.id,
+          height: 44,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  c.name,
+                  style: TextStyle(
+                    fontFamily: 'Gilroy',
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 14,
+                    color: isSelected ? colors.buttonPrimaryBg : colors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_rounded,
+                  size: 18,
+                  color: colors.buttonPrimaryBg,
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+
+    if (selectedId != null && selectedId != _controller.complex.id) {
+      await _controller.loadComplexDetails(selectedId);
+      _transformationController.value = Matrix4.identity();
+      if (mounted) setState(() {});
+    }
+  }
+
   AppBar _buildAppBar(
     BuildContext context,
     ResidentialComplex complex,
@@ -1369,31 +1437,49 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
           context,
           gradientColors: appBarGradient,
           borderColor: subtleBorder,
-          child: InkWell(
-            onTap: () => ChessGridFilterDialog.show(
-              context: context,
-              controller: _controller,
-            ),
-            borderRadius: BorderRadius.circular(26),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    complex.name,
-                    style: TextStyle(
-                      fontFamily: 'Gilroy',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15.5,
-                      color: primaryText,
-                      letterSpacing: 0.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  key: _complexTitleKey,
+                  onTap: () => _showComplexPicker(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          complex.name,
+                          style: TextStyle(
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15.5,
+                            color: primaryText,
+                            letterSpacing: 0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 16,
+                        color: colors.buttonPrimaryBg,
+                      ),
+                    ],
                   ),
-                  Row(
+                ),
+                InkWell(
+                  onTap: () => ChessGridFilterDialog.show(
+                    context: context,
+                    controller: _controller,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
@@ -1403,7 +1489,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
                             fontFamily: 'Golos',
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: colors.buttonPrimaryBg,
+                            color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1411,14 +1497,14 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
                       ),
                       const SizedBox(width: 2),
                       Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 14,
-                        color: colors.buttonPrimaryBg,
+                        Icons.tune_rounded,
+                        size: 11,
+                        color: colors.buttonPrimaryBg.withValues(alpha: 0.85),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
