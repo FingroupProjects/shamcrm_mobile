@@ -91,7 +91,7 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
         .length;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.backgroundPrimary,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         forceMaterialTransparency: true,
@@ -143,6 +143,9 @@ class _ChessGridScreenState extends State<ChessGridScreen> {
           : Stack(
               fit: StackFit.expand,
               children: [
+                Positioned.fill(
+                  child: Container(color: colors.backgroundPrimary),
+                ),
                 const Positioned.fill(
                   child: AppBackgroundOverlay(
                     preset: AppBackgroundPreset.aurora,

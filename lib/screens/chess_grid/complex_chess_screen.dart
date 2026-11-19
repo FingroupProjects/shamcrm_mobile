@@ -158,7 +158,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.backgroundPrimary,
       appBar: _buildAppBar(context, complex, building, hasActiveFilter),
       floatingActionButton: (_currentView == ChessViewMode.matrix || _currentView == ChessViewMode.list)
           ? FloatingActionButton.extended(
@@ -180,6 +180,9 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          Positioned.fill(
+            child: Container(color: colors.backgroundPrimary),
+          ),
           const Positioned.fill(
             child: AppBackgroundOverlay(
               preset: AppBackgroundPreset.aurora,
