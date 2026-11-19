@@ -325,7 +325,18 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () => setState(() => _currentView = tile.mode),
+                      onTap: () {
+                        if (tile.mode == ChessViewMode.orderPayments) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const OrderPaymentsScreen(),
+                            ),
+                          );
+                          return;
+                        }
+                        setState(() => _currentView = tile.mode);
+                      },
                       child: Ink(
                         decoration: BoxDecoration(
                           color: colors.surfacePrimary,
@@ -436,7 +447,7 @@ class _ComplexChessScreenState extends State<ComplexChessScreen> {
         return const ChessPaymentsView();
 
       case ChessViewMode.orderPayments:
-        return const OrderPaymentsScreen(hideAppBar: true);
+        return const OrderPaymentsScreen();
 
       case ChessViewMode.parking:
         return ChessGridParkingView(
