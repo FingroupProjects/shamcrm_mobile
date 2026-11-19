@@ -64,6 +64,7 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
   String? _managerId;
   int? _statusId;
   String _managerName = '';
+  // ignore: unused_field
   String _dealType = 'cash';
   List<OrderStatus> _statuses = [];
   bool _loadingStatuses = true;
@@ -303,6 +304,7 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
     });
   }
 
+  // ignore: unused_element
   void _openScheduleTemplate() {
     final phone = _phone.isNotEmpty ? _phone : _phoneController.text.trim();
     final order = _residentialKey.currentState?.buildSchedulePreview(
@@ -973,33 +975,33 @@ class _NewChessDealScreenState extends State<NewChessDealScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_dealType != 'cash') ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _saving ? null : _openScheduleTemplate,
-                      icon: Icon(Icons.description_outlined, color: colors.buttonPrimaryBg, size: 18),
-                      label: Text(
-                        'Шаблон графика',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w500,
-                          color: colors.buttonPrimaryBg,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.buttonPrimaryBg,
-                        side: BorderSide(color: colors.buttonPrimaryBg, width: 1.2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
+                // if (_dealType != 'cash') ...[
+                //   SizedBox(
+                //     width: double.infinity,
+                //     child: OutlinedButton.icon(
+                //       onPressed: _saving ? null : _openScheduleTemplate,
+                //       icon: Icon(Icons.description_outlined, color: colors.buttonPrimaryBg, size: 18),
+                //       label: Text(
+                //         'Шаблон графика',
+                //         style: TextStyle(
+                //           fontSize: 16,
+                //           fontFamily: 'Gilroy',
+                //           fontWeight: FontWeight.w500,
+                //           color: colors.buttonPrimaryBg,
+                //         ),
+                //       ),
+                //       style: OutlinedButton.styleFrom(
+                //         foregroundColor: colors.buttonPrimaryBg,
+                //         side: BorderSide(color: colors.buttonPrimaryBg, width: 1.2),
+                //         shape: RoundedRectangleBorder(
+                //           borderRadius: BorderRadius.circular(18),
+                //         ),
+                //         padding: const EdgeInsets.symmetric(vertical: 14),
+                //       ),
+                //     ),
+                //   ),
+                //   const SizedBox(height: 10),
+                // ],
                 Row(
               children: [
                 Expanded(
