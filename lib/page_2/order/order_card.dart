@@ -118,7 +118,8 @@ class _OrderCardState extends State<OrderCard> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return AppLocalizations.of(context)!.translate('no_date');
-    return DateFormat('dd.MM.yyyy').format(date);
+    final local = date.isUtc ? date.toLocal() : date;
+    return DateFormat('dd.MM.yyyy').format(local);
   }
 
   String _formatSum(double? sum) {

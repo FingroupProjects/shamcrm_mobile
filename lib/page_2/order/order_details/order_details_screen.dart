@@ -431,11 +431,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         return order.phone;
       case 'order_date':
         return order.lead.createdAt != null
-            ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+            ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!.isUtc ? order.lead.createdAt!.toLocal() : order.lead.createdAt!)
             : '';
       case 'created_at':
         return order.createdAt != null
-            ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+            ? DateFormat('dd.MM.yyyy').format(order.createdAt!.isUtc ? order.createdAt!.toLocal() : order.createdAt!)
             : '';
       case 'order_status_id':
       case 'status_id':
@@ -472,10 +472,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   void _updateDetails(Order order) {
     _currentOrderDetails = order;
     String formattedDate = order.lead.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!)
+        ? DateFormat('dd.MM.yyyy').format(order.lead.createdAt!.isUtc ? order.lead.createdAt!.toLocal() : order.lead.createdAt!)
         : AppLocalizations.of(context)!.translate('');
     String createdAtDate = order.createdAt != null
-        ? DateFormat('dd.MM.yyyy').format(order.createdAt!)
+        ? DateFormat('dd.MM.yyyy').format(order.createdAt!.isUtc ? order.createdAt!.toLocal() : order.createdAt!)
         : AppLocalizations.of(context)!.translate('');
 
     if (!_isConfigurationLoaded) {

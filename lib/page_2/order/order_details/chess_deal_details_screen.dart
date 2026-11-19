@@ -357,6 +357,48 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
     );
   }
 
+  String _formatCreatedDate() {
+    DateTime? dt = _order.createdAt;
+    final rawDate = _order.date;
+
+    if (dt != null) {
+      DateTime localDt;
+      if (dt.isUtc) {
+        localDt = dt.toLocal();
+      } else {
+        final rawStr = _order.rawJson?['created_at']?.toString() ?? rawDate ?? '';
+        if (rawStr.endsWith('Z') || rawStr.endsWith('z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(rawStr)) {
+          final parsed = DateTime.tryParse(rawStr);
+          localDt = (parsed != null && parsed.isUtc) ? parsed.toLocal() : dt.toLocal();
+        } else {
+          // If server time has no timezone indicator in string, add local timezone offset (+5 for TJ/UZ)
+          final offset = DateTime.now().timeZoneOffset;
+          localDt = offset.inMinutes != 0 ? dt.add(offset) : dt.add(const Duration(hours: 5));
+        }
+      }
+      return DateFormat('dd.MM.yyyy HH:mm').format(localDt);
+    }
+
+    if (rawDate != null && rawDate.trim().isNotEmpty) {
+      final parsed = DateTime.tryParse(rawDate.trim());
+      if (parsed != null) {
+        DateTime localDt;
+        if (parsed.isUtc) {
+          localDt = parsed.toLocal();
+        } else if (rawDate.endsWith('Z') || rawDate.endsWith('z') || RegExp(r'[+-]\d{2}:?\d{2}$').hasMatch(rawDate)) {
+          localDt = parsed.toLocal();
+        } else {
+          final offset = DateTime.now().timeZoneOffset;
+          localDt = offset.inMinutes != 0 ? parsed.add(offset) : parsed.add(const Duration(hours: 5));
+        }
+        return DateFormat('dd.MM.yyyy HH:mm').format(localDt);
+      }
+      return rawDate;
+    }
+
+    return '—';
+  }
+
   Widget _buildHeaderCard(dynamic colors) {
     final statusList = _statuses.map((s) => _StatusOption(s.id, s.name)).toList();
     final selectedStatus = statusList.isNotEmpty
@@ -366,9 +408,7 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
           )
         : _StatusOption(_order.orderStatus.id, _order.orderStatus.name);
 
-    final createdDateStr = _order.createdAt != null
-        ? DateFormat('dd.MM.yyyy HH:mm').format(_order.createdAt!)
-        : (_order.date ?? '—');
+    final createdDateStr = _formatCreatedDate();
 
     return Container(
       padding: const EdgeInsets.all(16),
