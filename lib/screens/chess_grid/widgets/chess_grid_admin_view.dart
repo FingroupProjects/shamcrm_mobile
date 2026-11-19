@@ -393,7 +393,7 @@ class _ChessGridAdminViewState extends State<ChessGridAdminView> {
     const options = <(String, String)>[
       ('all', 'Все'),
       ('flat', 'Квартиры'),
-      ('park', 'Парковка'),
+      ('park', 'Парковки'),
     ];
 
     return Container(
