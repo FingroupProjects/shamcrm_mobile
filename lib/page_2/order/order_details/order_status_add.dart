@@ -239,7 +239,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                             label:
                                 'Введите текст который получит клиент при переходе его заказа в этот статус',
                             controller: _messageController,
-                            isRequired: true,
+                            isRequired: false,
                             hintText: localizations.translate('Введите текст'),
                           ),
                           const SizedBox(height: 18),
@@ -325,7 +325,7 @@ class _CreateOrderStatusDialogState extends State<CreateOrderStatusDialog> {
                           final title = _titleController.text.trim();
                           final message = _messageController.text.trim();
 
-                          if (title.isNotEmpty && message.isNotEmpty) {
+                          if (title.isNotEmpty) {
                             setState(() => _submitting = true);
                             widget.orderBloc.add(CreateOrderStatus(
                               title: title,

@@ -248,7 +248,7 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                             label:
                                 'Введите текст который получит клиент при переходе его заказа в этот статус',
                             controller: _messageController,
-                            isRequired: true,
+                            isRequired: false,
                             hintText: localizations.translate('Введите текст'),
                           ),
                           const SizedBox(height: 18),
@@ -332,7 +332,7 @@ class _EditStatusOrderState extends State<EditStatusOrder> {
                           final title = _titleController.text.trim();
                           final message = _messageController.text.trim();
 
-                          if (title.isNotEmpty && message.isNotEmpty) {
+                          if (title.isNotEmpty) {
                             widget.orderBloc.add(UpdateOrderStatus(
                               statusId: widget.status.id,
                               title: title,
