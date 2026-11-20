@@ -11,7 +11,6 @@ import 'package:crm_task_manager/bloc/task_status_add/task_bloc.dart'
 import 'package:crm_task_manager/bloc/task_status_add/task_event.dart'
     as task_status_add;
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
-import 'package:crm_task_manager/custom_widget/color_picker/status_color_picker.dart';
 import 'package:crm_task_manager/custom_widget/custom_chat_styles.dart';
 import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
@@ -92,15 +91,15 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
                 },
                 errorText: _projectError,
               ),
-            const SizedBox(height: 8),
-            StatusColorField(
-              selectedColor: selectedColor,
-              onColorChanged: (c) {
-                setState(() {
-                  selectedColor = c;
-                });
-              },
-            ),
+            // const SizedBox(height: 8),
+            // StatusColorField(
+            //   selectedColor: selectedColor,
+            //   onColorChanged: (c) {
+            //     setState(() {
+            //       selectedColor = c;
+            //     });
+            //   },
+            // ),
             const SizedBox(height: 8),
             Container(
               padding: EdgeInsets.symmetric(vertical: 0),
@@ -319,7 +318,7 @@ class _CreateStatusDialogState extends State<CreateStatusDialog> {
             roleIds: needsPermission ? selectedRoleIds : null,
             finalStep: isFinalStage,
             isUnassembled: isUnassembled,
-            color: colorToHex(selectedColor),
+            color: '#000000',
           ),
         );
 

@@ -262,7 +262,7 @@ class TaskStatus {
       taskStatus: SafeConverters.toMapOrNull(json['taskStatus']) != null
           ? TaskStatusName.fromJson(SafeConverters.toMap(json['taskStatus']))
           : null,
-      color: SafeConverters.toSafeString(json['color'], defaultValue: '#3B82F6'),
+      color: SafeConverters.toSafeString(json['color'], defaultValue: '#000000'),
       tasksCount: _tasksCountFromJson(json),
       roles: SafeConverters.toList(json['roles'])
           .map((role) => SafeConverters.toSafeString(role))

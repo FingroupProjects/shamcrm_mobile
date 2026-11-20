@@ -559,7 +559,7 @@ extension ApiTasksX on ApiService {
         'task_status_name_id': taskStatusNameId,
         'project_id': projectId,
         'needs_permission': needsPermission ? 1 : 0,
-        'color': (color != null && color.isNotEmpty) ? color : '#3B82F6',
+        'color': (color != null && color.isNotEmpty) ? color : '#000000',
       };
 
       // Добавляем final_step, если оно не null
@@ -1376,7 +1376,7 @@ extension ApiTasksX on ApiService {
 
     final payload = {
       if (projectId != null) "project_id": projectId,
-      "color": (color != null && color.isNotEmpty) ? color : '#3B82F6',
+      "color": (color != null && color.isNotEmpty) ? color : '#000000',
       "name": name,
       "title": name,
       "task_status_name_id": taskStatusId,
