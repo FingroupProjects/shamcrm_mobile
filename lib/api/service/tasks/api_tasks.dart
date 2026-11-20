@@ -584,6 +584,8 @@ extension ApiTasksX on ApiService {
 
       // Проверяем статус ответа
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await clearTaskStatusesPersistentCache();
+        ApiService.clearAnalyticsResponseCache();
         final responseData = json.decode(response.body);
         return {
           'success': true,
@@ -1292,6 +1294,8 @@ extension ApiTasksX on ApiService {
     final response = await _deleteRequest(path);
 
     if (response.statusCode == 200) {
+      await clearTaskStatusesPersistentCache();
+      ApiService.clearAnalyticsResponseCache();
       return {'result': 'Success'};
     } else {
       throw Exception('Failed to delete taskStatus!');
@@ -1390,6 +1394,8 @@ extension ApiTasksX on ApiService {
     );
 
     if (response.statusCode == 200) {
+      await clearTaskStatusesPersistentCache();
+      ApiService.clearAnalyticsResponseCache();
       return {'result': 'Success'};
     } else {
       throw Exception('Failed to update task status!');

@@ -208,10 +208,10 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           );
           try {
             final taskBloc = BlocProvider.of<TaskBloc>(context, listen: false);
-            taskBloc.add(FetchTaskStatuses(projectId: widget.projectId));
+            taskBloc.add(FetchTaskStatuses(projectId: widget.projectId, forceRefresh: true));
             taskBloc.add(FetchTasks(widget.taskStatusId, projectId: widget.projectId));
           } catch (_) {}
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         } else if (state is TaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

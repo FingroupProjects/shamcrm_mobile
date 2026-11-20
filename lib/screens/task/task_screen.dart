@@ -1882,9 +1882,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
 
     if (result == true) {
-      // ОПТИМИЗАЦИЯ: Убираем дублирование вызова FetchTaskStatuses
       final taskBloc = BlocProvider.of<TaskBloc>(context);
-      taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
+      await taskBloc.clearAllCountsAndCache(
+        clearPersistentCache: !_isProjectContext,
+      );
+      ApiService.clearAnalyticsResponseCache();
+      taskBloc.add(FetchTaskStatuses(
+        forceRefresh: true,
+        projectId: _projectContextId,
+      ));
 
       setState(() {
         navigateToEnd = true;
@@ -1962,6 +1968,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   // Вспомогательный метод для построения UI кнопки табы
   Widget _buildTabButtonUI(int index, bool isActive, int taskCount) {
     final title = (_tabTitles[index]['title'] as String?)?.trim() ?? '';
+    final colorString = _tabTitles[index]['color'] as String?;
+    final statusColor = hexToColor(colorString, defaultColor: context.appColors.buttonPrimaryBg);
 
     return GestureDetector(
       key: _tabKeys[index],
@@ -1980,95 +1988,91 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
           color: isActive
               ? context.appColors.buttonPrimaryBg
               : context.appColors.surfacePrimary,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isActive
-                ? context.appColors.buttonPrimaryBg
-                : context.appColors.borderSubtle.withValues(alpha: 0.58),
+                ? statusColor.withValues(alpha: 0.9)
+                : statusColor.withValues(alpha: 0.45),
+            width: isActive ? 1.5 : 1.2,
           ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: context.appColors.buttonPrimaryBg
-                        .withValues(alpha: 0.12),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : const [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Builder(
-              builder: (context) {
-                final colorString = _tabTitles[index]['color'] as String?;
-                final statusColor = hexToColor(colorString, defaultColor: Colors.transparent);
-                if (statusColor == Colors.transparent) return const SizedBox.shrink();
-                return Container(
-                  width: 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isActive ? Colors.white.withValues(alpha: 0.6) : Colors.black12,
-                      width: 1,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: Text(
-                title.isEmpty ? 'Статус' : title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isActive
-                      ? context.appColors.buttonPrimaryFg
-                      : context.appColors.textPrimary,
-                  fontSize: 14,
-                  fontFamily: 'Gilroy',
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                ),
+          boxShadow: [
+            if (isActive)
+              BoxShadow(
+                color: statusColor.withValues(alpha: 0.28),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              )
+            else
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? context.appColors.buttonPrimaryFg.withValues(alpha: 0.18)
-                    : context.appColors.buttonPrimaryBg.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isActive
-                      ? context.appColors.buttonPrimaryBg
-                          .withValues(alpha: 0.85)
-                      : context.appColors.textInverse.withValues(alpha: 0.22),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                taskCount.toString(),
-                style: TextStyle(
-                  color: isActive
-                      ? context.appColors.buttonPrimaryFg
-                      : context.appColors.textPrimary,
-                  fontSize: 12,
-                  fontFamily: 'Gilroy',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 140),
+                      child: Text(
+                        title.isEmpty ? 'Статус' : title,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isActive
+                              ? context.appColors.buttonPrimaryFg
+                              : context.appColors.textPrimary,
+                          fontSize: 14,
+                          fontFamily: 'Gilroy',
+                          fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? context.appColors.buttonPrimaryFg.withValues(alpha: 0.20)
+                            : statusColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        taskCount.toString(),
+                        style: TextStyle(
+                          color: isActive
+                              ? context.appColors.buttonPrimaryFg
+                              : statusColor,
+                          fontSize: 12,
+                          fontFamily: 'Gilroy',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 3.5,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2137,19 +2141,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
   }
 
-  void _editTaskStatus(int index) {
+  void _editTaskStatus(int index) async {
     final taskStatus = _tabTitles[index];
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => TaskStatusEditScreen(
         taskStatusId: taskStatus['id'],
         projectId: _projectContextId,
       ),
-    ).then((_) {
+    );
+
+    if (result == true) {
       if (!mounted) return;
-      _taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
-      _taskBloc.add(FetchTasks(taskStatus['id'], projectId: _projectContextId));
-    });
+      await _hardRefreshAfterTaskChange(taskStatus['id']);
+    }
   }
 
   void _showDeleteDialog(int index) async {
