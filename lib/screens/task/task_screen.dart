@@ -2016,62 +2016,64 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(15),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 140),
-                      child: Text(
-                        title.isEmpty ? 'Статус' : title,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isActive
-                              ? context.appColors.buttonPrimaryFg
-                              : context.appColors.textPrimary,
-                          fontSize: 14,
-                          fontFamily: 'Gilroy',
-                          fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 140),
+                        child: Text(
+                          title.isEmpty ? 'Статус' : title,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isActive
+                                ? context.appColors.buttonPrimaryFg
+                                : context.appColors.textPrimary,
+                            fontSize: 14,
+                            fontFamily: 'Gilroy',
+                            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? context.appColors.buttonPrimaryFg.withValues(alpha: 0.20)
-                            : statusColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        taskCount.toString(),
-                        style: TextStyle(
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
                           color: isActive
-                              ? context.appColors.buttonPrimaryFg
-                              : statusColor,
-                          fontSize: 12,
-                          fontFamily: 'Gilroy',
-                          fontWeight: FontWeight.w700,
+                              ? context.appColors.buttonPrimaryFg.withValues(alpha: 0.20)
+                              : statusColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          taskCount.toString(),
+                          style: TextStyle(
+                            color: isActive
+                                ? context.appColors.buttonPrimaryFg
+                                : statusColor,
+                            fontSize: 12,
+                            fontFamily: 'Gilroy',
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                height: 3.5,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                Container(
+                  height: 3.5,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
