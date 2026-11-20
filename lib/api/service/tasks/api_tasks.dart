@@ -1357,6 +1357,7 @@ extension ApiTasksX on ApiService {
     required bool checkingStep,
     bool isUnassembled = false,
     required List<int> roleIds,
+    int? projectId,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task-status/$taskStatusId');
@@ -1367,6 +1368,7 @@ extension ApiTasksX on ApiService {
     final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
 
     final payload = {
+      if (projectId != null) "project_id": projectId,
       "name": name,
       "title": name,
       "task_status_name_id": taskStatusId,

@@ -1,4 +1,3 @@
-import 'package:crm_task_manager/models/deal/dealById_model.dart';
 import 'package:crm_task_manager/models/deal/deal_model.dart';
 import 'package:crm_task_manager/models/task/project_model.dart';
 import 'package:crm_task_manager/models/user/user_data_response.dart';
@@ -237,6 +236,7 @@ class TaskStatus {
   final bool checkingStep;
   final bool isUnassembled;
   final List<String> roles; // Added roles field
+  final int? projectId;
 
   TaskStatus({
     required this.id,
@@ -248,11 +248,13 @@ class TaskStatus {
     required this.checkingStep,
     required this.isUnassembled,
     required this.roles, // Initialize roles
+    this.projectId,
   });
 
   factory TaskStatus.fromJson(Map<String, dynamic> json) {
     return TaskStatus(
       id: SafeConverters.toInt(json['id']),
+      projectId: SafeConverters.toIntOrNull(json['project_id'] ?? json['project']?['id']),
       needsPermission: SafeConverters.toBool(json['needs_permission']),
       finalStep: SafeConverters.toBool(json['final_step']),
       checkingStep: SafeConverters.toBool(json['checking_step']),

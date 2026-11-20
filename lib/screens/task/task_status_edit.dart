@@ -1,10 +1,14 @@
 import 'package:crm_task_manager/api/service/api_service.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
+import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
+import 'package:crm_task_manager/models/task/project_task_model.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
+import 'package:crm_task_manager/screens/task/task_details/project_list_task.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,10 +16,12 @@ import 'package:flutter/material.dart';
 
 class TaskStatusEditScreen extends StatefulWidget {
   final int taskStatusId;
+  final int? projectId;
 
   const TaskStatusEditScreen({
     super.key,
     required this.taskStatusId,
+    this.projectId,
   });
 
   @override
@@ -31,12 +37,16 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
   late TaskBloc _taskBloc;
   bool _dataLoaded = false;
   List<int> selectedRoleIds = [];
+  String? selectedProjectId;
+  String? _projectError;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
     _taskBloc = TaskBloc(ApiService());
+    selectedProjectId = widget.projectId?.toString();
+    context.read<GetTaskProjectBloc>().add(GetTaskProjectEv());
     _loadTaskStatus();
   }
 
@@ -75,6 +85,35 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
       return;
     }
 
+    final effectiveProjectId =
+        int.tryParse(selectedProjectId ?? '') ?? widget.projectId;
+
+    if (effectiveProjectId == null) {
+      setState(() {
+        _projectError = 'Выберите проект';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Выберите проект!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textInverse,
+            ),
+          ),
+          backgroundColor: context.appColors.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
       _taskBloc.add(
@@ -86,6 +125,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           checkingStep: checkingStep,
           isUnassembled: isUnassembled,
           roleIds: selectedRoleIds,
+          projectId: effectiveProjectId,
           localizations: localizations,
         ),
       );
@@ -128,6 +168,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
         if (state is TaskStatusLoaded && !_dataLoaded) {
           setState(() {
             _titleController.text = state.taskStatus.taskStatus?.name ?? '';
+            selectedProjectId ??= state.taskStatus.projectId?.toString();
             needsPermission = state.taskStatus.needsPermission;
             finalStep = state.taskStatus.finalStep;
             checkingStep = state.taskStatus.checkingStep;
@@ -163,8 +204,8 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           );
           try {
             final taskBloc = BlocProvider.of<TaskBloc>(context, listen: false);
-            taskBloc.add(FetchTaskStatuses());
-            taskBloc.add(FetchTasks(widget.taskStatusId));
+            taskBloc.add(FetchTaskStatuses(projectId: widget.projectId));
+            taskBloc.add(FetchTasks(widget.taskStatusId, projectId: widget.projectId));
           } catch (_) {}
           Navigator.of(context).pop();
         } else if (state is TaskError) {
@@ -201,7 +242,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: needsPermission ? 530 : 420,
+            height: needsPermission ? 620 : 500,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: context.appColors.surfacePrimary,
@@ -265,6 +306,17 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                     controller: _titleController,
                                     isRequired: true,
                                     hintText: 'Введите название',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ProjectTaskGroupWidget(
+                                    selectedProject: selectedProjectId,
+                                    onSelectProject: (ProjectTask selectedProjectData) {
+                                      setState(() {
+                                        selectedProjectId = selectedProjectData.id.toString();
+                                        _projectError = null;
+                                      });
+                                    },
+                                    errorText: _projectError,
                                   ),
                                   const SizedBox(height: 16),
                                   _buildCheckbox(

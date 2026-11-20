@@ -2122,6 +2122,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => TaskStatusEditScreen(
         taskStatusId: taskStatus['id'],
+        projectId: _projectContextId,
       ),
     ).then((_) {
       if (!mounted) return;
