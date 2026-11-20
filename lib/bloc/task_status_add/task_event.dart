@@ -14,6 +14,7 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
   final List<int>? roleIds;
   final bool? finalStep; // Добавлено поле finalStep
   final bool isUnassembled;
+  final String? color;
 
   const CreateTaskStatusAdd({
     required this.taskStatusNameId,
@@ -22,6 +23,7 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
     this.roleIds,
     this.finalStep, // Инициализация нового поля
     this.isUnassembled = false,
+    this.color,
   });
 
   @override
@@ -32,5 +34,6 @@ class CreateTaskStatusAdd extends TaskStatusEvent {
         roleIds,
         finalStep, // Добавлено поле в список props
         isUnassembled,
+        color,
       ];
 }

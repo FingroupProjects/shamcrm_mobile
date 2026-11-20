@@ -965,6 +965,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         isUnassembled: event.isUnassembled,
         roleIds: event.roleIds,
         projectId: event.projectId,
+        color: event.color,
       );
 
       if (response['result'] == 'Success') {

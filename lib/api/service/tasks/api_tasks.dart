@@ -551,6 +551,7 @@ extension ApiTasksX on ApiService {
     List<int>? roleIds,
     bool? finalStep,
     bool isUnassembled = false,
+    String? color,
   }) async {
     try {
       // Формируем данные для запроса
@@ -558,6 +559,7 @@ extension ApiTasksX on ApiService {
         'task_status_name_id': taskStatusNameId,
         'project_id': projectId,
         'needs_permission': needsPermission ? 1 : 0,
+        'color': (color != null && color.isNotEmpty) ? color : '#3B82F6',
       };
 
       // Добавляем final_step, если оно не null
@@ -1358,6 +1360,7 @@ extension ApiTasksX on ApiService {
     bool isUnassembled = false,
     required List<int> roleIds,
     int? projectId,
+    String? color,
   }) async {
     // Используем _appendQueryParams для добавления organization_id и sales_funnel_id
     final path = await _appendQueryParams('/task-status/$taskStatusId');
@@ -1369,6 +1372,7 @@ extension ApiTasksX on ApiService {
 
     final payload = {
       if (projectId != null) "project_id": projectId,
+      "color": (color != null && color.isNotEmpty) ? color : '#3B82F6',
       "name": name,
       "title": name,
       "task_status_name_id": taskStatusId,

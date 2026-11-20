@@ -29,6 +29,7 @@ import 'package:crm_task_manager/widgets/helpful_empty_state.dart';
 import 'package:crm_task_manager/screens/task/task_details/task_status_add.dart';
 import 'package:crm_task_manager/screens/task/task_status_delete.dart';
 import 'package:crm_task_manager/screens/task/task_status_edit.dart';
+import 'package:crm_task_manager/custom_widget/color_picker/status_color_picker.dart';
 import 'package:crm_task_manager/screens/task/project_screen.dart';
 import 'package:crm_task_manager/services/app_logout_service.dart';
 import 'package:crm_task_manager/utils/TutorialStyleWidget.dart';
@@ -2004,6 +2005,26 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Builder(
+              builder: (context) {
+                final colorString = _tabTitles[index]['color'] as String?;
+                final statusColor = hexToColor(colorString, defaultColor: Colors.transparent);
+                if (statusColor == Colors.transparent) return const SizedBox.shrink();
+                return Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isActive ? Colors.white.withValues(alpha: 0.6) : Colors.black12,
+                      width: 1,
+                    ),
+                  ),
+                );
+              },
+            ),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 140),
               child: Text(
@@ -2212,6 +2233,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                       'id': status.id,
                       'title': status.taskStatus?.name ?? "",
                       'is_unassembled': status.isUnassembled,
+                      'color': status.color,
                     })
                 .toList());
           }
@@ -2226,8 +2248,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               // Обновляем табы с новыми данными
               _tabTitles = state.taskStatuses
                   .where((status) => _canReadTaskStatus)
-                  .map((status) =>
-                      {'id': status.id, 'title': status.taskStatus?.name ?? ""})
+                  .map((status) => {
+                        'id': status.id,
+                        'title': status.taskStatus?.name ?? "",
+                        'color': status.color,
+                      })
                   .toList();
               _tabKeys = List.generate(_tabTitles.length, (_) => GlobalKey());
 

@@ -276,6 +276,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
   final bool isUnassembled;
   final List<int> roleIds;
   final int? projectId;
+  final String? color;
   final AppLocalizations localizations;
 
   UpdateTaskStatusEdit({
@@ -287,6 +288,7 @@ class UpdateTaskStatusEdit extends TaskEvent {
     this.isUnassembled = false,
     required this.roleIds,
     this.projectId,
+    this.color,
     required this.localizations,
   });
 }

@@ -2,6 +2,7 @@ import 'package:crm_task_manager/api/service/api_service.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_bloc.dart';
 import 'package:crm_task_manager/bloc/project_task/project_task_event.dart';
 import 'package:crm_task_manager/core/theme/helpers/theme_context_extension.dart';
+import 'package:crm_task_manager/custom_widget/color_picker/status_color_picker.dart';
 import 'package:crm_task_manager/bloc/task/task_bloc.dart';
 import 'package:crm_task_manager/bloc/task/task_event.dart';
 import 'package:crm_task_manager/bloc/task/task_state.dart';
@@ -39,6 +40,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
   List<int> selectedRoleIds = [];
   String? selectedProjectId;
   String? _projectError;
+  Color _selectedColor = const Color(0xFF3B82F6);
 
   @override
   void initState() {
@@ -126,6 +128,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           isUnassembled: isUnassembled,
           roleIds: selectedRoleIds,
           projectId: effectiveProjectId,
+          color: colorToHex(_selectedColor),
           localizations: localizations,
         ),
       );
@@ -169,6 +172,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           setState(() {
             _titleController.text = state.taskStatus.taskStatus?.name ?? '';
             selectedProjectId ??= state.taskStatus.projectId?.toString();
+            _selectedColor = hexToColor(state.taskStatus.color);
             needsPermission = state.taskStatus.needsPermission;
             finalStep = state.taskStatus.finalStep;
             checkingStep = state.taskStatus.checkingStep;
@@ -242,7 +246,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           insetPadding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 400,
-            height: needsPermission ? 620 : 500,
+            height: needsPermission ? 680 : 560,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: context.appColors.surfacePrimary,
@@ -317,6 +321,15 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                                       });
                                     },
                                     errorText: _projectError,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  StatusColorField(
+                                    selectedColor: _selectedColor,
+                                    onColorChanged: (c) {
+                                      setState(() {
+                                        _selectedColor = c;
+                                      });
+                                    },
                                   ),
                                   const SizedBox(height: 16),
                                   _buildCheckbox(

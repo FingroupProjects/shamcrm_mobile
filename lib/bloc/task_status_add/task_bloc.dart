@@ -27,6 +27,7 @@ class TaskStatusBloc extends Bloc<TaskStatusEvent, TaskStatusState> {
           roleIds: event.roleIds,
           finalStep: event.finalStep,
           isUnassembled: event.isUnassembled,
+          color: event.color,
         );
 
         if (response['success']) {
