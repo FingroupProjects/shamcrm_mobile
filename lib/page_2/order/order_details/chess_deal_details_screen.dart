@@ -242,7 +242,8 @@ class _ChessDealDetailsScreenState extends State<ChessDealDetailsScreen> {
     final t = raw.trim();
     try {
       if (t.contains('-')) {
-        final dt = DateTime.parse(t);
+        final parsed = DateTime.parse(t);
+        final dt = parsed.isUtc ? parsed.toLocal() : parsed;
         return DateFormat('dd.MM.yyyy').format(dt);
       }
     } catch (_) {}

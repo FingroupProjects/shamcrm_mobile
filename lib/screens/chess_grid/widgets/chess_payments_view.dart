@@ -2174,7 +2174,8 @@ String _date(dynamic value) {
   final raw = value?.toString() ?? '';
   final parsed = DateTime.tryParse(raw);
   if (parsed == null) return raw.isEmpty ? '—' : raw;
-  return DateFormat('dd.MM.yyyy').format(parsed);
+  final dt = parsed.isUtc ? parsed.toLocal() : parsed;
+  return DateFormat('dd.MM.yyyy').format(dt);
 }
 
 String _dealStatus(String? value) {

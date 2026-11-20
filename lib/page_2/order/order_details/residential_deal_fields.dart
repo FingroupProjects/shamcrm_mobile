@@ -158,7 +158,8 @@ class ResidentialDealFieldsState extends State<ResidentialDealFields> {
     if (t.isEmpty) return '';
     try {
       if (t.contains('-')) {
-        final dt = DateTime.parse(t);
+        final parsed = DateTime.parse(t);
+        final dt = parsed.isUtc ? parsed.toLocal() : parsed;
         return DateFormat('dd/MM/yyyy').format(dt);
       }
     } catch (_) {}

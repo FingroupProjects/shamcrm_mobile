@@ -17,6 +17,7 @@ import 'package:crm_task_manager/models/common/file_helper.dart';
 import 'package:crm_task_manager/models/field/field_configuration.dart';
 import 'package:crm_task_manager/models/field/main_field_model.dart';
 import 'package:crm_task_manager/models/lead/lead_list_model.dart';
+import 'package:crm_task_manager/models/page_2/order_card.dart' as deal;
 import 'package:crm_task_manager/models/page_2/order_status_model.dart' as order_api;
 import 'package:crm_task_manager/models/page_2/supplier_model.dart';
 import 'package:crm_task_manager/screens/chess_grid/controllers/chess_grid_controller.dart';
@@ -29,6 +30,7 @@ import 'package:crm_task_manager/screens/lead/tabBar/lead_details/custom_field_m
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/lead_create_custom.dart';
 import 'package:crm_task_manager/screens/lead/tabBar/lead_details/main_field_dropdown_widget.dart';
 import 'package:crm_task_manager/screens/deal/tabBar/deal_details/manager_for_lead.dart';
+import 'package:crm_task_manager/utils/safe_converters.dart';
 import 'package:crm_task_manager/widgets/required_field_slot.dart';
 import 'package:crm_task_manager/widgets/snackbar_widget.dart';
 import 'package:flutter/material.dart';
@@ -104,17 +106,22 @@ class _PickOption {
 class OrderCreateSheet extends StatefulWidget {
   final Apartment? apartment;
   final ParkingSpot? parking;
+  final deal.Order? existingOrder;
 
   const OrderCreateSheet({
     super.key,
     this.apartment,
     this.parking,
+    this.existingOrder,
   });
 
-  static Future<void> show({
+  bool get isEdit => existingOrder != null;
+
+  static Future<dynamic> show({
     required BuildContext context,
     Apartment? apartment,
     ParkingSpot? parking,
+    deal.Order? existingOrder,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -125,6 +132,7 @@ class OrderCreateSheet extends StatefulWidget {
         child: OrderCreateSheet(
           apartment: apartment,
           parking: parking,
+          existingOrder: existingOrder,
         ),
       ),
     );
@@ -226,6 +234,36 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
   String? _firstMissingField;
   int _fieldErrorPulse = 0;
 
+  String _formatDateForUi(dynamic raw) {
+    if (raw == null) return '';
+    final str = raw.toString().trim();
+    if (str.isEmpty || str == 'null') return '';
+    try {
+      if (str.contains('/')) {
+        final parts = str.split('/');
+        if (parts.length == 3 && parts[2].length == 4) return str;
+      }
+      DateTime dt;
+      if (str.contains('T')) {
+        final parsed = DateTime.parse(str);
+        dt = parsed.isUtc ? parsed.toLocal() : parsed;
+      } else if (str.contains('-')) {
+        final parsed = DateTime.tryParse(str);
+        if (parsed != null) {
+          dt = parsed.isUtc ? parsed.toLocal() : parsed;
+        } else {
+          final datePart = str.split(' ').first;
+          dt = DateTime.parse(datePart);
+        }
+      } else {
+        return str;
+      }
+      return DateFormat('dd/MM/yyyy').format(dt);
+    } catch (_) {
+      return str;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -251,6 +289,100 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
 
     final today = DateTime.now();
     _firstPaymentDateController.text = DateFormat('dd/MM/yyyy').format(today);
+
+    final existing = widget.existingOrder;
+    if (existing != null) {
+      final raw = existing.rawJson ?? {};
+
+      _selectedLeadId = existing.lead.id.toString();
+      if (existing.manager != null) {
+        _selectedManagerId = existing.manager!.id.toString();
+        _selectedManagerName = existing.manager!.name;
+      } else if (raw['manager_id'] != null) {
+        _selectedManagerId = raw['manager_id'].toString();
+      }
+
+      _selectedStatusId = existing.orderStatus.id;
+
+      final ownerName = (raw['owner_name'] ?? raw['ownerName'] ?? raw['buyer_name'] ?? existing.lead.name)?.toString().trim() ?? '';
+      _ownerFullNameController.text = ownerName;
+
+      final phone = existing.phone.isNotEmpty ? existing.phone : (raw['phone']?.toString() ?? '');
+      if (phone.isNotEmpty) {
+        final parsed = parsePhoneCountryAndNumber(phone);
+        _phoneCountry = parsed.country;
+        final dial = parsed.country?.dialCode ?? '';
+        final local = parsed.localNumber;
+        _formattedPhone = dial.isNotEmpty ? '$dial$local' : phone;
+        _phoneController.text = local.isNotEmpty ? local : phone;
+        _phoneRevision++;
+      }
+
+      final genderRaw = (raw['gender'] ?? '').toString().toLowerCase().trim();
+      if (genderRaw == 'f' || genderRaw == 'female' || genderRaw == 'ж' || genderRaw == 'женский') {
+        _selectedGender = 'f';
+      } else {
+        _selectedGender = 'm';
+      }
+
+      _passportSeriesNumberController.text = (raw['passport'] ?? '').toString();
+      _passportIssuePlaceController.text = (raw['passport_issued_by'] ?? raw['passportIssuedBy'] ?? '').toString();
+      _issueDateController.text = _formatDateForUi(raw['passport_issued_at'] ?? raw['passportIssuedAt']);
+      _expiryDateController.text = _formatDateForUi(raw['passport_expires_at'] ?? raw['passportExpiresAt']);
+      _birthDateController.text = _formatDateForUi(raw['owner_birth_date'] ?? raw['ownerBirthDate']);
+
+      final innVal = raw['inn'];
+      if (innVal != null && innVal.toString().isNotEmpty && innVal.toString() != 'null') {
+        _innController.text = innVal.toString();
+      }
+      _addressController.text = (raw['residence_address'] ?? raw['residenceAddress'] ?? '').toString();
+
+      final dPricePerM2 = SafeConverters.toDoubleOrNull(raw['price_per_m2'] ?? raw['price_per_sqm']);
+      if (dPricePerM2 != null && dPricePerM2 > 0) {
+        _pricePerSqmController.text = dPricePerM2.toStringAsFixed(0);
+      }
+      final dArea = SafeConverters.toDoubleOrNull(raw['total_area']);
+      if (dArea != null && dArea > 0) {
+        _totalArea = dArea;
+        _totalAreaController.text = '${dArea.toStringAsFixed(1)} м²';
+      }
+      final dSum = SafeConverters.toDoubleOrNull(raw['sum'] ?? raw['price'] ?? existing.sum);
+      if (dSum != null && dSum > 0) {
+        _totalPrice = dSum;
+        _totalPriceController.text = dSum.toStringAsFixed(0);
+      }
+
+      final dealTypeRaw = (raw['deal_type'] ?? raw['dealType'] ?? raw['payment_type'] ?? '').toString().toLowerCase().trim();
+      if (dealTypeRaw == 'installment' || dealTypeRaw == 'рассрочка') {
+        _selectedDealType = DealType.installment;
+      } else if (dealTypeRaw == 'mixed' || dealTypeRaw == 'смешанные' || dealTypeRaw == 'бартер') {
+        _selectedDealType = DealType.mixed;
+      } else {
+        _selectedDealType = DealType.cash;
+      }
+
+      final down = SafeConverters.toDoubleOrNull(raw['down_payment']);
+      if (down != null && down > 0) {
+        _downPaymentController.text = down.toStringAsFixed(0);
+      }
+
+      final months = SafeConverters.toIntOrNull(raw['installment_months']);
+      if (months != null && months > 0) {
+        _monthsController.text = months.toString();
+      }
+
+      final firstDate = raw['first_payment_date'];
+      if (firstDate != null && firstDate.toString().isNotEmpty && firstDate.toString() != 'null') {
+        _firstPaymentDateController.text = _formatDateForUi(firstDate);
+      }
+
+      final barterAmt = SafeConverters.toDoubleOrNull(raw['barter_amount']);
+      if (barterAmt != null && barterAmt > 0) {
+        _barterAmountController.text = barterAmt.toStringAsFixed(0);
+      }
+      _barterNoteController.text = (raw['barter_note'] ?? '').toString();
+    }
+
     _recalculateInstallment();
     _loadOrderMeta();
     _loadDealFieldLayout();
@@ -306,7 +438,10 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     final value = raw?.trim() ?? '';
     if (value.isEmpty || value.toLowerCase() == 'null') return null;
     final iso = DateTime.tryParse(value);
-    if (iso != null) return DateFormat('dd/MM/yyyy').format(iso);
+    if (iso != null) {
+      final dt = iso.isUtc ? iso.toLocal() : iso;
+      return DateFormat('dd/MM/yyyy').format(dt);
+    }
     for (final pattern in ['dd.MM.yyyy', 'dd/MM/yyyy', 'yyyy-MM-dd']) {
       try {
         return DateFormat('dd/MM/yyyy').format(DateFormat(pattern).parseStrict(value));
@@ -349,9 +484,12 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       if (!mounted) return;
 
       SupplierCurrency? currency;
-      if (savedCurrencyId != null) {
+      final targetCurrencyId = widget.existingOrder != null
+          ? (SafeConverters.toIntOrNull(widget.existingOrder!.rawJson?['currency_id']) ?? savedCurrencyId)
+          : savedCurrencyId;
+      if (targetCurrencyId != null) {
         for (final item in currencies) {
-          if (item.id == savedCurrencyId) {
+          if (item.id == targetCurrencyId) {
             currency = item;
             break;
           }
@@ -361,7 +499,11 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
 
       setState(() {
         _orderStatuses = statuses;
-        _selectedStatusId = statuses.isNotEmpty ? statuses.first.id : null;
+        if (widget.existingOrder != null) {
+          _selectedStatusId = widget.existingOrder!.orderStatus.id;
+        } else {
+          _selectedStatusId = statuses.isNotEmpty ? statuses.first.id : null;
+        }
         _currencies = currencies.where((item) => item.id != null).toList();
         _selectedCurrency = currency;
         _loadingMeta = false;
@@ -490,6 +632,28 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
     setState(() {
       _fieldConfigurations = configs;
       _fieldSlots = merged;
+      if (widget.existingOrder != null) {
+        for (final cf in widget.existingOrder!.customFieldValues) {
+          final keyName = cf.customField?.name;
+          final field = _crmFields.cast<crm_fields.CustomField?>().firstWhere(
+                (f) => f?.fieldName == keyName,
+                orElse: () => null,
+              );
+          if (field != null && field.controller.text.isEmpty) {
+            field.controller.text = cf.value;
+          }
+        }
+        for (final dv in widget.existingOrder!.directoryValues) {
+          final dirId = dv.entry.directory.id;
+          final field = _crmFields.cast<crm_fields.CustomField?>().firstWhere(
+                (f) => f?.directoryId == dirId,
+                orElse: () => null,
+              );
+          if (field != null && field.controller.text.isEmpty) {
+            field.controller.text = dv.entry.id.toString();
+          }
+        }
+      }
     });
   }
 
@@ -1877,45 +2041,94 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
         });
       }
 
-      final result = await api.createResidentialOrder(
-        leadId: leadId,
-        managerId: managerId,
-        orderStatusId: _selectedStatusId!,
-        integrationId: integrationId,
-        phone: phone,
-        sum: _totalPrice,
-        currencyId: currencyId,
-        ownerName: ownerName,
-        gender: _selectedGender,
-        passport: passport,
-        passportIssuedBy: _passportIssuePlaceController.text.trim(),
-        passportIssuedAt: _apiDateFrom(_issueDateController),
-        passportExpiresAt: _apiDateFrom(_expiryDateController),
-        ownerBirthDate: _apiDateFrom(_birthDateController),
-        inn: inn,
-        residenceAddress: _addressController.text.trim(),
-        goodId: apartment.id,
-        variantId: variantId,
-        pricePerM2: sqPrice,
-        totalArea: _totalArea > 0 ? _totalArea : null,
-        dealType: dealType,
-        downPayment: !isInstallment
-            ? null
-            : (sendSchedule || down > 0 ? down : null),
-        installmentMonths: sendSchedule ? months : null,
-        firstPaymentDate: sendSchedule ? _apiDateFrom(_firstPaymentDateController) : null,
-        barterAmount: _selectedDealType == DealType.mixed && _barterAmount > 0 ? _barterAmount : null,
-        barterNote: _selectedDealType == DealType.mixed ? _barterNoteController.text.trim() : null,
-        orderCustomFields: customFieldMap,
-        directoryValues: directoryValues,
-        filePaths: _attachedFiles.map((file) => file.path).toList(),
-      );
+      final result = widget.isEdit
+          ? await api.updateResidentialOrder(
+              orderId: widget.existingOrder!.id,
+              leadId: leadId,
+              managerId: managerId,
+              orderStatusId: _selectedStatusId!,
+              integrationId: widget.existingOrder?.integrationId ?? integrationId,
+              phone: phone,
+              sum: _totalPrice,
+              currencyId: currencyId,
+              ownerName: ownerName,
+              gender: _selectedGender,
+              passport: passport,
+              passportIssuedBy: _passportIssuePlaceController.text.trim(),
+              passportIssuedAt: _apiDateFrom(_issueDateController),
+              passportExpiresAt: _apiDateFrom(_expiryDateController),
+              ownerBirthDate: _apiDateFrom(_birthDateController),
+              inn: inn,
+              residenceAddress: _addressController.text.trim(),
+              goodId: apartment.id,
+              variantId: variantId,
+              pricePerM2: sqPrice,
+              totalArea: _totalArea > 0 ? _totalArea : null,
+              dealType: dealType,
+              downPayment: !isInstallment
+                  ? null
+                  : (sendSchedule || down > 0 ? down : null),
+              installmentMonths: sendSchedule ? months : null,
+              firstPaymentDate: sendSchedule ? _apiDateFrom(_firstPaymentDateController) : null,
+              barterAmount: _selectedDealType == DealType.mixed && _barterAmount > 0 ? _barterAmount : null,
+              barterNote: _selectedDealType == DealType.mixed ? _barterNoteController.text.trim() : null,
+              orderCustomFields: customFieldMap,
+              directoryValues: directoryValues,
+              filePaths: _attachedFiles.map((file) => file.path).toList(),
+            )
+          : await api.createResidentialOrder(
+              leadId: leadId,
+              managerId: managerId,
+              orderStatusId: _selectedStatusId!,
+              integrationId: integrationId,
+              phone: phone,
+              sum: _totalPrice,
+              currencyId: currencyId,
+              ownerName: ownerName,
+              gender: _selectedGender,
+              passport: passport,
+              passportIssuedBy: _passportIssuePlaceController.text.trim(),
+              passportIssuedAt: _apiDateFrom(_issueDateController),
+              passportExpiresAt: _apiDateFrom(_expiryDateController),
+              ownerBirthDate: _apiDateFrom(_birthDateController),
+              inn: inn,
+              residenceAddress: _addressController.text.trim(),
+              goodId: apartment.id,
+              variantId: variantId,
+              pricePerM2: sqPrice,
+              totalArea: _totalArea > 0 ? _totalArea : null,
+              dealType: dealType,
+              downPayment: !isInstallment
+                  ? null
+                  : (sendSchedule || down > 0 ? down : null),
+              installmentMonths: sendSchedule ? months : null,
+              firstPaymentDate: sendSchedule ? _apiDateFrom(_firstPaymentDateController) : null,
+              barterAmount: _selectedDealType == DealType.mixed && _barterAmount > 0 ? _barterAmount : null,
+              barterNote: _selectedDealType == DealType.mixed ? _barterNoteController.text.trim() : null,
+              orderCustomFields: customFieldMap,
+              directoryValues: directoryValues,
+              filePaths: _attachedFiles.map((file) => file.path).toList(),
+            );
       if (!mounted) return;
       if (result['success'] != true) {
         showCustomSnackBar(
           context: context,
-          message: result['error']?.toString() ?? 'Не удалось создать сделку',
+          message: result['error']?.toString() ??
+              (widget.isEdit ? 'Не удалось обновить сделку' : 'Не удалось создать сделку'),
           isSuccess: false,
+        );
+        return;
+      }
+
+      if (widget.isEdit) {
+        await ChessGridController.instance.loadApartmentById(apartment);
+        if (!mounted) return;
+        final navigator = Navigator.of(context);
+        navigator.pop({'success': true, 'statusId': _selectedStatusId});
+        showCustomSnackBar(
+          context: navigator.context,
+          message: 'Квартира № ${apartment.displayNumber}: сделка успешно обновлена',
+          isSuccess: true,
         );
         return;
       }
@@ -1977,7 +2190,7 @@ class _OrderCreateSheetState extends State<OrderCreateSheet> {
       }
 
       final navigator = Navigator.of(context);
-      navigator.pop();
+      navigator.pop({'success': true, 'statusId': _selectedStatusId});
       showCustomSnackBar(
         context: navigator.context,
         message: 'Квартира № ${apartment.displayNumber}: сделка создана',
