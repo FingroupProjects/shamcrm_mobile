@@ -6,7 +6,6 @@ import 'package:crm_task_manager/bloc/task/task_state.dart';
 import 'package:crm_task_manager/custom_widget/custom_textfield.dart';
 import 'package:crm_task_manager/screens/profile/languages/app_localizations.dart';
 import 'package:crm_task_manager/screens/task/task_details/role_list.dart';
-import 'package:crm_task_manager/screens/task/task_details/task_status_list.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
@@ -15,9 +14,9 @@ class TaskStatusEditScreen extends StatefulWidget {
   final int taskStatusId;
 
   const TaskStatusEditScreen({
-    Key? key,
+    super.key,
     required this.taskStatusId,
-  }) : super(key: key);
+  });
 
   @override
   _TaskStatusEditScreenState createState() => _TaskStatusEditScreenState();
@@ -32,7 +31,6 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
   late TaskBloc _taskBloc;
   bool _dataLoaded = false;
   List<int> selectedRoleIds = [];
-  int? selectedStatusNameId;
 
   @override
   void initState() {
@@ -54,14 +52,35 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
   }
 
   void _saveChanges() {
-    final taskBloc = BlocProvider.of<TaskBloc>(context);
-    taskBloc.add(FetchTaskStatuses());
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Заполните все обязательные поля!',
+            style: TextStyle(
+              fontFamily: 'Gilroy',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: context.appColors.textInverse,
+            ),
+          ),
+          backgroundColor: context.appColors.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
     final localizations = AppLocalizations.of(context);
     if (localizations != null) {
       _taskBloc.add(
         UpdateTaskStatusEdit(
           taskStatusId: widget.taskStatusId,
-          name: _titleController.text,
+          name: _titleController.text.trim(),
           needsPermission: needsPermission,
           finalStep: finalStep,
           checkingStep: checkingStep,
@@ -71,19 +90,6 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
         ),
       );
     }
-  }
-
-  static Future<void> show(BuildContext context, int taskStatusId) {
-    return showDialog(
-      context: context,
-      builder: (context) => TaskStatusEditScreen(
-        taskStatusId: taskStatusId,
-      ),
-    ).then((_) {
-      final taskBloc = BlocProvider.of<TaskBloc>(context, listen: false);
-      taskBloc.add(FetchTaskStatuses());
-      taskBloc.add(FetchTasks(taskStatusId));
-    });
   }
 
   Widget _buildCheckbox(
@@ -121,13 +127,15 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
         final colors = context.appColors;
         if (state is TaskStatusLoaded && !_dataLoaded) {
           setState(() {
-            _titleController.text = state.taskStatus.taskStatus!.name;
+            _titleController.text = state.taskStatus.taskStatus?.name ?? '';
             needsPermission = state.taskStatus.needsPermission;
             finalStep = state.taskStatus.finalStep;
             checkingStep = state.taskStatus.checkingStep;
             isUnassembled = state.taskStatus.isUnassembled;
-            selectedRoleIds =
-                (state.taskStatus.roles ?? []).map((e) => e as int).toList();
+            selectedRoleIds = state.taskStatus.roles
+                .map((e) => int.tryParse(e.toString()) ?? 0)
+                .where((id) => id > 0)
+                .toList();
             _dataLoaded = true;
           });
         } else if (state is TaskStatusUpdatedEdit) {
@@ -143,19 +151,21 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: colors.success,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
-          final taskBloc = BlocProvider.of<TaskBloc>(context, listen: false);
-          taskBloc.add(FetchTaskStatuses());
-          taskBloc.add(FetchTasks(widget.taskStatusId));
+          try {
+            final taskBloc = BlocProvider.of<TaskBloc>(context, listen: false);
+            taskBloc.add(FetchTaskStatuses());
+            taskBloc.add(FetchTasks(widget.taskStatusId));
+          } catch (_) {}
           Navigator.of(context).pop();
         } else if (state is TaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -170,14 +180,14 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                 ),
               ),
               behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor: colors.error,
               elevation: 3,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              duration: Duration(seconds: 3),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -240,7 +250,7 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                     ),
                     const SizedBox(height: 20),
                     Expanded(
-                      child: state is TaskLoading
+                      child: state is TaskLoading && !_dataLoaded
                           ? Center(
                               child: CircularProgressIndicator(
                                 color: context.appColors.buttonPrimaryBg,
@@ -250,17 +260,13 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  StatusList(
-                                    selectedTaskStatus:
-                                        selectedStatusNameId?.toString(),
-                                    onChanged:
-                                        (String? statusName, int? statusId) {
-                                      setState(() {
-                                        selectedStatusNameId = statusId;
-                                      });
-                                    },
+                                  _buildTextFieldWithLabel(
+                                    label: 'Название',
+                                    controller: _titleController,
+                                    isRequired: true,
+                                    hintText: 'Введите название',
                                   ),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 16),
                                   _buildCheckbox(
                                     context,
                                     'С доступом',
@@ -343,22 +349,31 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
                           ],
                         ),
                         child: TextButton(
-                          onPressed: _saveChanges,
+                          onPressed: state is TaskLoading ? null : _saveChanges,
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 10,
                             ),
                           ),
-                          child: Text(
-                            'Сохранить',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Gilroy',
-                              fontWeight: FontWeight.w500,
-                              color: context.appColors.buttonPrimaryFg,
-                            ),
-                          ),
+                          child: state is TaskLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: context.appColors.buttonPrimaryFg,
+                                  ),
+                                )
+                              : Text(
+                                  'Сохранить',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Gilroy',
+                                    fontWeight: FontWeight.w500,
+                                    color: context.appColors.buttonPrimaryFg,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -387,6 +402,12 @@ class _TaskStatusEditScreenState extends State<TaskStatusEditScreen> {
           controller: controller,
           hintText: hintText ?? '',
           label: label,
+          backgroundColor: context.appColors.fieldBg,
+          textColor: context.appColors.textPrimary,
+          labelColor: context.appColors.textPrimary,
+          hintColor: context.appColors.textSecondary,
+          borderColor: context.appColors.borderSubtle,
+          focusedBorderColor: context.appColors.buttonPrimaryBg,
           validator: isRequired
               ? (value) => value!.isEmpty ? 'Поле обязательно' : null
               : null,

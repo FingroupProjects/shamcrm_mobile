@@ -2118,16 +2118,15 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   void _editTaskStatus(int index) {
     final taskStatus = _tabTitles[index];
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TaskStatusEditScreen(
-          taskStatusId: taskStatus['id'],
-        ),
+    showDialog(
+      context: context,
+      builder: (context) => TaskStatusEditScreen(
+        taskStatusId: taskStatus['id'],
       ),
     ).then((_) {
       if (!mounted) return;
       _taskBloc.add(FetchTaskStatuses(projectId: _projectContextId));
+      _taskBloc.add(FetchTasks(taskStatus['id'], projectId: _projectContextId));
     });
   }
 

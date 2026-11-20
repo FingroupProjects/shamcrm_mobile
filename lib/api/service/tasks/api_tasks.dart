@@ -1367,6 +1367,8 @@ extension ApiTasksX on ApiService {
     final roles = roleIds.map((roleId) => {"role_id": roleId}).toList();
 
     final payload = {
+      "name": name,
+      "title": name,
       "task_status_name_id": taskStatusId,
       "needs_permission": needsPermission ? 1 : 0,
       "final_step": finalStep ? 1 : 0,
